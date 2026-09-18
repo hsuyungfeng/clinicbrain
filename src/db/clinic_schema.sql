@@ -156,7 +156,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS page_index_fts USING fts5(
     summary_text,
     content='page_index_trees',
     content_rowid='id',
-    tokenize='unicode61'
+    tokenize='trigram'
 );
 
 -- ========================================
