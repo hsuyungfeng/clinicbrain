@@ -1,0 +1,7 @@
+clinic.db
+seed_database.log
+__pycache__/
+*.pyc
+.DS_Store
+.omc/
+OriginalData/
