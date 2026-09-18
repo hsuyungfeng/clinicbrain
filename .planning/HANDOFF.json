@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-18T14:48:00+08:00",
+  "timestamp": "2026-09-18T16:30:00+08:00",
   "phase": "01",
   "phase_name": "taiwan-pageindex-rag",
   "phase_dir": ".planning/phases/01-taiwan-pageindex-rag",
@@ -15,6 +15,13 @@
       "status": "done",
       "commit": "0ac396d",
       "notes": "7,573 drugs + 2,669 service items imported (not 377K+/42K+ as originally estimated — that figure conflated CSV newline count with record count). FTS5 switched to trigram tokenizer since unicode61 does not segment Chinese text; queries under 3 chars need a LIKE fallback at the query layer (not yet built — that's TASK-005)."
+    },
+    {
+      "id": "TASK-003",
+      "name": "Implement PageIndex schema and clinical reasoning tree generation",
+      "status": "done",
+      "commit": "cf3dd47",
+      "notes": "Decided against auto-generating trees from existing data sources: SFT medical dialogue data is Simplified Chinese TCM diagnosis Q&A (wrong language, wrong domain), and service_items payment_rules are generic coverage boilerplate with no clinical steps. Instead hand-wrote 4 more high-quality Traditional Chinese PageIndex trees (electrowave facelift, HA filler, fractional laser, HIFU lifting) alongside the existing 2 (laser resurfacing, botox), covering different anesthesia/downtime profiles as a quality baseline for TASK-004's LLM prompt. All 6 verified clean of price leakage and Simplified Chinese. Also found and fixed page_index_fts, which was still on unicode61 tokenizer from before the TASK-001 trigram migration — new trees were completely unsearchable until fixed; now all three FTS5 tables (drugs_fts, service_items_fts, page_index_fts) consistently use trigram."
     },
     {
       "id": 1,
@@ -54,11 +61,6 @@
     }
   ],
   "remaining_tasks": [
-    {
-      "id": 3,
-      "name": "Implement PageIndex schema and tree generation",
-      "status": "not_started"
-    },
     {
       "id": 4,
       "name": "Build clinical reasoning tree LLM prompt",
@@ -137,6 +139,6 @@
     }
   ],
   "uncommitted_files": [],
-  "next_action": "TASK-003 - Implement PageIndex schema and clinical reasoning tree generation. Schema table page_index_trees already exists (src/db/clinic_schema.sql); need a script/process to populate it beyond the 2 hardcoded sample trees, likely from procedure descriptions across the service_items + SFT medical dialogue data.",
-  "context_notes": "TASK-001 done and committed (0ac396d): schema created, 7,573 drugs + 2,669 service items seeded, FTS5 switched to trigram tokenizer to fix Chinese search (unicode61 could not segment CJK text). Root cause of the original 377K+/42K+ record estimate: that number was the CSV file's raw newline count, not the row count — long free-text fields (AI-note, 給付規定) contain embedded newlines. Actual record counts are much smaller and that's correct, not a data-loss bug."
+  "next_action": "TASK-004 - Build clinical reasoning tree LLM prompt for Taiwan context. Use the 6 hand-written trees in src/pageindex/seed_trees.py as few-shot quality examples/style guide. Prompt must enforce: Traditional Chinese only, absolute price masking, and the pre_op/procedure/post_op_short/maintenance structure with physician_notes left for human review.",
+  "context_notes": "TASK-001 (0ac396d) and TASK-003 (cf3dd47) done. DB has 7,573 drugs, 2,669 service items, 6 PageIndex trees, all three FTS5 tables (drugs_fts, service_items_fts, page_index_fts) use trigram tokenizer — verified working for 3+ char Traditional Chinese queries. 2-char query fallback still deferred to TASK-005. Root cause of the original 377K+/42K+ record estimate: CSV raw newline count, not row count (long free-text fields have embedded newlines) — actual record counts are correct, not a data-loss bug."
 }
