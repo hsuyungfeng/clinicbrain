@@ -1,14 +1,21 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-18T10:30:00+08:00",
+  "timestamp": "2026-09-18T14:48:00+08:00",
   "phase": "01",
   "phase_name": "taiwan-pageindex-rag",
   "phase_dir": ".planning/phases/01-taiwan-pageindex-rag",
   "plan": 1,
   "task": 8,
   "total_tasks": 8,
-  "status": "paused",
+  "status": "in_progress",
   "completed_tasks": [
+    {
+      "id": "TASK-001",
+      "name": "Build SQLite clinic schema + seed from OriginalData",
+      "status": "done",
+      "commit": "0ac396d",
+      "notes": "7,573 drugs + 2,669 service items imported (not 377K+/42K+ as originally estimated — that figure conflated CSV newline count with record count). FTS5 switched to trigram tokenizer since unicode61 does not segment Chinese text; queries under 3 chars need a LIKE fallback at the query layer (not yet built — that's TASK-005)."
+    },
     {
       "id": 1,
       "name": "OriginalData analysis",
@@ -80,16 +87,6 @@
   ],
   "blockers": [
     {
-      "description": "SQLite schema design decision: single DB with clinic_id vs separate DB per clinic",
-      "type": "technical",
-      "workaround": "Need to decide based on data freshness and query complexity requirements"
-    },
-    {
-      "description": "FTS5 Chinese tokenization: medical terminology search validation needed",
-      "type": "technical",
-      "workaround": "May need custom Chinese tokenizer for medical terms"
-    },
-    {
       "description": "LLM prompt engineering: finalize clinical reasoning tree prompt",
       "type": "technical",
       "workaround": "Test with 5+ real NHI form samples"
@@ -98,17 +95,17 @@
       "description": "Evaluation test suite: create 50+ query test cases",
       "type": "technical",
       "workaround": "Create comprehensive test cases before implementation"
+    },
+    {
+      "description": "Query-layer FTS fallback not yet implemented: trigram tokenizer only matches queries of 3+ chars; 2-char medical terms (e.g. 雷射, 拆線) need a LIKE '%term%' fallback at the search/query layer (TASK-005)",
+      "type": "technical",
+      "workaround": "Design a single search helper that branches on query length before TASK-005 begins"
     }
   ],
   "human_actions_pending": [
     {
-      "action": "Review and approve SQLite schema design",
-      "context": "Need to decide between single DB with clinic_id or separate DBs per clinic",
-      "blocking": true
-    },
-    {
       "action": "Validate OTC localization rules completeness",
-      "context": "Ensure all drug ingredients in OriginalData have localization mappings",
+      "context": "Only 14 ingredients are hardcoded in update_otc_names(); 456 of 7,573 drug records matched. Confirm whether more common OTC ingredients need mappings before this ships.",
       "blocking": false
     }
   ],
@@ -140,6 +137,6 @@
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Start with TASK-001 - Build SQLite clinic schema + seed from OriginalData CSV/ODS files. Read first: OriginalData/藥品項查詢項目檔260101.csv for schema structure, then create src/db/clinic_schema.sql.",
-  "context_notes": "Research and design phase complete. Next step is implementation starting with SQLite schema. Need to validate design decisions before proceeding to execution."
+  "next_action": "TASK-003 - Implement PageIndex schema and clinical reasoning tree generation. Schema table page_index_trees already exists (src/db/clinic_schema.sql); need a script/process to populate it beyond the 2 hardcoded sample trees, likely from procedure descriptions across the service_items + SFT medical dialogue data.",
+  "context_notes": "TASK-001 done and committed (0ac396d): schema created, 7,573 drugs + 2,669 service items seeded, FTS5 switched to trigram tokenizer to fix Chinese search (unicode61 could not segment CJK text). Root cause of the original 377K+/42K+ record estimate: that number was the CSV file's raw newline count, not the row count — long free-text fields (AI-note, 給付規定) contain embedded newlines. Actual record counts are much smaller and that's correct, not a data-loss bug."
 }
