@@ -9,7 +9,6 @@ import csv
 import os
 import sys
 from pathlib import Path
-from datetime import datetime
 import logging
 
 # Setup logging
@@ -226,65 +225,6 @@ def update_otc_names(conn):
     logger.info(f"Updated {updated_count} drug records with OTC names")
     return updated_count
 
-def create_sample_page_index(conn):
-    """Create sample PageIndex trees for testing."""
-    logger.info("Creating sample PageIndex trees...")
-    
-    cursor = conn.cursor()
-    
-    # Sample clinical reasoning trees
-    sample_trees = [
-        {
-            'doc_id': 'zhiyan-clinic-laser-skin-resurfacing',
-            'category': 'special',
-            'pre_op': '術前須知：1. 過敏體質需告知醫師 2. 術前2週停止使用A酸 3. 術前1週避免日曬 4. 術前洗臉清潔',
-            'procedure': '療程步驟：皮秒雷射利用極短脈衝光束擊碎黑色素，刺激膠原蛋白增生。過程約15-30分鐘，依治療範圍而定。麻醉方式：局部麻醉膏。',
-            'post_op_short': '術後照護：1. 術後立即冰敷15-20分鐘 2. 3天內避免化妝 3. 1週內避免日曬 4. 使用醫師指定保養品 5. 避免摳抓結痂',
-            'maintenance': '長期維持：1. 每月回診追蹤 2. 加強防曬SPF50+ 3. 定期保濕 4. 維持良好生活作息 5. 效果可維持6-12個月',
-            'summary_text': '皮秒雷射術前注意過敏體質、停用A酸、避免日曬。療程利用短脈衝光束擊碎黑色素，約15-30分鐘。術後冰敷、3天內避免化妝、1週避免日曬。每月回診，效果維持6-12個月。'
-        },
-        {
-            'doc_id': 'zhiyan-clinic-botox-injection',
-            'category': 'special',
-            'pre_op': '術前須知：1. 告知醫師用藥史 2. 術前2週停止服用阿斯匹靈 3. 術前洗臉清潔 4. 避免懷孕或哺乳',
-            'procedure': '療程步驟：肉毒桿菌素注射使用極細針頭將藥物注入目標肌肉，放鬆肌肉減少皺紋。過程約10-20分鐘，無需麻醉。',
-            'post_op_short': '術後照護：1. 術後4小時避免平躺 2. 24小時內避免按摩注射部位 3. 1週內避免劇烈運動 4. 避免高溫環境（三溫暖、烤箱）',
-            'maintenance': '長期維持：1. 每3-6個月回診補打 2. 保持良好表情習慣 3. 配合保養品使用 4. 效果可維持4-6個月',
-            'summary_text': '肉毒桿菌素注射術前停止服用阿斯匹靈、洗臉清潔。療程用極細針頭注入目標肌肉，約10-20分鐘。術後4小時避免平躺、24小時避免按摩、1週避免劇烈運動。每3-6個月回診，效果維持4-6個月。'
-        }
-    ]
-    
-    inserted_count = 0
-    
-    for tree in sample_trees:
-        try:
-            cursor.execute("""
-                INSERT OR REPLACE INTO page_index_trees (
-                    doc_id, category, pre_op, procedure, post_op_short, maintenance,
-                    summary_text, version, indexed_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                tree['doc_id'],
-                tree['category'],
-                tree['pre_op'],
-                tree['procedure'],
-                tree['post_op_short'],
-                tree['maintenance'],
-                tree['summary_text'],
-                '2.0',
-                datetime.now().isoformat()
-            ))
-            
-            inserted_count += 1
-            
-        except Exception as e:
-            logger.warning(f"Error inserting PageIndex tree: {e}")
-            continue
-    
-    conn.commit()
-    logger.info(f"Created {inserted_count} sample PageIndex trees")
-    return inserted_count
-
 def verify_import(conn):
     """Verify the import was successful."""
     logger.info("Verifying import...")
@@ -349,10 +289,10 @@ def main():
         
         # Update OTC names
         otc_count = update_otc_names(conn)
-        
-        # Create sample PageIndex trees
-        page_index_count = create_sample_page_index(conn)
-        
+
+        # PageIndex trees are seeded separately by src/pageindex/seed_trees.py
+        # (incremental upsert — see CONTENT_FIELDS/content_version logic there)
+
         # Verify import
         stats = verify_import(conn)
         

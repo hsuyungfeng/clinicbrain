@@ -26,6 +26,39 @@ CLINIC_ID = "zhiyan-clinic"
 
 TREES = [
     {
+        "doc_id": f"{CLINIC_ID}-laser-skin-resurfacing",
+        "category": "special",
+        "pre_op": "術前須知：1. 過敏體質需告知醫師 2. 術前2週停止使用A酸 3. 術前1週避免日曬 4. 術前洗臉清潔",
+        "procedure": "療程步驟：皮秒雷射利用極短脈衝光束擊碎黑色素，刺激膠原蛋白增生。過程約15-30分鐘，依治療範圍而定。麻醉方式：局部麻醉膏。",
+        "post_op_short": "術後照護：1. 術後立即冰敷15-20分鐘 2. 3天內避免化妝 3. 1週內避免日曬 4. 使用醫師指定保養品 5. 避免摳抓結痂",
+        "maintenance": "長期維持：1. 每月回診追蹤 2. 加強防曬SPF50+ 3. 定期保濕 4. 維持良好生活作息 5. 效果可維持6-12個月",
+        "pre_op_physician_notes": None,
+        "procedure_physician_notes": None,
+        "post_op_short_physician_notes": None,
+        "maintenance_physician_notes": None,
+        "summary_text": (
+            "皮秒雷射術前注意過敏體質、停用A酸、避免日曬。療程利用短脈衝光束擊碎黑色素，約15-30"
+            "分鐘。術後冰敷、3天內避免化妝、1週避免日曬。每月回診，效果維持6-12個月。"
+        ),
+    },
+    {
+        "doc_id": f"{CLINIC_ID}-botox-injection",
+        "category": "special",
+        "pre_op": "術前須知：1. 告知醫師用藥史 2. 術前2週停止服用阿斯匹靈 3. 術前洗臉清潔 4. 避免懷孕或哺乳",
+        "procedure": "療程步驟：肉毒桿菌素注射使用極細針頭將藥物注入目標肌肉，放鬆肌肉減少皺紋。過程約10-20分鐘，無需麻醉。",
+        "post_op_short": "術後照護：1. 術後4小時避免平躺 2. 24小時內避免按摩注射部位 3. 1週內避免劇烈運動 4. 避免高溫環境（三溫暖、烤箱）",
+        "maintenance": "長期維持：1. 每3-6個月回診補打 2. 保持良好表情習慣 3. 配合保養品使用 4. 效果可維持4-6個月",
+        "pre_op_physician_notes": None,
+        "procedure_physician_notes": None,
+        "post_op_short_physician_notes": None,
+        "maintenance_physician_notes": None,
+        "summary_text": (
+            "肉毒桿菌素注射術前停止服用阿斯匹靈、洗臉清潔。療程用極細針頭注入目標肌肉，約10-20"
+            "分鐘。術後4小時避免平躺、24小時避免按摩、1週避免劇烈運動。每3-6個月回診，效果維持"
+            "4-6個月。"
+        ),
+    },
+    {
         "doc_id": f"{CLINIC_ID}-electrowave-facelift",
         "category": "special",
         "pre_op": (
@@ -131,7 +164,7 @@ TREES = [
             "高溫環境與劇烈運動 3. 加強保濕，避免臉部過度按摩 4. 如出現持續性疼痛或異常腫脹應回診評估"
         ),
         "maintenance": (
-            "長期維持：1. 效果會隨時間逐漸顯現，術後1-3個月最為明顯 2. 建議每8-12個月回診評估是否需"
+            "長期維持：1. 效果會隨時間逐漸顯現，術後1-3個月最為明顯 2. 建議每6-12個月回診評估是否需"
             "加強施作 3. 平時應維持良好生活作息與防曬習慣以延長效果 4. 效果可維持約1-2年，依個人"
             "老化速度與生活習慣而異"
         ),
@@ -148,40 +181,88 @@ TREES = [
 ]
 
 
+CONTENT_FIELDS = (
+    "category",
+    "pre_op",
+    "pre_op_physician_notes",
+    "procedure",
+    "procedure_physician_notes",
+    "post_op_short",
+    "post_op_short_physician_notes",
+    "maintenance",
+    "maintenance_physician_notes",
+    "summary_text",
+)
+
+
 def upsert_trees(conn):
+    """增量寫入 PageIndex 範本：新資料 INSERT（content_version=1），既有
+    資料只有在內容真的變更時才 UPDATE 並遞增 content_version；內容相同則
+    跳過寫入，避免無意義地更新 updated_at 與觸發 FTS 重建。"""
     cursor = conn.cursor()
-    inserted = 0
+    inserted, updated, unchanged = 0, 0, 0
+
     for tree in TREES:
         cursor.execute(
-            """
-            INSERT OR REPLACE INTO page_index_trees (
-                doc_id, category,
-                pre_op, pre_op_physician_notes,
-                procedure, procedure_physician_notes,
-                post_op_short, post_op_short_physician_notes,
-                maintenance, maintenance_physician_notes,
-                summary_text, version, indexed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            f"SELECT id, {', '.join(CONTENT_FIELDS)}, content_version "
+            "FROM page_index_trees WHERE doc_id = ?",
+            (tree["doc_id"],),
+        )
+        existing = cursor.fetchone()
+
+        if existing is None:
+            cursor.execute(
+                f"""
+                INSERT INTO page_index_trees (
+                    doc_id, {', '.join(CONTENT_FIELDS)},
+                    version, source_type, content_version,
+                    needs_regeneration, indexed_at
+                ) VALUES (?, {', '.join('?' for _ in CONTENT_FIELDS)}, ?, ?, ?, ?, ?)
+                """,
+                (
+                    tree["doc_id"],
+                    *(tree[field] for field in CONTENT_FIELDS),
+                    "2.0",
+                    "manual",
+                    1,
+                    0,
+                    datetime.now().isoformat(),
+                ),
+            )
+            inserted += 1
+            continue
+
+        existing_id = existing[0]
+        existing_values = existing[1:-1]
+        existing_content_version = existing[-1]
+        new_values = tuple(tree[field] for field in CONTENT_FIELDS)
+
+        if existing_values == new_values:
+            unchanged += 1
+            continue
+
+        cursor.execute(
+            f"""
+            UPDATE page_index_trees
+            SET {', '.join(f'{field} = ?' for field in CONTENT_FIELDS)},
+                content_version = ?,
+                needs_regeneration = 0,
+                indexed_at = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
             """,
             (
-                tree["doc_id"],
-                tree["category"],
-                tree["pre_op"],
-                tree["pre_op_physician_notes"],
-                tree["procedure"],
-                tree["procedure_physician_notes"],
-                tree["post_op_short"],
-                tree["post_op_short_physician_notes"],
-                tree["maintenance"],
-                tree["maintenance_physician_notes"],
-                tree["summary_text"],
-                "2.0",
+                *new_values,
+                existing_content_version + 1,
                 datetime.now().isoformat(),
+                existing_id,
             ),
         )
-        inserted += 1
+        updated += 1
+
     conn.commit()
-    return inserted
+    print(f"新增 {inserted} 筆、更新 {updated} 筆、內容未變跳過 {unchanged} 筆")
+    return inserted + updated
 
 
 def main():

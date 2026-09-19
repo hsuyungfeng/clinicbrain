@@ -118,7 +118,10 @@ CREATE TABLE IF NOT EXISTS page_index_trees (
     maintenance TEXT,                -- 長期維持與保養 (Long-term maintenance)
     maintenance_physician_notes TEXT, -- 醫師權威指令 (Maintenance physician notes)
     summary_text TEXT,               -- Combined summary for FTS
-    version TEXT DEFAULT '2.0',      -- Schema version
+    version TEXT DEFAULT '2.0',      -- Schema version (format version, not content revision)
+    source_type TEXT DEFAULT 'manual', -- 'manual'（人工手寫）| 'llm_generated'（LLM 生成）| 'clinic_upload'（診所上傳擷取）
+    content_version INTEGER NOT NULL DEFAULT 1, -- 內容修訂版本號，每次實質內容變更遞增
+    needs_regeneration BOOLEAN NOT NULL DEFAULT 0, -- 標記為過時/待夜間批次重新生成
     indexed_at TIMESTAMP,            -- When indexed
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -177,6 +180,7 @@ CREATE INDEX IF NOT EXISTS idx_clinic_hours_clinic_id ON clinic_hours(clinic_id)
 -- PageIndex trees indexes
 CREATE INDEX IF NOT EXISTS idx_page_index_category ON page_index_trees(category);
 CREATE INDEX IF NOT EXISTS idx_page_index_doc_id ON page_index_trees(doc_id);
+CREATE INDEX IF NOT EXISTS idx_page_index_needs_regeneration ON page_index_trees(needs_regeneration);
 
 -- ========================================
 -- Triggers for FTS Updates
@@ -219,6 +223,8 @@ CREATE TRIGGER IF NOT EXISTS service_items_au AFTER UPDATE ON service_items BEGI
 END;
 
 -- Trigger for page_index_trees FTS updates
+-- 注意：updated_at 刻意不用 trigger 自動維護（避免 UPDATE trigger 內再次
+-- UPDATE 自身資料表造成的遞迴風險），改由應用層寫入時明確帶入 CURRENT_TIMESTAMP。
 CREATE TRIGGER IF NOT EXISTS page_index_ai AFTER INSERT ON page_index_trees BEGIN
     INSERT INTO page_index_fts(rowid, summary_text)
     VALUES (new.id, new.summary_text);
