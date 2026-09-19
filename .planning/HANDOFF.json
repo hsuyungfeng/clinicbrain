@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-18T16:54:07+08:00",
+  "timestamp": "2026-09-19T12:21:12+08:00",
   "phase": "01",
   "phase_name": "taiwan-pageindex-rag",
   "phase_dir": ".planning/phases/01-taiwan-pageindex-rag",
@@ -22,6 +22,20 @@
       "status": "done",
       "commit": "cf3dd47",
       "notes": "Decided against auto-generating trees from existing data sources: SFT medical dialogue data is Simplified Chinese TCM diagnosis Q&A (wrong language, wrong domain), and service_items payment_rules are generic coverage boilerplate with no clinical steps. Instead hand-wrote 4 more high-quality Traditional Chinese PageIndex trees (electrowave facelift, HA filler, fractional laser, HIFU lifting) alongside the existing 2 (laser resurfacing, botox), covering different anesthesia/downtime profiles as a quality baseline for TASK-004's LLM prompt. All 6 verified clean of price leakage and Simplified Chinese. Also found and fixed page_index_fts, which was still on unicode61 tokenizer from before the TASK-001 trigram migration — new trees were completely unsearchable until fixed; now all three FTS5 tables (drugs_fts, service_items_fts, page_index_fts) consistently use trigram."
+    },
+    {
+      "id": "SCHEMA-INCREMENTAL",
+      "name": "page_index_trees incremental update support + content versioning",
+      "status": "done",
+      "commit": "f59af48",
+      "notes": "Added content_version (increments on real content change), source_type (manual/llm_generated/clinic_upload), needs_regeneration (for future nightly batch to pick stale rows). seed_trees.py rewritten from INSERT OR REPLACE (wholesale overwrite, reset created_at every run) to true incremental UPSERT — compares existing content, skips if unchanged, updates + bumps content_version + preserves created_at if changed. Removed the duplicate create_sample_page_index() from scripts/seed_database.py (2 trees migrated into seed_trees.py's TREES list) so page_index_trees seeding has one single source of truth. Verified all three states (insert/skip-unchanged/update-with-version-bump) work correctly and FTS5 search still matches after updates. updated_at intentionally NOT trigger-maintained (avoids recursive UPDATE-trigger-updates-self risk) — application code must pass CURRENT_TIMESTAMP explicitly on updates."
+    },
+    {
+      "id": "VISION-DOCS",
+      "name": "Vision expansion planning + entry-point docs for future sessions",
+      "status": "done",
+      "commit": "8d365a9, c8a2320",
+      "notes": "User described a larger vision beyond the original 8-task phase: (1) general medical Q&A entry point for anonymous late-night self-queries, (2) clinic-uploadable PDF/JPEG/PNG with OCR ingestion into PageIndex, (3) local LLM with cloud API fallback, (4) nightly batch to pre-generate common Q&A (reduce daytime token cost) plus nightly knowledge-base maintenance, (5) doctor-toolbox.com official API integration (bidirectional import/export) after clinicbrain's own features are done. Investigated the user's prior project DrtoolboxLocalServer (same clinic, github.com/hsuyungfeng/DrtoolboxLocalServer, also present locally under ~/Desktop/DrtoolBox/UpdateList/MedicalOderUpdate/) — it already implements most of this: pytesseract OCR with chi_tra language pack (4 duplicated call sites — a mistake not to repeat), ChromaDB vector search alongside FTS5, local llama.cpp inference (Ornith models, dual-GPU), identical page_index_trees column structure, same pricing-masking rules almost verbatim. Wrote .planning/VISION-EXPANSION.md (full gap analysis, decision log, phase 02-05 draft sequencing) and root-level Plan.md (single entry point for future LLM sessions) + AGENTS.md (binding project rules, modeled on DrtoolboxLocalServer's AGENTS.md)."
     },
     {
       "id": 1,
@@ -136,9 +150,29 @@
       "decision": "OTC localization as hardcoded mapping",
       "rationale": "Reliability with future expansion capability from NHI database",
       "phase": "01"
+    },
+    {
+      "decision": "Local LLM inference is the default, cloud API is fallback-only",
+      "rationale": "Matches prior project DrtoolboxLocalServer's privacy-first, zero-cloud-dependency principle; user explicitly confirmed this preference",
+      "phase": "post-01 (Phase 02 draft)"
+    },
+    {
+      "decision": "Nightly batch job does both: (1) pre-generate common Q&A pairs via LLM into a cache table, (2) maintain/rebuild PageIndex trees and re-index new documents",
+      "rationale": "User confirmed both are needed — reduces daytime LLM token cost by serving cached answers first, while keeping the knowledge base current",
+      "phase": "post-01 (Phase 04 draft)"
+    },
+    {
+      "decision": "page_index_trees must support incremental updates going forward (content_version, source_type, needs_regeneration), not wholesale INSERT OR REPLACE",
+      "rationale": "User explicitly asked to prioritize this — an updatable database design is a prerequisite for reducing future token usage (query DB first, only call LLM for what's missing/stale)",
+      "phase": "01 (done, commit f59af48)"
+    },
+    {
+      "decision": "doctor-toolbox.com integration will use their official API for bidirectional import/export, not the prior project's MITM interception approach",
+      "rationale": "User explicitly rejected the MITM pattern when asked to clarify; wants a proper API contract instead. Scheduled after clinicbrain's own phases (01-04) are complete.",
+      "phase": "post-01 (Phase 05 draft)"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "TASK-004 - Build clinical reasoning tree LLM prompt for Taiwan context. Use the 6 hand-written trees in src/pageindex/seed_trees.py as few-shot quality examples/style guide. Prompt must enforce: Traditional Chinese only, absolute price masking, and the pre_op/procedure/post_op_short/maintenance structure with physician_notes left for human review.",
-  "context_notes": "TASK-001 (0ac396d) and TASK-003 (cf3dd47) done. DB has 7,573 drugs, 2,669 service items, 6 PageIndex trees, all three FTS5 tables (drugs_fts, service_items_fts, page_index_fts) use trigram tokenizer — verified working for 3+ char Traditional Chinese queries. 2-char query fallback still deferred to TASK-005. Root cause of the original 377K+/42K+ record estimate: CSV raw newline count, not row count (long free-text fields have embedded newlines) — actual record counts are correct, not a data-loss bug."
+  "next_action": "TASK-004 - Build clinical reasoning tree LLM prompt for Taiwan context. Use the 6 hand-written trees in src/pageindex/seed_trees.py as few-shot quality examples/style guide. Prompt must enforce: Traditional Chinese only, absolute price masking, and the pre_op/procedure/post_op_short/maintenance structure with physician_notes left for human review. Also read root-level Plan.md and AGENTS.md first — both were just created as the entry point for future sessions.",
+  "context_notes": "TASK-001 (0ac396d), TASK-003 (cf3dd47), and the page_index_trees incremental-update schema work (f59af48) are done. DB has 7,573 drugs, 2,669 service items, 6 PageIndex trees, all three FTS5 tables (drugs_fts, service_items_fts, page_index_fts) use trigram tokenizer — verified working for 3+ char Traditional Chinese queries. 2-char query fallback still deferred to TASK-005. Root cause of the original 377K+/42K+ record estimate: CSV raw newline count, not row count (long free-text fields have embedded newlines) — actual record counts are correct, not a data-loss bug. This session also produced .planning/VISION-EXPANSION.md (full gap analysis against user's larger vision — general Q&A entry point, OCR document ingestion, local LLM, nightly batch pre-generation, doctor-toolbox.com API integration) plus root-level Plan.md and AGENTS.md as the new entry-point docs for any future LLM session. Read those two files first before diving into .planning/ internals — they now supersede this file as the first thing to read, with this HANDOFF.json still being the authoritative live-state source."
 }
