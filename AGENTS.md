@@ -37,7 +37,11 @@ python3 src/pageindex/seed_trees.py    # 增量寫入 PageIndex 範本
 - `source_type`：`manual`（人工手寫）| `llm_generated`（LLM 生成）| `clinic_upload`（診所上傳擷取）
 - `needs_regeneration`：標記過時、待夜間批次重新生成
 
-**寫入規則**：一律走增量 UPSERT（比對現有內容，未變則跳過、有變才更新並遞增 `content_version`，保留原始 `created_at`）。**禁止使用 `INSERT OR REPLACE` 整批覆寫**——會重置 `created_at`、失去版本追蹤意義。參考 `src/pageindex/seed_trees.py` 的 `upsert_trees()` 實作。
+**寫入規則**：一律走增量 UPSERT（比對現有內容，未變則跳過、有變才更新並遞增 `content_version`，保留原始 `created_at`）。**禁止使用 `INSERT OR REPLACE` 整批覆寫**——會重置 `created_at`、失去版本追蹤意義。
+
+**單一寫入路徑**：`src/pageindex/db_writer.py` 的 `upsert_trees(conn, trees, source_type)` 是 `page_index_trees` 的唯一權威寫入函式，手寫種子（`seed_trees.py`）與 LLM 生成（`prompt_template.py` + 任何未來的 batch 生成腳本）都必須呼叫它，**不得各自重新實作 INSERT/UPDATE 邏輯**——TASK-003 時 `scripts/seed_database.py` 曾與 `seed_trees.py` 各自維護一份重複範本，造成資料不一致，此後禁止重蹈覆轍。
+
+**LLM 生成流程**：`src/pageindex/prompt_template.py` 提供 `build_prompt()` → `generate_tree()`（接收一個 `llm_call: Callable[[str], str]` 介面，與底層 LLM provider 解耦，Phase 02 本地 LLM 層完成後直接傳入即可）→ `parse_and_validate()`（強制驗證繁體中文、無價格洩漏、無保證療效用語、欄位齊全）→ `to_upsert_row()` → `db_writer.upsert_trees(conn, [row], source_type='llm_generated')`。任何驗證失敗的輸出**絕不能**寫入資料庫。
 
 ### 2.3 FTS5 全文檢索 — 中文分詞鐵則
 SQLite FTS5 的預設 `unicode61` tokenizer **完全無法分詞中文**（會把整段中文當一個 token，只能全字串完全匹配）。本專案所有 FTS5 虛擬表**必須明確指定 `tokenize='trigram'`**：
@@ -62,7 +66,9 @@ SQLite FTS5 的預設 `unicode61` tokenizer **完全無法分詞中文**（會�
 ## 4. 目錄結構
 
 * `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源
-* `src/pageindex/seed_trees.py`：PageIndex 樹的增量種子腳本（唯一負責來源，不與 `seed_database.py` 重複維護）
+* `src/pageindex/db_writer.py`：`page_index_trees` 的唯一 UPSERT 寫入邏輯，手寫種子與 LLM 生成皆呼叫此模組
+* `src/pageindex/seed_trees.py`：PageIndex 樹的手寫種子內容（`source_type='manual'`）
+* `src/pageindex/prompt_template.py`：LLM 生成臨床推理樹的 prompt 組裝 + 輸出驗證（`source_type='llm_generated'`）
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）

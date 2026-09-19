@@ -17,7 +17,11 @@ CONSTRAINT 遵循：
 
 import sqlite3
 from pathlib import Path
-from datetime import datetime
+
+try:
+    from .db_writer import upsert_trees as _upsert_trees
+except ImportError:
+    from db_writer import upsert_trees as _upsert_trees
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DB_PATH = PROJECT_ROOT / "clinic.db"
@@ -181,87 +185,11 @@ TREES = [
 ]
 
 
-CONTENT_FIELDS = (
-    "category",
-    "pre_op",
-    "pre_op_physician_notes",
-    "procedure",
-    "procedure_physician_notes",
-    "post_op_short",
-    "post_op_short_physician_notes",
-    "maintenance",
-    "maintenance_physician_notes",
-    "summary_text",
-)
-
-
 def upsert_trees(conn):
-    """增量寫入 PageIndex 範本：新資料 INSERT（content_version=1），既有
-    資料只有在內容真的變更時才 UPDATE 並遞增 content_version；內容相同則
-    跳過寫入，避免無意義地更新 updated_at 與觸發 FTS 重建。"""
-    cursor = conn.cursor()
-    inserted, updated, unchanged = 0, 0, 0
-
-    for tree in TREES:
-        cursor.execute(
-            f"SELECT id, {', '.join(CONTENT_FIELDS)}, content_version "
-            "FROM page_index_trees WHERE doc_id = ?",
-            (tree["doc_id"],),
-        )
-        existing = cursor.fetchone()
-
-        if existing is None:
-            cursor.execute(
-                f"""
-                INSERT INTO page_index_trees (
-                    doc_id, {', '.join(CONTENT_FIELDS)},
-                    version, source_type, content_version,
-                    needs_regeneration, indexed_at
-                ) VALUES (?, {', '.join('?' for _ in CONTENT_FIELDS)}, ?, ?, ?, ?, ?)
-                """,
-                (
-                    tree["doc_id"],
-                    *(tree[field] for field in CONTENT_FIELDS),
-                    "2.0",
-                    "manual",
-                    1,
-                    0,
-                    datetime.now().isoformat(),
-                ),
-            )
-            inserted += 1
-            continue
-
-        existing_id = existing[0]
-        existing_values = existing[1:-1]
-        existing_content_version = existing[-1]
-        new_values = tuple(tree[field] for field in CONTENT_FIELDS)
-
-        if existing_values == new_values:
-            unchanged += 1
-            continue
-
-        cursor.execute(
-            f"""
-            UPDATE page_index_trees
-            SET {', '.join(f'{field} = ?' for field in CONTENT_FIELDS)},
-                content_version = ?,
-                needs_regeneration = 0,
-                indexed_at = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-            """,
-            (
-                *new_values,
-                existing_content_version + 1,
-                datetime.now().isoformat(),
-                existing_id,
-            ),
-        )
-        updated += 1
-
-    conn.commit()
-    print(f"新增 {inserted} 筆、更新 {updated} 筆、內容未變跳過 {unchanged} 筆")
+    """寫入本檔案定義的手寫範本（source_type='manual'）。實際 UPSERT 邏輯
+    在 db_writer.py，供 LLM 生成路徑（prompt_template.py）共用，避免重複
+    實作寫入邏輯。"""
+    inserted, updated, unchanged = _upsert_trees(conn, TREES, source_type="manual")
     return inserted + updated
 
 
