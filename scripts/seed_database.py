@@ -6,6 +6,7 @@ Phase 01: Foundation - SQLite clinic schema + seed from OriginalData CSV/ODS
 
 import sqlite3
 import csv
+import json
 import os
 import sys
 from pathlib import Path
@@ -27,6 +28,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "OriginalData"
 DB_PATH = PROJECT_ROOT / "clinic.db"
 SCHEMA_PATH = PROJECT_ROOT / "src" / "db" / "clinic_schema.sql"
+OTC_MAPPINGS_PATH = PROJECT_ROOT / "src" / "db" / "otc_mappings.json"
 
 def create_database():
     """Create database and apply schema."""
@@ -181,45 +183,39 @@ def import_service_items(conn):
     return count
 
 def update_otc_names(conn):
-    """Update OTC drug names with Taiwan localization."""
+    """Update OTC drug names with Taiwan localization from JSON configuration."""
     logger.info("Updating OTC drug names with Taiwan localization...")
     
     cursor = conn.cursor()
     
-    # OTC localization mapping
-    otc_mapping = {
-        'ACETAMINOPHEN': '俗稱普拿疼的乙醯胺酚',
-        'IBUPROFEN': '常見的布洛芬',
-        'ASPIRIN': '阿斯匹靈',
-        'DIPHENHYDRAMINE': '抗組織胺（撲爾敏）',
-        'LORATADINE': '抗組織胺（開瑞坦）',
-        'CETIRIZINE': '抗組織胺（適利達）',
-        'OMEPRAZOLE': '胃藥（奧美拉唑）',
-        'RANITIDINE': '胃藥（雷尼替丁）',
-        'FAMOTIDINE': '胃藥（法莫替丁）',
-        'METFORMIN': '糖尿病藥（二甲雙胍）',
-        'AMLODIPINE': '降壓藥（氨氯地平）',
-        'LOSARTAN': '降壓藥（纈沙坦）',
-        'ATORVASTATIN': '降膽固醇藥（阿托伐他汀）',
-        'SIMVASTATIN': '降膽固醇藥（辛伐他汀）',
-    }
+    if not OTC_MAPPINGS_PATH.exists():
+        logger.error(f"OTC mappings file not found: {OTC_MAPPINGS_PATH}")
+        return 0
+    
+    with open(OTC_MAPPINGS_PATH, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    
+    mappings = config.get("mappings", [])
+    logger.info(f"Loaded {len(mappings)} OTC mapping rules from {OTC_MAPPINGS_PATH.name}")
     
     updated_count = 0
     
-    for ingredient, otc_name in otc_mapping.items():
-        try:
-            cursor.execute("""
-                UPDATE drugs 
-                SET otc_name_chinese = ? 
-                WHERE ingredient LIKE ? 
-                AND otc_name_chinese IS NULL
-            """, (otc_name, f'%{ingredient}%'))
-            
-            updated_count += cursor.rowcount
-            
-        except Exception as e:
-            logger.warning(f"Error updating OTC name for {ingredient}: {e}")
-            continue
+    for item in mappings:
+        otc_name = item["otc_name_chinese"]
+        patterns = [item["pattern"]] + item.get("aliases", [])
+        for pattern in patterns:
+            try:
+                cursor.execute("""
+                    UPDATE drugs 
+                    SET otc_name_chinese = ? 
+                    WHERE ingredient LIKE ? 
+                    AND otc_name_chinese IS NULL
+                """, (otc_name, f'%{pattern}%'))
+                
+                updated_count += cursor.rowcount
+            except Exception as e:
+                logger.warning(f"Error updating OTC name for {pattern}: {e}")
+                continue
     
     conn.commit()
     logger.info(f"Updated {updated_count} drug records with OTC names")

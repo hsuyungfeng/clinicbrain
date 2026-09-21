@@ -91,8 +91,26 @@ def search_text(
     ]
 
 
+def format_drug_display_name(fields: dict) -> str:
+    """產生藥品的使用者易讀名稱。
+    若有 otc_name_chinese（本地化俗名/用途說明），優先於顯示名稱中凸顯，
+    方便病患快速理解藥品臨床用途與通俗稱呼。
+    """
+    otc = fields.get("otc_name_chinese")
+    cname = (fields.get("chinese_name") or "").strip()
+    ename = (fields.get("english_name") or "").strip()
+
+    if otc:
+        if cname:
+            return f"{cname}【{otc}】"
+        if ename:
+            return f"{ename}【{otc}】"
+        return otc
+    return cname or ename or "未具名藥品"
+
+
 def search_drugs(conn: sqlite3.Connection, query: str, limit: int = 10) -> list[SearchHit]:
-    return search_text(
+    hits = search_text(
         conn,
         table="drugs",
         fts_table="drugs_fts",
@@ -101,6 +119,9 @@ def search_drugs(conn: sqlite3.Connection, query: str, limit: int = 10) -> list[
         like_columns=("chinese_name", "ingredient", "otc_name_chinese"),
         limit=limit,
     )
+    for hit in hits:
+        hit.fields["display_name"] = format_drug_display_name(hit.fields)
+    return hits
 
 
 def search_service_items(conn: sqlite3.Connection, query: str, limit: int = 10) -> list[SearchHit]:

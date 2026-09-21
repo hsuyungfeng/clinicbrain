@@ -1,0 +1,415 @@
+{
+  "version": "1.0",
+  "description": "台灣診所常用 OTC 與慢性病藥品成分本地化對照表",
+  "updated_at": "2026-09-21",
+  "mappings": [
+    {
+      "pattern": "ACETAMINOPHEN",
+      "aliases": ["PARACETAMOL"],
+      "otc_name_chinese": "俗稱普拿疼的乙醯胺酚（解熱止痛藥）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "IBUPROFEN",
+      "aliases": [],
+      "otc_name_chinese": "常見消炎止痛藥（布洛芬，如依普芬）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "DICLOFENAC",
+      "aliases": [],
+      "otc_name_chinese": "常見消炎止痛藥（非炎/痛立達/服他寧）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "PIROXICAM",
+      "aliases": [],
+      "otc_name_chinese": "消炎止痛藥（匹洛西卡）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "KETOROLAC",
+      "aliases": [],
+      "otc_name_chinese": "強效止痛藥（克多羅多克/安痛）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "MELOXICAM",
+      "aliases": [],
+      "otc_name_chinese": "骨關節消炎止痛藥（美洛昔康/莫比克）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "MEFENAMIC ACID",
+      "aliases": [],
+      "otc_name_chinese": "經痛與消炎止痛藥（甲芬那酸/博疏痛）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "ASPIRIN",
+      "aliases": ["ACETYLSALICYLIC ACID"],
+      "otc_name_chinese": "阿斯匹靈（解熱鎮痛/抗血栓）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "TRAMADOL",
+      "aliases": [],
+      "otc_name_chinese": "中樞性鎮痛藥（妥馬多）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "CODEINE",
+      "aliases": [],
+      "otc_name_chinese": "鎮咳止痛藥（可待因）",
+      "category": "解熱鎮痛"
+    },
+    {
+      "pattern": "DEXTROMETHORPHAN",
+      "aliases": [],
+      "otc_name_chinese": "常見中樞性鎮咳藥（右美沙芬）",
+      "category": "呼吸道用藥"
+    },
+    {
+      "pattern": "CETIRIZINE",
+      "aliases": ["LEVOCETIRIZINE"],
+      "otc_name_chinese": "第二代抗組織胺（抗過敏/蕁麻疹，如驅異樂/喜癒痔）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "LORATADINE",
+      "aliases": ["DESLORATADINE"],
+      "otc_name_chinese": "第二代抗組織胺（抗過敏/過敏性鼻炎，如敏福/克敏能）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "FEXOFENADINE",
+      "aliases": [],
+      "otc_name_chinese": "第二代抗組織胺（抗過敏/不嗜睡，如艾思妥/艾來）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "CHLORPHENIRAMINE",
+      "aliases": [],
+      "otc_name_chinese": "第一代抗組織胺（過敏/流鼻水/打噴嚏，如撲爾敏/希普利敏）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "DIPHENHYDRAMINE",
+      "aliases": [],
+      "otc_name_chinese": "第一代抗組織胺（止癢/抗過敏/防暈車，苯海拉明）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "KETOTIFEN",
+      "aliases": [],
+      "otc_name_chinese": "抗過敏與預防氣喘藥（滅敏/妥芬）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "MONTELUKAST",
+      "aliases": [],
+      "otc_name_chinese": "氣喘與過敏性鼻炎預防藥（欣流/白三烯受體拮抗劑）",
+      "category": "抗過敏與抗組織胺"
+    },
+    {
+      "pattern": "PSEUDOEPHEDRINE",
+      "aliases": [],
+      "otc_name_chinese": "鼻塞解除劑（偽麻黃鹼）",
+      "category": "呼吸道用藥"
+    },
+    {
+      "pattern": "GUAIFENESIN",
+      "aliases": [],
+      "otc_name_chinese": "常見祛痰藥（愈創木酚甘油醚）",
+      "category": "呼吸道用藥"
+    },
+    {
+      "pattern": "FAMOTIDINE",
+      "aliases": [],
+      "otc_name_chinese": "常見胃藥/胃酸抑制劑（H2受體阻斷劑，如安胃達/法莫替丁）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "RANITIDINE",
+      "aliases": [],
+      "otc_name_chinese": "常見胃藥/胃酸抑制劑（雷尼替丁）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "OMEPRAZOLE",
+      "aliases": ["ESOMEPRAZOLE"],
+      "otc_name_chinese": "常見胃藥/氫離子幫浦阻斷劑（胃潰瘍逆流藥，如耐適恩/奧美拉唑）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "LANSOPRAZOLE",
+      "aliases": [],
+      "otc_name_chinese": "常見胃藥/氫離子幫浦阻斷劑（胃潰瘍逆流藥，如泰克胃通）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "PANTOPRAZOLE",
+      "aliases": [],
+      "otc_name_chinese": "常見胃藥/氫離子幫浦阻斷劑（胃酸逆流藥，如保衛康）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "ALUMINUM HYDROXIDE",
+      "aliases": [],
+      "otc_name_chinese": "常見胃藥/制酸劑（胃乳成分，氫氧化鋁）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "MAGNESIUM HYDROXIDE",
+      "aliases": ["MAGNESIUM OXIDE"],
+      "otc_name_chinese": "常見胃藥/制酸與軟便劑（氫氧化鎂/氧化鎂）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "SIMETHICONE",
+      "aliases": ["DIMETHICONE"],
+      "otc_name_chinese": "常見腸胃藥/消脹氣藥（西甲矽油/瓦斯康）",
+      "category": "腸胃用藥"
+    },
+    {
+      "pattern": "CLOTRIMAZOLE",
+      "aliases": [],
+      "otc_name_chinese": "抗黴菌外用藥（克黴唑，用於香港腳/股癬/念珠菌）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "ECONAZOLE",
+      "aliases": [],
+      "otc_name_chinese": "抗黴菌外用藥（益康唑）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "BIFONAZOLE",
+      "aliases": [],
+      "otc_name_chinese": "抗黴菌外用藥（必弗唑）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "BUTENAFINE",
+      "aliases": [],
+      "otc_name_chinese": "抗黴菌外用藥（布替萘芬）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "NAFTIFINE",
+      "aliases": [],
+      "otc_name_chinese": "抗黴菌外用藥（萘替芬）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "NYSTATIN",
+      "aliases": [],
+      "otc_name_chinese": "抗念珠菌外用藥（耐絲菌素）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "ACYCLOVIR",
+      "aliases": [],
+      "otc_name_chinese": "抗皰疹病毒外用/口服藥（艾塞可威，如唇皰疹藥膏）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "CLINDAMYCIN",
+      "aliases": [],
+      "otc_name_chinese": "抗痘與消炎外用抗生素（克林達黴素）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "FUSIDIC ACID",
+      "aliases": [],
+      "otc_name_chinese": "傷口消炎抗生素（褐黴素/膚潤康）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "GENTAMICIN",
+      "aliases": [],
+      "otc_name_chinese": "消炎抗生素藥膏（慶大黴素/見大黴素）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "NEOMYCIN",
+      "aliases": [],
+      "otc_name_chinese": "外用綜合抗生素（新黴素）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "METRONIDAZOLE",
+      "aliases": [],
+      "otc_name_chinese": "抗原蟲與酒糟消炎藥（滅達座，醫美治療酒糟常備）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "ADAPALENE",
+      "aliases": [],
+      "otc_name_chinese": "第三代外用A酸/粉刺痘痘藥（如蒂膚麗/愛達蓮）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "SALICYLIC ACID",
+      "aliases": [],
+      "otc_name_chinese": "角質軟化與面皰藥（水楊酸）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "TRANEXAMIC ACID",
+      "aliases": [],
+      "otc_name_chinese": "傳明酸（止血/美白/抗炎）",
+      "category": "皮膚外用與抗感染"
+    },
+    {
+      "pattern": "BETAMETHASONE",
+      "aliases": [],
+      "otc_name_chinese": "類固醇消炎止癢藥（貝他每松/倍他米松）",
+      "category": "類固醇抗發炎"
+    },
+    {
+      "pattern": "CLOBETASOL",
+      "aliases": [],
+      "otc_name_chinese": "超強效外用類固醇（氯倍他索）",
+      "category": "類固醇抗發炎"
+    },
+    {
+      "pattern": "TRIAMCINOLONE",
+      "aliases": [],
+      "otc_name_chinese": "類固醇消炎藥（曲安西龍/常見口內膏成分）",
+      "category": "類固醇抗發炎"
+    },
+    {
+      "pattern": "MOMETASONE",
+      "aliases": [],
+      "otc_name_chinese": "中強效類固醇消炎藥（莫美他松）",
+      "category": "類固醇抗發炎"
+    },
+    {
+      "pattern": "DEXAMETHASONE",
+      "aliases": [],
+      "otc_name_chinese": "類固醇抗發炎藥（地塞米松）",
+      "category": "類固醇抗發炎"
+    },
+    {
+      "pattern": "PREDNISOLONE",
+      "aliases": ["METHYLPREDNISOLONE"],
+      "otc_name_chinese": "常用口服抗發炎類固醇（普立朗/得爾康）",
+      "category": "類固醇抗發炎"
+    },
+    {
+      "pattern": "AMLODIPINE",
+      "aliases": [],
+      "otc_name_chinese": "降血壓藥（鈣離子阻斷劑，如脈優/氨氯地平）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "VALSARTAN",
+      "aliases": [],
+      "otc_name_chinese": "降血壓藥（血管收縮素受體阻斷劑，如得安穩）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "LOSARTAN",
+      "aliases": [],
+      "otc_name_chinese": "降血壓藥（如科素亞/洛沙坦）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "OLMESARTAN",
+      "aliases": [],
+      "otc_name_chinese": "降血壓藥（如傲坦/奧美沙坦）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "IRBESARTAN",
+      "aliases": [],
+      "otc_name_chinese": "降血壓藥（如安普諾維/厄貝沙坦）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "BISOPROLOL",
+      "aliases": [],
+      "otc_name_chinese": "降血壓與心律調節乙型阻斷劑（如康肯）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "HYDROCHLOROTHIAZIDE",
+      "aliases": [],
+      "otc_name_chinese": "降血壓利尿劑（氫氯噻嗪）",
+      "category": "慢性病降壓藥"
+    },
+    {
+      "pattern": "METFORMIN",
+      "aliases": [],
+      "otc_name_chinese": "降血糖藥（雙胍類/滅糖敏，如庫魯化）",
+      "category": "慢性病降糖藥"
+    },
+    {
+      "pattern": "GLIMEPIRIDE",
+      "aliases": [],
+      "otc_name_chinese": "降血糖藥（磺醯尿素類，如瑪尔胰）",
+      "category": "慢性病降糖藥"
+    },
+    {
+      "pattern": "PIOGLITAZONE",
+      "aliases": [],
+      "otc_name_chinese": "降血糖胰島素增敏劑（如愛妥糖）",
+      "category": "慢性病降糖藥"
+    },
+    {
+      "pattern": "ACARBOSE",
+      "aliases": [],
+      "otc_name_chinese": "降血糖飯後血糖調節劑（如醣祿）",
+      "category": "慢性病降糖藥"
+    },
+    {
+      "pattern": "ATORVASTATIN",
+      "aliases": [],
+      "otc_name_chinese": "降膽固醇藥（他汀類，如立普妥）",
+      "category": "慢性病降脂藥"
+    },
+    {
+      "pattern": "ROSUVASTATIN",
+      "aliases": [],
+      "otc_name_chinese": "降膽固醇藥（他汀類，如冠脂妥）",
+      "category": "慢性病降脂藥"
+    },
+    {
+      "pattern": "SIMVASTATIN",
+      "aliases": [],
+      "otc_name_chinese": "降膽固醇藥（他汀類，如素果）",
+      "category": "慢性病降脂藥"
+    },
+    {
+      "pattern": "BENZBROMARONE",
+      "aliases": [],
+      "otc_name_chinese": "降尿酸與痛風預防藥（苯溴馬隆）",
+      "category": "痛風與代謝"
+    },
+    {
+      "pattern": "ALLOPURINOL",
+      "aliases": [],
+      "otc_name_chinese": "降尿酸抑制尿酸生成藥（安樂普諾）",
+      "category": "痛風與代謝"
+    },
+    {
+      "pattern": "COLCHICINE",
+      "aliases": [],
+      "otc_name_chinese": "急性痛風緩解藥（秋水仙素）",
+      "category": "痛風與代謝"
+    },
+    {
+      "pattern": "SILYMARIN",
+      "aliases": [],
+      "otc_name_chinese": "保肝輔助成分（水飛薊素，如保肝膠囊）",
+      "category": "肝機能與保健"
+    },
+    {
+      "pattern": "GINKGO BILOBA",
+      "aliases": [],
+      "otc_name_chinese": "末梢血管循環輔助劑（銀杏葉萃取，如循利寧）",
+      "category": "末梢循環輔助"
+    }
+  ]
+}
