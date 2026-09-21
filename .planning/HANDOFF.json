@@ -1,11 +1,11 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-19T14:20:00+08:00",
+  "timestamp": "2026-09-21T00:00:00+08:00",
   "phase": "01",
   "phase_name": "taiwan-pageindex-rag",
   "phase_dir": ".planning/phases/01-taiwan-pageindex-rag",
   "plan": 1,
-  "task": 5,
+  "task": 6,
   "total_tasks": 8,
   "status": "in_progress",
   "completed_tasks": [
@@ -43,6 +43,13 @@
       "status": "done",
       "commit": "a55ed63",
       "notes": "Built src/pageindex/prompt_template.py: build_prompt() assembles the generation prompt using 2 of the 6 hand-written trees as few-shot examples; generate_tree() takes a provider-agnostic llm_call: Callable[[str], str] so Phase 02's actual local-LLM client can be plugged in later without touching this code; parse_and_validate() enforces Traditional-Chinese-only, no price leakage, no overclaiming language (保證有效 etc.), all 5 required fields present, tolerates markdown code-fence-wrapped output. Also extracted the UPSERT logic that used to live only inside seed_trees.py into a new shared src/pageindex/db_writer.py (upsert_trees(conn, trees, source_type)) so both manual seeding and LLM generation write through the exact same incremental-upsert path — prevents repeating the TASK-003 mistake where seed_database.py and seed_trees.py each maintained a duplicate copy of the same 2 trees. Tested 7 validator scenarios (valid output, price leak, simplified Chinese, missing fields, overclaiming language, code-fence tolerance, malformed JSON) plus a full generate→validate→upsert→FTS5-search round trip against a scratch copy of clinic.db (not the real one). No real LLM available in this environment yet (no ollama/openai/anthropic client installed) — the prompt/validator were built and tested with a fake llm_call; actual model output quality is unverified until Phase 02 wires up a real local LLM."
+    },
+    {
+      "id": "TASK-005",
+      "name": "Implement search/query interface with routing",
+      "status": "done",
+      "commit": "1d5bb52",
+      "notes": "Built src/query/search.py (unified FTS5 trigram-vs-LIKE dispatch across drugs/service_items/page_index_trees, confirmed working correctly against page_index_trees despite its content_rowid='id' quirk) and src/query/router.py (classify() for special/general routing by keyword, mask_prices() as the final CONSTRAINT enforcement layer, handle_query() as the unified entry point). Found and fixed a real bug during testing: FTS5 trigram MATCH requires the whole query string to match contiguously, so passing a full natural-language question (e.g. '音波拉提會痛嗎？') straight to MATCH returns zero hits even though '音波拉提' exists in the data. Built extract_search_terms() to solve this — combines route-keyword hits with CJK-character-run extraction, split on common question-particle patterns (是什麼/多久/怎麼/etc.) as cut points, sorted longest-first to prioritize specificity, deduped. Verified against realistic full-sentence queries; the only remaining known imprecision is that generic 2-char words (e.g. 維持, appearing in most PageIndex summary_text values) can add noise to LIKE-fallback results, though longer/more-specific terms are tried first so the correct answer is usually still ranked first. general route currently returns zero page_index_trees hits for any query since all 6 seed trees are category='special' — this is expected, not a bug; general-category content doesn't exist until Phase 04's nightly batch generation produces some. No formal test file was added — TASK-008 (evaluation suite) is the designated place for building out regression tests covering the scenarios found here (full-sentence FTS failures, stopword-splitting, keyword-vs-CJK-fragment precision)."
     },
     {
       "id": 1,
@@ -83,11 +90,6 @@
   ],
   "remaining_tasks": [
     {
-      "id": 5,
-      "name": "Implement search/query interface with routing",
-      "status": "not_started"
-    },
-    {
       "id": 6,
       "name": "Build OTC drug localization layer",
       "status": "not_started"
@@ -110,14 +112,14 @@
       "workaround": "Validate against a real model once Phase 02 (local LLM layer) exists, or temporarily wire a cloud API key for smoke testing before Phase 02 is built"
     },
     {
-      "description": "Evaluation test suite: create 50+ query test cases",
+      "description": "Evaluation test suite: create 50+ query test cases — should specifically include the full-sentence-query and stopword-splitting scenarios found while building TASK-005's extract_search_terms()",
       "type": "technical",
       "workaround": "Create comprehensive test cases before implementation"
     },
     {
-      "description": "Query-layer FTS fallback not yet implemented: trigram tokenizer only matches queries of 3+ chars; 2-char medical terms (e.g. 雷射, 拆線) need a LIKE '%term%' fallback at the search/query layer (TASK-005)",
+      "description": "extract_search_terms() is a simple keyword/CJK-run heuristic, not real Chinese word segmentation. Generic 2-char terms (e.g. 維持, 回診) can appear in most page_index_trees rows, adding noise to LIKE-fallback results in the middle of a result set (correct answer is usually still ranked first due to longer-term priority, but not guaranteed)",
       "type": "technical",
-      "workaround": "Design a single search helper that branches on query length before TASK-005 begins"
+      "workaround": "Evaluate a real Chinese tokenizer (e.g. jieba) if TASK-008's eval suite finds this actually degrades result quality in practice"
     }
   ],
   "human_actions_pending": [
@@ -175,6 +177,6 @@
     }
   ],
   "uncommitted_files": [],
-  "next_action": "TASK-005 - Implement search/query interface with special/general routing. Must include the 3-char+ FTS trigram vs <3-char LIKE fallback dispatch logic (see AGENTS.md §2.3). Should also wire prompt_template.generate_tree() as a callable path for on-demand tree generation when a query has no matching page_index_trees row yet, once Phase 02's local LLM exists — for now the query layer can just search existing rows.",
-  "context_notes": "TASK-001 (0ac396d), TASK-003 (cf3dd47), the page_index_trees incremental-update schema work (f59af48), and TASK-004 (a55ed63, LLM prompt + validator + shared db_writer.py) are all done. DB has 7,573 drugs, 2,669 service items, 6 PageIndex trees, all three FTS5 tables (drugs_fts, service_items_fts, page_index_fts) use trigram tokenizer — verified working for 3+ char Traditional Chinese queries. 2-char query fallback still deferred to TASK-005 (this is now the immediate next task). TASK-004's prompt/validator have only been tested against a fake llm_call — no real LLM client is installed in this environment, so actual generation quality is unverified until Phase 02 exists. Root cause of the original 377K+/42K+ record estimate: CSV raw newline count, not row count (long free-text fields have embedded newlines) — actual record counts are correct, not a data-loss bug. Root-level Plan.md and AGENTS.md (created in a prior session) are the entry point for any future LLM session — read those first, then this file for live state."
+  "next_action": "TASK-006 - Build OTC drug localization layer. Currently only 14 ingredients are hardcoded in scripts/seed_database.py's update_otc_names() (456 of 7,573 drug records matched). Review OriginalData for more common OTC ingredients needing mappings, and consider whether the mapping table should move somewhere more maintainable than being hardcoded inline in the seed script (e.g. a JSON config file or its own DB table) — this is exactly the kind of thing a clinic might want to edit without touching Python.",
+  "context_notes": "TASK-001 (0ac396d), TASK-003 (cf3dd47), the page_index_trees incremental-update schema work (f59af48), TASK-004 (a55ed63, LLM prompt + validator + shared db_writer.py), and TASK-005 (1d5bb52, search/query interface with special/general routing) are all done. DB has 7,573 drugs, 2,669 service items, 6 PageIndex trees (all category='special', no 'general' rows exist yet), all three FTS5 tables use trigram tokenizer. src/query/search.py and src/query/router.py provide the full query stack: extract_search_terms() → classify() → handle_query(), with mask_prices() as final output sanitization. TASK-004's prompt/validator have only been tested against a fake llm_call — no real LLM client is installed in this environment, so actual generation quality is unverified until Phase 02 exists. Root cause of the original 377K+/42K+ record estimate: CSV raw newline count, not row count (long free-text fields have embedded newlines) — actual record counts are correct, not a data-loss bug. Root-level Plan.md and AGENTS.md are the entry point for any future LLM session — read those first, then this file for live state."
 }
