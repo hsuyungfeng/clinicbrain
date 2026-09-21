@@ -132,7 +132,7 @@ Phase 01「Taiwan PageIndex RAG」8 個任務中，已完成 TASK-001（SQLite s
 - [ ] 3.1 OCR 引擎選型 — 待確認（建議先沿用 Tesseract + chi_tra，有舊系統先例）
 - [ ] 3.2 向量檢索要不要引入 — 待確認
 - [ ] 3.4 使用者身份與資料隔離範圍 — 待確認
-- [ ] GPU/硬體資源確認（本地模型選型依據）— 待確認
+- [x] GPU/硬體資源確認 — **已盤點（2026-09-21）**：GTX 1060 6GB（閒置）+ RTX 2080 Ti 22GB（已被既有 `llama-server` 占用 17GB，跑 Qwen3.8-27B）。**機器上已有運行中的本地 LLM 服務**，不需重新部署，詳見 `.planning/phases/02-local-llm-layer/PLAN.md`。發現該模型對政治敏感問題會輸出中國官方立場內容，已決策：繼續用此服務，靠 prompt+驗證層防禦。
 - [ ] doctor-toolbox.com 官方 API 文件、認證方式、匯入/匯出資料範疇 — 待調查
 
 ## 6. 下一步
