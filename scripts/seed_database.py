@@ -30,6 +30,15 @@ DB_PATH = PROJECT_ROOT / "clinic.db"
 SCHEMA_PATH = PROJECT_ROOT / "src" / "db" / "clinic_schema.sql"
 OTC_MAPPINGS_PATH = PROJECT_ROOT / "src" / "db" / "otc_mappings.json"
 
+# Ensure project root is in sys.path for relative imports
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from src.clinic.custom_notes import seed_sample_notes
+except ImportError:
+    from clinic.custom_notes import seed_sample_notes
+
 def create_database():
     """Create database and apply schema."""
     logger.info(f"Creating database at {DB_PATH}")
@@ -241,6 +250,11 @@ def verify_import(conn):
     cursor.execute("SELECT COUNT(*) FROM clinic_info")
     clinic_count = cursor.fetchone()[0]
     logger.info(f"Clinics: {clinic_count} records")
+
+    # Count clinic custom notes
+    cursor.execute("SELECT COUNT(*) FROM clinic_custom_notes")
+    custom_notes_count = cursor.fetchone()[0]
+    logger.info(f"Clinic custom notes: {custom_notes_count} records")
     
     # Count PageIndex trees
     cursor.execute("SELECT COUNT(*) FROM page_index_trees")
@@ -265,6 +279,7 @@ def verify_import(conn):
         'drugs': drug_count,
         'service_items': service_count,
         'clinics': clinic_count,
+        'clinic_custom_notes': custom_notes_count,
         'page_index_trees': page_index_count,
         'drugs_fts': drugs_fts_count,
         'service_items_fts': service_fts_count,
@@ -286,6 +301,10 @@ def main():
         # Update OTC names
         otc_count = update_otc_names(conn)
 
+        # Seed clinic custom notes (clinic-level general notes)
+        notes_count = seed_sample_notes(conn)
+        logger.info(f"Seeded {notes_count} clinic custom notes")
+
         # PageIndex trees are seeded separately by src/pageindex/seed_trees.py
         # (incremental upsert — see CONTENT_FIELDS/content_version logic there)
 
@@ -300,6 +319,7 @@ def main():
         logger.info(f"  - Drugs: {stats['drugs']:,} records")
         logger.info(f"  - Service items: {stats['service_items']:,} records")
         logger.info(f"  - Clinics: {stats['clinics']} records")
+        logger.info(f"  - Clinic custom notes: {stats['clinic_custom_notes']} records")
         logger.info(f"  - PageIndex trees: {stats['page_index_trees']} records")
         logger.info(f"  - Drugs FTS: {stats['drugs_fts']:,} entries")
         logger.info(f"  - Service items FTS: {stats['service_items_fts']:,} entries")

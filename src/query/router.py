@@ -189,6 +189,24 @@ def get_clinic_info(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") 
     return dict(zip(columns, row))
 
 
+def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") -> dict[str, str]:
+    """回傳指定診所的通用段落備註字典 {section: note}。
+    例如 {"pre_op": "...", "post_op_short": "..."}。
+    這是診所層級、跨所有療程適用的通則，與單一療程專屬的 *_physician_notes 獨立分開。
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT section, note
+        FROM clinic_custom_notes
+        WHERE clinic_id = ?
+        ORDER BY id ASC
+        """,
+        (clinic_id,),
+    )
+    return {row[0]: row[1] for row in cursor.fetchall()}
+
+
 def _search_terms_merged(search_fn, conn: sqlite3.Connection, terms: list[str], limit: int) -> list:
     """對多個候選詞彙分別呼叫 search_fn，合併結果並依 row_id 去重（保留
     第一次出現的順序——關鍵字命中詞優先於 CJK fallback 片段，因為
@@ -212,6 +230,7 @@ class QueryResponse:
     page_index_hits: list
     drug_hits: list
     service_item_hits: list
+    clinic_custom_notes: dict = field(default_factory=dict)
 
 
 def handle_query(
@@ -223,8 +242,8 @@ def handle_query(
     """統一查詢入口：分類路由 → 依路由查對應資料表 → 對所有文字欄位套用
     價格遮罩 → 回傳結構化結果。
 
-    general 路由刻意不查 clinic_info/clinic_hours（避免診所專屬資訊滲入
-    一般醫學問答，見模組頂部說明），但仍會查 page_index_trees 的
+    general 路由刻意不查 clinic_info/clinic_hours/clinic_custom_notes（避免診所
+    專屬資訊滲入一般醫學問答，見模組頂部說明），但仍會查 page_index_trees 的
     category='general' 資料與藥品/服務項目——這些屬於全國性 NHI 資料，
     不是診所專屬資訊。
     """
@@ -233,6 +252,7 @@ def handle_query(
 
     clinic_info = None
     clinic_hours: list = []
+    clinic_custom_notes: dict = {}
 
     if route_result.route == "special" and any(kw in query for kw in _CLINIC_OPS_KEYWORDS):
         clinic_info = get_clinic_info(conn, clinic_id)
@@ -244,6 +264,13 @@ def handle_query(
 
     if route_result.route == "general":
         page_index_hits = [h for h in page_index_hits if h.fields.get("category") == "general"]
+    elif route_result.route == "special":
+        # special 路由且有 PageIndex 樹命中，或問及診所政策/術前術後注意事項時，撈出診所通用備註
+        if page_index_hits or any(kw in query for kw in ("術前", "術後", "注意事項", "備註", "規定")):
+            raw_notes = get_clinic_custom_notes(conn, clinic_id)
+            clinic_custom_notes = {
+                sec: mask_prices(note) for sec, note in raw_notes.items()
+            }
 
     for hit_list in (page_index_hits, drug_hits, service_item_hits):
         for hit in hit_list:
@@ -259,4 +286,5 @@ def handle_query(
         page_index_hits=page_index_hits,
         drug_hits=drug_hits,
         service_item_hits=service_item_hits,
+        clinic_custom_notes=clinic_custom_notes,
     )
