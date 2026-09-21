@@ -18,22 +18,24 @@
 
 ---
 
-## 2. Phase 01：Taiwan PageIndex RAG（進行中）
+## 2. Phase 01：Taiwan PageIndex RAG（✅ 已完成）
 
-8 個任務，目前進度：
+8 個任務全數完成：
 
 | # | 任務 | 狀態 | 備註 |
 |---|---|---|---|
-| TASK-001 | SQLite schema + seed from OriginalData | ✅ 完成 (`0ac396d`) | 7,573 藥品 + 2,669 服務項目；FTS5 改用 trigram |
-| TASK-003 | PageIndex schema + tree generation | ✅ 完成 (`cf3dd47`) | 6 筆手寫繁中範本；修復 `page_index_fts` 遺漏的 trigram |
-| — | page_index_trees 增量更新設計 | ✅ 完成 (`f59af48`) | `content_version`/`source_type`/`needs_regeneration`，見 AGENTS.md 2.2 節 |
-| TASK-004 | LLM prompt 設計（生成臨床推理樹） | ⬜ 未開始 | 用現有 6 筆範本作 few-shot 品質基準 |
-| TASK-005 | 查詢介面 + special/general 路由 | ⬜ 未開始 | 需含 FTS trigram 的 3 字元以下 LIKE fallback |
-| TASK-006 | OTC 本地化層完整化 | ⬜ 未開始 | 目前僅 14 種硬編碼成分，456/7,573 筆命中 |
-| TASK-007 | 診所資料庫整合 | ⬜ 未開始 | |
-| TASK-008 | 評估測試套件（50+ 查詢） | ⬜ 未開始 | |
+| TASK-001 | SQLite schema + seed from OriginalData | ✅ (`0ac396d`) | 7,573 藥品 + 2,669 服務項目；FTS5 改用 trigram |
+| TASK-003 | PageIndex schema + tree generation | ✅ (`cf3dd47`) | 6 筆手寫繁中範本；修復 `page_index_fts` 遺漏的 trigram |
+| — | page_index_trees 增量更新設計 | ✅ (`f59af48`) | `content_version`/`source_type`/`needs_regeneration` |
+| TASK-004 | LLM prompt 設計（生成臨床推理樹） | ✅ (`a55ed63`) | `src/pageindex/prompt_template.py`；未接真實 LLM 測試 |
+| TASK-005 | 查詢介面 + special/general 路由 | ✅ (`1d5bb52`) | `src/query/`；修復 FTS5 完整句子查詢失敗問題 |
+| TASK-006 | OTC 本地化層完整化 | ✅ (`24ab889`) | 68 種成分，覆蓋率 6.02%→32.8%；首次交予 Antigravity 執行 |
+| TASK-007 | 診所資料庫整合 | ✅ (`b7c7fa5`) | `src/clinic/custom_notes.py`；`clinic_custom_notes` 查詢/寫入路徑 |
+| TASK-008 | 評估測試套件 | ✅ (`a09e829`) | `tests/`，91 個 pytest 案例，專案首份正式測試套件 |
 
-**確切執行狀態**（哪個任務做到哪一步、當前 blocker）請讀 `.planning/HANDOFF.json`——這份文件才是即時真相來源，本表格只是概覽,可能落後於實際進度。
+TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行，Claude 逐項親自驗證後才提交——每次都實測重跑而非採信交付報告，過程中抓到數次報告論述不準確或誤讀程式碼的情況，詳見 `.planning/HANDOFF.json` 各任務的 notes 欄位。
+
+**確切執行狀態與完整驗證紀錄**請讀 `.planning/HANDOFF.json`——這份文件才是即時真相來源。
 
 ---
 
