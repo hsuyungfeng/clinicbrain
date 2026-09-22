@@ -26,11 +26,12 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DB_PATH = PROJECT_ROOT / "clinic.db"
 
-CLINIC_ID = "zhiyan-clinic"
+CLINIC_ID = "3503190424"
 
 TREES = [
     {
-        "doc_id": f"{CLINIC_ID}-laser-skin-resurfacing",
+        "doc_id": "laser-skin-resurfacing",
+        "clinic_id": CLINIC_ID,
         "category": "special",
         "pre_op": "術前須知：1. 過敏體質需告知醫師 2. 術前2週停止使用A酸 3. 術前1週避免日曬 4. 術前洗臉清潔",
         "procedure": "療程步驟：皮秒雷射利用極短脈衝光束擊碎黑色素，刺激膠原蛋白增生。過程約15-30分鐘，依治療範圍而定。麻醉方式：局部麻醉膏。",
@@ -46,7 +47,8 @@ TREES = [
         ),
     },
     {
-        "doc_id": f"{CLINIC_ID}-botox-injection",
+        "doc_id": "botox-injection",
+        "clinic_id": CLINIC_ID,
         "category": "special",
         "pre_op": "術前須知：1. 告知醫師用藥史 2. 術前2週停止服用阿斯匹靈 3. 術前洗臉清潔 4. 避免懷孕或哺乳",
         "procedure": "療程步驟：肉毒桿菌素注射使用極細針頭將藥物注入目標肌肉，放鬆肌肉減少皺紋。過程約10-20分鐘，無需麻醉。",
@@ -63,7 +65,8 @@ TREES = [
         ),
     },
     {
-        "doc_id": f"{CLINIC_ID}-electrowave-facelift",
+        "doc_id": "electrowave-facelift",
+        "clinic_id": CLINIC_ID,
         "category": "special",
         "pre_op": (
             "術前須知：1. 懷孕或裝有心律調節器者不建議施作 2. 臉部有開放性傷口或急性發炎需先治療痊癒 "
@@ -93,7 +96,8 @@ TREES = [
         ),
     },
     {
-        "doc_id": f"{CLINIC_ID}-hyaluronic-acid-filler",
+        "doc_id": "hyaluronic-acid-filler",
+        "clinic_id": CLINIC_ID,
         "category": "special",
         "pre_op": (
             "術前須知：1. 告知醫師是否有凝血功能異常或正在服用抗凝血藥物 2. 術前2週避免服用阿斯匹靈、"
@@ -122,7 +126,8 @@ TREES = [
         ),
     },
     {
-        "doc_id": f"{CLINIC_ID}-fractional-laser",
+        "doc_id": "fractional-laser",
+        "clinic_id": CLINIC_ID,
         "category": "special",
         "pre_op": (
             "術前須知：1. 過敏體質、蟹足腫體質需事先告知醫師 2. 術前2週停止使用A酸、左旋C等刺激性保養品 "
@@ -152,7 +157,8 @@ TREES = [
         ),
     },
     {
-        "doc_id": f"{CLINIC_ID}-hifu-lifting",
+        "doc_id": "hifu-lifting",
+        "clinic_id": CLINIC_ID,
         "category": "special",
         "pre_op": (
             "術前須知：1. 懷孕、裝有金屬植入物或心律調節器者不建議施作 2. 臉部有嚴重痤瘡發炎或開放性傷口需先治療"

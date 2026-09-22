@@ -41,6 +41,9 @@ def upsert_trees(conn, trees, source_type: str):
     inserted, updated, unchanged = 0, 0, 0
 
     for tree in trees:
+        if "clinic_id" not in tree or not tree["clinic_id"]:
+            raise ValueError(f"tree dict (doc_id='{tree.get('doc_id')}') 缺少必要之 'clinic_id' 鍵")
+
         cursor.execute(
             f"SELECT id, {', '.join(CONTENT_FIELDS)}, content_version "
             "FROM page_index_trees WHERE doc_id = ?",
@@ -52,13 +55,14 @@ def upsert_trees(conn, trees, source_type: str):
             cursor.execute(
                 f"""
                 INSERT INTO page_index_trees (
-                    doc_id, {', '.join(CONTENT_FIELDS)},
+                    doc_id, clinic_id, {', '.join(CONTENT_FIELDS)},
                     version, source_type, content_version,
                     needs_regeneration, indexed_at
-                ) VALUES (?, {', '.join('?' for _ in CONTENT_FIELDS)}, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, {', '.join('?' for _ in CONTENT_FIELDS)}, ?, ?, ?, ?, ?)
                 """,
                 (
                     tree["doc_id"],
+                    tree["clinic_id"],
                     *(tree[field] for field in CONTENT_FIELDS),
                     "2.0",
                     source_type,

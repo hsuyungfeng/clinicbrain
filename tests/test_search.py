@@ -100,12 +100,12 @@ def test_search_page_index_trees_fts_path(conn):
     hits_hifu = search_page_index_trees(conn, "音波拉提", limit=5)
     assert len(hits_hifu) > 0
     doc_ids = [h.fields["doc_id"] for h in hits_hifu]
-    assert "zhiyan-clinic-hifu-lifting" in doc_ids
+    assert "hifu-lifting" in doc_ids
 
     hits_filler = search_page_index_trees(conn, "玻尿酸", limit=5)
     assert len(hits_filler) > 0
     doc_ids_filler = [h.fields["doc_id"] for h in hits_filler]
-    assert "zhiyan-clinic-hyaluronic-acid-filler" in doc_ids_filler
+    assert "hyaluronic-acid-filler" in doc_ids_filler
 
 
 def test_search_page_index_trees_like_path(conn):
@@ -113,7 +113,7 @@ def test_search_page_index_trees_like_path(conn):
     hits_botox = search_page_index_trees(conn, "肉毒", limit=5)
     assert len(hits_botox) > 0
     doc_ids = [h.fields["doc_id"] for h in hits_botox]
-    assert "zhiyan-clinic-botox-injection" in doc_ids
+    assert "botox-injection" in doc_ids
 
 
 # ---------------------------------------------------------------------------

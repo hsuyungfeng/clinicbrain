@@ -41,6 +41,8 @@ def search_text(
     select_columns: tuple,
     like_columns: tuple,
     limit: int = 10,
+    extra_where: Optional[str] = None,
+    extra_params: tuple = (),
 ) -> list[SearchHit]:
     """對指定資料表做中文全文檢索，依查詢字串長度自動分流。
 
@@ -52,6 +54,8 @@ def search_text(
     select_columns: 要從 table 取回的欄位（含主鍵）
     like_columns: LIKE fallback 時要比對的欄位（通常是中文名稱欄位）
     limit: 回傳筆數上限
+    extra_where: 額外過濾條件（如 'clinic_id = ?'）
+    extra_params: 額外過濾條件之參數
     """
     query = query.strip()
     if not query:
@@ -60,20 +64,28 @@ def search_text(
     cursor = conn.cursor()
 
     if _use_fts(query):
+        where_clause = f"rowid IN (SELECT rowid FROM {fts_table} WHERE {fts_table} MATCH ?)"
+        params = [query]
+        if extra_where:
+            where_clause += f" AND {extra_where}"
+            params.extend(extra_params)
+        params.append(limit)
         cursor.execute(
             f"""
             SELECT {', '.join(select_columns)}
             FROM {table}
-            WHERE rowid IN (
-                SELECT rowid FROM {fts_table} WHERE {fts_table} MATCH ?
-            )
+            WHERE {where_clause}
             LIMIT ?
             """,
-            (query, limit),
+            params,
         )
     else:
-        where_clause = " OR ".join(f"{col} LIKE ?" for col in like_columns)
-        params = [f"%{query}%" for _ in like_columns] + [limit]
+        where_clause = "(" + " OR ".join(f"{col} LIKE ?" for col in like_columns) + ")"
+        params = [f"%{query}%" for _ in like_columns]
+        if extra_where:
+            where_clause += f" AND {extra_where}"
+            params.extend(extra_params)
+        params.append(limit)
         cursor.execute(
             f"""
             SELECT {', '.join(select_columns)}
@@ -136,11 +148,21 @@ def search_service_items(conn: sqlite3.Connection, query: str, limit: int = 10) 
     )
 
 
-def search_page_index_trees(conn: sqlite3.Connection, query: str, limit: int = 10) -> list[SearchHit]:
+def search_page_index_trees(
+    conn: sqlite3.Connection,
+    query: str,
+    limit: int = 10,
+    clinic_id: Optional[str] = None,
+) -> list[SearchHit]:
     """page_index_trees 的 rowid 對應到 id（AUTOINCREMENT 主鍵），不是預設
     rowid 別名以外的欄位，所以這裡直接用 id 當 select 主鍵，語法上與
     search_text() 的假設一致（SQLite 中 INTEGER PRIMARY KEY 就是 rowid 別名）。
+
+    支援依 clinic_id 進行診所過濾（TASK-00 新增）。當 clinic_id 為 None 時，
+    回傳所有診所資料（向後相容）。
     """
+    extra_where = "clinic_id = ?" if clinic_id else None
+    extra_params = (clinic_id,) if clinic_id else ()
     return search_text(
         conn,
         table="page_index_trees",
@@ -149,6 +171,7 @@ def search_page_index_trees(conn: sqlite3.Connection, query: str, limit: int = 1
         select_columns=(
             "id",
             "doc_id",
+            "clinic_id",
             "category",
             "pre_op",
             "procedure",
@@ -158,4 +181,6 @@ def search_page_index_trees(conn: sqlite3.Connection, query: str, limit: int = 1
         ),
         like_columns=("summary_text",),
         limit=limit,
+        extra_where=extra_where,
+        extra_params=extra_params,
     )

@@ -34,7 +34,7 @@ except ImportError:
 # （侵入性注射 vs 非侵入性能量儀器），讓 LLM 看到結構差異但格式一致。
 # ---------------------------------------------------------------------------
 
-_FEW_SHOT_DOC_IDS = ("zhiyan-clinic-botox-injection", "zhiyan-clinic-hifu-lifting")
+_FEW_SHOT_DOC_IDS = ("botox-injection", "hifu-lifting")
 
 _OUTPUT_FIELDS = ("pre_op", "procedure", "post_op_short", "maintenance", "summary_text")
 
@@ -44,7 +44,7 @@ def _few_shot_examples() -> str:
     for tree in SEED_TREES:
         if tree["doc_id"] not in _FEW_SHOT_DOC_IDS:
             continue
-        procedure_name = tree["doc_id"].replace("zhiyan-clinic-", "")
+        procedure_name = tree["doc_id"]
         example = {
             "procedure_name": procedure_name,
             **{field_name: tree[field_name] for field_name in _OUTPUT_FIELDS},
@@ -198,13 +198,14 @@ def generate_tree(
     return parse_and_validate(raw_output)
 
 
-def to_upsert_row(doc_id: str, category: str, tree: GeneratedTree) -> dict:
+def to_upsert_row(doc_id: str, clinic_id: str, category: str, tree: GeneratedTree) -> dict:
     """把 GeneratedTree 轉成符合 db_writer.py CONTENT_FIELDS 格式的 dict，
     可直接餵給 db_writer.upsert_trees() 的增量 upsert 邏輯（呼叫時傳入
     source_type='llm_generated'；physician_notes 欄位一律 None，交由
     醫師事後審核填入）。"""
     return {
         "doc_id": doc_id,
+        "clinic_id": clinic_id,
         "category": category,
         "pre_op": tree.pre_op,
         "pre_op_physician_notes": None,

@@ -52,14 +52,14 @@ def test_upsert_clinic_note_duplicate_prevention_and_update(isolated_conn):
 def test_upsert_clinic_note_invalid_section_raises_value_error(isolated_conn, invalid_section: str):
     """驗證非法 section 拋出 ValueError。"""
     with pytest.raises(ValueError, match="無效的 section"):
-        upsert_clinic_note(isolated_conn, "zhiyan-clinic", invalid_section, "一些備註內容")
+        upsert_clinic_note(isolated_conn, "3503190424", invalid_section, "一些備註內容")
 
 
 @pytest.mark.parametrize("empty_note", ["", "   ", "\t\n  \r"])
 def test_upsert_clinic_note_empty_note_raises_value_error(isolated_conn, empty_note: str):
     """驗證空白或純空格 note 拋出 ValueError。"""
     with pytest.raises(ValueError, match="note 內容不可為空"):
-        upsert_clinic_note(isolated_conn, "zhiyan-clinic", "pre_op", empty_note)
+        upsert_clinic_note(isolated_conn, "3503190424", "pre_op", empty_note)
 
 
 def test_upsert_multiple_valid_sections(isolated_conn):
@@ -102,7 +102,7 @@ def test_seed_sample_notes_idempotent(isolated_conn):
 
 def test_handle_query_masks_prices_in_custom_notes(isolated_conn):
     """防禦性安全測試：若診所通用備註被誤填寫了具體金額，handle_query 必須強制遮罩。"""
-    clinic_id = "zhiyan-clinic"
+    clinic_id = "3503190424"
     # 刻意寫入含有價格的自訂備註
     upsert_clinic_note(isolated_conn, clinic_id, "pre_op", "預收保證金1500元或NT$800，術前空腹。")
 

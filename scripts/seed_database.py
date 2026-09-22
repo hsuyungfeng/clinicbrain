@@ -37,8 +37,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 try:
     from src.clinic.custom_notes import seed_sample_notes
+    from src.pageindex.seed_clinic_info import seed_clinic_info
 except ImportError:
     from clinic.custom_notes import seed_sample_notes
+    from pageindex.seed_clinic_info import seed_clinic_info
 
 def create_database():
     """Create database and apply schema."""
@@ -301,6 +303,10 @@ def main():
         
         # Update OTC names
         otc_count = update_otc_names(conn)
+
+        # Seed clinic info (basic clinic profile)
+        clinic_info_count = seed_clinic_info(conn)
+        logger.info(f"Seeded {clinic_info_count} clinic info records")
 
         # Seed clinic custom notes (clinic-level general notes)
         notes_count = seed_sample_notes(conn)

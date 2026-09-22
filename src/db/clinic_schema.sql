@@ -107,7 +107,8 @@ CREATE TABLE IF NOT EXISTS clinic_custom_notes (
 -- PageIndex trees table - Clinical reasoning trees for medical procedures
 CREATE TABLE IF NOT EXISTS page_index_trees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    doc_id TEXT UNIQUE,              -- Document identifier (e.g., procedure name + clinic)
+    doc_id TEXT UNIQUE,              -- Document identifier (e.g., procedure name slug)
+    clinic_id TEXT REFERENCES clinic_info(clinic_id),  -- 所屬診所（2026-09-22 Phase 04 新增；原本診所身份只靠 doc_id 字串前綴表達，是技術債）
     category TEXT NOT NULL,          -- 'special' or 'general'
     pre_op TEXT,                     -- 術前須知與禁忌 (Pre-op instructions)
     pre_op_physician_notes TEXT,     -- 醫師權威指令 (Pre-op physician notes)
@@ -246,17 +247,19 @@ END;
 -- Sample Data (for testing)
 -- ========================================
 
--- Sample clinic info
-INSERT OR IGNORE INTO clinic_info (clinic_id, name, phone, address, website, clinic_type)
-VALUES ('zhiyan-clinic', '緻妍外科診所', '(04) 2320-0000', '台中市西區台灣大道二段100號', 'https://www.zhiyan-clinic.com', '醫美診所');
+-- clinic_info 的種子資料唯一權威來源是 src/pageindex/seed_clinic_info.py
+-- （2026-09-22 Phase 04 修正：這裡原本也有一份重複的 INSERT OR IGNORE，
+-- 跟 seed_clinic_info.py 各自維護同一筆資料，違反 AGENTS.md 2.2 節的
+-- 單一寫入路徑原則——TASK-003 時 scripts/seed_database.py 與
+-- seed_trees.py 就踩過這個雷。schema.sql 只保留表結構，不再內嵌資料）
 
 -- Sample clinic hours (for testing)
 INSERT OR IGNORE INTO clinic_hours (clinic_id, day_of_week, morning_start, morning_end, afternoon_start, afternoon_end)
 VALUES 
-('zhiyan-clinic', '星期一', '09:00', '12:00', '13:30', '17:30'),
-('zhiyan-clinic', '星期二', '09:00', '12:00', '13:30', '17:30'),
-('zhiyan-clinic', '星期三', '09:00', '12:00', '13:30', '17:30'),
-('zhiyan-clinic', '星期四', '09:00', '12:00', '13:30', '17:30'),
-('zhiyan-clinic', '星期五', '09:00', '12:00', '13:30', '17:30'),
-('zhiyan-clinic', '星期六', '09:00', '12:00', NULL, NULL),
-('zhiyan-clinic', '星期日', NULL, NULL, NULL, NULL);
+('3503190424', '星期一', '09:00', '12:00', '13:30', '17:30'),
+('3503190424', '星期二', '09:00', '12:00', '13:30', '17:30'),
+('3503190424', '星期三', '09:00', '12:00', '13:30', '17:30'),
+('3503190424', '星期四', '09:00', '12:00', '13:30', '17:30'),
+('3503190424', '星期五', '09:00', '12:00', '13:30', '17:30'),
+('3503190424', '星期六', '09:00', '12:00', NULL, NULL),
+('3503190424', '星期日', NULL, NULL, NULL, NULL);

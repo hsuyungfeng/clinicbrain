@@ -118,22 +118,22 @@ def test_classify_general_queries(query: str):
 
 def test_handle_query_special_clinic_ops(conn):
     """驗證 special 診所營運查詢（如開門時間）會完整帶出診所資訊與門診時段。"""
-    res = handle_query(conn, "診所幾點開門？")
+    res = handle_query(conn, "診所幾點開門？", clinic_id="3503190424")
     assert res.route == "special"
     assert res.clinic_info is not None
-    assert res.clinic_info["clinic_id"] == "zhiyan-clinic"
+    assert res.clinic_info["clinic_id"] == "3503190424"
     assert "緻妍" in res.clinic_info["name"]
     assert len(res.clinic_hours) == 7
 
 
 def test_handle_query_special_procedure_and_custom_notes(conn):
     """驗證 special 療程查詢命中 PageIndex 樹時，會帶出療程資訊與診所通用段落備註。"""
-    res = handle_query(conn, "音波拉提會痛嗎？")
+    res = handle_query(conn, "音波拉提會痛嗎？", clinic_id="3503190424")
     assert res.route == "special"
     assert len(res.page_index_hits) > 0
     # 命中音波拉提推理樹
     doc_ids = [hit.fields.get("doc_id") for hit in res.page_index_hits]
-    assert "zhiyan-clinic-hifu-lifting" in doc_ids
+    assert "hifu-lifting" in doc_ids
     # 帶出診所層級通用備註
     assert isinstance(res.clinic_custom_notes, dict)
     assert len(res.clinic_custom_notes) > 0
