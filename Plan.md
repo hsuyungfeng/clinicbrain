@@ -105,11 +105,15 @@ Stage 1（文字型文件擷取 + `faq_cache` 建表 + LLM 轉 Q&A）四個任�
 9、`customer-service-faq` 16），寫入隔離測試複本 `clinic_test.db`，Claude 逐筆掃過確認零價格
 洩漏、零簡體字殘留。
 
-**已知後續事項**：正式 `clinic.db` 目前**尚未套用 `faq_cache` schema**——本次僅更新
-`clinic_schema.sql`（DDL 來源）與隔離測試複本，符合任務隔離 CONSTRAINT。功能要在正式環境
-真正可用，需要後續對正式 `clinic.db` 執行一次 schema 更新（例如重跑
-`scripts/seed_database.py` 或等效的 `ALTER`/`CREATE` 補丁），這不在本次任務範圍內，是下一步
-待辦事項之一。
+**後續收尾（2026-09-22 已完成）**：Stage 1 交付時正式 `clinic.db` 還沒有 `faq_cache` schema，
+已於同日補做：對正式 `clinic.db` 套用 `faq_cache`/`faq_cache_fts`/三個觸發器（先在隔離複本
+演練一次確認安全，再對正式庫執行，執行前後非相關資料表筆數一致），並透過
+`faq_writer.upsert_faqs()`（唯一權威寫入路徑）把已驗證的 40 筆真實 FAQ
+（`source_type='clinic_upload'`）寫入正式資料庫，逐筆重新掃過確認零價格洩漏、零簡體字。
+套用後重跑 pytest 發現 2 個既有測試（`test_faq_cache_fts_cjk_match`／
+`test_faq_cache_triggers_sync`）因為測試選字（「甲溝炎」「矽膠貼」）剛好命中正式資料庫裡
+真實存在的其他 FAQ 內容而失敗——已修正為用測試專屬 `topic_key` 過濾，不受既有資料影響
+（commit `35a71a5`），連續重跑三次穩定 123/123 通過。
 
 Stage 2（圖片 OCR）與 Stage 3（影片/複雜 PDF）尚未展開，三份優先檔案以外的其他文件
 （`儀器/` 簡體字操作手冊、`衛教文章/`、`廠商PPT/`、`每月活動單/`、`一般醫學/` 底下全部內容）
@@ -153,6 +157,15 @@ Stage 2（圖片 OCR）與 Stage 3（影片/複雜 PDF）尚未展開，三份�
    `clinic.db` 本身**沒有**這張表——因為任務隔離 CONSTRAINT 只要求驗證在隔離複本上完成，
    不要求同步遷移正式庫。這不是 bug，但下次要真正使用 `faq_cache` 功能前，必須記得先對
    正式 `clinic.db` 補跑一次 schema 更新，不能假設「schema.sql 改了 = 正式資料庫也有了」。
+   （已於 2026-09-22 補做完成，見上方「後續收尾」。）
+8. **測試 fixture 複製正式 `clinic.db` 後，一旦正式庫有了真實資料，測試選字不能再隨便挑**：
+   `faq_cache` 套用到正式 `clinic.db` 並寫入 40 筆真實 FAQ 後，兩個既有 FTS 測試
+   （用「甲溝炎」「矽膠貼」這類看似安全的醫療常見詞當 `MATCH` 關鍵字）突然失敗——不是
+   程式碼壞了，是測試選的詞剛好命中資料庫裡真實存在的其他 FAQ 內容。`isolated_conn` 這類
+   fixture 複製的是正式 `clinic.db`，不是空白資料庫，資料庫內容越豐富、隨便選字撞到既有
+   資料的機率越高。修正方式是比照 `test_multi_clinic.py` 已有的慣例：用測試專屬的唯一
+   識別碼（如 `topic_key='test-xxx-unique-marker'`）過濾查詢結果，只驗證本測試自己寫入的
+   那一列，不要只信任裸的 `MATCH`/查詢命中數。
 
 ---
 

@@ -32,10 +32,15 @@ python3 scripts/seed_database.py       # 建 schema + 匯入藥品/服務項目 
 python3 src/pageindex/seed_trees.py    # 增量寫入 PageIndex 範本
 ```
 
-**⚠️ `faq_cache` 尚未套用到正式 `clinic.db`（2026-09-22 現況）**：`src/db/clinic_schema.sql`
-已定義 `faq_cache`/`faq_cache_fts`，但只在隔離測試複本上驗證過（Phase 03 Stage 1 任務隔離
-CONSTRAINT 只要求驗證，不要求遷移正式庫）。要真正使用 FAQ 功能前，需要先對正式 `clinic.db`
-補跑一次 schema 更新——不要假設「schema.sql 改了 = 正式資料庫也有這張表」。
+**`faq_cache` 已套用到正式 `clinic.db`（2026-09-22 補做，非 Phase 03 Stage 1 交付原始範圍）**：
+Stage 1 交付時只在隔離測試複本上驗證過 `faq_cache`，正式 `clinic.db` 當時還沒有這張表；
+後續已手動對正式庫執行 `faq_cache`/`faq_cache_fts`/三個觸發器的 schema 更新，並透過
+`faq_writer.upsert_faqs()`（唯一權威寫入路徑）把 Stage 1 已驗證的 40 筆真實 FAQ
+（`source_type='clinic_upload'`）寫入正式資料庫。**注意**：`isolated_conn` 這類測試 fixture
+複製的是正式 `clinic.db`，寫入真實資料後測試若用真實醫療用語（如「甲溝炎」）當 FTS
+`MATCH` 關鍵字，可能命中資料庫既有的真實列而非只命中測試自己寫入的那一列——`faq_cache`
+相關測試必須用測試專屬的 `topic_key` 過濾，不能只信任裸的 `MATCH` 命中數（見
+`tests/test_faq_cache.py` 的既有修正案例）。
 
 **⚠️ `clinic_id` 現在是多數函式的必填參數（2026-09-22 Phase 04 TASK-02 完成，commit
 `625593d`）**：`src/query/router.py` 的 `get_clinic_hours`/`get_clinic_info`/
