@@ -76,9 +76,19 @@ src/clinic/custom_notes.py:102  seed_sample_notes(..., clinic_id: str = "zhiyan-
 - 把資料庫裡現有 `clinic_id = 'zhiyan-clinic'` 的所有資料（`clinic_info`、
   `clinic_hours`、`clinic_custom_notes`，以及 TASK-00 新增的
   `page_index_trees.clinic_id`）遷移成 `clinic_id = '3503190424'`
-- 更新 `scripts/seed_database.py`（`clinic_info` 的種子資料，目前寫死
-  `'zhiyan-clinic'` 那筆 INSERT）
+- **修正（2026-09-22 展開 TASK-PLAN.md 時發現）**：原本這裡寫「更新
+  `scripts/seed_database.py` 的 `clinic_info` 種子資料，目前寫死
+  `'zhiyan-clinic'` 那筆 INSERT」，經實際檢查程式碼後確認**不準確**——
+  `scripts/seed_database.py` 裡根本沒有任何寫入 `clinic_info` 的 INSERT
+  （只有 `SELECT COUNT(*) FROM clinic_info` 做統計）。正式 `clinic.db` 裡
+  唯一的那 1 筆 `clinic_info` 資料是先前某次 session 手動寫入的，版控裡
+  沒有可重建它的腳本。真正要做的是**新增**一個補齊種子腳本的子任務，
+  完整規格見 `TASK-PLAN.md` TASK-01 第 2 項
 - 執行前務必先在測試複本驗證（比照 TASK-00 的隔離慣例）
+
+完整可執行規格（含程式碼層級細節、CONSTRAINT、驗收標準）已展開至
+`.planning/phases/04-multi-clinic-support/TASK-PLAN.md`（涵蓋 TASK-00 與
+TASK-01；TASK-02/TASK-03 維持草案狀態，見下方對應章節）。
 
 ### TASK-02：移除函式預設值中的硬編碼診所
 

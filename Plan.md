@@ -64,7 +64,7 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 使用者確認的方向（完整討論見 `.planning/VISION-EXPANSION.md`）：
 
 - **Phase 03（草案已就緒，schema 已定案）：文件擷取管線** — `.planning/phases/03-document-ingestion/PLAN.md` 已完成真實資料盤點（`OriginalData/一般醫學/` 2.0G、`OriginalData/緻妍外科診所/` 782M）與使用者決策（診所文件先轉 Q&A 再入庫、需簡繁轉換、`健保相關/` 與 Phase 01 資料同源已確認）。2026-09-22 追加確認：新增獨立 `faq_cache` 表（不與 `page_index_trees` 共用同一張表，欄位模式比照），FTS5 一樣用 trigram。尚未展開為 TASK-PLAN.md，尚未動工。
-- **Phase 04（草案已就緒，schema 已定案）：多診所支援** — `.planning/phases/04-multi-clinic-support/PLAN.md` 已有使用者決策（單一資料庫邏輯隔離、`clinic_id` 改用健保特約醫事機構代碼、識別方式留給 Phase 05 部署層處理）。2026-09-22 追加確認：盤點發現 `page_index_trees` 目前完全沒有 `clinic_id` 欄位（診所身份只靠 `doc_id` 字串前綴 + 硬編碼比對辨識，是技術債），已定案新增真正的 `clinic_id` 欄位、`doc_id` 改為純療程 slug（新增 TASK-00 作為 TASK-01 的前置依賴）。尚未展開為 TASK-PLAN.md，尚未動工。
+- **Phase 04（TASK-PLAN.md 已展開，尚未動工）：多診所支援** — `.planning/phases/04-multi-clinic-support/PLAN.md` 已有使用者決策（單一資料庫邏輯隔離、`clinic_id` 改用健保特約醫事機構代碼、識別方式留給 Phase 05 部署層處理）。2026-09-22 追加確認：盤點發現 `page_index_trees` 目前完全沒有 `clinic_id` 欄位（診所身份只靠 `doc_id` 字串前綴 + 硬編碼比對辨識，是技術債），已定案新增真正的 `clinic_id` 欄位、`doc_id` 改為純療程 slug。同日已將 TASK-00（補欄位+doc_id 去前綴+`search_page_index_trees()` 補 clinic 過濾）與 TASK-01（clinic_id 值遷移為健保代碼+補齊 `clinic_info` 缺失的種子腳本）展開成完整可執行規格 `.planning/phases/04-multi-clinic-support/TASK-PLAN.md`（比照 Phase 02 模式，可直接交給 Antigravity 執行）。TASK-02（函式預設值是否移除）與 TASK-03（依賴 Phase 05）維持草案，不在本次展開範圍。尚未實際動工執行。
 - **Phase 05（建議）：doctor-toolbox.com 官方 API 整合** — 雙向資料匯入/匯出，走正式 API（非舊系統的 MITM 攔截方式），排在 clinicbrain 自身功能完成之後。
 
 **尚待決策**（見 VISION-EXPANSION.md 第 5 節）：OCR 引擎最終選型、要不要引入向量檢索補強 FTS5 召回率、使用者身份與資料隔離範圍（匿名 vs 留歷史）、doctor-toolbox.com API 文件與認證方式。
