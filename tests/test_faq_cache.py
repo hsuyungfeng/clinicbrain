@@ -22,11 +22,19 @@ def test_faq_cache_fts_trigram_configuration(isolated_conn: sqlite3.Connection):
 
 
 def test_faq_cache_fts_cjk_match(isolated_conn: sqlite3.Connection):
-    """驗證 FTS5 中文關鍵字 MATCH 查詢能真實命中中文內容。"""
+    """驗證 FTS5 中文關鍵字 MATCH 查詢能真實命中中文內容。
+
+    2026-09-22 修正：clinic.db 現在已有 40 筆真實 Phase 03 Stage 1 生成的
+    FAQ（含「甲溝炎」等常見醫療用語），舊版測試直接用 MATCH 命中數斷言會被
+    真實資料污染（isolated_conn 複製的是正式 clinic.db，不是空白資料庫）。
+    改用 JOIN 回 faq_cache 並以本測試專屬的 topic_key 過濾，確保只驗證本
+    測試自己寫入的那一列，不受資料庫既有內容影響——比照 test_multi_clinic.py
+    用 "test-*" 前綴避免碰撞既有資料的既有慣例。
+    """
     faqs = [
         {
             "clinic_id": "3503190424",
-            "topic_key": "paronychia",
+            "topic_key": "test-fts-cjk-match-unique-marker",
             "question": "甲溝炎手術需要注意什麼？",
             "answer": "術前需由醫師評估甲床狀況，若有急性蜂窩性組織炎需先消炎。",
             "category": "special",
@@ -35,22 +43,39 @@ def test_faq_cache_fts_cjk_match(isolated_conn: sqlite3.Connection):
     upsert_faqs(isolated_conn, faqs, source_type="clinic_upload")
 
     cursor = isolated_conn.cursor()
-    # 測試 3 字以上關鍵字 MATCH
-    cursor.execute("SELECT rowid FROM faq_cache_fts WHERE faq_cache_fts MATCH '甲溝炎'")
+    # 測試 3 字以上關鍵字 MATCH，並限定只看本測試寫入的 topic_key
+    cursor.execute(
+        """
+        SELECT fts.rowid FROM faq_cache_fts fts
+        JOIN faq_cache f ON f.id = fts.rowid
+        WHERE fts.faq_cache_fts MATCH '甲溝炎' AND f.topic_key = 'test-fts-cjk-match-unique-marker'
+        """
+    )
     hits = cursor.fetchall()
-    assert len(hits) == 1, "甲溝炎關鍵字未於 FTS 命中"
+    assert len(hits) == 1, "甲溝炎關鍵字未於 FTS 命中本測試寫入的列"
 
-    cursor.execute("SELECT rowid FROM faq_cache_fts WHERE faq_cache_fts MATCH '組織炎'")
+    cursor.execute(
+        """
+        SELECT fts.rowid FROM faq_cache_fts fts
+        JOIN faq_cache f ON f.id = fts.rowid
+        WHERE fts.faq_cache_fts MATCH '組織炎' AND f.topic_key = 'test-fts-cjk-match-unique-marker'
+        """
+    )
     hits = cursor.fetchall()
-    assert len(hits) == 1, "答案中之組織炎關鍵字未於 FTS 命中"
+    assert len(hits) == 1, "答案中之組織炎關鍵字未於 FTS 命中本測試寫入的列"
 
 
 def test_faq_cache_triggers_sync(isolated_conn: sqlite3.Connection):
-    """驗證 INSERT/UPDATE/DELETE 觸發器能否正確同步 faq_cache_fts。"""
+    """驗證 INSERT/UPDATE/DELETE 觸發器能否正確同步 faq_cache_fts。
+
+    2026-09-22 修正：同上，改用本測試專屬的 topic_key 過濾，避免被
+    clinic.db 既有真實資料（如同樣提及「矽膠」的其他 FAQ 列）誤判。
+    """
+    topic_key = "test-triggers-sync-unique-marker"
     faqs = [
         {
             "clinic_id": "3503190424",
-            "topic_key": "scar-care",
+            "topic_key": topic_key,
             "question": "蟹足腫疤痕如何治療？",
             "answer": "可透過局部消疤針或矽膠貼片撫平組織。",
             "category": "special",
@@ -58,24 +83,32 @@ def test_faq_cache_triggers_sync(isolated_conn: sqlite3.Connection):
     ]
     upsert_faqs(isolated_conn, faqs, source_type="clinic_upload")
 
-    cursor = isolated_conn.cursor()
-    cursor.execute("SELECT rowid FROM faq_cache_fts WHERE faq_cache_fts MATCH '蟹足腫'")
-    assert len(cursor.fetchall()) == 1
+    def _match_this_topic(match_term: str) -> list:
+        cursor = isolated_conn.cursor()
+        cursor.execute(
+            """
+            SELECT fts.rowid FROM faq_cache_fts fts
+            JOIN faq_cache f ON f.id = fts.rowid
+            WHERE fts.faq_cache_fts MATCH ? AND f.topic_key = ?
+            """,
+            (match_term, topic_key),
+        )
+        return cursor.fetchall()
+
+    assert len(_match_this_topic("蟹足腫")) == 1
 
     # UPDATE 答案內容
     faqs[0]["answer"] = "可透過類固醇注射或雷射治療撫平組織。"
     upsert_faqs(isolated_conn, faqs, source_type="clinic_upload")
 
-    cursor.execute("SELECT rowid FROM faq_cache_fts WHERE faq_cache_fts MATCH '類固醇'")
-    assert len(cursor.fetchall()) == 1
-    cursor.execute("SELECT rowid FROM faq_cache_fts WHERE faq_cache_fts MATCH '矽膠貼'")
-    assert len(cursor.fetchall()) == 0, "舊內容應自 FTS 索引移除"
+    assert len(_match_this_topic("類固醇")) == 1
+    assert len(_match_this_topic("矽膠貼")) == 0, "舊內容應自 FTS 索引移除"
 
     # DELETE
-    cursor.execute("DELETE FROM faq_cache WHERE topic_key = 'scar-care'")
+    cursor = isolated_conn.cursor()
+    cursor.execute("DELETE FROM faq_cache WHERE topic_key = ?", (topic_key,))
     isolated_conn.commit()
-    cursor.execute("SELECT rowid FROM faq_cache_fts WHERE faq_cache_fts MATCH '類固醇'")
-    assert len(cursor.fetchall()) == 0, "刪除後 FTS 應無結果"
+    assert len(_match_this_topic("類固醇")) == 0, "刪除後 FTS 應無結果"
 
 
 def test_upsert_faqs_validation_rules(isolated_conn: sqlite3.Connection):
