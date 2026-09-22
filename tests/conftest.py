@@ -17,6 +17,23 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 
+def _ensure_faq_cache(db_path: Path):
+    """確保測試複本資料庫具備 faq_cache 與其 FTS5 / Triggers 結構。"""
+    schema_sql_path = PROJECT_ROOT / "src" / "db" / "clinic_schema.sql"
+    if not schema_sql_path.exists():
+        return
+    sql_text = schema_sql_path.read_text(encoding="utf-8")
+    start_marker = "CREATE TABLE IF NOT EXISTS faq_cache"
+    end_marker = "-- ========================================\n-- Sample Data"
+    start_pos = sql_text.find(start_marker)
+    end_pos = sql_text.find(end_marker)
+    if start_pos != -1:
+        faq_ddl = sql_text[start_pos:end_pos] if end_pos != -1 else sql_text[start_pos:]
+        temp_conn = sqlite3.connect(str(db_path))
+        temp_conn.executescript(faq_ddl)
+        temp_conn.close()
+
+
 @pytest.fixture(scope="session")
 def session_db_path(tmp_path_factory) -> Path:
     """Session 層級的資料庫複本（供唯讀查詢與檢索測試使用）。"""
@@ -26,6 +43,7 @@ def session_db_path(tmp_path_factory) -> Path:
     temp_dir = tmp_path_factory.mktemp("session_db")
     target_path = temp_dir / "clinic_test.db"
     shutil.copy2(PROD_DB_PATH, target_path)
+    _ensure_faq_cache(target_path)
     return target_path
 
 
@@ -45,6 +63,7 @@ def isolated_conn(tmp_path: Path):
     
     target_path = tmp_path / "clinic_isolated.db"
     shutil.copy2(PROD_DB_PATH, target_path)
+    _ensure_faq_cache(target_path)
     connection = sqlite3.connect(str(target_path))
     yield connection
     connection.close()

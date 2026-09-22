@@ -84,7 +84,10 @@ def upsert_clinic_note(conn: sqlite3.Connection, clinic_id: str, section: str, n
     conn.commit()
 
 
-def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") -> dict[str, str]:
+DEFAULT_CLINIC_ID = "3503190424"  # 緻妍外科診所健保代碼，供獨立執行腳本測試使用
+
+
+def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str) -> dict[str, str]:
     """回傳指定診所的所有通用備註字典 {section: note}。"""
     cursor = conn.cursor()
     cursor.execute(
@@ -99,7 +102,7 @@ def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str = "zhiyan-c
     return {row[0]: row[1] for row in cursor.fetchall()}
 
 
-def seed_sample_notes(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") -> int:
+def seed_sample_notes(conn: sqlite3.Connection, clinic_id: str) -> int:
     """寫入診所通用備註的預設範例資料。"""
     count = 0
     for section, note in DEFAULT_SAMPLE_NOTES.items():
@@ -112,9 +115,9 @@ def main() -> int:
     db_path = sys.argv[1] if len(sys.argv) > 1 else str(DEFAULT_DB_PATH)
     print(f"連接資料庫：{db_path}")
     conn = sqlite3.connect(db_path)
-    count = seed_sample_notes(conn)
-    print(f"成功寫入/更新 {count} 筆診所通用備註（zhiyan-clinic）")
-    notes = get_clinic_custom_notes(conn)
+    count = seed_sample_notes(conn, clinic_id=DEFAULT_CLINIC_ID)
+    print(f"成功寫入/更新 {count} 筆診所通用備註（{DEFAULT_CLINIC_ID}）")
+    notes = get_clinic_custom_notes(conn, clinic_id=DEFAULT_CLINIC_ID)
     for sec, note in notes.items():
         print(f"\n[{sec}]:\n{note}")
     conn.close()

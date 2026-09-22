@@ -14,6 +14,8 @@ import pytest
 from src.pageindex.db_writer import upsert_trees
 from src.pageindex.seed_clinic_info import seed_clinic_info, CLINIC_ID as SEED_CLINIC_ID
 from src.query.search import search_page_index_trees
+from src.query.router import get_clinic_hours, get_clinic_info, get_clinic_custom_notes, handle_query
+from src.clinic.custom_notes import seed_sample_notes
 
 
 def _build_dummy_tree(doc_id: str, clinic_id: str | None = None, procedure: str = "測試療程步驟", summary: str = "測試摘要") -> dict:
@@ -178,3 +180,66 @@ def test_seed_clinic_info_zero_state_rebuild(tmp_path: Path, conn: sqlite3.Conne
     assert cur.fetchone()[0] == 1
 
     new_conn.close()
+
+
+def test_task02_functions_require_clinic_id(conn: sqlite3.Connection):
+    """TASK-02: 驗證 4 個底層相關函式均強制要求 clinic_id 為必填參數（未提供時拋出 TypeError），
+    而 handle_query() 保留 clinic_id: str | None = None（general 路由可省略，special 路由未給時拋出 ValueError）。
+    """
+    # 1. get_clinic_hours(conn) 缺少必填參數
+    with pytest.raises(TypeError):
+        get_clinic_hours(conn)  # type: ignore[call-arg]
+
+    # 2. get_clinic_info(conn) 缺少必填參數
+    with pytest.raises(TypeError):
+        get_clinic_info(conn)  # type: ignore[call-arg]
+
+    # 3. get_clinic_custom_notes(conn) 缺少必填參數
+    with pytest.raises(TypeError):
+        get_clinic_custom_notes(conn)  # type: ignore[call-arg]
+
+    # 4. seed_sample_notes(conn) 缺少必填參數
+    with pytest.raises(TypeError):
+        seed_sample_notes(conn)  # type: ignore[call-arg]
+
+    # 5. handle_query(conn, query) 在 special 路由下缺少 clinic_id 時拋出 ValueError
+    with pytest.raises(ValueError, match="special 路由查詢診所營運資訊需要提供 clinic_id"):
+        handle_query(conn, "診所幾點開門？")
+
+    # 6. handle_query(conn, query) 在 general 路由下可正常執行（不依賴 clinic_id）
+    res_general = handle_query(conn, "高血壓可以吃什麼水果？")
+    assert res_general.route == "general"
+    assert res_general.clinic_info is None
+
+
+def test_handle_query_scopes_page_index_hits_by_clinic_id(isolated_conn: sqlite3.Connection):
+    """TASK-02: 驗證 handle_query() 將 clinic_id 傳入 search_page_index_trees 達成療程樹診所隔離。"""
+    # 建立第二家診所的音波拉提療程資料
+    other_clinic_id = "8888888888"
+    other_tree = _build_dummy_tree(
+        doc_id="other-clinic-hifu",
+        clinic_id=other_clinic_id,
+        procedure="第二診所的音波拉提專屬程序",
+        summary="第二診所 音波拉提 專屬療程",
+    )
+    upsert_trees(isolated_conn, [other_tree], source_type="manual")
+
+    # 1. 查詢緻妍外科診所 "3503190424"：只會拿到該診所的樹
+    res_zhiyan = handle_query(isolated_conn, "音波拉提會痛嗎？", clinic_id="3503190424")
+    assert res_zhiyan.route == "special"
+    doc_ids_zhiyan = [h.fields["doc_id"] for h in res_zhiyan.page_index_hits]
+    assert "hifu-lifting" in doc_ids_zhiyan
+    assert "other-clinic-hifu" not in doc_ids_zhiyan
+
+    # 2. 查詢第二家診所 "8888888888"：只會拿到第二家診所的樹
+    res_other = handle_query(isolated_conn, "音波拉提會痛嗎？", clinic_id=other_clinic_id)
+    assert res_other.route == "special"
+    doc_ids_other = [h.fields["doc_id"] for h in res_other.page_index_hits]
+    assert "other-clinic-hifu" in doc_ids_other
+    assert "hifu-lifting" not in doc_ids_other
+
+    # 3. 查詢不存在的診所代碼：療程樹命中為空
+    res_none = handle_query(isolated_conn, "音波拉提會痛嗎？", clinic_id="nonexistent-id")
+    assert res_none.route == "special"
+    assert res_none.page_index_hits == []
+

@@ -157,7 +157,7 @@ def mask_prices(text: str) -> str:
     return _PRICE_PATTERN.sub(_PRICE_MASK, text)
 
 
-def get_clinic_hours(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") -> list[dict]:
+def get_clinic_hours(conn: sqlite3.Connection, clinic_id: str) -> list[dict]:
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -176,7 +176,7 @@ def get_clinic_hours(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic")
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 
-def get_clinic_info(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") -> dict | None:
+def get_clinic_info(conn: sqlite3.Connection, clinic_id: str) -> dict | None:
     cursor = conn.cursor()
     cursor.execute(
         "SELECT clinic_id, name, phone, address, website, clinic_type FROM clinic_info WHERE clinic_id = ?",
@@ -189,7 +189,7 @@ def get_clinic_info(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") 
     return dict(zip(columns, row))
 
 
-def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str = "zhiyan-clinic") -> dict[str, str]:
+def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str) -> dict[str, str]:
     """回傳指定診所的通用段落備註字典 {section: note}。
     例如 {"pre_op": "...", "post_op_short": "..."}。
     這是診所層級、跨所有療程適用的通則，與單一療程專屬的 *_physician_notes 獨立分開。
@@ -207,14 +207,16 @@ def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str = "zhiyan-c
     return {row[0]: row[1] for row in cursor.fetchall()}
 
 
-def _search_terms_merged(search_fn, conn: sqlite3.Connection, terms: list[str], limit: int) -> list:
+def _search_terms_merged(
+    search_fn, conn: sqlite3.Connection, terms: list[str], limit: int, **kwargs
+) -> list:
     """對多個候選詞彙分別呼叫 search_fn，合併結果並依 row_id 去重（保留
     第一次出現的順序——關鍵字命中詞優先於 CJK fallback 片段，因為
     extract_search_terms() 已經照這個優先順序排列 terms）。"""
     seen_ids = set()
     merged = []
     for term in terms:
-        for hit in search_fn(conn, term, limit=limit):
+        for hit in search_fn(conn, term, limit=limit, **kwargs):
             if hit.row_id not in seen_ids:
                 seen_ids.add(hit.row_id)
                 merged.append(hit)
@@ -236,16 +238,16 @@ class QueryResponse:
 def handle_query(
     conn: sqlite3.Connection,
     query: str,
-    clinic_id: str = "zhiyan-clinic",
+    clinic_id: str | None = None,
     limit: int = 5,
 ) -> QueryResponse:
     """統一查詢入口：分類路由 → 依路由查對應資料表 → 對所有文字欄位套用
     價格遮罩 → 回傳結構化結果。
 
     general 路由刻意不查 clinic_info/clinic_hours/clinic_custom_notes（避免診所
-    專屬資訊滲入一般醫學問答，見模組頂部說明），但仍會查 page_index_trees 的
-    category='general' 資料與藥品/服務項目——這些屬於全國性 NHI 資料，
-    不是診所專屬資訊。
+    專屬資訊滲入一般醫學問答，見模組頂部說明），且本質上不需要 clinic_id，
+    因此 clinic_id 預設為 None。但 special 路由若涉及診所營運、療程樹或通用備註，
+    若呼叫端未傳入 clinic_id，將拋出明確之 ValueError。
     """
     route_result = classify(query)
     search_terms = extract_search_terms(query)
@@ -255,10 +257,14 @@ def handle_query(
     clinic_custom_notes: dict = {}
 
     if route_result.route == "special" and any(kw in query for kw in _CLINIC_OPS_KEYWORDS):
+        if clinic_id is None:
+            raise ValueError(f"special 路由查詢診所營運資訊需要提供 clinic_id（問句：'{query}'）")
         clinic_info = get_clinic_info(conn, clinic_id)
         clinic_hours = get_clinic_hours(conn, clinic_id)
 
-    page_index_hits = _search_terms_merged(search_page_index_trees, conn, search_terms, limit)
+    page_index_hits = _search_terms_merged(
+        search_page_index_trees, conn, search_terms, limit, clinic_id=clinic_id
+    )
     drug_hits = _search_terms_merged(search_drugs, conn, search_terms, limit)
     service_item_hits = _search_terms_merged(search_service_items, conn, search_terms, limit)
 
@@ -267,6 +273,8 @@ def handle_query(
     elif route_result.route == "special":
         # special 路由且有 PageIndex 樹命中，或問及診所政策/術前術後注意事項時，撈出診所通用備註
         if page_index_hits or any(kw in query for kw in ("術前", "術後", "注意事項", "備註", "規定")):
+            if clinic_id is None:
+                raise ValueError(f"special 路由查詢診所通用備註需要提供 clinic_id（問句：'{query}'）")
             raw_notes = get_clinic_custom_notes(conn, clinic_id)
             clinic_custom_notes = {
                 sec: mask_prices(note) for sec, note in raw_notes.items()

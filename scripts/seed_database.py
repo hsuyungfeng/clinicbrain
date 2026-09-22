@@ -37,10 +37,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 try:
     from src.clinic.custom_notes import seed_sample_notes
-    from src.pageindex.seed_clinic_info import seed_clinic_info
+    from src.pageindex.seed_clinic_info import seed_clinic_info, CLINIC_ID
 except ImportError:
     from clinic.custom_notes import seed_sample_notes
-    from pageindex.seed_clinic_info import seed_clinic_info
+    from pageindex.seed_clinic_info import seed_clinic_info, CLINIC_ID
 
 def create_database():
     """Create database and apply schema."""
@@ -309,7 +309,7 @@ def main():
         logger.info(f"Seeded {clinic_info_count} clinic info records")
 
         # Seed clinic custom notes (clinic-level general notes)
-        notes_count = seed_sample_notes(conn)
+        notes_count = seed_sample_notes(conn, clinic_id=CLINIC_ID)
         logger.info(f"Seeded {notes_count} clinic custom notes")
 
         # PageIndex trees are seeded separately by src/pageindex/seed_trees.py

@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS icd10_pcs (
 
 -- Clinic information table
 CREATE TABLE IF NOT EXISTS clinic_info (
-    clinic_id TEXT PRIMARY KEY,      -- Unique clinic identifier (e.g., "zhiyan-clinic")
+    clinic_id TEXT PRIMARY KEY,      -- Unique clinic identifier (e.g., "3503190424")
     name TEXT NOT NULL,              -- Clinic name (e.g., 緻妍外科診所)
     phone TEXT,                      -- Phone number
     address TEXT,                    -- Full address
@@ -241,6 +241,57 @@ CREATE TRIGGER IF NOT EXISTS page_index_au AFTER UPDATE ON page_index_trees BEGI
     VALUES ('delete', old.id, old.summary_text);
     INSERT INTO page_index_fts(rowid, summary_text)
     VALUES (new.id, new.summary_text);
+END;
+
+-- ========================================
+-- FAQ Cache Table (Document Ingestion Q&A)
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS faq_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clinic_id TEXT REFERENCES clinic_info(clinic_id),
+    topic_key TEXT,           -- 對應療程/主題 slug，NULL = 通用醫療
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    category TEXT NOT NULL,   -- 'special' or 'general'
+    source_type TEXT DEFAULT 'manual',  -- 'manual' | 'llm_generated' | 'clinic_upload'
+    content_version INTEGER NOT NULL DEFAULT 1,
+    needs_regeneration BOOLEAN NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(clinic_id, topic_key, question)
+);
+
+-- FTS5 for faq_cache (trigram tokenizer for CJK matching)
+CREATE VIRTUAL TABLE IF NOT EXISTS faq_cache_fts USING fts5(
+    question,
+    answer,
+    content='faq_cache',
+    content_rowid='id',
+    tokenize='trigram'
+);
+
+-- FAQ Cache indexes
+CREATE INDEX IF NOT EXISTS idx_faq_cache_clinic_id ON faq_cache(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_faq_cache_topic_key ON faq_cache(topic_key);
+CREATE INDEX IF NOT EXISTS idx_faq_cache_category ON faq_cache(category);
+
+-- Trigger for faq_cache FTS updates
+CREATE TRIGGER IF NOT EXISTS faq_cache_ai AFTER INSERT ON faq_cache BEGIN
+    INSERT INTO faq_cache_fts(rowid, question, answer)
+    VALUES (new.id, new.question, new.answer);
+END;
+
+CREATE TRIGGER IF NOT EXISTS faq_cache_ad AFTER DELETE ON faq_cache BEGIN
+    INSERT INTO faq_cache_fts(faq_cache_fts, rowid, question, answer)
+    VALUES ('delete', old.id, old.question, old.answer);
+END;
+
+CREATE TRIGGER IF NOT EXISTS faq_cache_au AFTER UPDATE ON faq_cache BEGIN
+    INSERT INTO faq_cache_fts(faq_cache_fts, rowid, question, answer)
+    VALUES ('delete', old.id, old.question, old.answer);
+    INSERT INTO faq_cache_fts(rowid, question, answer)
+    VALUES (new.id, new.question, new.answer);
 END;
 
 -- ========================================

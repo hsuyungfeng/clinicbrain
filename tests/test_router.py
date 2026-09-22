@@ -150,3 +150,14 @@ def test_handle_query_general_strict_isolation(conn, query: str):
     assert res.clinic_info is None, f"合規違規：general 查詢 '{query}' 洩漏了 clinic_info"
     assert res.clinic_hours == [], f"合規違規：general 查詢 '{query}' 洩漏了 clinic_hours"
     assert res.clinic_custom_notes == {}, f"合規違規：general 查詢 '{query}' 洩漏了 clinic_custom_notes"
+
+
+def test_handle_query_special_missing_clinic_id_raises_value_error(conn):
+    """TASK-02: 驗證 special 路由查詢若涉及診所專屬資訊但未傳入 clinic_id 時，拋出明確之 ValueError。"""
+    # 診所營運查詢（需 clinic_info / clinic_hours）
+    with pytest.raises(ValueError, match="special 路由查詢診所營運資訊需要提供 clinic_id"):
+        handle_query(conn, "診所幾點開門？")
+
+    # 療程與備註查詢（需 clinic_custom_notes）
+    with pytest.raises(ValueError, match="special 路由查詢診所通用備註需要提供 clinic_id"):
+        handle_query(conn, "音波拉提會痛嗎？")
