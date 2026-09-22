@@ -8,7 +8,10 @@
 ## 1. 專案身份與定位
 
 * **專案名稱**：clinicbrain — Taiwan Clinic Medical PageIndex RAG System
-* **服務對象**：緻妍外科診所（Zhiyan Aesthetic Clinic，`clinic_id = 'zhiyan-clinic'`）
+* **服務對象**：緻妍外科診所（Zhiyan Aesthetic Clinic）。`clinic_id` 目前資料庫裡是人工命名
+  slug `'zhiyan-clinic'`，但依 Phase 04 使用者決策（2026-09-22）即將遷移為台灣健保特約醫事
+  機構代碼 `'3503190424'`（規格見 `.planning/phases/04-multi-clinic-support/TASK-PLAN.md`，
+  尚未執行）——修改任何硬編碼 `clinic_id` 字面值前，先確認 Phase 04 是否已經跑過遷移。
 * **語言規範**：所有輸出內容（LLM 回覆、PageIndex 樹內容、程式碼註解、commit 訊息）**必須使用繁體中文**（程式碼識別字、SQL 關鍵字、藥品學名/國際醫療術語除外）。
 * **定位關係**：本專案是舊系統 `DrtoolboxLocalServer`（同一診所前一代系統，GitHub `hsuyungfeng/DrtoolboxLocalServer`）的精簡重寫起點，聚焦在 PageIndex 臨床推理樹 + RAG 查詢，逐步擴充舊系統已驗證可行的能力（OCR 擷取、本地 LLM、夜間批次生成等）。詳見 `.planning/VISION-EXPANSION.md`。
 
@@ -36,6 +39,20 @@ python3 src/pageindex/seed_trees.py    # 增量寫入 PageIndex 範本
 - `content_version`：內容修訂版號，每次實質內容變更遞增（非 schema 版本，schema 版本是 `version` 欄位）
 - `source_type`：`manual`（人工手寫）| `llm_generated`（LLM 生成）| `clinic_upload`（診所上傳擷取）
 - `needs_regeneration`：標記過時、待夜間批次重新生成
+
+**⚠️ `clinic_id` 欄位遷移狀態（2026-09-22 追蹤中，尚未驗收/commit）**：Phase 04
+TASK-00（`page_index_trees` 新增 `clinic_id TEXT REFERENCES clinic_info(clinic_id)` 欄位、
+`doc_id` 去除診所前綴改為純療程 slug）**已經實際執行**——正式 `clinic.db` 已跑過遷移
+（`doc_id` 現在是 `hifu-lifting` 這種無前綴格式，`clinic_id` 欄位存在且值為
+`'zhiyan-clinic'`），`src/db/clinic_schema.sql`/`src/pageindex/db_writer.py`/
+`src/pageindex/prompt_template.py`/`src/pageindex/seed_trees.py`/`src/query/search.py`
+五個檔案也有對應的未 commit 改動，另外新增了 `scripts/migrate_pageindex_clinic_id.py`
+與 `src/pageindex/seed_clinic_info.py`（未 commit）。**但這批改動尚未經過驗收**：3 個
+pytest 測試（`tests/test_router.py`、`tests/test_search.py`）目前斷言失敗，因為斷言還在
+比對舊的 `zhiyan-clinic-*` doc_id 格式，尚未更新。TASK-01（`clinic_id` 值遷移為健保代碼
+`3503190424`）**還沒執行**——資料庫裡 `clinic_id` 現在仍是 `'zhiyan-clinic'`。修改任何
+`page_index_trees`/`clinic_id` 相關程式碼前，先確認這批未 commit 的改動是否已經驗收完成
+（看 `git log` 是否已有對應 commit、`.planning/HANDOFF.json` 是否已更新）。
 
 **寫入規則**：一律走增量 UPSERT（比對現有內容，未變則跳過、有變才更新並遞增 `content_version`，保留原始 `created_at`）。**禁止使用 `INSERT OR REPLACE` 整批覆寫**——會重置 `created_at`、失去版本追蹤意義。
 

@@ -64,7 +64,7 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 使用者確認的方向（完整討論見 `.planning/VISION-EXPANSION.md`）：
 
 - **Phase 03（草案已就緒，schema 已定案）：文件擷取管線** — `.planning/phases/03-document-ingestion/PLAN.md` 已完成真實資料盤點（`OriginalData/一般醫學/` 2.0G、`OriginalData/緻妍外科診所/` 782M）與使用者決策（診所文件先轉 Q&A 再入庫、需簡繁轉換、`健保相關/` 與 Phase 01 資料同源已確認）。2026-09-22 追加確認：新增獨立 `faq_cache` 表（不與 `page_index_trees` 共用同一張表，欄位模式比照），FTS5 一樣用 trigram。尚未展開為 TASK-PLAN.md，尚未動工。
-- **Phase 04（TASK-PLAN.md 已展開，尚未動工）：多診所支援** — `.planning/phases/04-multi-clinic-support/PLAN.md` 已有使用者決策（單一資料庫邏輯隔離、`clinic_id` 改用健保特約醫事機構代碼、識別方式留給 Phase 05 部署層處理）。2026-09-22 追加確認：盤點發現 `page_index_trees` 目前完全沒有 `clinic_id` 欄位（診所身份只靠 `doc_id` 字串前綴 + 硬編碼比對辨識，是技術債），已定案新增真正的 `clinic_id` 欄位、`doc_id` 改為純療程 slug。同日已將 TASK-00（補欄位+doc_id 去前綴+`search_page_index_trees()` 補 clinic 過濾）與 TASK-01（clinic_id 值遷移為健保代碼+補齊 `clinic_info` 缺失的種子腳本）展開成完整可執行規格 `.planning/phases/04-multi-clinic-support/TASK-PLAN.md`（比照 Phase 02 模式，可直接交給 Antigravity 執行）。TASK-02（函式預設值是否移除）與 TASK-03（依賴 Phase 05）維持草案，不在本次展開範圍。尚未實際動工執行。
+- **Phase 04（TASK-00 已執行但未驗收/未 commit，TASK-01 未開始）：多診所支援** — `.planning/phases/04-multi-clinic-support/PLAN.md` 已有使用者決策（單一資料庫邏輯隔離、`clinic_id` 改用健保特約醫事機構代碼、識別方式留給 Phase 05 部署層處理）。2026-09-22 已將 TASK-00（補 `clinic_id` 欄位+doc_id 去前綴+`search_page_index_trees()` 補 clinic 過濾）與 TASK-01（clinic_id 值遷移為健保代碼+補齊 `clinic_info` 缺失的種子腳本）展開成完整可執行規格 `.planning/phases/04-multi-clinic-support/TASK-PLAN.md`。**同日稍後發現 TASK-00 已經被實際執行**（正式 `clinic.db` 已跑過遷移，5 個 `src/` 檔案有對應改動、新增 `scripts/migrate_pageindex_clinic_id.py` 與 `src/pageindex/seed_clinic_info.py`）——但全部**尚未 commit、尚未驗收**，目前 `pytest` 有 3 個測試斷言因為比對舊 `doc_id` 格式而失敗（預期內，尚待更新斷言）。**下次 session 第一件事**：驗收這批改動（審視 diff、確認遷移腳本冪等性、更新 3 個失敗測試斷言）後再決定是否 commit，接著才是 TASK-01。TASK-02（函式預設值是否移除）與 TASK-03（依賴 Phase 05）維持草案。
 - **Phase 05（建議）：doctor-toolbox.com 官方 API 整合** — 雙向資料匯入/匯出，走正式 API（非舊系統的 MITM 攔截方式），排在 clinicbrain 自身功能完成之後。
 
 **尚待決策**（見 VISION-EXPANSION.md 第 5 節）：OCR 引擎最終選型、要不要引入向量檢索補強 FTS5 召回率、使用者身份與資料隔離範圍（匿名 vs 留歷史）、doctor-toolbox.com API 文件與認證方式。
@@ -96,8 +96,19 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 會自動讀取 `.planning/HANDOFF.json` 與對應 phase 的 `.continue-here.md`，還原完整上下文、
 待辦事項、已知 blocker。這份 Plan.md 是靜態總覽，不會即時更新每個 session 的進度細節。
 
-**⚠️ 已知踩雷紀錄**：2026-09-22 這次 session 發現 Phase 02 早已完成並 commit（`ff04197`），
-但 `HANDOFF.json`／本文件都還停留在「Phase 02 尚未開始」的舊快照，直到這次比對 `git log`
-才抓到落差並修正。**下次 session 開頭務必用 `git log --oneline -10` 或
-`git log <上次HANDOFF記錄的commit>..HEAD` 跟這兩份文件的敘述做交叉比對**，不要只信任
-文件裡寫的進度。
+**⚠️ 已知踩雷紀錄**：
+1. 2026-09-22 這次 session 一開始發現 Phase 02 早已完成並 commit（`ff04197`），但
+   `HANDOFF.json`／本文件都還停留在「Phase 02 尚未開始」的舊快照，直到比對 `git log`
+   才抓到落差並修正。
+2. 同一個 session 稍後又發現第二次落差：Phase 04 的 TASK-00 已經被**實際執行**（正式
+   `clinic.db` 跑過遷移、5 個 `src/` 檔案有改動），但這次連 commit 都沒有——純粹是
+   working tree 裡的未追蹤/未提交狀態，連 `git log` 都看不出來，只有跑 `git status` +
+   實際連進 `clinic.db` 查 schema 才發現。
+
+**下次 session 開頭務必做兩件事**：
+1. `git log --oneline -10` 或 `git log <上次HANDOFF記錄的commit>..HEAD` 跟文件敘述的
+   進度做交叉比對（抓已 commit 但文件未同步的落差）
+2. `git status --short` 檢查有沒有未 commit 的改動（抓已執行但連 commit 都沒有的落差，
+   這種比第一種更危險，因為沒有任何 commit 訊息可以說明「這是什麼」「為什麼存在」）
+
+不要只信任文件裡寫的進度，也不要只信任 `git log`——兩者都要查。
