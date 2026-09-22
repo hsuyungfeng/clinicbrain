@@ -59,19 +59,47 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 
 ---
 
-## 4. Phase 02 之後：願景擴充（Phase 03/04 已有草案，尚未展開為可執行任務）
+## 4. Phase 04：多診所支援（TASK-00/TASK-01 ✅ 已完成；TASK-02/TASK-03 待展開）
+
+TASK-00 與 TASK-01 已完成並驗證（單一 commit `f487763`，由 Antigravity 依
+`.planning/phases/04-multi-clinic-support/TASK-PLAN.md` 執行，Claude 逐項親自重新驗證
+——不只跑 pytest，另外自己寫獨立腳本驗證 `ValueError`/UPDATE 不覆寫/FTS+LIKE 過濾/遷移
+腳本冪等性——後提交）：
+
+| # | 任務 | 狀態 | 備註 |
+|---|---|---|---|
+| TASK-00 | `page_index_trees` 補 `clinic_id` 欄位 + `doc_id` 去前綴 | ✅ | 順道修掉 `search_page_index_trees()` 完全沒有診所過濾的既有 bug |
+| TASK-01 | `clinic_id` 值遷移為健保代碼 `3503190424` | ✅ | 四張表（`clinic_info`/`clinic_hours`/`clinic_custom_notes`/`page_index_trees`）同步遷移 |
+
+驗收：pytest 104/104 通過（100 舊 + 4 新，`tests/test_multi_clinic.py`），`PRAGMA foreign_key_check`
+零違規，正式 `clinic.db` 遷移前後非相關資料（drugs/service_items/FTS 索引）筆數一致。
+
+**驗收過程中發現並修正一個規劃階段的誤判**：TASK-PLAN.md 原本判斷「`clinic_info` 找不到任何
+種子腳本」，但獨立驗證時發現 `clinic_schema.sql` 本身其實已有一份內嵌種子資料
+（先前規劃時 grep 範圍只涵蓋 `.py`，沒查到 `.sql`）。Antigravity 依規格新增的
+`seed_clinic_info.py` 因此與 `schema.sql` 產生重複寫入邏輯——已在同一 commit 一併修正：
+移除 `schema.sql` 內嵌的 `clinic_info` INSERT，`seed_clinic_info.py` 成為唯一權威來源
+（`clinic_hours` 的種子資料維持在 `schema.sql`，無重複問題，不動）。
+
+TASK-02（5 個函式的 `clinic_id` 預設值是否移除）與 TASK-03（依賴 Phase 05 的查詢入口解析）
+仍是草案，尚未展開成可執行規格。
+
+**完整驗證紀錄**請讀 `.planning/HANDOFF.json`。
+
+---
+
+## 5. Phase 04 之後：願景擴充（Phase 03 已有草案，尚未展開為可執行任務）
 
 使用者確認的方向（完整討論見 `.planning/VISION-EXPANSION.md`）：
 
 - **Phase 03（草案已就緒，schema 已定案）：文件擷取管線** — `.planning/phases/03-document-ingestion/PLAN.md` 已完成真實資料盤點（`OriginalData/一般醫學/` 2.0G、`OriginalData/緻妍外科診所/` 782M）與使用者決策（診所文件先轉 Q&A 再入庫、需簡繁轉換、`健保相關/` 與 Phase 01 資料同源已確認）。2026-09-22 追加確認：新增獨立 `faq_cache` 表（不與 `page_index_trees` 共用同一張表，欄位模式比照），FTS5 一樣用 trigram。尚未展開為 TASK-PLAN.md，尚未動工。
-- **Phase 04（TASK-00 已執行但未驗收/未 commit，TASK-01 未開始）：多診所支援** — `.planning/phases/04-multi-clinic-support/PLAN.md` 已有使用者決策（單一資料庫邏輯隔離、`clinic_id` 改用健保特約醫事機構代碼、識別方式留給 Phase 05 部署層處理）。2026-09-22 已將 TASK-00（補 `clinic_id` 欄位+doc_id 去前綴+`search_page_index_trees()` 補 clinic 過濾）與 TASK-01（clinic_id 值遷移為健保代碼+補齊 `clinic_info` 缺失的種子腳本）展開成完整可執行規格 `.planning/phases/04-multi-clinic-support/TASK-PLAN.md`。**同日稍後發現 TASK-00 已經被實際執行**（正式 `clinic.db` 已跑過遷移，5 個 `src/` 檔案有對應改動、新增 `scripts/migrate_pageindex_clinic_id.py` 與 `src/pageindex/seed_clinic_info.py`）——但全部**尚未 commit、尚未驗收**，目前 `pytest` 有 3 個測試斷言因為比對舊 `doc_id` 格式而失敗（預期內，尚待更新斷言）。**下次 session 第一件事**：驗收這批改動（審視 diff、確認遷移腳本冪等性、更新 3 個失敗測試斷言）後再決定是否 commit，接著才是 TASK-01。TASK-02（函式預設值是否移除）與 TASK-03（依賴 Phase 05）維持草案。
 - **Phase 05（建議）：doctor-toolbox.com 官方 API 整合** — 雙向資料匯入/匯出，走正式 API（非舊系統的 MITM 攔截方式），排在 clinicbrain 自身功能完成之後。
 
 **尚待決策**（見 VISION-EXPANSION.md 第 5 節）：OCR 引擎最終選型、要不要引入向量檢索補強 FTS5 召回率、使用者身份與資料隔離範圍（匿名 vs 留歷史）、doctor-toolbox.com API 文件與認證方式。
 
 ---
 
-## 5. 重要背景與教訓（避免重蹈覆轍）
+## 6. 重要背景與教訓（避免重蹈覆轍）
 
 1. **舊系統 `DrtoolboxLocalServer` 已經做過類似的事**，不是從零開始設計。同一台機器本機路徑
    `~/Desktop/DrtoolBox/UpdateList/MedicalOderUpdate/` 也有相關 RAG 實驗。動工新 Phase 前，
@@ -85,10 +113,15 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
    中醫辨證問答，不能直接用於繁體中文醫美診所的 PageIndex 生成。
 5. **任務邊界要守住**：做 TASK-001 時不要順手把 TASK-005 的查詢邏輯也寫掉；做 schema 改動時
    若發現需要新功能（如查詢層 fallback），記錄成備註留給對應任務，不要當場展開。
+6. **盤點「這筆資料是哪裡寫入的」時，grep 範圍不能只查 `.py`**：Phase 04 規劃 TASK-PLAN.md
+   時判斷「`clinic_info` 找不到任何種子腳本」，但漏查了 `.sql` 檔案——`clinic_schema.sql`
+   本身就有一份內嵌的 `INSERT OR IGNORE`。這導致 Antigravity 依規格新增了一個重複的
+   `seed_clinic_info.py`，驗收時才發現。之後要確認「某張表的資料從哪裡來」，`grep` 至少要
+   涵蓋 `.py` 與 `.sql` 兩種副檔名，不要假設種子資料只會出現在 Python 腳本裡。
 
 ---
 
-## 6. 如何恢復工作
+## 7. 如何恢復工作
 
 ```
 /gsd-resume-work
