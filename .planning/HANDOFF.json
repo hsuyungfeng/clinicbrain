@@ -1,12 +1,12 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-21T17:00:00+08:00",
-  "phase": "01",
-  "phase_name": "taiwan-pageindex-rag",
-  "phase_dir": ".planning/phases/01-taiwan-pageindex-rag",
+  "timestamp": "2026-09-22T11:50:57+08:00",
+  "phase": "02",
+  "phase_name": "local-llm-layer",
+  "phase_dir": ".planning/phases/02-local-llm-layer",
   "plan": 1,
-  "task": 8,
-  "total_tasks": 8,
+  "task": 4,
+  "total_tasks": 4,
   "status": "completed",
   "completed_tasks": [
     {
@@ -107,15 +107,17 @@
       "name": "Query route logic design",
       "status": "done",
       "commit": "design-phase"
+    },
+    {
+      "id": "PHASE02-TASK-01..04",
+      "name": "Local LLM inference layer: llm_client adapter + political-stance guardrail + end-to-end generation",
+      "status": "done",
+      "commit": "ff04197",
+      "notes": "Executed by Antigravity against .planning/phases/02-local-llm-layer/TASK-PLAN.md, independently re-verified by Claude before commit (same delegation pattern as Phase 01 TASK-006/007/008). Added src/pageindex/llm_client.py: local_llm_call(prompt, timeout=90) calls the already-running llama-server (127.0.0.1:8080, Qwen3.8-27B-UD-Q4_K_XL) via stdlib urllib only (no new dependency), does a GET /v1/models health check first, raises a custom LocalLLMUnavailableError with a clear Chinese message on connection failure/timeout instead of leaking a raw traceback or silently returning empty output, and strictly extracts only message.content (discards the model's non-standard reasoning_content field). Function signature matches generate_tree()'s expected Callable[[str], str] exactly, so it plugs in with no wrapper. prompt_template.py gained a 7th strict rule (existing rules 1-6 left untouched) prohibiting political/sovereignty/ideological stance content, plus a new _POLITICAL_STANCE_PHRASES tuple + check in parse_and_validate() modeled on the existing _FORBIDDEN_PHRASES mechanism — raises TreeValidationError with a distinct message (not conflated with the price/simplified-Chinese/overclaiming checks) so violations are easy to categorize. This guardrail exists because real-machine testing found the local Qwen model outputs PRC-official-line content on politically sensitive prompts (e.g. Taiwan sovereignty questions); user's explicit decision was to keep using this existing service as-is (no redeploy, no model swap) and defend via prompt+validator layers instead. Claude independently re-verified rather than trusting the delivery report: personally ran llm_client.py against the live server and confirmed real content came back; personally constructed a political-stance test string and confirmed parse_and_validate() correctly raises TreeValidationError; re-ran pytest tests/ and got 100/100 passing (91 prior + 9 new in tests/test_llm_client.py and tests/test_prompt_template.py); computed clinic.db SHA-256 before/after and confirmed byte-identical — zero pollution of the real database; personally inspected the 3 real LLM-generated trees (淨膚雷射/水飛梭/自體脂肪補臉, all new procedures not overlapping the 6 hand-written seed trees) written only to an isolated test-copy database via db_writer.upsert_trees(source_type='llm_generated'), confirmed reasonable content and full validator pass. Cloud API fallback was explicitly out of scope (interface-only, not implemented). Known caveat carried into future phases: the _POLITICAL_STANCE_PHRASES list is an initial sample, not exhaustive — documented as needing expansion if real-world generation surfaces new stance phrasings the current list misses."
     }
   ],
   "remaining_tasks": [],
   "blockers": [
-    {
-      "description": "TASK-004 prompt has never been run against a real LLM — no ollama/openai/anthropic client is installed in this environment. Validator logic is tested with fake responses only (including in the TASK-008 test suite).",
-      "type": "technical",
-      "workaround": "Validate against a real model once Phase 02 (local LLM layer) exists"
-    },
     {
       "description": "extract_search_terms() is a simple keyword/CJK-run heuristic, not real Chinese word segmentation. Generic 2-char terms (e.g. 維持, 回診) can appear in most page_index_trees rows, adding noise to LIKE-fallback results in the middle of a result set (correct answer is usually still ranked first due to longer-term priority, but not guaranteed). This is now covered by regression tests but not eliminated as a limitation.",
       "type": "technical",
@@ -168,9 +170,19 @@
       "decision": "doctor-toolbox.com integration will use their official API for bidirectional import/export, not the prior project's MITM interception approach",
       "rationale": "User explicitly rejected the MITM pattern when asked to clarify; wants a proper API contract instead. Scheduled after clinicbrain's own phases (01-04) are complete.",
       "phase": "post-01 (Phase 05 draft)"
+    },
+    {
+      "decision": "Keep using the existing local Qwen3.8-27B llama-server as-is (no redeploy, no model swap) despite it outputting PRC-official-line content on politically sensitive prompts; defend via a prompt-layer rule (7th strict rule) plus a validator-layer keyword check (_POLITICAL_STANCE_PHRASES) instead",
+      "rationale": "User explicitly confirmed continuing with the existing service; re-deploying/swapping models was considered out of proportion to the risk, since the prompt+validator double-defense fits the project's existing CONSTRAINT-enforcement architecture pattern (same mechanism already used for price leakage and Simplified Chinese detection)",
+      "phase": "02 (done, commit ff04197)"
+    },
+    {
+      "decision": "Clinic business documents (緻妍外科診所/) get converted to Q&A pairs via LLM before entering the knowledge base, not directly into page_index_trees' four-section structure; the FAQ cache table design must be shared with the nightly-batch common-Q&A pre-generation mechanism (not a separate schema)",
+      "rationale": "User confirmed both document-derived and general-knowledge-derived FAQ content should share one table design rather than maintaining two parallel schemas for the same conceptual thing",
+      "phase": "post-01 (Phase 03 draft)"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "PHASE 01 IS COMPLETE (all 8 tasks done, commit a09e829 closes it out with a 91-case pytest suite). There is no formal Phase 02 plan/PLAN.md yet — only the draft sequencing in .planning/VISION-EXPANSION.md. Before writing code for Phase 02, that draft needs to be turned into an actual phase definition (likely via /gsd-plan-phase or /gsd-phase, per the project's GSD workflow). Per VISION-EXPANSION.md, Phase 02 is 'local LLM inference layer' (local-first, cloud-fallback, confirmed by user) — the first concrete unblocking step is figuring out what local LLM serving option is actually available on this machine (no ollama/openai/anthropic client is installed currently; TASK-004's prompt_template.py has been fully built and tested against a fake llm_call but never against anything real). Recommend starting there: check what's installed/available (ollama? llama.cpp? GPU present?), then design the llm_call: Callable[[str], str] adapter that prompt_template.generate_tree() already expects, with cloud API as documented fallback only.",
-  "context_notes": "Phase 01 (taiwan-pageindex-rag) is fully done: TASK-001 (0ac396d), TASK-003 (cf3dd47), the page_index_trees incremental-update schema work (f59af48), TASK-004 (a55ed63), TASK-005 (1d5bb52), TASK-006 (24ab889), TASK-007 (b7c7fa5), TASK-008 (a09e829). TASK-006/007/008 were all executed by an external tool (Antigravity) against Claude-written specs, then independently re-verified by Claude before each commit — this delegation pattern worked consistently well across three tasks and is documented with specific verification findings (including inaccuracies Claude caught in delivery reports) in each task's notes above; worth reusing for Phase 02 if the user wants to continue that way. Final state: DB has 7,573 drugs (2,484 with OTC localization, 32.8%), 2,669 service items, 6 PageIndex trees (category='special'), 3 clinic_custom_notes rows, all three FTS5 tables on trigram, and a 91-case pytest suite (tests/) that's verified not to touch the real clinic.db (SHA-256 hash-checked before/after). Full stack: src/query/ (search.py, router.py), src/clinic/custom_notes.py, src/pageindex/ (prompt_template.py, db_writer.py, seed_trees.py), src/db/ (clinic_schema.sql, otc_mappings.json). Root-level Plan.md and AGENTS.md are the entry point for any future LLM session — both should be updated to reflect Phase 01's completion before Phase 02 work starts. TASK-004's LLM prompt/validator remains untested against a real model — that's now explicitly Phase 02's first problem to solve, not deferred/ambiguous anymore."
+  "next_action": "PHASE 02 (local-llm-layer) IS COMPLETE (all 4 tasks done, commit ff04197; 100/100 pytest passing as of this session's re-verification on 2026-09-22). Phase 03 (document-ingestion) and Phase 04 (multi-clinic-support) both have draft PLAN.md files under .planning/phases/ with real data inventory and user decisions already captured, but neither has been broken down into an Antigravity-executable TASK-PLAN.md yet, and neither has started implementation. Phase 03 has an open blocking question noted in its own PLAN.md ('待確認'): FAQ cache table schema design (whether it mirrors page_index_trees' content_version/source_type fields) needs to be settled before Stage 1 (text-document extraction) can be scoped in detail. Phase 04 also has an open question: whether page_index_trees.doc_id should be reprefixed to the NHI institution code or left as-is with only the clinic_id column changing — flagged in its own PLAN.md as '建議下次 session 優先確認'. Recommend resuming with the user by picking one of these two open questions first (whichever phase they want to tackle next), since both phases are otherwise ready to move from draft PLAN.md to a detailed TASK-PLAN.md.",
+  "context_notes": "Phase 01 (taiwan-pageindex-rag, 8 tasks) and Phase 02 (local-llm-layer, 4 tasks) are both fully done and committed. Phase 01: TASK-001 (0ac396d), TASK-003 (cf3dd47), page_index_trees incremental-update schema (f59af48), TASK-004 (a55ed63), TASK-005 (1d5bb52), TASK-006 (24ab889), TASK-007 (b7c7fa5), TASK-008 (a09e829). Phase 02: llm_client adapter + political-stance guardrail + e2e generation, all 4 tasks in one commit (ff04197). TASK-006/007/008 (Phase 01) and all of Phase 02 were executed by an external tool (Antigravity) against Claude-written specs, then independently re-verified by Claude before each commit — this delegation pattern has now worked consistently across 4 tasks and is documented with specific verification findings (including inaccuracies Claude caught in delivery reports) in each task's notes above; worth reusing for Phase 03/04 if the user wants to continue that way. Final state as of this session: DB has 7,573 drugs (2,484 with OTC localization, 32.8%), 2,669 service items, 6 hand-written PageIndex trees (category='special', source_type='manual') plus 3 more real LLM-generated trees living only in an isolated test-copy DB (never merged into clinic.db — that was out of scope for Phase 02's e2e validation task), 3 clinic_custom_notes rows, all three FTS5 tables on trigram, and a 100-case pytest suite (tests/, up from 91 after Phase 02's 9 new cases) verified not to touch the real clinic.db (SHA-256 hash-checked before/after, re-confirmed byte-identical again in this session). Full stack: src/query/ (search.py, router.py), src/clinic/custom_notes.py, src/pageindex/ (prompt_template.py, db_writer.py, seed_trees.py, llm_client.py), src/db/ (clinic_schema.sql, otc_mappings.json). IMPORTANT PROCESS NOTE for future sessions: Phase 02 was completed and committed (ff04197, 2026-09-22 11:50) but this HANDOFF.json and root Plan.md were never updated afterward — they still described Phase 02 as 'not yet started' until this session caught and fixed the drift by cross-checking git log against the docs. Always verify HANDOFF.json/Plan.md against `git log` and actual file existence at the start of a session rather than trusting the doc timestamp alone."
 }

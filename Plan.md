@@ -39,20 +39,39 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 
 ---
 
-## 3. Phase 01 之後：願景擴充（已規劃，未展開為正式 phase）
+## 3. Phase 02：本地 LLM 推理層（✅ 已完成）
+
+4 個任務全數完成（單一 commit `ff04197`，由 Antigravity 依 `.planning/phases/02-local-llm-layer/TASK-PLAN.md` 執行，Claude 逐項親自驗證後提交）：
+
+| # | 任務 | 狀態 | 備註 |
+|---|---|---|---|
+| TASK-01 | `llm_client.py` adapter | ✅ | 純標準庫 `urllib` 串接既有 `llama-server`（127.0.0.1:8080，Qwen3.8-27B），健康檢查 + 明確逾時/連線例外 |
+| TASK-02 | Prompt 立場中立規範 | ✅ | `prompt_template.py` 新增第 7 條規則，既有 1-6 條未動 |
+| TASK-03 | 輸出驗證層立場檢測 | ✅ | `_POLITICAL_STANCE_PHRASES` 比照既有 `_FORBIDDEN_PHRASES` 機制 |
+| TASK-04 | 端到端驗證 | ✅ | 3 筆真實生成（淨膚雷射/水飛梭/自體脂肪補臉），通過驗證，寫入隔離測試複本 |
+
+驗收：pytest 100/100 通過（91 舊 + 9 新），`clinic.db` 測試前後 SHA-256 一致（零污染正式資料庫）。
+背景：實測發現本機既有 Qwen 模型對政治敏感問題會輸出中國官方立場內容，使用者決定不換模型、
+不重新部署，改用 prompt + 驗證雙層防禦（詳見 `.planning/HANDOFF.json` 決策紀錄）。
+雲端 API 備援**未實作**，僅確認介面可留待未來串接。
+
+**完整驗證紀錄**請讀 `.planning/HANDOFF.json`。
+
+---
+
+## 4. Phase 02 之後：願景擴充（Phase 03/04 已有草案，尚未展開為可執行任務）
 
 使用者確認的方向（完整討論見 `.planning/VISION-EXPANSION.md`）：
 
-- **Phase 02（建議）：本地 LLM 推理層** — 本地優先、雲端 API 備援。待確認機器 GPU 資源。
-- **Phase 03（建議）：文件擷取管線** — 診所上傳 PDF/JPEG/PNG，OCR（建議沿用 Tesseract + `chi_tra`，舊系統 `DrtoolboxLocalServer` 已驗證此路徑）+ PDF/DOCX 文字擷取 → 餵入 PageIndex 生成管線。
-- **Phase 04（建議）：一般醫療諮詢入口 + 夜間批次生成** — 使用者半夜自問健康問題的匿名/一般入口；夜間批次用 LLM 預生成常見問答存資料庫（降低白天即時 LLM 呼叫的 token 成本，是查詢時「先查資料庫、沒中才即時生成」的分流邏輯的前提）；同時批次維護/更新 PageIndex 索引。
+- **Phase 03（草案已就緒）：文件擷取管線** — `.planning/phases/03-document-ingestion/PLAN.md` 已完成真實資料盤點（`OriginalData/一般醫學/` 2.0G、`OriginalData/緻妍外科診所/` 782M）與使用者三點決策（診所文件先轉 Q&A 再入庫、需簡繁轉換、`健保相關/` 與 Phase 01 資料同源已確認）。**待確認**：FAQ 快取表 schema 設計，阻塞 Stage 1 詳細任務展開。
+- **Phase 04（草案已就緒）：多診所支援** — `.planning/phases/04-multi-clinic-support/PLAN.md` 已有使用者三點決策（單一資料庫邏輯隔離、`clinic_id` 改用健保特約醫事機構代碼、識別方式留給 Phase 05 部署層處理）。**待確認**：`page_index_trees.doc_id` 是否要跟著改成代碼前綴，這是下次 session 建議優先確認的問題。
 - **Phase 05（建議）：doctor-toolbox.com 官方 API 整合** — 雙向資料匯入/匯出，走正式 API（非舊系統的 MITM 攔截方式），排在 clinicbrain 自身功能完成之後。
 
 **尚待決策**（見 VISION-EXPANSION.md 第 5 節）：OCR 引擎最終選型、要不要引入向量檢索補強 FTS5 召回率、使用者身份與資料隔離範圍（匿名 vs 留歷史）、doctor-toolbox.com API 文件與認證方式。
 
 ---
 
-## 4. 重要背景與教訓（避免重蹈覆轍）
+## 5. 重要背景與教訓（避免重蹈覆轍）
 
 1. **舊系統 `DrtoolboxLocalServer` 已經做過類似的事**，不是從零開始設計。同一台機器本機路徑
    `~/Desktop/DrtoolBox/UpdateList/MedicalOderUpdate/` 也有相關 RAG 實驗。動工新 Phase 前，
@@ -69,10 +88,16 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 
 ---
 
-## 5. 如何恢復工作
+## 6. 如何恢復工作
 
 ```
 /gsd-resume-work
 ```
 會自動讀取 `.planning/HANDOFF.json` 與對應 phase 的 `.continue-here.md`，還原完整上下文、
 待辦事項、已知 blocker。這份 Plan.md 是靜態總覽，不會即時更新每個 session 的進度細節。
+
+**⚠️ 已知踩雷紀錄**：2026-09-22 這次 session 發現 Phase 02 早已完成並 commit（`ff04197`），
+但 `HANDOFF.json`／本文件都還停留在「Phase 02 尚未開始」的舊快照，直到這次比對 `git log`
+才抓到落差並修正。**下次 session 開頭務必用 `git log --oneline -10` 或
+`git log <上次HANDOFF記錄的commit>..HEAD` 跟這兩份文件的敘述做交叉比對**，不要只信任
+文件裡寫的進度。
