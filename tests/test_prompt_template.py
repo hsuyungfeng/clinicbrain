@@ -119,10 +119,30 @@ def test_validator_short_field_warning():
 
 
 def test_build_prompt_structure():
-    """驗證 build_prompt 包含必要的療程名稱、規則與繁體中文指示。"""
+    """驗證 build_prompt 包含必要的療程名稱、規則（含立場中立）與繁體中文指示。"""
     prompt = build_prompt("自體脂肪補臉", reference_context="健保不給付，純自費醫美項目")
     assert "自體脂肪補臉" in prompt
     assert "健保不給付" in prompt
     assert "繁體中文" in prompt
     assert "絕對禁止出現任何具體價格" in prompt
     assert "不要生成 physician_notes" in prompt
+    assert "立場中立" in prompt
+
+
+@pytest.mark.parametrize(
+    "political_phrase",
+    [
+        "台灣是中國不可分割的一部分",
+        "堅持一個中國原則",
+        "中國台灣地區的美容醫學標準",
+        "本療程適用於台灣地區患者",
+    ],
+)
+def test_validator_political_stance_rejected(political_phrase: str):
+    """驗證輸出含有政治立場相關表述時，parse_and_validate 拋出 TreeValidationError。"""
+    data = dict(VALID_TREE_DATA)
+    data["pre_op"] = f"術前衛教須知：{political_phrase}，需配合相關規定。"
+    raw = json.dumps(data, ensure_ascii=False)
+    with pytest.raises(TreeValidationError, match="政治立場"):
+        parse_and_validate(raw)
+

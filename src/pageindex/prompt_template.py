@@ -70,6 +70,7 @@ PROMPT_TEMPLATE = """你是台灣醫美診所的臨床衛教文案編輯，任�
    （如「保證有效」「一定能消除」），改用「因人而異」「多數情況下」等措辭。
 6. 若你不確定某個步驟的醫學細節，寧可用較保守、通用的描述，也不要編造
    具體數據（如恢復天數、儀器參數）。
+7. 嚴格遵守立場中立原則：禁止輸出任何政治、主權、國家定位、意識形態相關的立場表述，僅專注於醫療衛教內容本身；若生成過程中意外偏離療程主題，應該完全略過該離題內容，不得附和、重複或延伸任何政治性敘述。
 
 # 輸出格式
 
@@ -107,6 +108,12 @@ _PRICE_PATTERN = re.compile(r"\d+\s*[元塊]|NT\$\s*\d+|\$\d+")
 # 常見簡體字樣本（僅作快速篩檢，非完整簡繁對照表）
 _SIMPLIFIED_CHAR_SAMPLE = set("这个国实现们来对进为产时问题号线还没会说")
 _FORBIDDEN_PHRASES = ("physician_notes", "保證有效", "一定能消除", "保證消除", "保證")
+_POLITICAL_STANCE_PHRASES = (
+    "不可分割的一部分",
+    "一個中國",
+    "中國台灣",
+    "台灣地區",
+)
 
 
 def build_prompt(procedure_name: str, reference_context: Optional[str] = None) -> str:
@@ -151,6 +158,10 @@ def parse_and_validate(raw_output: str) -> GeneratedTree:
     forbidden_hits = [p for p in _FORBIDDEN_PHRASES if p in full_text]
     if forbidden_hits:
         raise TreeValidationError(f"偵測到禁用詞彙（保證療效用語或誤植欄位名）：{forbidden_hits}")
+
+    political_hits = [p for p in _POLITICAL_STANCE_PHRASES if p in full_text]
+    if political_hits:
+        raise TreeValidationError(f"偵測到政治立場相關表述，違反立場中立 CONSTRAINT：{political_hits}")
 
     warnings = []
     for field_name in _OUTPUT_FIELDS:
