@@ -80,6 +80,45 @@ PageIndex 樹（走 Phase 02 剛打通的 `local_llm_call`）→ 人工審核 �
    產物。這與 `VISION-EXPANSION.md` 先前提到的夜間常見問答預生成機制相通，
    差別在於這裡的來源是文件擷取而非通用醫學常識——**技術設計上應該共用同一套
    FAQ 表結構，不要為文件擷取另外設計一套**。
+
+   **`faq_cache` 表結構（2026-09-22 確認）**：新增獨立資料表，不與
+   `page_index_trees` 共用同一張表（欄位模式比照，但 Q&A 是「一問一答」的
+   扁平結構，跟 `page_index_trees` 的「四段式療程樹」結構本質不同，硬塞進
+   同一張表會讓兩種內容形狀混在一起、查詢層要判斷「這筆到底是摘要還是
+   Q&A」，不划算）：
+
+   ```sql
+   CREATE TABLE faq_cache (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       clinic_id TEXT REFERENCES clinic_info(clinic_id),
+       topic_key TEXT,           -- 對應療程/主題 slug，NULL = 通用醫療（呼應
+                                  -- general 路由；有值時對應 page_index_trees
+                                  -- 的療程 doc_id，但不是外鍵，因為 general
+                                  -- 類 FAQ 沒有對應的療程樹）
+       question TEXT NOT NULL,
+       answer TEXT NOT NULL,
+       category TEXT NOT NULL,   -- 'special' or 'general'，沿用既有路由分流
+       source_type TEXT DEFAULT 'manual',  -- 'manual' | 'llm_generated' |
+                                  -- 'clinic_upload'，語意與 page_index_trees
+                                  -- 完全一致（見 AGENTS.md 2.2 節）
+       content_version INTEGER NOT NULL DEFAULT 1,
+       needs_regeneration BOOLEAN NOT NULL DEFAULT 0,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   );
+   -- + faq_cache_fts（trigram tokenizer，比照 drugs_fts/service_items_fts/
+   --   page_index_fts 的既有模式，問題與答案都要能被中文全文檢索到）
+   ```
+
+   `content_version`/`source_type`/`needs_regeneration` 三個欄位語意完全
+   沿用 `page_index_trees` 既有設計（見 `AGENTS.md` 2.2 節），這樣夜間批次
+   維護邏輯（Phase 04 願景草案提到的「先查資料庫、沒中才即時生成」）可以對
+   兩張表用同一套「找 `needs_regeneration=1` 的列」邏輯，不需要為 FAQ 另外
+   刻一套。寫入路徑應該仿照 `src/pageindex/db_writer.py` 的模式，新增
+   `src/pageindex/faq_writer.py`（或併入同一個 `db_writer.py`，交給實際
+   展開 TASK-PLAN 時決定）提供唯一的 UPSERT 入口，不要讓文件擷取管線與夜間
+   批次各自重新實作寫入邏輯——這正是 `AGENTS.md` 2.2 節記載過、TASK-003 時
+   踩過的重複寫入路徑教訓。
 2. **匯入前必須做簡繁轉換**——確認採用，見下方「簡繁轉換」小節。
 3. **`健保相關/` 已確認與 Phase 01 依賴的資料同源**（見下方「路徑修正記錄」，
    不是重複資料而是同一批資料被移動位置，已修正 `scripts/seed_database.py`
@@ -102,8 +141,11 @@ pipeline（匯入筆數與修正前一致，100 個既有 pytest 測試全數通
 做簡繁轉換，而非自行刻規則；轉換後的內容仍要通過 `prompt_template.py` 既有的
 `_SIMPLIFIED_CHAR_SAMPLE` 檢測層才算數，不能假設轉換工具 100% 正確。
 
-## 待確認（阻塞後續詳細計畫展開）
+## 待確認
 
-- FAQ 快取表的 schema 設計——是否比照 `page_index_trees` 有 `content_version`/
-  `source_type` 等欄位、要不要跟 general/special 路由對應
 - 是否現在就展開 Stage 1 詳細任務（可比照 Phase 02 模式交給 Antigravity）
+  ——`faq_cache` schema 設計已於 2026-09-22 確認（見上方使用者決策 1），
+  不再是阻塞項；但 Stage 1（純文字擷取）本身不依賴 `faq_cache` 存在，理論上
+  可以先獨立展開，`faq_cache` 的建表 + 寫入邏輯留到 Stage 1 擷取出真實文字
+  後、真的要轉 Q&A 時再一併做（即 Stage 1.5，串接 Phase 02 的
+  `local_llm_call`）
