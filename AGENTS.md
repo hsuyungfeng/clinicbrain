@@ -23,13 +23,27 @@
 - `drugs`：377K+ 藥品項目來源 CSV，實際匯入 7,573 筆（CSV 換行數 ≠ 記錄數，勿用 `wc -l` 估算）
 - `service_items`：2,669 筆醫療服務給付項目
 - `page_index_trees` + `page_index_fts`：PageIndex 臨床推理樹（見 2.2）
+- `faq_cache` + `faq_cache_fts`：文件擷取/夜間批次產出的常見問答快取（見 2.4）
 - `clinic_info` / `clinic_hours` / `clinic_custom_notes`：診所專屬層
 
 重建指令：
 ```bash
-python3 scripts/seed_database.py       # 建 schema + 匯入藥品/服務項目
+python3 scripts/seed_database.py       # 建 schema + 匯入藥品/服務項目 + clinic_info/clinic_custom_notes
 python3 src/pageindex/seed_trees.py    # 增量寫入 PageIndex 範本
 ```
+
+**⚠️ `faq_cache` 尚未套用到正式 `clinic.db`（2026-09-22 現況）**：`src/db/clinic_schema.sql`
+已定義 `faq_cache`/`faq_cache_fts`，但只在隔離測試複本上驗證過（Phase 03 Stage 1 任務隔離
+CONSTRAINT 只要求驗證，不要求遷移正式庫）。要真正使用 FAQ 功能前，需要先對正式 `clinic.db`
+補跑一次 schema 更新——不要假設「schema.sql 改了 = 正式資料庫也有這張表」。
+
+**⚠️ `clinic_id` 現在是多數函式的必填參數（2026-09-22 Phase 04 TASK-02 完成，commit
+`625593d`）**：`src/query/router.py` 的 `get_clinic_hours`/`get_clinic_info`/
+`get_clinic_custom_notes` 與 `src/clinic/custom_notes.py` 的同名函式/`seed_sample_notes`
+**沒有預設值**，呼叫端必須明確傳入 `clinic_id`（目前唯一有效值是 `'3503190424'`）。
+`handle_query()`（統一查詢入口）是唯一例外，維持 `clinic_id: str | None = None`——
+`general` 路由本質上不需要診所上下文；但 `special` 路由查詢診所營運資訊時若沒收到
+`clinic_id`，會明確拋出 `ValueError`，不會靜默查到空結果。
 
 ### 2.2 PageIndex 臨床推理樹 (`page_index_trees`)
 每筆記錄代表一個療程的臨床推理樹，欄位：
@@ -58,10 +72,33 @@ python3 src/pageindex/seed_trees.py    # 增量寫入 PageIndex 範本
 
 ### 2.3 FTS5 全文檢索 — 中文分詞鐵則
 SQLite FTS5 的預設 `unicode61` tokenizer **完全無法分詞中文**（會把整段中文當一個 token，只能全字串完全匹配）。本專案所有 FTS5 虛擬表**必須明確指定 `tokenize='trigram'`**：
-- `drugs_fts`、`service_items_fts`、`page_index_fts` 皆已採用 trigram
+- `drugs_fts`、`service_items_fts`、`page_index_fts`、`faq_cache_fts` 皆已採用 trigram
 - **新增或修改任何 FTS5 虛擬表時，務必重新指定 `tokenize='trigram'`**——曾發生過遷移時漏改其中一個表，導致該表完全搜不到中文的真實案例（見 git log `cf3dd47`）
 - trigram 對 3 字以下的查詢無效（trigram 本身要求最少 3 字元）。查詢層（TASK-005）必須設計「3+ 字用 FTS trigram、少於 3 字用 `LIKE '%term%'`」的混合分流邏輯
 - 驗證方式：修改 schema 後務必 `SELECT sql FROM sqlite_master WHERE sql LIKE '%fts5%'` 逐一確認，並跑真實中文關鍵字的 `MATCH` 查詢
+
+### 2.4 FAQ 快取 (`faq_cache`，2026-09-22 Phase 03 Stage 1 新增)
+一問一答的扁平結構，服務兩種來源：文件擷取轉 Q&A、未來夜間批次為常見問題預生成。**刻意
+不與 `page_index_trees` 共用同一張表**（Q&A 扁平結構與四段式療程樹結構本質不同），但
+`content_version`/`source_type`/`needs_regeneration` 三個欄位語意完全沿用 2.2 節的
+`page_index_trees` 設計，讓未來維護邏輯可以對兩張表用同一套「找待重生成列」查詢模式。
+
+欄位：`clinic_id`（可為 NULL，代表 `general` 類不綁特定診所）、`topic_key`（對應療程/主題
+slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general'`，沿用既有路由
+分流）。`UNIQUE(clinic_id, topic_key, question)` 約束搭配 `faq_writer.py` 內部用
+`IS ?`（而非 `= ?`）比對，正確處理 `clinic_id`/`topic_key` 為 `NULL` 時的去重語意
+（SQLite 的 `= ` 對 `NULL` 比較永遠是 unknown/falsy，用 `= ?` 會讓 general 類資料每次都被
+誤判成新資料）。
+
+**單一寫入路徑**：`src/pageindex/faq_writer.py` 的 `upsert_faqs(conn, faqs, source_type)`
+是 `faq_cache` 的唯一權威寫入函式，語意比照 `db_writer.py` 的 `upsert_trees()`
+（增量 UPSERT，`category='special'` 卻缺 `clinic_id` 時拋出 `ValueError`）。
+
+**文件擷取管線**：`src/ingestion/`（`extract_text.py` 擷取 docx/xlsx、`convert_chinese.py`
+用 `opencc` `s2twp` 做簡繁轉換、`generate_faq.py` 組 prompt + 四層驗證：價格洩漏/簡體字/
+政治立場/保證療效禁詞，單筆過濾不影響同批其他合格項目）→
+`scripts/run_stage1_ingestion.py` 端到端入口。任何自動擷取/生成的內容寫入時
+`source_type` 應標記為 `'clinic_upload'`，不要跟手寫或無來源依據的 LLM 生成混淆。
 
 ---
 
@@ -85,7 +122,10 @@ SQLite FTS5 的預設 `unicode61` tokenizer **完全無法分詞中文**（會�
 * `src/pageindex/seed_clinic_info.py`：`clinic_info` 種子資料的唯一權威來源
 * `src/pageindex/prompt_template.py`：LLM 生成臨床推理樹的 prompt 組裝 + 輸出驗證（`source_type='llm_generated'`）
 * `src/pageindex/llm_client.py`：本地 LLM（llama-server）呼叫 adapter，符合 `generate_tree()` 期待的 `Callable[[str], str]` 介面
+* `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯（見 2.4 節）
+* `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`，見 2.4 節）
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
+* `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
