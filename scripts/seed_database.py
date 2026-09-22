@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
-DATA_DIR = PROJECT_ROOT / "OriginalData"
+# OriginalData/ 已於 2026-09-22 重新整理，NHI 藥品/服務項目 CSV 移至「一般醫學/健保相關/」
+DATA_DIR = PROJECT_ROOT / "OriginalData" / "一般醫學" / "健保相關"
 DB_PATH = PROJECT_ROOT / "clinic.db"
 SCHEMA_PATH = PROJECT_ROOT / "src" / "db" / "clinic_schema.sql"
 OTC_MAPPINGS_PATH = PROJECT_ROOT / "src" / "db" / "otc_mappings.json"
