@@ -1,13 +1,13 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-23T00:00:00+08:00",
-  "phase": "03",
-  "phase_name": "document-ingestion",
-  "phase_dir": ".planning/phases/03-document-ingestion",
+  "timestamp": "2026-09-29T15:32:13+08:00",
+  "phase": "05",
+  "phase_name": "api-integration",
+  "phase_dir": ".planning/phases/05-api-integration",
   "plan": 1,
-  "task": 4,
+  "task": 1,
   "total_tasks": 4,
-  "status": "stage1_completed_and_applied_to_production",
+  "status": "paused",
   "completed_tasks": [
     {
       "id": "TASK-001",
@@ -135,17 +135,53 @@
       "status": "done",
       "commit": "35a71a5 (test fix only — the schema/data application to clinic.db itself is not a git-tracked change, since clinic.db is gitignored and rebuilt from scripts per AGENTS.md 2.1)",
       "notes": "Direct follow-up task (not delegated to Antigravity) to close the known gap left by the previous task: production clinic.db had no faq_cache table and none of the 40 verified FAQ rows. Rehearsed the exact same operation on an isolated copy first (copied clinic.db, extracted the faq_cache DDL block from clinic_schema.sql via string markers, executescript'd it, confirmed the table appeared and all pre-existing data was untouched) before touching the real clinic.db. Applied the same DDL to the real clinic.db (CREATE TABLE IF NOT EXISTS / CREATE VIRTUAL TABLE IF NOT EXISTS / CREATE TRIGGER IF NOT EXISTS, so it's idempotent and additive-only — never touches existing tables). Verified all 6 pre-existing tables (drugs, service_items, page_index_trees, clinic_info, clinic_hours, clinic_custom_notes) had unchanged row counts before/after, and all 4 FTS5 tables (including the new faq_cache_fts) present and on trigram. Then read the 40 already-verified FAQ rows from the isolated clinic_test.db (left over from the prior task's delivery), grouped them by source_type (all 40 were 'clinic_upload'), and wrote them into the real clinic.db via faq_writer.upsert_faqs() — the single authoritative write path, not a raw INSERT — confirming 40 inserted / 0 updated / 0 unchanged. Re-verified on the real production data (not just trusting the earlier isolated-copy check): re-ran the full price-leakage/Simplified-Chinese sweep directly against the 40 rows now living in the real clinic.db and got zero hits; ran a real FTS MATCH query ('甲溝炎') and got real hits including some of the newly-inserted production rows. Re-ran pytest tests/ afterward and found 2 REAL test failures — not caused by this operation being wrong, but exposed by it: test_faq_cache_fts_cjk_match and test_faq_cache_triggers_sync used plausible-sounding real medical search terms ('甲溝炎', '矽膠貼') as MATCH keywords, and now that clinic.db legitimately contains other FAQ rows using the same common medical terminology, the tests' bare MATCH-count assertions became ambiguous (a MATCH for '甲溝炎' now legitimately returns both the test's own inserted row AND several real production rows that happen to also discuss 甲溝炎). Confirmed via direct query that rows 2/3/16/17 (甲溝炎) and 18 (矽膠貼) are genuine production content, not corrupted or duplicated data — the test design itself had an implicit assumption (isolated_conn's copy of clinic.db starts with an empty faq_cache) that broke once faq_cache had real rows, the same class of gap the project has hit before with page_index_trees row-count assumptions. Fixed both tests to filter by a test-exclusive topic_key (test-fts-cjk-match-unique-marker / test-triggers-sync-unique-marker) joined back to faq_cache, so assertions only look at the row(s) the test itself wrote, matching the existing test-prefix convention already used in test_multi_clinic.py ('test-proc-no-key' etc.) — committed as 35a71a5. Re-ran the full suite 3 times in a row after the fix and got 123/123 passing every time, confirming stability against the now-nonempty faq_cache table rather than a flaky pass."
+    },
+    {
+      "id": "PHASE04-TASK-03",
+      "name": "FAQ 快取查詢整合與多診所檢索分流 (search_faq_cache + QueryResponse.faq_hits)",
+      "status": "done",
+      "commit": "bb46697",
+      "notes": "實作 search_faq_cache() 支援 3+ 字 FTS5 trigram 與 <3 字 LIKE fallback、診所隔離與類別過濾；整合 handle_query() 與 QueryResponse.faq_hits；新增 tests/test_faq_search.py 6 個測試全數通過 (128/128)。"
+    },
+    {
+      "id": "PHASE05-TASK-01",
+      "name": "FastAPI 服務基礎骨架、Pydantic 基底模型、唯讀連線注入與 GET /health 端點",
+      "status": "done",
+      "commit": "3bf1436",
+      "notes": "安裝並驗證 FastAPI/Uvicorn/Pydantic/HTTPX；實作 src/api/config.py, dependencies.py (PRAGMA query_only=ON, check_same_thread=False), models/common.py, routes/health.py, app.py；新增 tests/test_api_health.py (132/132 測試全通，clinic.db SHA-256 零改變)。"
     }
   ],
-  "remaining_tasks": [],
+  "remaining_tasks": [
+    {
+      "id": "TASK-02",
+      "name": "自然語言查詢端點封裝 (POST /api/v1/query, clinics/{clinic_id}/query 與二次價格遮蔽)",
+      "status": "not_started"
+    },
+    {
+      "id": "TASK-03",
+      "name": "doctor-toolbox.com 雙向同步契約實作 (POST /api/v1/sync/export, import 與 sync_logs)",
+      "status": "not_started"
+    },
+    {
+      "id": "TASK-04",
+      "name": "端到端整合測試、資料庫零污染驗證與服務啟動器 (scripts/run_api_server.py)",
+      "status": "not_started"
+    }
+  ],
   "blockers": [
     {
-      "description": "extract_search_terms() is a simple keyword/CJK-run heuristic, not real Chinese word segmentation. Generic 2-char terms (e.g. 維持, 回診) can appear in most page_index_trees rows, adding noise to LIKE-fallback results in the middle of a result set (correct answer is usually still ranked first due to longer-term priority, but not guaranteed). This is now covered by regression tests but not eliminated as a limitation.",
-      "type": "technical",
-      "workaround": "Evaluate a real Chinese tokenizer (e.g. jieba) if real-world usage in Phase 04 shows this degrades result quality in practice"
+      "description": "GPU 1 (RTX 2080 Ti 22GB) 目前處於 Fan ERR! Pwr ERR! 硬體保護鎖定狀態",
+      "type": "human_action",
+      "workaround": "需由使用者執行 sudo /home/hsu/nvidia-stabilize.sh 或重新開機；目前 GET /health 與所有查詢檢索具備優雅降級能力（status=degraded），不影響 API 開發與資料庫檢索"
     }
   ],
-  "human_actions_pending": [],
+  "human_actions_pending": [
+    {
+      "action": "執行 sudo /home/hsu/nvidia-stabilize.sh 重置 GPU 1 並重啟 llama-server",
+      "context": "若需要恢復本地 LLM 推理生成功能",
+      "blocking": false
+    }
+  ],
   "decisions": [
     {
       "decision": "Use dual-layer architecture: General NHI data + Clinic-specific data",
@@ -211,9 +247,24 @@
       "decision": "page_index_trees gets a real clinic_id column (FK to clinic_info); doc_id becomes a clinic-prefix-free procedure slug (e.g. zhiyan-clinic-hifu-lifting → hifu-lifting)",
       "rationale": "Discovered during 2026-09-22 planning session that page_index_trees currently has NO clinic_id column at all — clinic identity lives only as a string prefix on doc_id, parsed via hardcoded string matching in prompt_template.py (_FEW_SHOT_DOC_IDS, .replace('zhiyan-clinic-', '')). This is technical debt, not a design choice worth preserving. A real column lets 'all trees for this clinic' be a plain WHERE clinic_id = ? query instead of LIKE 'prefix-%', and means doc_id never needs a second rewrite if the clinic_id naming scheme changes again later (e.g. once Phase 05's doctor-toolbox.com integration is real).",
       "phase": "post-01 (Phase 04 draft, confirmed 2026-09-22)"
+    },
+    {
+      "decision": "FastAPI 端點採用標準 RESTful JSON 契約，完全捨棄舊系統 mitmproxy 攔截手法",
+      "rationale": "避免安裝自簽 CA 與瀏覽器安全性警告，建立透明、型別安全之雙向同步協定",
+      "phase": "05"
+    },
+    {
+      "decision": "查詢連線強制 PRAGMA query_only = ON，連線建立設定 check_same_thread = False",
+      "rationale": "保證查詢端點零寫入風險，同時支援 FastAPI worker threadpool 並發調用",
+      "phase": "05"
+    },
+    {
+      "decision": "GET /health 端點提供優雅降級 (degraded)",
+      "rationale": "當本地 LLM 離線時標記 degraded 但回傳 HTTP 200，維持核心資料庫 RAG 檢索可用性",
+      "phase": "05"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "PHASE 04 TASK-00/01/02 are all COMPLETE (commits f487763, 625593d). PHASE 03 STAGE 1 is COMPLETE AND APPLIED TO PRODUCTION (commit 625593d for the code, plus a direct follow-up this session that applied the faq_cache schema to the real clinic.db and wrote all 40 verified FAQ rows into it via faq_writer.upsert_faqs(), with test fix commit 35a71a5). PHASE 03 STAGE 2 (image OCR) is now CLOSED, decided NOT to build a full OCR pipeline — manually visually inspected 6 representative images across every subdirectory (每月活動單/, 衛教文章/, 儀器/, EMFACE臉部磁波電波/) on 2026-09-23 and found: logos/product photos have zero extractable text, the clinic-hours flyer duplicates data already in clinic_hours/clinic_info, the promotional flyer is full of raw prices (would just get filtered out by the price-leakage validator anyway), the before/after photo has no substantive text, and the one genuinely content-rich image (an equipment energy/probe parameter chart) has text embedded in a multi-column diagram — high OCR-accuracy risk, and its content (contraindication zones, energy settings) is physician-reference material better suited to page_index_trees.physician_notes than faq_cache, so manual transcription would beat OCR if that content is ever needed. Written up in .planning/phases/03-document-ingestion/PLAN.md. pytest tests/ is 123/123 passing, stable across repeated runs. Remaining open work: (1) Phase 04 TASK-03 (query-entry clinic_id resolution) depends on Phase 05 and is intentionally not started. (2) Phase 03 Stage 3 (video/complex PDF) not yet evaluated, lowest priority, likely similar low-ROI verdict to Stage 2 — recommend the same manual-sample-first approach before building anything. (3) OriginalData/一般醫學/ (2.0G) has never been touched by Phase 03 — only the 3 priority files under 緻妍外科診所/ were processed. This is the only Phase 03 direction still worth pursuing if scope expands: 一般醫學/美容醫學/'s PDF patient-education content (e.g. 完美皮膚保養指南, 肉毒桿菌毒素美容) is real text content feeding the general route, unlike the image-heavy stuff Stage 2 just closed out. Also unprocessed: 衛教文章/, 廠商PPT/, 每月活動單/ beyond what Stage 2's spot-check already covered. (4) src/pageindex/llm_client.py and Phase 02's 3 real LLM-generated trees still only exist in an isolated test-copy DB, never merged into the real clinic.db — unrelated to this session, still true.",
-  "context_notes": "Phase 01 (8 tasks), Phase 02 (4 tasks), Phase 04 (all 3 completed tasks: TASK-00/01/02), and Phase 03 Stage 1 (all 4 tasks, code + production data) are done. Phase 01: TASK-001 (0ac396d) through TASK-008 (a09e829). Phase 02: one commit (ff04197). Phase 04 TASK-00/01: one commit (f487763). Phase 04 TASK-02 + Phase 03 Stage 1 code: delivered together in one commit (625593d). Phase 03 Stage 1 production application + test fix: commit 35a71a5 (the faq_cache DDL application and the 40-row data write to clinic.db are themselves not git-tracked changes, since clinic.db is gitignored per AGENTS.md 2.1 — only the test fix that the production data exposed needed a commit). Antigravity-delegated work was independently re-verified by Claude before each commit (writing fresh independent verification scripts against isolated DB copies every time, not just re-running the delivered pytest suite) — this pattern has now worked consistently across 6 rounds and caught real issues each time (see each task's notes above); worth continuing for Phase 03 Stage 2/3 and Phase 04 TASK-03 when those start. Final state as of this session: DB has 7,573 drugs (2,484 OTC-localized, 32.8%), 2,669 service items, 6 hand-written PageIndex trees (clinic_id='3503190424', doc_id prefix-free e.g. 'hifu-lifting'), 40 real faq_cache rows (source_type='clinic_upload', topic breakdown: outpatient-surgery-procedures 15, insurance-diagnosis-certificates 9, customer-service-faq 16 — personally re-verified zero price leakage/Simplified Chinese on the actual production rows, not just the earlier isolated-copy check), 3 clinic_custom_notes rows, all 4 FTS5 tables on trigram (drugs_fts, service_items_fts, page_index_fts, faq_cache_fts), and a 123-case pytest suite (up from 107 after Phase 03 Stage 1's 16 new cases) that is stable across 3 consecutive full runs against the now-nonempty clinic.db. Full stack additions this session: src/pageindex/faq_writer.py (sole faq_cache upsert authority, NULL-safe dedup via `IS ?`), src/ingestion/ (extract_text.py, convert_chinese.py, generate_faq.py), scripts/run_stage1_ingestion.py, scripts/migrate_pageindex_clinic_id.py, scripts/migrate_to_nhi_code.py, src/pageindex/seed_clinic_info.py. router.py's get_clinic_hours/get_clinic_info/get_clinic_custom_notes and custom_notes.py's same-named functions/seed_sample_notes are now required clinic_id (no default); handle_query() alone keeps clinic_id: str | None = None and raises ValueError (not silent failure or TypeError) when a special-route query needs clinic data but none was given — this also fixed handle_query() never passing clinic_id down into search_page_index_trees(), a gap found during Phase 04 TASK-02 spec-writing this session. IMPORTANT PROCESS NOTES for future sessions, in order of how they were discovered: (1) Phase 02 was completed and committed but HANDOFF.json/Plan.md weren't updated until caught via `git log` cross-check — always do this at session start. (2) Phase 04 TASK-00 was found fully executed but completely uncommitted (zero trace in `git log`) — `git status` must also be checked every session start, not just `git log`. (3) Auditing 'where does this data get written' via grep must cover `.sql` as well as `.py` — a grep that only covered .py led to a false 'no seed script exists' conclusion and caused a real (harmless but rule-violating) duplicate-write-path to be built; caught and fixed during verification. (4) Schema changes to clinic_schema.sql (the DDL source) do NOT automatically propagate to the real clinic.db — they're two separate things; this was true earlier in the session for faq_cache and has since been resolved by directly applying the DDL to production. (5) Once a table that test fixtures copy from production (isolated_conn etc.) starts holding real data, tests that pick 'safe-sounding' real-world search terms as FTS MATCH keywords can start failing not because of a code bug but because the term legitimately now matches other real rows too — fixed by filtering assertions to a test-exclusive identifier (e.g. a unique topic_key) rather than trusting a bare MATCH count, matching the project's existing 'test-*' prefix convention. This is the same class of gap as page_index_trees row-count assumptions the project has hit before — any test written before a table had real production content should be re-audited once that table stops being effectively empty."
+  "next_action": "執行 Phase 05 TASK-02：實作 src/api/models/query.py 與 src/api/routes/query.py，將 handle_query 封裝為 POST /api/v1/query，實作 Header/Body clinic_id 解析與二次價格遮蔽",
+  "context_notes": "Phase 01~04 全部完工，Phase 05 TASK-01 完成（132 測試全通，clinic.db SHA-256 零改變）。目前處於暫停狀態，下一個任務為 TASK-02 查詢端點封裝。"
 }
