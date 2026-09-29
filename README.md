@@ -66,8 +66,10 @@ clinicbrain/
 │   ├── pageindex/            # PageIndex 推理樹、LLM 客戶端、db_writer, faq_writer
 │   └── query/                # 查詢路由 (router.py: handle_query, search.py)
 ├── scripts/                  # 建庫種子、遷移腳本與服務啟動器
-├── tests/                    # 完整自動化測試套件 (132+ tests, 100% 通過)
+├── tests/                    # 完整自動化測試套件 (155 tests, 100% 通過)
 ├── .planning/                # GSD 專案規劃追蹤 (PROJECT.md, ROADMAP.md, STATE.md)
+├── clinicbrain-api.service   # Systemd user service 單元範本
+├── Plan.md                   # 專案總計畫與歷程紀錄
 ├── AGENTS.md                 # 專案大腦開發規範與安全鐵則
 └── clinic.db                 # SQLite 主資料庫 (gitignored, 依腳本重建)
 ```

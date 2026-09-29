@@ -24,6 +24,7 @@
 - `service_items`：2,669 筆醫療服務給付項目
 - `page_index_trees` + `page_index_fts`：PageIndex 臨床推理樹（見 2.2）
 - `faq_cache` + `faq_cache_fts`：文件擷取/夜間批次產出的常見問答快取（見 2.4）
+- `sync_logs`：雙向資料同步契約審計紀錄（見 2.5）
 - `clinic_info` / `clinic_hours` / `clinic_custom_notes`：診所專屬層
 
 重建指令：
@@ -105,6 +106,34 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 `scripts/run_stage1_ingestion.py` 端到端入口。任何自動擷取/生成的內容寫入時
 `source_type` 應標記為 `'clinic_upload'`，不要跟手寫或無來源依據的 LLM 生成混淆。
 
+### 2.5 雙向資料同步契約與審計紀錄 (`sync_logs`，2026-09-29 Phase 05 新增)
+為達成與雲端平台（如 `doctor-toolbox.com`、院所 HIS/EHR）之資料同步，本專案提供標準官方 RESTful JSON 契約，徹底摒棄舊系統 `DrtoolboxLocalServer` 採用之 mitmproxy 攔截作法。
+
+- **匯出端點 (`POST /api/v1/sync/export`)**：支援 `clinic_id`、`since_version`（增量過濾）與實體篩選（`trees`、`faqs`、`notes`、`hours`）。匯出前全面經由 `deep_mask_prices()` 進行遞迴字串清洗，保證輸出零價格數字洩漏。
+- **匯入端點 (`POST /api/v1/sync/import`)**：接收外部推播更新，**嚴格強制走唯一權威寫入路徑**：
+  - 臨床推理樹：`src/pageindex/db_writer.py:upsert_trees(conn, trees, source_type='clinic_upload')`（支援部分更新，內容變更遞增 `content_version`，未變則冪等跳過）。
+  - FAQ 快取：`src/pageindex/faq_writer.py:upsert_faqs(conn, faqs, source_type='clinic_upload')`。
+  - 診所通用備註：`src/clinic/custom_notes.py:upsert_clinic_note(conn, clinic_id, section, note)`。
+  - 門診時間：交易內比對更新。
+- **多層醫療法規合規防禦**：
+  - 保證療效禁詞攔截：檢測到「保證有效」、「保證根除」、「百分之百有效」等違法用詞，立即拋出 HTTP 400。
+  - 政治立場爭議詞彙攔截：針對「中國台灣/臺灣」、「台灣/臺灣地區」等詞彙（涵蓋簡繁與台/臺異體字）雙重防禦攔截，拋出 HTTP 400。
+  - 繁簡中文處理：預設自動使用 `opencc` 轉為台灣正體中文；若停用自動轉換則檢出簡體即中斷報錯。
+  - 價格自動清洗：若非價格文字中包含金額數字，自動清洗遮蔽為 `[請致電診所確認]`，杜絕未經核定之價格寫入資料庫。
+- **審計紀錄 (`sync_logs`)**：每次匯出入操作皆記錄至資料庫，記載 `clinic_id`、`sync_type`、`direction`、`status`、`record_count` 與 `payload_summary`（**嚴禁記錄病患個資與具體價格**）。
+
+### 2.6 FastAPI 服務層與系統啟動 (Phase 05 新增)
+- **讀寫連線分離設計**：
+  - 唯讀連線 (`dependencies.py:get_read_db`)：強制底層執行 `PRAGMA query_only = ON;`，防範任何查詢層面的意外寫入或注入風險。
+  - 寫入專用連線 (`dependencies.py:get_write_db`)：僅供同步匯出入使用，開啟 `PRAGMA foreign_keys = ON;`。
+- **多診所動態路由查詢**：
+  - 統一入口：`POST /api/v1/query`、`POST /api/v1/clinics/{clinic_id}/query` 與 `GET /api/v1/query`。
+  - 診所識別解析順序：Path/Body `clinic_id` > Header `X-Clinic-ID` > `config.default_clinic_id`。
+  - 二次價格防禦：序列化回傳前一律經由 `deep_mask_prices()` 遞迴清洗。
+- **服務啟動與守護常駐**：
+  - 啟動腳本：`scripts/run_api_server.py`（支援 `--host`, `--port`, `--reload`, `--workers`, `--log-level`）。
+  - Systemd 守護單元：`clinicbrain-api.service`（相依於 `llama-server.service`，支援開機自啟與故障重啟）。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -120,6 +149,10 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 
 ## 4. 目錄結構
 
+* `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`）
+  * `src/api/routes/query.py`：自然語言查詢與多診所動態路由端點
+  * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
+  * `src/api/routes/health.py`：系統與資料庫健康檢查端點
 * `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應
   Python 模組，見下）
 * `src/pageindex/db_writer.py`：`page_index_trees` 的唯一 UPSERT 寫入邏輯，手寫種子與 LLM 生成皆呼叫此模組
@@ -131,6 +164,8 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`，見 2.4 節）
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
 * `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
+* `scripts/run_api_server.py`：FastAPI 服務啟動入口腳本（支援 CLI 參數）
+* `clinicbrain-api.service`：systemd user service 配置範本
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

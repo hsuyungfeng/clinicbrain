@@ -128,17 +128,18 @@ Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
 
 ---
 
-## 6. Phase 05：doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構
+## 6. Phase 05：doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構（✅ 已完成）
 
-已定案並展開為詳細規格（見 `.planning/phases/05-api-integration/PLAN.md` 與 `TASK-PLAN.md`）：
-- **FastAPI 服務層**：Pydantic 強型別資料契約、OpenAPI 文件、`GET /health` 健康檢查。
-- **自然語言查詢端點**：封裝 `handle_query()`（`POST /api/v1/query`、`POST /api/v1/clinics/{clinic_id}/query`），全面落實價格二次遮蔽與多診所動態路由。
-- **官方雙向同步契約**：
-  - 徹底捨棄舊系統 `DrtoolboxLocalServer` 的 mitmproxy 攔截手法，採用標準 RESTful JSON 契約。
-  - `POST /api/v1/sync/export`（增量匯出本地已審定之 PageIndex 樹、FAQ 快取與自訂備註）。
-  - `POST /api/v1/sync/import`（安全接收雲端修改之醫師備註、FAQ 與門診時間，走專案唯一權威寫入路徑）。
-  - `sync_logs` 同步審計日誌。
-- **測試隔離原則**：全部 API 測試在 `tmp_path` 隔離複本執行，正式 `clinic.db` SHA-256 零變更。
+4 個任務全數完工，由 Antigravity 依 `.planning/phases/05-api-integration/PLAN.md` 與 `TASK-PLAN.md` 執行，測試套件擴充至 155 個測試 100% 通過，正式 `clinic.db` SHA-256 全程未變：
+
+| # | 任務 | 狀態 | 備註 |
+|---|---|---|---|
+| TASK-01 | FastAPI 基礎骨架、Pydantic Schema 與健康檢查 (`GET /health`) | ✅ (`3bf1436`) | 建立 `src/api/`，實作 `get_read_db`（`PRAGMA query_only=ON`）、`verify_admin_key` 與 `/health` 監控端點 |
+| TASK-02 | 自然語言查詢端點封裝 (`POST /api/v1/query`) | ✅ (`816e3c2`) | 封裝 `handle_query()`、多診所動態路由（URL Path/Body/Header 三重解析）、遞迴字串二次價格遮蔽防禦 |
+| TASK-03 | doctor-toolbox.com 雙向資料同步契約與審計日誌 | ✅ (`5c4f96c`) | `sync_logs` 表結構、`POST /api/v1/sync/export` 增量匯出、`POST /api/v1/sync/import` 權威寫入與醫療法規合規多層攔截（保證療效、政治立場正簡台臺異體字、價格清洗） |
+| TASK-04 | 服務啟動器、Systemd 單元範本與全系統驗收 | ✅ (`bb12589`) | `scripts/run_api_server.py` CLI 參數解析與 Banner 診斷、`clinicbrain-api.service` 配置範本、全系統端到端測試通過 |
+
+驗收：pytest 155/155 全數通過（128 舊 + 27 新），正式 `clinic.db` SHA-256 (`c51cc4d039379fe00f70d7864b29a952928233fa6caa6e72954900f4c28c65ad`) 全程未變（零污染正式資料庫）。獨立 Git 倉庫已建立並完整同步至 GitHub 遠端 `https://github.com/hsuyungfeng/clinicbrain`。
 
 ---
 
@@ -175,6 +176,14 @@ Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
    資料的機率越高。修正方式是比照 `test_multi_clinic.py` 已有的慣例：用測試專屬的唯一
    識別碼（如 `topic_key='test-xxx-unique-marker'`）過濾查詢結果，只驗證本測試自己寫入的
    那一列，不要只信任裸的 `MATCH`/查詢命中數。
+9. **FastAPI 的 Sync 路由執行在 Worker 執行緒池**：
+   FastAPI 的同步端點（`def` handler）由 AnyIO 在執行緒池中並發執行。SQLite 連線必須指定
+   `check_same_thread=False`，且測試注入時應 monkeypatch `config.db_path` 讓執行緒各自
+   建立安全連線，禁止跨執行緒直接共用同一連線物件。
+10. **繁簡轉換（OpenCC s2twp）自動將「台」轉換為「臺」**：
+   在執行政治立場與敏感詞檢測時（如「中國台灣」、「台灣地區」），若文字先經過 `to_traditional()`
+   處理，會被轉為「中國臺灣」、「臺灣地區」。過濾清單必須完整包含正簡繁與台/臺異體字，
+   並於轉換前後執行雙重檢核，杜絕字元變體繞過風險。
 
 ---
 
