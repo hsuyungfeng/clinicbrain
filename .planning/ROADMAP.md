@@ -61,7 +61,7 @@
 **Plans**: 4 tasks
 - [x] 05-01: TASK-01 FastAPI 基礎骨架、Pydantic Schema 與健康檢查 (`GET /health`)
 - [x] 05-02: TASK-02 自然語言查詢端點封裝 (`POST /api/v1/query` + 多診所動態路由與價格二次遮蔽)
-- [ ] 05-03: TASK-03 doctor-toolbox.com 雙向同步契約實作 (Export/Import 規格、權威寫入與 `sync_logs`)
+- [x] 05-03: TASK-03 doctor-toolbox.com 雙向同步契約實作 (Export/Import 規格、權威寫入與 `sync_logs`)
 - [ ] 05-04: TASK-04 端到端整合測試、資料庫零污染驗證與服務啟動器 (`scripts/run_api_server.py`)
 
 ## Progress
@@ -72,6 +72,6 @@
 | 2. Local LLM Layer | 4/4 | Complete | 2026-09-22 |
 | 3. Document Ingestion | 4/4 (Stage 1) | Stage 1 Complete / OCR Closed | 2026-09-23 |
 | 4. Multi-Clinic Support | 4/4 | Complete | 2026-09-29 |
-| 5. doctor-toolbox.com API | 2/4 | In Progress | - |
+| 5. doctor-toolbox.com API | 3/4 | In Progress | - |
 
 

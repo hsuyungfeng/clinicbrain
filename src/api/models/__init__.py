@@ -9,6 +9,13 @@ from .query import (
     QueryRequest,
     QueryResponseModel,
 )
+from .sync import (
+    SyncExportRequest,
+    SyncExportResponse,
+    SyncImportRequest,
+    SyncImportResponse,
+    SyncLogItem,
+)
 
 __all__ = [
     "HealthResponse",
@@ -17,4 +24,9 @@ __all__ = [
     "ClinicHoursItem",
     "QueryRequest",
     "QueryResponseModel",
+    "SyncExportRequest",
+    "SyncExportResponse",
+    "SyncImportRequest",
+    "SyncImportResponse",
+    "SyncLogItem",
 ]

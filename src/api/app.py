@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import config
 from .routes.health import router as health_router
 from .routes.query import router as query_router
+from .routes.sync import router as sync_router
 
 
 def create_app() -> FastAPI:
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     # 掛載路由
     app.include_router(health_router)
     app.include_router(query_router)
+    app.include_router(sync_router)
 
     @app.get("/", tags=["根端點"], summary="服務根端點資訊")
     def root():

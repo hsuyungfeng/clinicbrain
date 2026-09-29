@@ -295,6 +295,26 @@ CREATE TRIGGER IF NOT EXISTS faq_cache_au AFTER UPDATE ON faq_cache BEGIN
 END;
 
 -- ========================================
+-- Sync Logs Table (Phase 05: Bidirectional API Sync)
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS sync_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clinic_id TEXT REFERENCES clinic_info(clinic_id),
+    sync_type TEXT NOT NULL,         -- 'export' | 'import'
+    direction TEXT NOT NULL,         -- 'push' | 'pull'
+    status TEXT NOT NULL,            -- 'success' | 'failed' | 'partial'
+    record_count INTEGER DEFAULT 0,
+    payload_summary TEXT,            -- 簡要摘要（嚴禁記錄病患個資與具體價格）
+    error_message TEXT,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_logs_clinic_id ON sync_logs(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_started_at ON sync_logs(started_at);
+
+-- ========================================
 -- Sample Data (for testing)
 -- ========================================
 

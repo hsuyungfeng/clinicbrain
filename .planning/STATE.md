@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-09-29)
 ## Current Position
 
 Phase: 5 of 5 (doctor-toolbox.com API Integration)
-Plan: TASK-02 完成（POST /api/v1/query 與 /clinics/{clinic_id}/query 封裝、Header/Body clinic_id 解析、二次價格防禦完成），準備執行 TASK-03（雙向同步契約）
-Status: Phase 5 in progress (TASK-02 Done, 2/4)
-Last activity: 2026-09-29 — Phase 05 TASK-02 完成：查詢介面 HTTP 封裝、多診所動態路由與二次價格遮蔽，140 個測試全數通過
+Plan: TASK-03 完成（POST /api/v1/sync/export 與 POST /api/v1/sync/import 雙向同步契約、權威寫入路徑、sync_logs 審計紀錄、安全攔截），準備執行 TASK-04（端到端整合與服務啟動器）
+Status: Phase 5 in progress (TASK-03 Done, 3/4)
+Last activity: 2026-09-29 — Phase 05 TASK-03 完成：雙向同步 RESTful 契約、增量匯出入、價格清洗與合規攔截、sync_logs 審計日誌，151 個測試全數通過
 
-Progress: [█████████▌] 95% (Phase 01~04 完工，Phase 05 進行中)
+Progress: [█████████▉] 97% (Phase 01~04 完工，Phase 05 TASK-01~03 完成)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total tasks completed: 22+
-- Tests passing: 140/140 (100%)
+- Total tasks completed: 23+
+- Tests passing: 151/151 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
