@@ -56,14 +56,20 @@ def conn(session_db_path: Path):
 
 
 @pytest.fixture
-def isolated_conn(tmp_path: Path):
-    """Function 層級的獨立資料庫複本（供寫入、UPSERT 測試使用，測試後自動銷毀）。"""
+def isolated_db_path(tmp_path: Path) -> Path:
+    """Function 層級的獨立資料庫檔案路徑。"""
     if not PROD_DB_PATH.exists():
         pytest.fail(f"正式資料庫不存在：{PROD_DB_PATH}")
-    
+
     target_path = tmp_path / "clinic_isolated.db"
     shutil.copy2(PROD_DB_PATH, target_path)
     _ensure_faq_cache(target_path)
-    connection = sqlite3.connect(str(target_path))
+    return target_path
+
+
+@pytest.fixture
+def isolated_conn(isolated_db_path: Path):
+    """Function 層級的獨立資料庫複本連線（供寫入、UPSERT 測試使用，測試後自動銷毀）。"""
+    connection = sqlite3.connect(str(isolated_db_path))
     yield connection
     connection.close()

@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-09-29)
 ## Current Position
 
 Phase: 5 of 5 (doctor-toolbox.com API Integration)
-Plan: Phase 05 PLAN.md & TASK-PLAN.md 規格書已定案，待展開實作
-Status: Phase 5 in progress (Specs ready)
-Last activity: 2026-09-29 — Phase 05 完成 FastAPI 服務架構、handle_query HTTP 封裝與雙向同步契約 (PLAN.md, TASK-PLAN.md) 規格撰寫
+Plan: TASK-01 完成（FastAPI 骨架、HealthResponse 與測試通過），準備執行 TASK-02（handle_query 查詢端點）
+Status: Phase 5 in progress (TASK-01 Done)
+Last activity: 2026-09-29 — Phase 05 TASK-01 完成：FastAPI 服務基礎、Pydantic 模型、唯讀 DB 注入與 GET /health 端點，132 個測試全數通過
 
-Progress: [█████████░] 90% (Phase 01~04 完工，Phase 05 規格已定案)
+Progress: [█████████▎] 92% (Phase 01~04 完工，Phase 05 進行中)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total tasks completed: 20+
-- Tests passing: 128/128 (100%)
+- Total tasks completed: 21+
+- Tests passing: 132/132 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
