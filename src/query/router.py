@@ -27,9 +27,20 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 try:
-    from .search import search_drugs, search_service_items, search_page_index_trees
+    from .search import (
+        search_drugs,
+        search_service_items,
+        search_page_index_trees,
+        search_faq_cache,
+    )
 except ImportError:
-    from search import search_drugs, search_service_items, search_page_index_trees
+    from search import (
+        search_drugs,
+        search_service_items,
+        search_page_index_trees,
+        search_faq_cache,
+    )
+
 
 Route = Literal["special", "general"]
 
@@ -38,6 +49,7 @@ _CLINIC_OPS_KEYWORDS = ("營業", "開門", "關門", "門診時間", "地址", 
 _PROCEDURE_KEYWORDS = (
     "雷射", "拉皮", "拉提", "填充", "玻尿酸", "肉毒", "電波", "音波", "飛梭",
     "除斑", "除毛", "拆線", "術前", "術後", "回診", "療程",
+    "瘦瘦筆", "甲溝炎", "粉瘤", "脂肪瘤", "蟹足腫", "微創",
 )
 _DRUG_OR_SERVICE_KEYWORDS = ("藥", "成分", "副作用", "支付", "給付", "健保", "點數", "報保")
 
@@ -233,6 +245,7 @@ class QueryResponse:
     drug_hits: list
     service_item_hits: list
     clinic_custom_notes: dict = field(default_factory=dict)
+    faq_hits: list = field(default_factory=list)
 
 
 def handle_query(
@@ -267,6 +280,14 @@ def handle_query(
     )
     drug_hits = _search_terms_merged(search_drugs, conn, search_terms, limit)
     service_item_hits = _search_terms_merged(search_service_items, conn, search_terms, limit)
+    faq_hits = _search_terms_merged(
+        search_faq_cache,
+        conn,
+        search_terms,
+        limit,
+        clinic_id=clinic_id if route_result.route == "special" else None,
+        category="general" if route_result.route == "general" else None,
+    )
 
     if route_result.route == "general":
         page_index_hits = [h for h in page_index_hits if h.fields.get("category") == "general"]
@@ -280,7 +301,7 @@ def handle_query(
                 sec: mask_prices(note) for sec, note in raw_notes.items()
             }
 
-    for hit_list in (page_index_hits, drug_hits, service_item_hits):
+    for hit_list in (page_index_hits, drug_hits, service_item_hits, faq_hits):
         for hit in hit_list:
             for key, value in hit.fields.items():
                 if isinstance(value, str):
@@ -295,4 +316,6 @@ def handle_query(
         drug_hits=drug_hits,
         service_item_hits=service_item_hits,
         clinic_custom_notes=clinic_custom_notes,
+        faq_hits=faq_hits,
     )
+

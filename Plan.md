@@ -59,28 +59,25 @@ TASK-006/007/008 皆由外部工具 Antigravity 依 Claude 撰寫的規格執行
 
 ---
 
-## 4. Phase 04：多診所支援（TASK-00/TASK-01/TASK-02 ✅ 已完成；TASK-03 待展開）
+## 4. Phase 04：多診所支援（TASK-00 ~ TASK-03 ✅ 全數完成）
 
-TASK-00/TASK-01（commit `f487763`）與 TASK-02（commit `625593d`）皆由 Antigravity 依
-`.planning/phases/04-multi-clinic-support/PLAN.md`／`TASK-PLAN.md` 執行，Claude 逐項親自
-重新驗證（不只跑 pytest，額外寫獨立腳本驗證各項行為）後提交：
+TASK-00/TASK-01（commit `f487763`）、TASK-02（commit `625593d`）與 TASK-03 皆由 Antigravity 依
+`.planning/phases/04-multi-clinic-support/PLAN.md`／`TASK-PLAN.md`／`TASK-03-PLAN.md` 執行，
+逐項親自重新驗證（測試、腳本驗證行為、隔離安全）：
 
 | # | 任務 | 狀態 | 備註 |
 |---|---|---|---|
 | TASK-00 | `page_index_trees` 補 `clinic_id` 欄位 + `doc_id` 去前綴 | ✅ | 順道修掉 `search_page_index_trees()` 完全沒有診所過濾的既有 bug |
 | TASK-01 | `clinic_id` 值遷移為健保代碼 `3503190424` | ✅ | 四張表（`clinic_info`/`clinic_hours`/`clinic_custom_notes`/`page_index_trees`）同步遷移 |
 | TASK-02 | 移除 5 個函式過期的 `clinic_id="zhiyan-clinic"` 預設值 | ✅ | 4 個函式改必填；`handle_query()` 單獨保留 `str \| None = None`，special 路由缺 `clinic_id` 時明確拋 `ValueError` |
+| TASK-03 | FAQ 快取查詢整合與多診所檢索分流 | ✅ | `search_faq_cache()` 實作、`QueryResponse.faq_hits`、價格遮蔽與診所/路由嚴格隔離，新增 6 個測試全數通過 |
 
 TASK-00/TASK-01 驗收：pytest 104/104 通過，`PRAGMA foreign_key_check` 零違規，正式 `clinic.db`
-遷移前後非相關資料筆數一致。驗收過程中發現並修正一個規劃階段的誤判：TASK-PLAN.md 原本判斷
-「`clinic_info` 找不到任何種子腳本」，但獨立驗證時發現 `clinic_schema.sql` 本身其實已有一份
-內嵌種子資料（先前規劃時 grep 範圍只涵蓋 `.py`，沒查到 `.sql`）。已在同一 commit 修正：移除
-`schema.sql` 內嵌的 `clinic_info` INSERT，`seed_clinic_info.py` 成為唯一權威來源。
+遷移前後非相關資料筆數一致。
 
-TASK-02 驗收：pytest 123/123 通過（含 Phase 03 一併驗收的新測試），`handle_query()` 內部呼叫
-`search_page_index_trees()` 未傳 `clinic_id` 的關聯問題已在同一批一併修正。
+TASK-02 驗收：pytest 123/123 通過，`handle_query()` 內部呼叫 `search_page_index_trees()` 未傳 `clinic_id` 的關聯問題已一併修正。
 
-TASK-03（依賴 Phase 05 的查詢入口 `clinic_id` 解析）仍是草案，尚未展開成可執行規格。
+TASK-03 驗收：pytest 128/128 通過，新增 `tests/test_faq_search.py` 6 個測試涵蓋 FTS5 trigram MATCH、LIKE fallback、診所隔離、價格遮蔽；正式 `clinic.db` SHA-256 全程未變。
 
 **完整驗證紀錄**請讀 `.planning/HANDOFF.json`。
 
@@ -115,13 +112,17 @@ Stage 1（文字型文件擷取 + `faq_cache` 建表 + LLM 轉 Q&A）四個任�
 真實存在的其他 FAQ 內容而失敗——已修正為用測試專屬 `topic_key` 過濾，不受既有資料影響
 （commit `35a71a5`），連續重跑三次穩定 123/123 通過。
 
-**Stage 2（圖片 OCR）已於 2026-09-23 人工抽查結案，判定不值得展開完整 OCR 管線**——
-47 張圖片抽查 6 張跨類別樣本，多數是行銷圖/無實質文字照片，唯一有實質內容的
-`儀器/` 參數表也因文字混雜圖表、內容偏醫師參考而非病患衛教，建議未來若真的需要
-改用人工謄寫而非 OCR。完整判斷紀錄見 `.planning/phases/03-document-ingestion/PLAN.md`。
-Stage 3（影片/複雜 PDF）尚未評估，優先度最低。三份優先檔案以外的其他文字型文件
-（`衛教文章/`、`廠商PPT/`、`每月活動單/`、尤其 `一般醫學/美容醫學/` 的 PDF 衛教資料）
-也尚未處理，是 Phase 03 目前唯一還有實質待辦價值的擴充方向。
+**Stage 2（圖片 OCR）與 `一般醫學/美容醫學/` 皆已於 2026-09-23 人工抽查結案，判定
+不值得展開**——Stage 2 抽查 47 張圖片中 6 張跨類別樣本，多數是行銷圖/無實質文字
+照片，唯一有實質內容的 `儀器/` 參數表也因文字混雜圖表、內容偏醫師參考而非病患
+衛教，建議未來若真的需要改用人工謄寫而非 OCR。`美容醫學/` 原本盤點時只看檔名，
+假設是繁體中文病患衛教 PDF，實際打開後發現是整本簡體中文醫學教科書等級的掃描檔
+（`肉毒桿菌毒素美容.pdf`、`微創美容外科學.pdf` 等，動輒百餘頁到 555 頁，`pdftotext`
+完全抽不到文字、需整本書 OCR），性質與規模都跟原假設完全不同，投資報酬率比
+Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
+`.planning/phases/03-document-ingestion/PLAN.md`。**Phase 03 至此沒有已知的、
+值得展開的剩餘擴充方向**；Stage 3（影片/複雜 PDF）尚未評估但優先度最低，且大機率
+是同樣的低投資報酬率情況。
 
 **完整驗證紀錄**請讀 `.planning/HANDOFF.json`。
 

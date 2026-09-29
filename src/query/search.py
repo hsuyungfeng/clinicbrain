@@ -184,3 +184,55 @@ def search_page_index_trees(
         extra_where=extra_where,
         extra_params=extra_params,
     )
+
+
+def search_faq_cache(
+    conn: sqlite3.Connection,
+    query: str,
+    limit: int = 10,
+    clinic_id: Optional[str] = None,
+    category: Optional[str] = None,
+) -> list[SearchHit]:
+    """檢索 faq_cache 資料表。
+
+    支援依查詢字串長度自動分流（3+字走 faq_cache_fts，<3字走 LIKE）。
+    支援依 clinic_id 及 category 進行權限與範圍過濾。
+
+    過濾語意：
+    - 若 clinic_id 有值（如 '3503190424'）：
+        篩選條件為 (clinic_id = ? OR clinic_id IS NULL)
+        參數帶入 (clinic_id,)
+    - 若 clinic_id 為 None 且 category == 'general'：
+        篩選條件為 clinic_id IS NULL
+        無 clinic 參數帶入
+    - 若指定 category（如 'special' 或 'general'）：
+        額外 AND category = ?
+    """
+    conditions = []
+    params = []
+
+    if clinic_id is not None:
+        conditions.append("(clinic_id = ? OR clinic_id IS NULL)")
+        params.append(clinic_id)
+    elif category == "general":
+        conditions.append("clinic_id IS NULL")
+
+    if category is not None:
+        conditions.append("category = ?")
+        params.append(category)
+
+    extra_where = " AND ".join(conditions) if conditions else None
+    extra_params = tuple(params)
+
+    return search_text(
+        conn,
+        table="faq_cache",
+        fts_table="faq_cache_fts",
+        query=query,
+        select_columns=("id", "clinic_id", "topic_key", "category", "question", "answer"),
+        like_columns=("question", "answer"),
+        limit=limit,
+        extra_where=extra_where,
+        extra_params=extra_params,
+    )
+
