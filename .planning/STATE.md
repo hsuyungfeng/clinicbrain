@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-09-29)
 ## Current Position
 
 Phase: 5 of 5 (doctor-toolbox.com API Integration)
-Plan: TASK-03 完成（POST /api/v1/sync/export 與 POST /api/v1/sync/import 雙向同步契約、權威寫入路徑、sync_logs 審計紀錄、安全攔截），準備執行 TASK-04（端到端整合與服務啟動器）
-Status: Phase 5 in progress (TASK-03 Done, 3/4)
-Last activity: 2026-09-29 — Phase 05 TASK-03 完成：雙向同步 RESTful 契約、增量匯出入、價格清洗與合規攔截、sync_logs 審計日誌，151 個測試全數通過
+Plan: TASK-04 完成（本機服務啟動腳本 scripts/run_api_server.py、systemd user service 範本 clinicbrain-api.service、全系統端到端測試驗證），Phase 05 圓滿完工！
+Status: Phase 5 Complete (TASK-04 Done, 4/4)
+Last activity: 2026-09-29 — Phase 05 完工：FastAPI 服務層、handle_query 路由封裝、二次價格遮蔽、雙向同步 RESTful 契約、CLI 啟動腳本與 systemd user service，155 個測試全數通過
 
-Progress: [█████████▉] 97% (Phase 01~04 完工，Phase 05 TASK-01~03 完成)
+Progress: [██████████] 100% (Phase 01~05 全部完工)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total tasks completed: 23+
-- Tests passing: 151/151 (100%)
+- Total tasks completed: 24+
+- Tests passing: 155/155 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context

@@ -5,7 +5,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141+-009688.svg)](https://fastapi.tiangolo.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-FTS5%20trigram-003B57.svg)](https://sqlite.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-132%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-155%20passed-brightgreen.svg)]()
 
 ---
 
@@ -95,13 +95,37 @@ python3 src/pageindex/seed_trees.py
 本專案堅持測試資料庫 **100% 隔離原則**（測試過程使用記憶體/暫存複本，保證正式 `clinic.db` SHA-256 零污染）：
 ```bash
 pytest -k "not test_check_llm_health_live"
-# 132 passed
+# 155 passed
 ```
 
 ### 4. 啟動 API 伺服器
+
+#### 方法 A：使用本機啟動腳本（支援 CLI 參數）
 ```bash
-python3 -c "import uvicorn; from src.api.app import app; uvicorn.run(app, host='127.0.0.1', port=8000)"
+# 基本啟動 (預設 127.0.0.1:8000)
+python3 scripts/run_api_server.py
+
+# 開發模式：啟用自動熱重載
+python3 scripts/run_api_server.py --port 8000 --reload
+
+# 生產模式：自訂連接埠與 Worker 數量
+python3 scripts/run_api_server.py --host 127.0.0.1 --port 8080 --workers 2
 ```
+
+#### 方法 B：使用 Systemd User Service（開機自啟與背景常駐）
+```bash
+# 複製服務單元至使用者 systemd 目錄並重新載入
+cp clinicbrain-api.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+
+# 啟動服務與檢視狀態
+systemctl --user start clinicbrain-api
+systemctl --user status clinicbrain-api
+
+# 設定開機自動啟動
+systemctl --user enable clinicbrain-api
+```
+
 啟動後可開啟瀏覽器檢視 Interactive API Docs：
 - Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - 健康檢查端點: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
@@ -110,7 +134,7 @@ python3 -c "import uvicorn; from src.api.app import app; uvicorn.run(app, host='
 
 ## 📡 API 介面範例
 
-### 統一自然語言查詢 (`POST /api/v1/query`)
+### 1. 統一自然語言查詢 (`POST /api/v1/query`)
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/query \
@@ -119,6 +143,35 @@ curl -X POST http://127.0.0.1:8000/api/v1/query \
     "query": "請問音波拉提術後要怎麼照顧？",
     "clinic_id": "3503190424",
     "limit": 5
+  }'
+```
+
+### 2. 雲端資料增量匯出 (`POST /api/v1/sync/export`)
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/sync/export \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-admin-token" \
+  -d '{
+    "clinic_id": "3503190424",
+    "since_version": 0,
+    "entities": ["trees", "faqs", "notes", "hours"]
+  }'
+```
+
+### 3. 雲端資料推播匯入 (`POST /api/v1/sync/import`)
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/sync/import \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-admin-token" \
+  -d '{
+    "clinic_id": "3503190424",
+    "data": {
+      "notes": {
+        "post_op_short": "【更新】術後一週內嚴格避免前往三溫暖與溫泉。"
+      }
+    }
   }'
 ```
 

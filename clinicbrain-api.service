@@ -1,0 +1,21 @@
+[Unit]
+Description=clinicbrain API Server (FastAPI Taiwan Clinic RAG System)
+Documentation=https://github.com/hsuyungfeng/clinicbrain
+After=network.target llama-server.service
+Wants=llama-server.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/hsu/Desktop/clinicbrain
+Environment=PYTHONUNBUFFERED=1
+Environment=CLINICBRAIN_HOST=127.0.0.1
+Environment=CLINICBRAIN_PORT=8000
+Environment=CLINICBRAIN_DEFAULT_CLINIC_ID=3503190424
+Environment=CLINICBRAIN_DB_PATH=/home/hsu/Desktop/clinicbrain/clinic.db
+Environment=CLINICBRAIN_ENABLE_DOCS=true
+ExecStart=/usr/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_api_server.py --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
