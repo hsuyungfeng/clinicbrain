@@ -5,12 +5,12 @@
 See: .planning/PROJECT.md (updated 2026-09-29)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** Phase 4: Multi-Clinic Support（TASK-03 待展開）與 Phase 5 規劃
+**Current focus:** Phase 5: doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構規劃
 
 ## Current Position
 
-Phase: 4 of 5 (Multi-Clinic Support)
-Plan: TASK-03 (FAQ 快取查詢整合與多診所檢索分流) 已完成並通過驗證
+Phase: 5 of 5 (doctor-toolbox.com API Integration)
+Plan: 準備展開 Phase 05
 Status: Phase 4 Complete, ready for Phase 5
 Last activity: 2026-09-29 — Phase 04 TASK-03 完成：`search_faq_cache` 整合、`handle_query` 串接、新增 `tests/test_faq_search.py` 6 個測試全數通過
 
@@ -37,7 +37,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 工作區內待提交之文件修訂：`.planning/phases/03-document-ingestion/PLAN.md` 與 `Plan.md`（紀錄 `美容醫學/` 掃描檔抽查結案）
+- 展開 Phase 05: doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構規劃（FastAPI 路由封裝、認證機制、雙向同步合約）
 
 ### Blockers/Concerns
 

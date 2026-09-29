@@ -9,7 +9,7 @@
 - [x] **Phase 1: Taiwan PageIndex RAG** — 健保藥品/給付項目資料庫、四段式臨床推理樹、OTC 本地化、FTS5 trigram 檢索與基礎評估測試。
 - [x] **Phase 2: Local LLM Layer** — 串接本地 llama-server (Qwen3.8-27B)，加入立場中立規則與雙層驗證防禦，完成端到端推理樹生成。
 - [x] **Phase 3: Document Ingestion (Stage 1)** — 診所文件（docx/xlsx）擷取、簡繁轉換、自動 Q&A 生成、faq_cache 表與 40 筆真實 FAQ 匯入（Stage 2 OCR 與掃描教材經評估後結案關閉）。
-- [ ] **Phase 4: Multi-Clinic Support** — 健保機構代碼遷移與必填化（TASK-00~02 已完成）；TASK-03 查詢入口 clinic_id 動態解析待展開。
+- [x] **Phase 4: Multi-Clinic Support** — 健保機構代碼遷移與必填化、FAQ 快取查詢整合（TASK-00~03 全部完成，commit `bb46697`）。
 - [ ] **Phase 5: doctor-toolbox.com API Integration** — 官方雙向 API 對接，實現診所資料安全匯入與匯出。
 
 ## Phase Details
