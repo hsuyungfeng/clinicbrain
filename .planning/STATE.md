@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-09-29)
 ## Current Position
 
 Phase: 5 of 5 (doctor-toolbox.com API Integration)
-Plan: 準備展開 Phase 05
-Status: Phase 4 Complete, ready for Phase 5
-Last activity: 2026-09-29 — Phase 04 TASK-03 完成：`search_faq_cache` 整合、`handle_query` 串接、新增 `tests/test_faq_search.py` 6 個測試全數通過
+Plan: Phase 05 PLAN.md & TASK-PLAN.md 規格書已定案，待展開實作
+Status: Phase 5 in progress (Specs ready)
+Last activity: 2026-09-29 — Phase 05 完成 FastAPI 服務架構、handle_query HTTP 封裝與雙向同步契約 (PLAN.md, TASK-PLAN.md) 規格撰寫
 
-Progress: [██████████] 100% (Phase 01~04)
+Progress: [█████████░] 90% (Phase 01~04 完工，Phase 05 規格已定案)
 
 ## Performance Metrics
 

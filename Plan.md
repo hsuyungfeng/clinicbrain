@@ -128,13 +128,17 @@ Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
 
 ---
 
-## 6. Phase 03/04 之後：願景擴充
+## 6. Phase 05：doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構
 
-使用者確認的方向（完整討論見 `.planning/VISION-EXPANSION.md`）：
-
-- **Phase 05（建議）：doctor-toolbox.com 官方 API 整合** — 雙向資料匯入/匯出，走正式 API（非舊系統的 MITM 攔截方式），排在 clinicbrain 自身功能完成之後。
-
-**尚待決策**（見 VISION-EXPANSION.md 第 5 節）：OCR 引擎最終選型、要不要引入向量檢索補強 FTS5 召回率、使用者身份與資料隔離範圍（匿名 vs 留歷史）、doctor-toolbox.com API 文件與認證方式。
+已定案並展開為詳細規格（見 `.planning/phases/05-api-integration/PLAN.md` 與 `TASK-PLAN.md`）：
+- **FastAPI 服務層**：Pydantic 強型別資料契約、OpenAPI 文件、`GET /health` 健康檢查。
+- **自然語言查詢端點**：封裝 `handle_query()`（`POST /api/v1/query`、`POST /api/v1/clinics/{clinic_id}/query`），全面落實價格二次遮蔽與多診所動態路由。
+- **官方雙向同步契約**：
+  - 徹底捨棄舊系統 `DrtoolboxLocalServer` 的 mitmproxy 攔截手法，採用標準 RESTful JSON 契約。
+  - `POST /api/v1/sync/export`（增量匯出本地已審定之 PageIndex 樹、FAQ 快取與自訂備註）。
+  - `POST /api/v1/sync/import`（安全接收雲端修改之醫師備註、FAQ 與門診時間，走專案唯一權威寫入路徑）。
+  - `sync_logs` 同步審計日誌。
+- **測試隔離原則**：全部 API 測試在 `tmp_path` 隔離複本執行，正式 `clinic.db` SHA-256 零變更。
 
 ---
 
