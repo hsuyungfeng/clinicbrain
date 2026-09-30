@@ -3,10 +3,12 @@
 負責封裝 src/query/router.py:handle_query()，支援多診所解析與嚴格二次價格遮蔽。
 """
 
+import logging
 import sqlite3
 from typing import Any, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, status
 
+from ..config import config
 from ..dependencies import get_read_db
 from ..models.query import QueryRequest, QueryResponseModel
 
@@ -15,7 +17,41 @@ try:
 except (ImportError, ValueError):
     from src.query.router import handle_query, mask_prices
 
+try:
+    from ...query.cache_stats import record_query_outcome
+except (ImportError, ValueError):
+    from src.query.cache_stats import record_query_outcome
+
 router = APIRouter(prefix="/api/v1", tags=["自然語言臨床與健保查詢"])
+_stats_logger = logging.getLogger("clinicbrain.cache_stats")
+_warned_error_types: set[str] = set()
+
+
+def _record_cache_stats(clinic_id: Optional[str], source: str, matched_keywords: list) -> None:
+    """非同步/獨立記錄快取統計至 cache_stats 表。
+
+    取捨（D-09）：使用獨立短寫入連線（timeout=0.5s），與主查詢的 query_only=ON 分離。
+    失敗隔離：任何例外皆被捕捉並記錄單一警告，絕不中斷查詢，日誌中絕不記錄問句、clinic_id 或關鍵字。
+    """
+    if not config.cache_stats_enabled:
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(str(config.db_path), timeout=0.5)
+        record_query_outcome(
+            conn,
+            clinic_id=clinic_id,
+            hit=(source == "cache"),
+            matched_keywords=matched_keywords,
+        )
+    except Exception as exc:
+        err_type = type(exc).__name__
+        if err_type not in _warned_error_types:
+            _warned_error_types.add(err_type)
+            _stats_logger.warning("快取統計寫入失敗（已忽略，不影響查詢）：%s", err_type)
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def deep_mask_prices(obj: Any) -> Any:
@@ -74,12 +110,19 @@ def _execute_query(
         "service_item_hits": [_format_hit(h) for h in raw_response.service_item_hits],
         "clinic_custom_notes": raw_response.clinic_custom_notes,
         "faq_hits": [_format_hit(h) for h in raw_response.faq_hits],
+        "source": raw_response.source,
+        "cache_answer": raw_response.cache_answer,
     }
 
     # 執行二次價格遮蔽遞迴掃描
     sanitized_dict = deep_mask_prices(response_dict)
+    response_model = QueryResponseModel(**sanitized_dict)
 
-    return QueryResponseModel(**sanitized_dict)
+    # 僅對具備短路資格之查詢記錄快取統計
+    if raw_response.cache_eligible:
+        _record_cache_stats(clinic_id, raw_response.source, raw_response.matched_keywords)
+
+    return response_model
 
 
 @router.post(

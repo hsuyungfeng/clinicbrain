@@ -315,6 +315,27 @@ CREATE INDEX IF NOT EXISTS idx_sync_logs_clinic_id ON sync_logs(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_sync_logs_started_at ON sync_logs(started_at);
 
 -- ========================================
+-- Cache Stats Table (Phase 07: 快取優先查詢的匿名聚合統計)
+-- 隱私保護原則：
+-- 1. 僅存放日聚合計數，不存放任何問句全文、自由文字或個資。
+-- 2. keyword 欄位僅限存放固定的系統路由關鍵字白名單。
+-- 3. clinic_id 空字串代表未指定或無效診所。
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS cache_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clinic_id TEXT NOT NULL DEFAULT '',
+    stat_date TEXT NOT NULL,
+    outcome TEXT NOT NULL CHECK (outcome IN ('hit', 'miss', 'miss_keyword')),
+    keyword TEXT NOT NULL DEFAULT '',
+    count INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(clinic_id, stat_date, outcome, keyword)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cache_stats_date ON cache_stats(stat_date);
+
+-- ========================================
 -- Sample Data (for testing)
 -- ========================================
 

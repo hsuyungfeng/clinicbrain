@@ -10,6 +10,7 @@ from .config import config
 from .routes.health import router as health_router
 from .routes.query import router as query_router
 from .routes.sync import router as sync_router
+from .routes.cache_stats import router as cache_stats_router
 from .security import build_dev_warning, check_auth_config
 
 
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(query_router)
     app.include_router(sync_router)
+    app.include_router(cache_stats_router)
 
     @app.get("/", tags=["根端點"], summary="服務根端點資訊")
     def root():

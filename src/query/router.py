@@ -24,7 +24,7 @@ CONSTRAINT 遵循：
 import re
 import sqlite3
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Optional
 
 try:
     from .search import (
@@ -33,6 +33,7 @@ try:
         search_page_index_trees,
         search_faq_cache,
     )
+    from .faq_shortcut import select_confident_faq, SHORTCUT_CANDIDATE_LIMIT
 except ImportError:
     from search import (
         search_drugs,
@@ -40,6 +41,7 @@ except ImportError:
         search_page_index_trees,
         search_faq_cache,
     )
+    from faq_shortcut import select_confident_faq, SHORTCUT_CANDIDATE_LIMIT
 
 
 Route = Literal["special", "general"]
@@ -257,6 +259,9 @@ class QueryResponse:
     service_item_hits: list
     clinic_custom_notes: dict = field(default_factory=dict)
     faq_hits: list = field(default_factory=list)
+    source: Literal["cache", "pageindex", "llm"] = "pageindex"
+    cache_answer: Optional[str] = None
+    cache_eligible: bool = True
 
 
 def handle_query(
@@ -264,14 +269,18 @@ def handle_query(
     query: str,
     clinic_id: str | None = None,
     limit: int = 5,
+    cache_shortcut: bool = True,
 ) -> QueryResponse:
     """統一查詢入口：分類路由 → 依路由查對應資料表 → 對所有文字欄位套用
-    價格遮罩 → 回傳結構化結果。
+    價格遮罩 → 評估 FAQ 快取短路 → 回傳結構化結果。
 
     general 路由刻意不查 clinic_info/clinic_hours/clinic_custom_notes（避免診所
     專屬資訊滲入一般醫學問答，見模組頂部說明），且本質上不需要 clinic_id，
     因此 clinic_id 預設為 None。但 special 路由若涉及診所營運、療程樹或通用備註，
     若呼叫端未傳入 clinic_id，將拋出明確之 ValueError。
+
+    cache_shortcut 預設為 True。若問句不含診所營運關鍵字且存在高信心精確匹配的 FAQ，
+    將短路回傳該 FAQ 原文（已遮蔽價格），其餘非必要欄位清空，加速回應。
     """
     route_result = classify(query)
     search_terms = extract_search_terms(query)
@@ -312,11 +321,48 @@ def handle_query(
                 sec: mask_prices(note) for sec, note in raw_notes.items()
             }
 
-    for hit_list in (page_index_hits, drug_hits, service_item_hits, faq_hits):
+    # 評估是否允許快取短路（營運問句以結構化資訊優先，不短路）
+    shortcut_allowed = cache_shortcut and not any(kw in query for kw in _CLINIC_OPS_KEYWORDS)
+    shortcut_candidates: list = []
+    if shortcut_allowed:
+        shortcut_candidates = _search_terms_merged(
+            search_faq_cache,
+            conn,
+            search_terms,
+            max(limit, SHORTCUT_CANDIDATE_LIMIT),
+            clinic_id=clinic_id if route_result.route == "special" else None,
+            category="general" if route_result.route == "general" else None,
+        )
+
+    for hit_list in (page_index_hits, drug_hits, service_item_hits, faq_hits, shortcut_candidates):
         for hit in hit_list:
             for key, value in hit.fields.items():
                 if isinstance(value, str):
                     hit.fields[key] = mask_prices(value)
+
+    if shortcut_allowed:
+        decision = select_confident_faq(
+            query=query,
+            faq_hits=shortcut_candidates,
+            route=route_result.route,
+            clinic_id=clinic_id,
+            stopword_pattern=_STOPWORD_SPLIT_PATTERN,
+        )
+        if decision.hit is not None:
+            return QueryResponse(
+                route=route_result.route,
+                matched_keywords=route_result.matched_keywords,
+                clinic_info=None,
+                clinic_hours=[],
+                page_index_hits=[],
+                drug_hits=[],
+                service_item_hits=[],
+                clinic_custom_notes={},
+                faq_hits=[decision.hit],
+                source="cache",
+                cache_answer=mask_prices(decision.hit.fields["answer"]),
+                cache_eligible=True,
+            )
 
     return QueryResponse(
         route=route_result.route,
@@ -328,5 +374,8 @@ def handle_query(
         service_item_hits=service_item_hits,
         clinic_custom_notes=clinic_custom_notes,
         faq_hits=faq_hits,
+        source="pageindex",
+        cache_answer=None,
+        cache_eligible=shortcut_allowed,
     )
 

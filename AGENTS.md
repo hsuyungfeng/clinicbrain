@@ -24,6 +24,7 @@
 - `service_items`：2,669 筆醫療服務給付項目
 - `page_index_trees` + `page_index_fts`：PageIndex 臨床推理樹（見 2.2）
 - `faq_cache` + `faq_cache_fts`：文件擷取/夜間批次產出的常見問答快取（見 2.4）
+- `cache_stats`：快取優先查詢之匿名聚合命中統計（見 2.8）
 - `sync_logs`：雙向資料同步契約審計紀錄（見 2.5）
 - `clinic_info` / `clinic_hours` / `clinic_custom_notes`：診所專屬層
 
@@ -144,6 +145,40 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **測試慣例**：`tests/conftest.py` 設有 autouse fixture `_default_allow_no_auth`，既有測試預設視為開發模式放行，維持測試穩定性；專門驗證強制行為與 503 的測試必須自行透過 monkeypatch 將 `allow_no_auth` 覆寫為 `False`。
 - **後續規劃（尚未涵蓋）**：權限 600 之 `EnvironmentFile` 將於 AUTH-03 處理；金鑰常數時間比對（`secrets.compare_digest`）將於 AUTH-04 處理。
 
+### 2.8 快取優先查詢與匿名命中統計（Phase 07 新增）
+為降低本地 LLM 運算負擔並縮短病患常見問題之回應延遲，自 Phase 07 起導入快取優先（Cache-First）機制與匿名統計：
+- **保守短路判定規則 (`src/query/faq_shortcut.py`)**：
+  - 覆蓋率雙門檻：問句對 FAQ 覆蓋率 $\ge 0.9$、FAQ 對問句覆蓋率 $\ge 0.7$。
+  - 歧義邊界（Ambiguity Margin）：最高分與次高分覆蓋率差距需 $\ge 0.1$。
+  - 五維度風險特徵對抗檢查：任何風險特徵不對稱即拒絕短路：
+    1. 數字帶單位（`\d+\s*(天|日|週|周|月|年|次|mg|毫克|g|公克|ml|毫升|u|單位|歲)`）：如「第3天」與「第3週」、「5mg」與「5g」不得混淆。
+    2. 14 個否定詞（`不無沒別勿禁未非免避忌否戒停`）：避免肯定句與否定句語意顛倒。
+    3. 時序方位字（`前、後、內、外、上、下、左、右`）：避免「術前」與「術後」顛倒。
+    4. 人群與體質詞（`孕、兒、童、婦、老、病、障、敏、殘、癌、糖尿、過敏、高血壓、心臟`）：避免特殊體質病患適用一般建議。
+    5. 價格詢問詞（`多少錢、費用、價格、價位、收費、價錢、計費、報價`）：價格相關一律不短路。
+  - 獨立候選集大小：FAQ 檢索固定取 50 筆候選，不與 pageindex tree 檢索的 `top_k=3` 互相干擾。
+  - 命中時直接回傳 FAQ 快取原文（`source='faq_cache'`），略過 pageindex 推理樹與 LLM 生成。
+- **匿名統計表結構 (`cache_stats`)**：
+  - 欄位：`id`, `clinic_id`, `outcome`（`hit` / `miss` / `error` / `bypass`）, `keyword`, `query_date`, `created_at`。
+  - 隱私承諾：**嚴禁記錄問句原文或任何病患個資**。未命中時僅記錄透過固定詞表（`ROUTE_KEYWORD_VOCAB`）白名單過濾出之標準化路由關鍵字，其他文字一律過濾為空。
+- **統計指標語意與灌數限制**：
+  - 命中率計算：`hit_rate` 定義為 `cache_hits / (cache_hits + cache_misses)`（營運資訊查詢與錯誤不計入分母；總數為 0 時回傳 0.0）。
+  - 灌數風險處理：因自然語言查詢端點維持公開開放，有惡意灌數影響統計指標之風險；此風險採「接受（Accept）」處置，統計資料僅供院所營運熱度與 FAQ 補強參考，嚴禁作為計費、授權或醫療決策依據。
+- **D-09 連線架構取捨**：
+  - 為維持查詢端點唯讀連線 `PRAGMA query_only = ON;` 的嚴格唯讀保證，統計記錄採用獨立寫入連線非同步執行。
+  - 統計寫入的所有例外一律全吞（Fail-Safe），確保主查詢回應絕不因統計寫入失敗而中斷或受阻。
+- **正式庫手動遷移指引**：
+  - 正式環境 `clinic.db` 遷移不隨代碼部署自動執行。使用者需先手動備份：
+    ```bash
+    cp clinic.db clinic.db.bak-$(date +%Y%m%d)
+    python3 scripts/migrate_cache_stats.py --confirm-prod-backup
+    ```
+  - 未執行遷移前，統計寫入會因找不到表而安全忽略；管理端點 `GET /api/v1/cache/stats` 則會明確回傳 HTTP 503 提示「快取統計資料表尚未建立，請先執行遷移腳本」。
+- **已知限制（使用者決策：接受並文件化）**：
+  1. 正式庫 40 筆 FAQ 中有 16 筆問句因不含路由關鍵字被 `classify` 分流為 `general`，而 `general` 路由不檢索 `special` FAQ，導致短路命中率上限約 60%（24/40），其餘問句正常走原本 pageindex 推理樹回應；本階段依計畫不改動 `classify` 或路由邏輯、不新增補強檢索。
+  2. 保守門檻與嚴格風險檢查使釋義式或稍微變形之問法多半無法短路，此為防範錯誤醫療建議之預期設計取捨。
+  3. 未命中統計僅能記錄命中之標準化路由關鍵字，無法獲知病患真實具體問法，未來 Phase 09 補強 FAQ 時需搭配人工整理清單。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -160,12 +195,16 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 ## 4. 目錄結構
 
 * `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`, `security.py`）
+  * `src/api/models/cache_stats.py`：快取統計回應 Pydantic 資料模型
   * `src/api/security.py`：認證組態單一檢查函式與安全防護定義
   * `src/api/routes/query.py`：自然語言查詢與多診所動態路由端點
+  * `src/api/routes/cache_stats.py`：快取命中統計查詢端點（需管理者金鑰）
   * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
   * `src/api/routes/health.py`：系統與資料庫健康檢查端點
 * `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應
   Python 模組，見下）
+* `src/query/faq_shortcut.py`：高信心 FAQ 短路判定與五維風險特徵比對純函式
+* `src/query/cache_stats.py`：匿名快取命中統計寫入與彙總函式（白名單過濾）
 * `src/pageindex/db_writer.py`：`page_index_trees` 的唯一 UPSERT 寫入邏輯，手寫種子與 LLM 生成皆呼叫此模組
 * `src/pageindex/seed_trees.py`：PageIndex 樹的手寫種子內容（`source_type='manual'`）
 * `src/pageindex/seed_clinic_info.py`：`clinic_info` 種子資料的唯一權威來源
@@ -174,6 +213,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯（見 2.4 節）
 * `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`，見 2.4 節）
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
+* `scripts/migrate_cache_stats.py`：`cache_stats` 資料表冪等遷移腳本（正式庫需手動確認）
 * `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
 * `scripts/run_api_server.py`：FastAPI 服務啟動入口腳本（支援 CLI 參數）
 * `clinicbrain-api.service`：systemd user service 配置範本

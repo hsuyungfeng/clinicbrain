@@ -2,7 +2,7 @@
 自然語言查詢與檢索相關 Pydantic 模型。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -62,3 +62,11 @@ class QueryResponseModel(BaseModel):
     service_item_hits: List[SearchHitModel] = Field(default_factory=list, description="健保醫療服務給付項目命中結果")
     clinic_custom_notes: Dict[str, str] = Field(default_factory=dict, description="診所自訂注意事項備註（已價格遮蔽）")
     faq_hits: List[SearchHitModel] = Field(default_factory=list, description="常見問答 FAQ 快取檢索命中結果")
+    source: Literal["cache", "pageindex", "llm"] = Field(
+        "pageindex",
+        description="答案來源出處：'cache'（高信心 FAQ 原文短路）、'pageindex'（臨床推理樹與全文檢索彙整）、'llm'（預留給未來 LLM 合成生成，現行不出現）",
+    )
+    cache_answer: Optional[str] = Field(
+        None,
+        description="當 source 為 'cache' 時的 FAQ 原文答案（已完成價格遮蔽），其餘情況為 null",
+    )

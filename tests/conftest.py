@@ -80,3 +80,10 @@ def _default_allow_no_auth(monkeypatch):
     """既有測試預設視為開發模式放行；驗證強制行為的測試須自行覆寫為 False。"""
     from src.api.config import config
     monkeypatch.setattr(config, "allow_no_auth", True)
+
+
+@pytest.fixture(autouse=True)
+def _disable_cache_stats_by_default(monkeypatch):
+    """預設關閉統計寫入，避免測試意外寫入任何資料庫；驗證統計行為的測試須自行改回 True 並指向複本資料庫。"""
+    from src.api.config import config
+    monkeypatch.setattr(config, "cache_stats_enabled", False)
