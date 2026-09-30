@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-09-29)
 Phase: 5 of 5 (doctor-toolbox.com API Integration)
 Plan: TASK-04 完成（本機服務啟動腳本 scripts/run_api_server.py、systemd user service 範本 clinicbrain-api.service、全系統端到端測試驗證），Phase 05 圓滿完工！
 Status: Phase 5 Complete (TASK-04 Done, 4/4)
-Last activity: 2026-09-29 — Phase 05 完工：FastAPI 服務層、handle_query 路由封裝、二次價格遮蔽、雙向同步 RESTful 契約、CLI 啟動腳本與 systemd user service，155 個測試全數通過
+Last activity: 2026-09-29 — Phase 05 完工：FastAPI 服務層、handle_query 路由封裝、二次價格遮蔽、雙向同步 RESTful 契約、CLI 啟動腳本與 systemd user service，156 個測試全數通過
 
 Progress: [██████████] 100% (Phase 01~05 全部完工)
 
@@ -20,7 +20,7 @@ Progress: [██████████] 100% (Phase 01~05 全部完工)
 
 **Velocity:**
 - Total tasks completed: 24+
-- Tests passing: 155/155 (100%)
+- Tests passing: 156/156 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
@@ -45,6 +45,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-09-29 12:40 (Resumed)
-Stopped at: Context restored from HANDOFF.json & Plan.md; ready for next phase selection
-Resume file: .planning/HANDOFF.json
+Last session: 2026-09-30 (Resumed，已清除過期 HANDOFF.json 與 .continue-here.md)
+Stopped at: Phase 05 完工，準備依序執行：部署 API 服務、改善中文斷詞、開下一個里程碑
+Resume file: 無（交接檔已清除）
