@@ -72,19 +72,27 @@ def test_api_health_handles_db_failure():
 
 
 def test_verify_admin_key(monkeypatch):
-    """測試 API Key 認證機制（未設金鑰時放行，設定金鑰時比對 X-API-Key）。"""
+    """測試 API Key 認證機制（未設金鑰時依 allow_no_auth 決定放行或 503 fail-closed，設定金鑰時比對 X-API-Key）。"""
     from fastapi import HTTPException
 
-    # 1. 預設無金鑰：放行
+    # 1. 本機開發放行模式（allow_no_auth=True 且無金鑰）：放行
     monkeypatch.setattr(config, "admin_api_key", None)
+    monkeypatch.setattr(config, "allow_no_auth", True)
     assert verify_admin_key(None) is True
     assert verify_admin_key("any-key") is True
 
-    # 2. 設定金鑰：正確金鑰放行
+    # 2. 未設金鑰且未啟用開發放行旗標（allow_no_auth=False）：503 fail-closed
+    monkeypatch.setattr(config, "allow_no_auth", False)
+    with pytest.raises(HTTPException) as exc_info_503:
+        verify_admin_key(None)
+    assert exc_info_503.value.status_code == 503
+    assert "CLINICBRAIN_ADMIN_API_KEY" in exc_info_503.value.detail
+
+    # 3. 設定金鑰：正確金鑰放行（即便 allow_no_auth=False）
     monkeypatch.setattr(config, "admin_api_key", "secret-test-key")
     assert verify_admin_key("secret-test-key") is True
 
-    # 3. 錯誤或缺少金鑰：拋出 401
+    # 4. 錯誤或缺少金鑰：拋出 401
     with pytest.raises(HTTPException) as exc_info:
         verify_admin_key("wrong-key")
     assert exc_info.value.status_code == 401

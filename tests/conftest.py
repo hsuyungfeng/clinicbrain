@@ -73,3 +73,10 @@ def isolated_conn(isolated_db_path: Path):
     connection = sqlite3.connect(str(isolated_db_path))
     yield connection
     connection.close()
+
+
+@pytest.fixture(autouse=True)
+def _default_allow_no_auth(monkeypatch):
+    """既有測試預設視為開發模式放行；驗證強制行為的測試須自行覆寫為 False。"""
+    from src.api.config import config
+    monkeypatch.setattr(config, "allow_no_auth", True)

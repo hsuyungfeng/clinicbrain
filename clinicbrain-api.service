@@ -13,6 +13,13 @@ Environment=CLINICBRAIN_PORT=8000
 Environment=CLINICBRAIN_DEFAULT_CLINIC_ID=3503190424
 Environment=CLINICBRAIN_DB_PATH=/home/hsu/Desktop/clinicbrain/clinic.db
 Environment=CLINICBRAIN_ENABLE_DOCS=true
+# 注意：自 Phase 06 起，未設定 CLINICBRAIN_ADMIN_API_KEY 時服務會拒絕啟動。
+# 請勿把金鑰明文寫入此範本檔（此檔案納入版本控制）。
+# 請於部署時自行提供金鑰，例如以 systemd override 檔（systemctl --user edit clinicbrain-api）
+# 於本機環境額外加入 Environment="CLINICBRAIN_ADMIN_API_KEY=<請自行產生的長隨機字串>"；
+# 權限 600 的 EnvironmentFile 將由後續 AUTH-03 處理。
+# 本機開發可暫以 CLINICBRAIN_ALLOW_NO_AUTH=1 關閉認證，切勿用於對外服務。
+# 組態修改後需由使用者手動重啟服務（systemctl --user restart clinicbrain-api），本範本不代為啟用或重啟。
 ExecStart=/usr/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_api_server.py --host 127.0.0.1 --port 8000
 Restart=on-failure
 RestartSec=5

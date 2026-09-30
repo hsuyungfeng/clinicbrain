@@ -134,6 +134,16 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   - 啟動腳本：`scripts/run_api_server.py`（支援 `--host`, `--port`, `--reload`, `--workers`, `--log-level`）。
   - Systemd 守護單元：`clinicbrain-api.service`（相依於 `llama-server.service`，支援開機自啟與故障重啟）。
 
+### 2.7 API 認證強制化（Phase 06 新增）
+為保護院所敏感資料與同步端點安全，自 Phase 06 起實施預設拒絕（Fail-Closed）的認證強制化機制：
+- **啟動檢核雙重防線**：未設定（或為純空白）`CLINICBRAIN_ADMIN_API_KEY` 時，`scripts/run_api_server.py` 在啟動 Uvicorn 前以結束碼 `2` 拒絕啟動，並於 `stderr` 輸出繁體中文處置指引；同時 FastAPI `lifespan` 亦共用同一檢核函式 `src/api/security.py:check_auth_config`，即使繞過腳本直接以 `uvicorn src.api.app:app` 啟動亦會因拋出 `AuthConfigError` 阻斷。
+- **本機開發放行旗標**：提供 CLI `--allow-no-auth` 或環境變數 `CLINICBRAIN_ALLOW_NO_AUTH=1` 供本機開發關閉認證。腳本啟動時會將 CLI 旗標同步映射至環境變數，確保 `--reload` 或多 worker 子行程皆能一致識別。啟動時於 `stderr` 印出繁體中文警告。若金鑰與開發旗標並存，以金鑰優先（強制驗證，不印警告）。
+- **同步與查詢權限劃分**：
+  - 同步端點（`POST /api/v1/sync/*`）：掛載 `verify_admin_key`。金鑰未設定且未開啟開發旗標時回傳 HTTP 503（Fail-Closed，拒絕靜默放行）；金鑰設定時比對 `X-API-Key`，未帶或不符回傳 HTTP 401。
+  - 自然語言查詢端點與 `/health` 健康檢查端點維持公開開放，不需認證。
+- **測試慣例**：`tests/conftest.py` 設有 autouse fixture `_default_allow_no_auth`，既有測試預設視為開發模式放行，維持測試穩定性；專門驗證強制行為與 503 的測試必須自行透過 monkeypatch 將 `allow_no_auth` 覆寫為 `False`。
+- **後續規劃（尚未涵蓋）**：權限 600 之 `EnvironmentFile` 將於 AUTH-03 處理；金鑰常數時間比對（`secrets.compare_digest`）將於 AUTH-04 處理。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -149,7 +159,8 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 
 ## 4. 目錄結構
 
-* `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`）
+* `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`, `security.py`）
+  * `src/api/security.py`：認證組態單一檢查函式與安全防護定義
   * `src/api/routes/query.py`：自然語言查詢與多診所動態路由端點
   * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
   * `src/api/routes/health.py`：系統與資料庫健康檢查端點
