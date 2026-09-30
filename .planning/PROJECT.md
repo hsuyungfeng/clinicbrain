@@ -4,6 +4,18 @@
 
 緻妍外科診所（Zhiyan Aesthetic Clinic，機構代碼 `3503190424`）的專屬 PageIndex 臨床推理與 RAG 查詢系統。系統整合台灣健保（NHI）藥品、醫療服務給付項目與診所自費療程衛教，透過四段式臨床推理樹與 FAQ 快取提供結構化檢索，並具備 OTC 藥品本地化與嚴格的台灣醫療法規合規機制。
 
+## Current Milestone: v1.1 上線就緒與成本優化
+
+**Goal:** 把 v1.0 的 API 安全上線，並讓常見問題不必每次都呼叫 LLM。
+
+**Target features:**
+- API 認證強制化
+- 快取優先查詢分流
+- 夜間批次生成與維護
+- 一般醫療諮詢入口 + 紅旗偵測
+
+**待決：** 一般諮詢是否匿名、是否留提問歷史（VISION 3.4）；「常見問題」清單來源。
+
 ## Core Value
 
 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無誇大保證療效、政治立場中立）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
@@ -25,8 +37,10 @@
 
 ### Active
 
-- [ ] 評估下一階段目標：Phase 04 TASK-03（查詢入口 `clinic_id` 解析）或 Phase 05（doctor-toolbox.com 官方 API 整合）
-- [ ] 提交工作區中已完成的 Phase 03 抽查結案文件修訂（`PLAN.md`、`Plan.md`）
+- [ ] **AUTH**：API 認證強制化（未設金鑰時拒絕啟動或明確警告；寫入/同步端點強制 `X-API-Key`）
+- [ ] **CACHE**：快取優先查詢分流（`handle_query` 先查 `faq_cache`，命中不呼叫 LLM）
+- [ ] **BATCH**：夜間批次生成與維護（預生成 FAQ、重建 `needs_regeneration` 的 PageIndex 樹）
+- [ ] **GENERAL**：一般醫療諮詢入口（不綁診所、免責聲明、紅旗症狀偵測與就醫提示）
 
 ### Out of Scope
 
@@ -62,5 +76,22 @@
 | `faq_cache` 獨立扁平結構 | Q&A 扁平問答與四段式臨床推理樹結構不同，分表清晰 | ✓ Good |
 | 結案 Stage 2 圖片 OCR 與教科書 OCR | 投資回報率低、教科書不適合衛教且多為掃描簡體 | ✓ Good |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-09-29 after Phase 03/04 milestone status sync*
+*Last updated: 2026-09-30 after v1.1 milestone start*
