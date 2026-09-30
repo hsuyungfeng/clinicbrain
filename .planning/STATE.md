@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-30T04:24:37.298Z"
 last_activity: 2026-09-30
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-29)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** Phase 5: doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構規劃
+**Current focus:** Phase 6: API 認證強制化（v1.1 上線就緒與成本優化）
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 6 of 9 (API 認證強制化)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-30 — Milestone v1.1 started
+Status: Not started
+Last activity: 2026-09-30 — v1.1 路線圖建立（Phase 6-9）
 
 ## Performance Metrics
 
@@ -51,7 +51,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 展開 Phase 05: doctor-toolbox.com 官方 API 整合與 HTTP 服務層架構規劃（FastAPI 路由封裝、認證機制、雙向同步合約）
+- 規劃 Phase 6：`/gsd-plan-phase 6`
+- 待決：CACHE-03 未命中統計以 topic_key/聚合計數設計，須與 GENERAL-03 匿名性相容
 
 ### Blockers/Concerns
 

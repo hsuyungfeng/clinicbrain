@@ -40,4 +40,20 @@
 - CACHE-03 與 GENERAL-03 有張力：只可存聚合計數/topic_key，不可存問句原文。BATCH-04 的「未命中來源」需在規劃時設計成不含個資的形式。
 
 ## Traceability
-（由 roadmap 填入）
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| AUTH-01 | Phase 6 | Pending |
+| CACHE-01 | Phase 7 | Pending |
+| CACHE-02 | Phase 7 | Pending |
+| CACHE-03 | Phase 7 | Pending |
+| CACHE-04 | Phase 7 | Pending |
+| GENERAL-01 | Phase 8 | Pending |
+| GENERAL-02 | Phase 8 | Pending |
+| GENERAL-03 | Phase 8 | Pending |
+| GENERAL-04 | Phase 8 | Pending |
+| BATCH-01 | Phase 9 | Pending |
+| BATCH-02 | Phase 9 | Pending |
+| BATCH-03 | Phase 9 | Pending |
+| BATCH-04 | Phase 9 | Pending |
+
+涵蓋：13/13 條 v1.1 需求皆已對應唯一 phase（Future Requirements 的 AUTH-02~04 不在本里程碑）。
