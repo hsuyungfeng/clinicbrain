@@ -7,3 +7,4 @@ __pycache__/
 .omc/
 OriginalData/
 scripts/ingestion_output/
+clinic.db-*
