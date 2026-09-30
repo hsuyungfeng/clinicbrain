@@ -66,6 +66,13 @@ _CJK_RUN_PATTERN = re.compile(r"[一-鿿]+")
 # 拆成更短的候選詞（例如「乙醯胺酚是什麼藥」在「是什麼」處被切成
 # 「乙醯胺酚」與「藥」），而不只是整段完全等於語助詞時才丟棄——否則
 # 像「乙醯胺酚是什麼藥」這種整句本身不在清單裡的情況會完全漏抽詞。
+# 2 字元低資訊通用詞：在多筆 PageIndex 摘要中都會出現，走 LIKE fallback 時
+# 會命中大量無關資料。排序時降到所有具體詞之後（不刪除，避免只剩這類詞的
+# 問句完全搜不到東西）。新增詞彙前請先確認它確實在多個療程中普遍出現。
+_GENERIC_TERMS = frozenset(
+    ("維持", "回診", "術後", "術前", "療程", "注意", "照護", "恢復", "效果", "治療")
+)
+
 _STOPWORD_SPLIT_PATTERN = re.compile(
     "|".join(
         re.escape(w)
@@ -128,10 +135,14 @@ def extract_search_terms(query: str) -> list[str]:
             if len(fragment) >= 2:
                 cjk_fragments.append(fragment)
 
+    # 低資訊通用詞降到最後（仍保留，當問句只剩這些詞時才有得搜），其餘
     # 依詞彙長度由長到短排序（越長越具體、越不容易誤中無關資料），
     # 長度相同則保留原本偵測順序；去重保留第一次出現。
     candidates = keyword_hits + cjk_fragments
-    ordered = sorted(range(len(candidates)), key=lambda i: (-len(candidates[i]), i))
+    ordered = sorted(
+        range(len(candidates)),
+        key=lambda i: (candidates[i] in _GENERIC_TERMS, -len(candidates[i]), i),
+    )
 
     seen = set()
     terms = []

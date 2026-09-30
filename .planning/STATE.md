@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-09-29)
 Phase: 5 of 5 (doctor-toolbox.com API Integration)
 Plan: TASK-04 完成（本機服務啟動腳本 scripts/run_api_server.py、systemd user service 範本 clinicbrain-api.service、全系統端到端測試驗證），Phase 05 圓滿完工！
 Status: Phase 5 Complete (TASK-04 Done, 4/4)
-Last activity: 2026-09-29 — Phase 05 完工：FastAPI 服務層、handle_query 路由封裝、二次價格遮蔽、雙向同步 RESTful 契約、CLI 啟動腳本與 systemd user service，156 個測試全數通過
+Last activity: 2026-09-29 — Phase 05 完工：FastAPI 服務層、handle_query 路由封裝、二次價格遮蔽、雙向同步 RESTful 契約、CLI 啟動腳本與 systemd user service，158 個測試全數通過
 
 Progress: [██████████] 100% (Phase 01~05 全部完工)
 
@@ -20,7 +20,7 @@ Progress: [██████████] 100% (Phase 01~05 全部完工)
 
 **Velocity:**
 - Total tasks completed: 24+
-- Tests passing: 156/156 (100%)
+- Tests passing: 158/158 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
@@ -41,7 +41,7 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- `src/query/router.py` 的 `extract_search_terms()` 使用簡單關鍵字與 CJK 長度切分，非完整中文斷詞。一般性 2 字詞（如「維持」）可能在 LIKE-fallback 中帶入雜訊，已納入回歸測試保護。
+- `src/query/router.py` 的 `extract_search_terms()` 仍非完整中文斷詞：2 字通用詞已由 `_GENERIC_TERMS` 降權（2026-09-30），但「動詞+名詞」黏連殘渣片段（如「音波拉提維持」「甲溝炎要」）尚未過濾，僅浪費一次查詢，不影響結果正確性。
 
 ## Session Continuity
 

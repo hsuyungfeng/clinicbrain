@@ -27,7 +27,17 @@ KNOWN_GOOD_EXTRACT_TERMS = {
     "感冒吃什麼好？": ["感冒吃"],
     "雷射拆線": ["雷射拆線", "雷射", "拆線"],
     "請問玻尿酸填充可以維持多久？": ["玻尿酸填充", "玻尿酸", "填充", "維持"],
+    # 通用詞（術後/回診）降到具體詞之後
+    "術後回診要注意什麼": ["術後回診", "術後", "回診"],
 }
+
+
+def test_generic_terms_ranked_after_specific_terms():
+    """低資訊通用詞（維持/回診/術後…）必須排在具體詞之後，但仍保留在結果中。"""
+    terms = extract_search_terms("肉毒術後回診")
+    assert terms.index("肉毒") < terms.index("術後")
+    assert terms.index("肉毒") < terms.index("回診")
+    assert extract_search_terms("維持多久？") == ["維持"]
 
 
 @pytest.mark.parametrize("query,expected_terms", KNOWN_GOOD_EXTRACT_TERMS.items())
