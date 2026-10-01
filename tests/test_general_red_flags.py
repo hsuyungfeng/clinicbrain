@@ -83,6 +83,9 @@ POSITIVE_CASES: list[tuple[str, str, str]] = [
     ("stroke", "emergency", "E06"),
     # E07
     ("吞了整瓶藥", "emergency", "E07"),
+    ("小孩吃了一整瓶感冒糖漿", "emergency", "E07"),
+    ("他服了整瓶安眠藥", "emergency", "E07"),
+    ("寶寶喝了一整瓶感冒糖漿", "emergency", "E07"),
     ("吞下電池", "emergency", "E07"),
     ("吞了異物", "emergency", "E07"),
     ("喝了農藥", "emergency", "E07"),
@@ -126,6 +129,9 @@ POSITIVE_CASES: list[tuple[str, str, str]] = [
 ]
 
 NEGATIVE_CASES: list[str] = [
+    "運動後可以喝一整瓶水嗎",
+    "每天要喝整瓶礦泉水才夠嗎",
+    "一整瓶保養品可以用多久",
     "玻尿酸要打幾次",
     "痛風可以喝酒嗎",
     "肉毒桿菌多久見效",
@@ -172,6 +178,7 @@ NEGATIVE_CASES: list[str] = [
 ]
 
 KNOWN_ACCEPTED_OVERTRIGGERS: list[tuple[str, str, str]] = [
+    ("吃了整瓶維他命會怎樣", "emergency", "E07"),
     ("胸。痛風", "emergency", "E01"),
     ("運動後心跳很快", "emergency", "E01"),
     ("忙到喘不過來", "emergency", "E02"),
