@@ -179,6 +179,35 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   2. 保守門檻與嚴格風險檢查使釋義式或稍微變形之問法多半無法短路，此為防範錯誤醫療建議之預期設計取捨。
   3. 未命中統計僅能記錄命中之標準化路由關鍵字，無法獲知病患真實具體問法，未來 Phase 09 補強 FAQ 時需搭配人工整理清單。
 
+### 2.9 一般醫療諮詢入口（Phase 08 新增）
+為提供民眾安全、匿名且合規之一般醫療衛教諮詢管道，自 Phase 08 起建立專屬一般諮詢架構：
+- **獨立匿名端點 (`POST /api/v1/general/query`)**：
+  - 匿名無綁定：不要求 `X-API-Key`，不接受亦不需 `clinic_id`；若客戶端夾帶 `clinic_id` 或 `X-Clinic-ID` 標頭一律靜默忽略。
+  - 資料庫隔離（GENERAL-04）：僅檢索 `category='general' AND clinic_id IS NULL` 之 `faq_cache` 與 `page_index_trees`；嚴格隔離診所私有資訊，絕不查詢藥品、健保服務給付項目與診所營運資料表；完全不呼叫外部 LLM 模型。
+  - 目前資料現況：正式資料庫內 general 類資料目前為 0 筆，所有非紅旗問句皆會誠實回傳 `no_match`（不捏造醫療內容）；general 衛教內容須另經醫師審核後始得入庫。
+- **急重症紅旗偵測 (`src/general/red_flags.py`)**：
+  - 單一權威詞表：定義 13 條規則（E01~E08, U01~U05），分為 `emergency`（立即撥打 119/急診）與 `urgent`（當日儘速就醫）兩級。
+  - 優先短路：問句命中紅旗時立即回傳固定就醫指示，完全不進行分詞、不存取資料庫。
+  - 保守醫療策略：否定語境（如「沒有胸痛」）刻意仍觸發；填充劑血管阻塞徵兆（E08）須與注射語境同句才觸發，並附加「聯絡施作診所」提示。
+  - 邊界決策：依使用者決策，精神心理類不在本表範圍；新增或修改詞表須經使用者審閱並補漏報導向正例與誤觸發負例測試。
+- **免責聲明與就醫提示 (`src/general/disclaimer.py`)**：
+  - 本模組為固定文字唯一權威來源。所有對外回覆（包含回答、無資料、紅旗警示）一律強制附帶法定醫療免責宣告，明確告知無法取代醫師面對面親自診察。
+- **傳輸層與日誌隱私承諾（GENERAL-03）**：
+  - 零日誌與無狀態：不寫入任何資料庫資料表、不記錄 `cache_stats`、回應模型刻意不回顯 `query` 欄位。
+  - 僅提供 POST 方法：問句置於請求主體，不進入 URL；同路徑之 GET 請求回傳 405 Method Not Allowed。
+  - 存取日誌過濾 (`src/api/access_log_filter.py`)：`ExcludeGeneralPathFilter` 自動攔截並整行丟棄 `uvicorn.access` 中所有 `/api/v1/general` 開頭之路徑紀錄（含 IP 與 query string）；反向代理（如 Nginx）若另有存取日誌，須自行對此路徑關閉記錄。
+- **輸入驗證與錯誤防禦**：
+  - 自訂路由 `AnonymousRoute(APIRoute)` 攔截所有 `RequestValidationError`，一律回傳固定繁體中文 `{"detail": "請求格式不正確"}`（HTTP 422），防範 FastAPI 預設錯誤在 `detail[].input` 回顯使用者敏感問句。
+  - 單次請求成本受限於問句長度（1-300 字元）與數量上限（`limit <= 10`）。
+- **認證決策與速率限制建議**：
+  - 本端點作為大眾匿名入口，刻意不加管理員金鑰。潛在濫用風險為唯讀計算負載。
+  - 建議於反向代理層使用 `limit_req` 實施速率限制；若未來於應用層實作，僅得使用純記憶體計數，嚴禁持久化病患 IP 或問句。
+- **已知限制與後續項目（不在本 Phase 處理）**：
+  1. 既有 `GET /api/v1/query?q=` 仍會在存取日誌中留下問句，且 `POST /api/v1/query` 走 `handle_query` 流程，不屬本端點之匿名承諾範圍，一般民眾入口請一律使用 `/api/v1/general/query`。
+  2. `consult_general` 沿用既有 `extract_search_terms`，長問句若未含停用詞可能切出過長片段影響 FTS 命中率；後續可考慮評估 2~3 字滑動窗口詞彙。
+- **測試慣例**：
+  - general 樹無專用寫入路徑（`upsert_trees` 需機構代碼），測試在暫存複本以 raw INSERT 建立 `clinic_id IS NULL` 的 general 樹；general FAQ 則透過權威寫入函式 `faq_writer.upsert_faqs` 寫入。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -194,13 +223,17 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 
 ## 4. 目錄結構
 
-* `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`, `security.py`）
+* `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`, `security.py`, `access_log_filter.py`）
+  * `src/api/access_log_filter.py`：uvicorn 存取日誌路徑過濾器（防止一般諮詢問句與 IP 洩漏）
+  * `src/api/models/general.py`：一般醫療諮詢請求與回應 Pydantic 資料模型
   * `src/api/models/cache_stats.py`：快取統計回應 Pydantic 資料模型
   * `src/api/security.py`：認證組態單一檢查函式與安全防護定義
+  * `src/api/routes/general.py`：一般醫療諮詢匿名對外端點（僅 POST，掛載 AnonymousRoute）
   * `src/api/routes/query.py`：自然語言查詢與多診所動態路由端點
   * `src/api/routes/cache_stats.py`：快取命中統計查詢端點（需管理者金鑰）
   * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
   * `src/api/routes/health.py`：系統與資料庫健康檢查端點
+* `src/general/`：一般醫療諮詢核心業務模組（`__init__.py`, `disclaimer.py`, `red_flags.py`, `consult.py`）
 * `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應
   Python 模組，見下）
 * `src/query/faq_shortcut.py`：高信心 FAQ 短路判定與五維風險特徵比對純函式
