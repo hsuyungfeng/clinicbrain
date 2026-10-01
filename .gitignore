@@ -8,3 +8,4 @@ __pycache__/
 OriginalData/
 scripts/ingestion_output/
 clinic.db-*
+clinic.db.bak-*
