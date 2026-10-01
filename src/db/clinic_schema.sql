@@ -245,6 +245,7 @@ END;
 
 -- ========================================
 -- FAQ Cache Table (Document Ingestion Q&A)
+-- review_status 欄位（pending/approved/rejected）：LLM 生成預設 pending 需審核，手寫與診所上傳預設 approved
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS faq_cache (
@@ -257,6 +258,8 @@ CREATE TABLE IF NOT EXISTS faq_cache (
     source_type TEXT DEFAULT 'manual',  -- 'manual' | 'llm_generated' | 'clinic_upload'
     content_version INTEGER NOT NULL DEFAULT 1,
     needs_regeneration BOOLEAN NOT NULL DEFAULT 0,
+    review_status TEXT NOT NULL DEFAULT 'approved' CHECK (review_status IN ('pending', 'approved', 'rejected')), -- 審核狀態（預設 approved 讓既有/手寫/診所上傳內容零回歸；llm_generated 於寫入時明確指定 pending）
+    reviewed_at TIMESTAMP,    -- 審核時間
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(clinic_id, topic_key, question)

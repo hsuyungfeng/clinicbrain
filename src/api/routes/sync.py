@@ -29,12 +29,14 @@ try:
     from ...clinic.custom_notes import upsert_clinic_note, VALID_SECTIONS
     from ...query.router import get_clinic_hours, get_clinic_custom_notes, mask_prices
     from ...ingestion.convert_chinese import to_traditional
+    from ...pageindex.faq_review import visible_faq_sql
 except (ImportError, ValueError):
     from src.pageindex.db_writer import upsert_trees, CONTENT_FIELDS
     from src.pageindex.faq_writer import upsert_faqs
     from src.clinic.custom_notes import upsert_clinic_note, VALID_SECTIONS
     from src.query.router import get_clinic_hours, get_clinic_custom_notes, mask_prices
     from src.ingestion.convert_chinese import to_traditional
+    from src.pageindex.faq_review import visible_faq_sql
 
 logger = logging.getLogger(__name__)
 
@@ -201,15 +203,17 @@ def export_sync_data(
         counts["trees"] = len(tree_rows)
 
     # 2. 常見問答 (faq_cache)
+    # 未核准 LLM FAQ 不外送雲端（Phase 09 BATCH-01）
     if "faqs" in request.entities:
         cursor.execute(
-            """
+            f"""
             SELECT id, clinic_id, topic_key, question, answer, category,
                    source_type, content_version, needs_regeneration,
                    created_at, updated_at
             FROM faq_cache
             WHERE (clinic_id = ? OR (clinic_id IS NULL AND category = 'general'))
               AND content_version >= ?
+              AND {visible_faq_sql(conn)}
             ORDER BY id ASC
             """,
             (request.clinic_id, request.since_version),

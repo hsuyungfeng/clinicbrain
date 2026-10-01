@@ -17,6 +17,11 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Optional
 
+try:
+    from ..pageindex.faq_review import visible_faq_sql
+except (ImportError, ValueError):
+    from src.pageindex.faq_review import visible_faq_sql
+
 # trigram tokenizer 對少於此字元數的查詢無法有效匹配，需要 LIKE fallback
 FTS_MIN_CHARS = 3
 
@@ -207,6 +212,8 @@ def search_faq_cache(
         無 clinic 參數帶入
     - 若指定 category（如 'special' 或 'general'）：
         額外 AND category = ?
+    - 審核閘門（Phase 09）：
+        未核准之 llm_generated 內容一律不可見（AND visible_faq_sql）
     """
     conditions = []
     params = []
@@ -220,6 +227,9 @@ def search_faq_cache(
     if category is not None:
         conditions.append("category = ?")
         params.append(category)
+
+    # 審核可見性過濾（Phase 09 BATCH-01：僅可見非 llm_generated 或已核准之記錄）
+    conditions.append(visible_faq_sql(conn))
 
     extra_where = " AND ".join(conditions) if conditions else None
     extra_params = tuple(params)

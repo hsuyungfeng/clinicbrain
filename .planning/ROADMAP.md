@@ -122,7 +122,13 @@
   3. `needs_regeneration=1` 的樹被重建並通過驗證，且 `*_physician_notes` 欄位內容前後完全不變
   4. `--dry-run` 只輸出預計動作而不寫入資料庫；LLM 不可用時批次優雅跳過並記錄日誌，不崩潰
   5. systemd timer 可啟用夜間排程，每次執行留下執行日誌
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 09-01-PLAN.md: 審核閘門資料層與遷移腳本 (BATCH-01)
+- [ ] 09-02-PLAN.md: 檢索/匯出閘門與審核 CLI (BATCH-01, BATCH-02)
+- [ ] 09-03-PLAN.md: 主題來源、種子清單與手動標記工具 (BATCH-02, BATCH-03)
+- [ ] 09-04-PLAN.md: FAQ 預生成與樹重建引擎 (BATCH-02, BATCH-03)
+- [ ] 09-05-PLAN.md: 批次執行器與 CLI (BATCH-01, BATCH-02, BATCH-03)
+- [ ] 09-06-PLAN.md: systemd 範本與文件關帳 (BATCH-03)
 
 ## Progress
 

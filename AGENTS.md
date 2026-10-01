@@ -208,6 +208,47 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **測試慣例**：
   - general 樹無專用寫入路徑（`upsert_trees` 需機構代碼），測試在暫存複本以 raw INSERT 建立 `clinic_id IS NULL` 的 general 樹；general FAQ 則透過權威寫入函式 `faq_writer.upsert_faqs` 寫入。
 
+### 2.10 夜間批次生成與審核閘門（Phase 09 新增）
+為達成離峰預先生成常見問答、減輕醫師日常重複解答負擔，並自動更新過期臨床推理樹，自 Phase 09 起導入夜間批次與審核閘門架構：
+- **醫師審核閘門語意 (`faq_cache.review_status`)**：
+  - 狀態列舉：`pending`（待審核）、`approved`（已核准）、`rejected`（已駁回）。
+  - 可見性規則：`manual`（手寫）與 `clinic_upload`（診所上傳）恆常對外可見；由本地模型生成之 `llm_generated` 資料預設寫入為 `pending`，在未獲醫師核准前對外完全隱蔽。
+  - 單一權威讀取與寫入路徑：
+    - `src/pageindex/faq_review.py:visible_faq_sql` 為所有 FAQ 查詢可見性過濾條件的唯一來源；新增任何 FAQ 讀取邏輯一律須經 `search_faq_cache` 或引用此條件。
+    - `src/pageindex/faq_review.py:set_review_status` 為修改審核狀態之唯一寫入路徑；核准前強制重跑四層醫療合規檢核；可見性改變時自動遞增 `content_version`。
+  - 消費端全面套用：自然語言查詢（含快取短路 `handle_query`）與同步匯出（`POST /api/v1/sync/export`）皆已無條件套用審核閘門，確保未核准項目零洩漏。
+- **資料庫遷移與 Fail-Closed 防禦**：
+  - 正式庫遷移指令：先手動備份 `cp clinic.db clinic.db.bak-$(date +%Y%m%d)`，後執行 `python3 scripts/migrate_faq_review_status.py --confirm-prod-backup`。
+  - 未遷移庫防禦：未完成遷移之舊庫在寫入 `llm_generated` 時一律拋錯拒絕（Fail-Closed）；檢索端則退化為完全排除 `llm_generated` 內容。
+- **批次執行器與資源防禦 (`src/batch/runner.py`)**：
+  - 執行入口：`python3 scripts/run_nightly_batch.py`。
+  - 多重資源保護：`--max-faq-topics`（預設 5）、`--max-trees`（預設 3）、`--max-pending`（預設 200，保護醫師審核負擔）、`--time-budget-seconds`（預設 3600.0，超時優雅中斷）、`--llm-timeout`（單次推論逾時 120 秒）。
+  - 單筆失敗隔離：單一主題或單一推理樹處理失敗不影響同批其他項目。
+  - 本地 LLM 離線降級：健康檢查或中途遇到 `LocalLLMUnavailableError` 時優雅中止，保留已完成項目並記錄日誌，以結束碼 0 退出，不造成排程失敗。
+- **臨床推理樹重建與【重建會覆蓋手寫內容】重要警示**：
+  - 唯一標記入口：`src/pageindex/db_writer.py:set_needs_regeneration`，提供 CLI 工具 `scripts/mark_tree_regen.py`。
+  - 繞過閘門取捨與後果：臨床推理樹重建**不走審核閘門**；被標記重建的手寫樹（`manual` 或 `clinic_upload`）其四段臨床內容與摘要將直接被 LLM 覆蓋，`source_type` 變更為 `llm_generated`。
+  - 補償防護機制：
+    1. 醫師權威註記保護：四段之 `*_physician_notes` 覆寫既有值，寫入後一致性校驗，若被清空自動執行前像還原。
+    2. 自動前像快照：重建前將既有內容以 JSON 格式儲存於 `logs/nightly_batch/tree_snapshots/`。
+    3. 審核警告事件：覆蓋手寫內容時於日誌發出醒目的 `tree_overwrote_handwritten` 警告並累計至摘要。
+- **主題種子清單 (`data/batch/faq_seeds.json`)**：
+  - 結合熱門未命中關鍵字（過去 14 天累計未命中次數達門檻）與 `always` 候選分流。
+  - 所有問題由人撰寫，載入時強制四層醫療合規檢查；全部題目皆已存在的主題自動跳過且不佔名額（不餓死其他主題）。
+- **非阻塞檔案鎖與日誌隱私保證**：
+  - 鎖檔位置：固定位於目標資料庫同目錄（`<db_path>.nightly.lock`），跨不同 log 目錄皆具互斥性，不重疊執行。
+  - 預設 log-dir 解析為專案絕對路徑 `logs/nightly_batch`。
+  - 日誌隱私範圍：`RunLogger` 嚴禁記錄 `query/question/answer/prompt/raw` 等鍵名；批次期間透過 `content_loggers_silenced()` 靜音內部 logger，保證程式產生日誌無問句與模型原文；第三方 logger 不在保證內。
+- **結束碼定義**：0 = 完成或優雅跳過（含 dry-run、LLM 不可用、持鎖略過、預算用盡）；1 = 未預期例外；2 = 參數/前置檢查拒絕。
+- **排程服務與啟用規範**：
+  - 提供 `clinicbrain-nightly.service`（oneshot）與 `clinicbrain-nightly.timer`（凌晨 02:30，含 Persistent 補跑）範本。
+  - 專案依規範絕不代為啟用或啟動任何 systemd 服務，由使用者自行規劃啟用。
+- **已知限制（架構決策接受）**：
+  1. `/api/v1/sync/import` 以 `clinic_upload` 寫入，若與既有 pending/rejected 的 `llm_generated` 列同鍵，會覆寫並變更為 approved（外部匯入視為院所權威來源）。
+  2. `local_llm_call` 逾時會轉為 `LocalLLMUnavailableError`，單次逾時即讓批次提前優雅結束（結束碼 0），留待下一晚繼續。
+  3. 樹重建繞過審核閘門（如上述，以快照與註記還原為補償防線）。
+  4. 未命中關鍵字僅記錄標準化白名單字詞，無法獲知病患真實具體問法。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -233,23 +274,32 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   * `src/api/routes/cache_stats.py`：快取命中統計查詢端點（需管理者金鑰）
   * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
   * `src/api/routes/health.py`：系統與資料庫健康檢查端點
+* `src/batch/`：夜間批次排程與生成核心模組（`runner.py`, `run_log.py`, `topic_sources.py`, `faq_generator.py`, `tree_rebuild.py`）
 * `src/general/`：一般醫療諮詢核心業務模組（`__init__.py`, `disclaimer.py`, `red_flags.py`, `consult.py`）
-* `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應
-  Python 模組，見下）
+* `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應 Python 模組）
 * `src/query/faq_shortcut.py`：高信心 FAQ 短路判定與五維風險特徵比對純函式
 * `src/query/cache_stats.py`：匿名快取命中統計寫入與彙總函式（白名單過濾）
-* `src/pageindex/db_writer.py`：`page_index_trees` 的唯一 UPSERT 寫入邏輯，手寫種子與 LLM 生成皆呼叫此模組
+* `src/pageindex/faq_review.py`：FAQ 審核閘門狀態管理、四層驗證與可見性 SQL 產生器
+* `src/pageindex/db_writer.py`：`page_index_trees` 的唯一 UPSERT 寫入與過期標記邏輯
 * `src/pageindex/seed_trees.py`：PageIndex 樹的手寫種子內容（`source_type='manual'`）
 * `src/pageindex/seed_clinic_info.py`：`clinic_info` 種子資料的唯一權威來源
-* `src/pageindex/prompt_template.py`：LLM 生成臨床推理樹的 prompt 組裝 + 輸出驗證（`source_type='llm_generated'`）
-* `src/pageindex/llm_client.py`：本地 LLM（llama-server）呼叫 adapter，符合 `generate_tree()` 期待的 `Callable[[str], str]` 介面
-* `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯（見 2.4 節）
-* `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`，見 2.4 節）
+* `src/pageindex/prompt_template.py`：LLM 生成臨床推理樹的 prompt 組裝 + 輸出驗證
+* `src/pageindex/llm_client.py`：本地 LLM（llama-server）呼叫 adapter
+* `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯
+* `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`）
+* `data/batch/faq_seeds.json`：夜間批次 FAQ 與樹主題繁體中文種子清單
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
-* `scripts/migrate_cache_stats.py`：`cache_stats` 資料表冪等遷移腳本（正式庫需手動確認）
+* `scripts/migrate_cache_stats.py`：`cache_stats` 資料表結構遷移腳本
+* `scripts/migrate_faq_review_status.py`：`faq_cache.review_status` 審核欄位交易性遷移腳本
+* `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具
+* `scripts/review_faq.py`：醫師審核命令列互動工具
+* `scripts/mark_tree_regen.py`：臨床推理樹待重建手動標記工具
 * `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
 * `scripts/run_api_server.py`：FastAPI 服務啟動入口腳本（支援 CLI 參數）
-* `clinicbrain-api.service`：systemd user service 配置範本
+* `clinicbrain-api.service`：API 服務 systemd 配置範本
+* `clinicbrain-nightly.service`：夜間批次排程 systemd 配置範本
+* `clinicbrain-nightly.timer`：夜間批次排程定時器範本
+* `docs/nightly-batch.md`：夜間批次與審核營運維護手冊
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

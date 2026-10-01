@@ -1,0 +1,16 @@
+[Unit]
+Description=clinicbrain 夜間批次定時排程器
+Documentation=https://github.com/hsuyungfeng/clinicbrain
+
+[Timer]
+# 每日凌晨 02:30 觸發
+OnCalendar=*-*-* 02:30:00
+# 若系統關機或休眠錯過預定排程，於開機後自動補行執行一次
+Persistent=true
+# 隨機延遲至多 15 分鐘，避免瞬間負載集中
+RandomizedDelaySec=900
+AccuracySec=1min
+Unit=clinicbrain-nightly.service
+
+[Install]
+WantedBy=timers.target

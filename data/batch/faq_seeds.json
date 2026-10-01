@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "description": "人工維護之常見問題種子主題清單；問題由專人撰寫，嚴禁貼入包含具體價格金額、簡體字或保證療效字句。",
+  "tree_procedure_names": {
+    "laser-skin-resurfacing": "雷射皮膚換膚",
+    "botox-injection": "肉毒桿菌素注射",
+    "electrowave-facelift": "電波拉皮",
+    "hyaluronic-acid-filler": "玻尿酸填充",
+    "fractional-laser": "飛梭雷射",
+    "hifu-lifting": "音波拉提"
+  },
+  "topics": [
+    {
+      "topic_key": "ingrown-nail-care",
+      "title": "甲溝炎處理與術後照護",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "keywords": [
+        "甲溝炎"
+      ],
+      "always": false,
+      "tree_doc_id": null,
+      "questions": [
+        "甲溝炎術後傷口要如何照護？",
+        "甲溝炎術後多久需要回診追蹤？",
+        "甲溝炎為什麼容易反覆發作？"
+      ]
+    },
+    {
+      "topic_key": "hifu-lifting-faq",
+      "title": "音波拉提常見問題",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "keywords": [
+        "音波",
+        "拉提"
+      ],
+      "always": false,
+      "tree_doc_id": "hifu-lifting",
+      "questions": [
+        "音波拉提術後多久可以恢復正常保養？",
+        "音波拉提大約多久需要再做一次？",
+        "哪些人不適合接受音波拉提？"
+      ]
+    },
+    {
+      "topic_key": "hyaluronic-acid-filler-faq",
+      "title": "玻尿酸填充常見問題",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "keywords": [
+        "玻尿酸",
+        "填充"
+      ],
+      "always": false,
+      "tree_doc_id": "hyaluronic-acid-filler",
+      "questions": [
+        "玻尿酸填充術後需要注意哪些事項？",
+        "玻尿酸填充的效果大約能維持多久？",
+        "玻尿酸填充後出現紅腫瘀青該怎麼辦？"
+      ]
+    },
+    {
+      "topic_key": "common-cold-home-care",
+      "title": "感冒居家照護",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "感冒時在家要如何照護與休息？",
+        "感冒時需要多喝水嗎？"
+      ]
+    }
+  ]
+}

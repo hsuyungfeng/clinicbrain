@@ -1,0 +1,22 @@
+[Unit]
+Description=clinicbrain 夜間批次（FAQ 預生成與過期樹重建）
+Documentation=https://github.com/hsuyungfeng/clinicbrain
+After=network.target llama-server.service
+Wants=llama-server.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hsu/Desktop/clinicbrain
+Environment=PYTHONUNBUFFERED=1
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=7200
+# 注意事項說明（繁體中文）：
+# 1. 本檔案僅為排程範本，納入版本控制，絕不包含任何敏感金鑰。
+# 2. 參數 --allow-prod-db 代表明確同意於正式庫進行寫入。
+# 3. 部署前請務必先手動備份資料庫：cp clinic.db clinic.db.bak-$(date +%Y%m%d)
+# 4. 且必須先確認已完成欄位結構遷移：python3 scripts/migrate_faq_review_status.py --confirm-prod-backup
+# 5. 建議先使用 --dry-run 在複本進行預演確認。
+# 6. 批次結束碼 0 代表正常完成或優雅略過（例如 LLM 離線），不視為服務失敗。
+# 7. 本專案絕不代為啟用或啟動任何系統服務，請使用者依系統管理指引自行規劃。
+ExecStart=/usr/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_nightly_batch.py --db /home/hsu/Desktop/clinicbrain/clinic.db --allow-prod-db --max-faq-topics 5 --max-trees 3 --time-budget-seconds 3600

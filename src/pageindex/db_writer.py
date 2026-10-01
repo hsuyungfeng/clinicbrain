@@ -107,3 +107,54 @@ def upsert_trees(conn, trees, source_type: str):
     conn.commit()
     print(f"新增 {inserted} 筆、更新 {updated} 筆、內容未變跳過 {unchanged} 筆（source_type={source_type}）")
     return inserted, updated, unchanged
+
+
+def set_needs_regeneration(
+    conn,
+    doc_ids: list[str],
+    flag: bool,
+) -> tuple[int, list[str]]:
+    """手動標記或清除 PageIndex 樹之 needs_regeneration 旗標（BATCH-02 入口）。
+
+    doc_ids: list of str，欲標記/清除的 doc_id 清單。
+    flag: True 為標記待重建 (1)，False 為清除標記 (0)。
+
+    規則：
+    - 若傳入的 doc_ids 中有任何項目不存在於資料庫，不進行任何寫入，直接回傳 (0, missing)。
+    - 僅更新 needs_regeneration 欄位，不修改 content_version、updated_at、source_type 與任何內容欄位。
+    - 這是全專案把 needs_regeneration 設為 1 的唯一入口。
+
+    回傳: (changed_count, missing_doc_ids)
+    """
+    if not doc_ids:
+        return 0, []
+
+    cursor = conn.cursor()
+    placeholders = ",".join("?" for _ in doc_ids)
+    cursor.execute(
+        f"SELECT doc_id FROM page_index_trees WHERE doc_id IN ({placeholders})",
+        doc_ids,
+    )
+    found_doc_ids = {row[0] for row in cursor.fetchall()}
+    missing = [d for d in doc_ids if d not in found_doc_ids]
+
+    if missing:
+        return 0, missing
+
+    target_val = 1 if flag else 0
+    changed = 0
+
+    for doc_id in doc_ids:
+        cursor.execute(
+            """
+            UPDATE page_index_trees
+            SET needs_regeneration = ?
+            WHERE doc_id = ? AND needs_regeneration != ?
+            """,
+            (target_val, doc_id, target_val),
+        )
+        changed += cursor.rowcount
+
+    conn.commit()
+    return changed, []
+

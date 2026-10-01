@@ -16,6 +16,11 @@ Phase 03 Document Ingestion Stage 1: TASK-00
 import sqlite3
 from typing import Any, Iterable, Optional
 
+try:
+    from .faq_review import has_review_status
+except ImportError:
+    from src.pageindex.faq_review import has_review_status
+
 CONTENT_FIELDS = ("question", "answer", "category", "topic_key")
 VALID_CATEGORIES = ("special", "general")
 VALID_SOURCE_TYPES = ("manual", "llm_generated", "clinic_upload")
@@ -36,12 +41,25 @@ def upsert_faqs(
         - topic_key: Optional[str]（對應之療程/主題 slug，可為 None）
     source_type: 'manual' | 'llm_generated' | 'clinic_upload'
 
+    審核狀態規範（Phase 09）：
+        - source_type='llm_generated' 寫入時 review_status 預設為 'pending'
+        - 'manual' 與 'clinic_upload' 寫入時 review_status 預設為 'approved'
+        - 若資料庫尚未遷移審核欄位且欲寫入 'llm_generated'，直接拋出 RuntimeError（Fail-Closed 原則）
+
     回傳: (inserted, updated, unchanged)
     """
     if source_type not in VALID_SOURCE_TYPES:
         raise ValueError(
             f"無效的 source_type: '{source_type}'，合法值為 {VALID_SOURCE_TYPES}"
         )
+
+    has_review = has_review_status(conn)
+    if source_type == "llm_generated" and not has_review:
+        raise RuntimeError(
+            "資料庫尚未建立審核欄位，禁止寫入 llm_generated 內容！請先執行 scripts/migrate_faq_review_status.py 遷移腳本。"
+        )
+
+    target_review_status = "pending" if source_type == "llm_generated" else "approved"
 
     cursor = conn.cursor()
     inserted = 0
@@ -87,22 +105,41 @@ def upsert_faqs(
         existing = cursor.fetchone()
 
         if existing is None:
-            cursor.execute(
-                """
-                INSERT INTO faq_cache (
-                    clinic_id, topic_key, question, answer, category,
-                    source_type, content_version, needs_regeneration
-                ) VALUES (?, ?, ?, ?, ?, ?, 1, 0)
-                """,
-                (
-                    clinic_id,
-                    topic_key,
-                    question,
-                    answer,
-                    category,
-                    source_type,
-                ),
-            )
+            if has_review:
+                cursor.execute(
+                    """
+                    INSERT INTO faq_cache (
+                        clinic_id, topic_key, question, answer, category,
+                        source_type, content_version, needs_regeneration, review_status
+                    ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?)
+                    """,
+                    (
+                        clinic_id,
+                        topic_key,
+                        question,
+                        answer,
+                        category,
+                        source_type,
+                        target_review_status,
+                    ),
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO faq_cache (
+                        clinic_id, topic_key, question, answer, category,
+                        source_type, content_version, needs_regeneration
+                    ) VALUES (?, ?, ?, ?, ?, ?, 1, 0)
+                    """,
+                    (
+                        clinic_id,
+                        topic_key,
+                        question,
+                        answer,
+                        category,
+                        source_type,
+                    ),
+                )
             inserted += 1
         else:
             existing_id, existing_q, existing_a, existing_cat, existing_topic, existing_version = existing
@@ -113,25 +150,49 @@ def upsert_faqs(
                 unchanged += 1
                 continue
 
-            cursor.execute(
-                """
-                UPDATE faq_cache
-                SET answer = ?,
-                    category = ?,
-                    source_type = ?,
-                    content_version = ?,
-                    needs_regeneration = 0,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-                """,
-                (
-                    answer,
-                    category,
-                    source_type,
-                    existing_version + 1,
-                    existing_id,
-                ),
-            )
+            if has_review:
+                cursor.execute(
+                    """
+                    UPDATE faq_cache
+                    SET answer = ?,
+                        category = ?,
+                        source_type = ?,
+                        content_version = ?,
+                        needs_regeneration = 0,
+                        review_status = ?,
+                        reviewed_at = NULL,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (
+                        answer,
+                        category,
+                        source_type,
+                        existing_version + 1,
+                        target_review_status,
+                        existing_id,
+                    ),
+                )
+            else:
+                cursor.execute(
+                    """
+                    UPDATE faq_cache
+                    SET answer = ?,
+                        category = ?,
+                        source_type = ?,
+                        content_version = ?,
+                        needs_regeneration = 0,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (
+                        answer,
+                        category,
+                        source_type,
+                        existing_version + 1,
+                        existing_id,
+                    ),
+                )
             updated += 1
 
     conn.commit()

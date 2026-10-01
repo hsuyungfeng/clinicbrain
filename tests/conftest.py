@@ -33,6 +33,9 @@ def _ensure_faq_cache(db_path: Path):
         temp_conn.executescript(faq_ddl)
         temp_conn.close()
 
+        from scripts.migrate_faq_review_status import apply_review_status_migration
+        apply_review_status_migration(db_path)
+
 
 @pytest.fixture(scope="session")
 def session_db_path(tmp_path_factory) -> Path:
