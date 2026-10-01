@@ -40,6 +40,10 @@
 - CACHE-03 與 GENERAL-03 有張力：只可存聚合計數/topic_key，不可存問句原文。BATCH-04 的「未命中來源」需在規劃時設計成不含個資的形式。
 
 - **已決策（2026-09-30）**：CACHE-03 未命中統計只累加 `handle_query` 已比對到的路由關鍵字（來自固定詞表）的計數，不存問句原文、不推測 topic_key。代價：只知主題熱度，不知具體問法。BATCH-04 的自動來源因此是「熱門關鍵字」，需搭配手動清單。
+- **已決策（2026-10-01，Phase 9）**：
+  - 夜間批次以 LLM 預生成的 FAQ **寫入但預設不啟用**：需新增審核狀態（如 `review_status`），`source_type='llm_generated'` 預設 pending，**查詢檢索與快取短路只使用已審核（或手寫/診所上傳）內容**，確保未經醫師審核的 LLM 內容不會被當成權威答案回覆。此點需小幅修改 Phase 7 已完成的 FAQ 檢索（`search_faq_cache` 與短路候選集）。
+  - BATCH-02 的 `needs_regeneration` 目前只有清除、沒有任何設為 1 的程式：由**手動標記工具**觸發，批次只處理已標記的樹，不做自動時間判斷；重建一律不得動 `*_physician_notes`。
+  - ROADMAP 成功標準 1 的「topic_key」依 Phase 7 決策應讀為「路由關鍵字」：需定義關鍵字到可生成主題的對應規則（搭配手動清單）。
 
 ## Traceability
 | Requirement | Phase | Status |
