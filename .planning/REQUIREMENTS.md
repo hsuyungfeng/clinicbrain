@@ -18,8 +18,8 @@
 - [ ] **GC-04**：改善審核工具 `review_faq`（依主題批次檢視、顯示生成來源與驗證結果）。生成結果一律 `pending`，經使用者核准才上線（沿用 v1.1 審核閘門）
 
 ### DEBT 技術債清理
-- [ ] **DEBT-01**：`migrate_faq_review_status` 的 ALTER 改由 schema 擷取，不再與 `clinic_schema.sql` 雙寫
-- [ ] **DEBT-02**：`config.default_clinic_id` 孤兒設定——接線成真正後備或移除，並對齊 AGENTS.md 2.6
+- [x] **DEBT-01**：`migrate_faq_review_status` 的 ALTER 改由 schema 擷取，不再與 `clinic_schema.sql` 雙寫
+- [x] **DEBT-02**：`config.default_clinic_id` 孤兒設定——接線成真正後備或移除，並對齊 AGENTS.md 2.6
 - [ ] **DEBT-03**：駁回題目可由人明確觸發重新生成（預設仍不自動重生成，避免被駁回內容自行回流）
 - [ ] **DEBT-04**：批次對真實 LLM 的完整實跑驗證，僅在資料庫複本上進行（不碰正式庫），需 `llama-server` 空閒
 
@@ -45,8 +45,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEBT-01 | Phase 10 | Pending |
-| DEBT-02 | Phase 10 | Pending |
+| DEBT-01 | Phase 10 | Complete |
+| DEBT-02 | Phase 10 | Complete |
 | CF-01 | Phase 11 | Pending |
 | CF-02 | Phase 11 | Pending |
 | CF-03 | Phase 11 | Pending |
