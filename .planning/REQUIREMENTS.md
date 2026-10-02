@@ -39,6 +39,7 @@
 - CF-01 改的是檢索順序；Phase 7 的短路安全檢查（覆蓋率、風險特徵）原本針對診所自己的 FAQ 校準，納入更多候選後必須由 CF-03 守門並補回歸測試。
 - GC-02 是新風險面：v1.1 四層驗證器（價格／簡體／政治／保證療效）不攔截用藥劑量與處方。
 - 本里程碑不涉及正式庫 schema 變更之外的資料遷移；任何對正式庫的寫入仍由使用者手動執行。
+- **已決策（2026-10-02，Phase 10）**：DEBT-02 採「**移除** `config.default_clinic_id`」，維持 `clinic_id` 必須明確傳入（Phase 4 原則：不靜默查到別家診所）。連帶移除 `clinicbrain-api.service` 範本的 `CLINICBRAIN_DEFAULT_CLINIC_ID` 並修正 AGENTS.md 2.6 的解析順序（Path/Body > Header，無預設）。單診所部署時呼叫端需帶 `X-Clinic-ID` 或 body `clinic_id`。
 
 ## Traceability
 
