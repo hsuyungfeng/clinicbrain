@@ -4,17 +4,18 @@
 
 緻妍外科診所（Zhiyan Aesthetic Clinic，機構代碼 `3503190424`）的專屬 PageIndex 臨床推理與 RAG 查詢系統。系統整合台灣健保（NHI）藥品、醫療服務給付項目與診所自費療程衛教，透過四段式臨床推理樹與 FAQ 快取提供結構化檢索，並具備 OTC 藥品本地化與嚴格的台灣醫療法規合規機制。
 
-## Current State
+## Current Milestone: v1.2 診所資料優先與一般疾病簡易資訊
 
-**已出貨：v1.1 上線就緒與成本優化（2026-10-02）**，前一版 v1.0（2026-09-29）。系統為本機 FastAPI 服務（綁定 127.0.0.1，手動啟動），含認證強制化、快取優先查詢、匿名一般諮詢（紅旗偵測）與醫師審核閘門下的夜間批次。578 個測試全過。
+**Goal:** 診所自己提供的資料永遠優先被查；一般問題則有本地 LLM 生成、經醫師審核的疾病簡易資訊可答。
 
-## Next Milestone Goals
+**Target features:**
+- **診所資料優先查詢（clinic-first）**：有 clinic_id 時，不論關鍵字分流結果，一律先查該診所自己的 FAQ／推理樹／備註，查不到才退到 general（解決短路命中率上限約 60%、16/40 FAQ 被誤分流而查不到）
+- **一般疾病簡易資訊（本地 LLM 生成）**：沿用 v1.1 批次與審核閘門（general 類、預設 pending、醫師核准後才被查詢），擴充常見疾病種子清單
+- **技術債清理**：DDL 雙寫收斂、孤兒設定 `default_clinic_id`、駁回題目可否重新生成、批次對真實 LLM 的實跑驗證（僅複本）、紅旗詞表殘餘漏報（須使用者審閱）
 
-尚未定義。候選方向（見 `.planning/milestones/v1.1-MILESTONE-AUDIT.md` 技術債）：
-- 讓 general 衛教內容真正有資料：實際跑夜間批次生成並經醫師核准
-- 改善中文檢索（2~3 字滑動窗）與短路命中率（目前上限約 60%）
-- 對外開放前的安全補強：AUTH-03（EnvironmentFile）、AUTH-04（常數時間比對）、應用層速率限制
-- 與 doctor-toolbox.com 實際整合方式（本機 vs 對外開放）
+**不在範圍：** 健保給付規定類問答（審查注意事項，列為後續）；簡體 `medical_o1_sft_Chinese.json` 與英文 ICD 檔不使用。
+
+**已知前提：** 已出貨 v1.1（2026-10-02）與 v1.0（2026-09-29）；本機 FastAPI 服務（127.0.0.1，手動啟動）。
 
 ## Core Value
 
@@ -42,7 +43,9 @@
 
 ### Active
 
-（無；下一個里程碑定義時再加入）
+- [ ] **CLINIC-FIRST**：診所資料優先查詢，不受關鍵字分流限制
+- [ ] **GENERAL-CONTENT**：LLM 生成的一般疾病簡易資訊（經審核閘門）
+- [ ] **DEBT**：v1.1 稽核技術債清理
 
 ### Out of Scope
 
@@ -96,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-02 after v1.1 milestone archived*
+*Last updated: 2026-10-02 after v1.2 milestone start*

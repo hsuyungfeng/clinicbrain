@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: 上線就緒與成本優化
-status: milestone-complete
-stopped_at: v1.1 與 v1.0 已歸檔；等待定義下一個里程碑
-last_updated: "2026-10-02T05:48:48.980Z"
-last_activity: 2026-10-02 — Milestone v1.1 completed and archived
+milestone: v1.2
+milestone_name: 診所資料優先與一般疾病簡易資訊
+status: planning
+last_updated: "2026-10-02T06:42:17.605Z"
+last_activity: 2026-10-02
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 無（v1.1 已歸檔，Phase 編號下次從 10 繼續）
+Phase: Not started (defining requirements)
 Plan: —
-Status: Milestone complete — 等待 /gsd-new-milestone
-Last activity: 2026-10-02 — Milestone v1.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-02 — Milestone v1.2 started
 
 ## Performance Metrics
 
