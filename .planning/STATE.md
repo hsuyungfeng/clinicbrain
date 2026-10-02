@@ -2,9 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 上線就緒與成本優化
-status: complete-pending-archive
-last_updated: "2026-10-02T00:00:00.000Z"
-last_activity: 2026-10-02
+status: milestone-complete
+stopped_at: v1.1 與 v1.0 已歸檔；等待定義下一個里程碑
+last_updated: "2026-10-02T05:48:48.980Z"
+last_activity: 2026-10-02 — Milestone v1.1 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -17,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-29)
+See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** v1.1 全部 Phase 完成；待使用者執行 Phase 9 正式庫遷移後歸檔里程碑
+**Current focus:** 無進行中的里程碑（v1.0、v1.1 已歸檔）；下一步 /gsd-new-milestone
 
 ## Current Position
 
-Phase: 9 of 9 (夜間批次生成與維護) — v1.1 四個 Phase 全部完成
-Plan: 16/16 plans 完成（Phase 6: 2、Phase 7: 4、Phase 8: 4、Phase 9: 6）
-Status: Complete — 待使用者手動遷移正式庫 review_status 後歸檔
-Last activity: 2026-10-02 — Phase 6–9 已執行、獨立驗證、commit 並 push（078d4dc）
+Phase: 無（v1.1 已歸檔，Phase 編號下次從 10 繼續）
+Plan: —
+Status: Milestone complete — 等待 /gsd-new-milestone
+Last activity: 2026-10-02 — Milestone v1.1 completed and archived
 
 ## Performance Metrics
 
@@ -54,9 +55,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 使用者手動：Phase 9 正式庫 review_status 遷移（先停服務、sqlite3 .backup 備份、遷移前後各量 sha256sum、--confirm-prod-backup）
-- 歸檔里程碑：/gsd-complete-milestone（一次歸檔 v1.0 與 v1.1）
-- 之後可考慮：general 類內容目前 0 筆（需批次生成 + 醫師核准）、2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04
+- 下一個里程碑：/gsd-new-milestone（候選方向見 .planning/milestones/v1.1-MILESTONE-AUDIT.md 技術債與 PROJECT.md 的 Next Milestone Goals）
+- 之後可考慮：夜間批次實際生成並經醫師核准（general 內容目前 0 筆）、2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04
 
 ### Blockers/Concerns
 
@@ -64,6 +64,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-10-02（Resumed）
-Stopped at: v1.1 Phase 6–9 完成；等待使用者遷移正式庫與歸檔
-Resume file: .planning/HANDOFF.json（保留至遷移與歸檔完成）
+Last session: 2026-10-02
+Stopped at: v1.1 與 v1.0 已歸檔（tag v1.0、v1.1）；等待定義下一個里程碑
+Resume file: 無

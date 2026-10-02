@@ -4,17 +4,17 @@
 
 緻妍外科診所（Zhiyan Aesthetic Clinic，機構代碼 `3503190424`）的專屬 PageIndex 臨床推理與 RAG 查詢系統。系統整合台灣健保（NHI）藥品、醫療服務給付項目與診所自費療程衛教，透過四段式臨床推理樹與 FAQ 快取提供結構化檢索，並具備 OTC 藥品本地化與嚴格的台灣醫療法規合規機制。
 
-## Current Milestone: v1.1 上線就緒與成本優化
+## Current State
 
-**Goal:** 把 v1.0 的 API 安全上線，並讓常見問題不必每次都呼叫 LLM。
+**已出貨：v1.1 上線就緒與成本優化（2026-10-02）**，前一版 v1.0（2026-09-29）。系統為本機 FastAPI 服務（綁定 127.0.0.1，手動啟動），含認證強制化、快取優先查詢、匿名一般諮詢（紅旗偵測）與醫師審核閘門下的夜間批次。578 個測試全過。
 
-**Target features:**
-- API 認證強制化
-- 快取優先查詢分流
-- 夜間批次生成與維護
-- 一般醫療諮詢入口 + 紅旗偵測
+## Next Milestone Goals
 
-**待決：** 一般諮詢是否匿名、是否留提問歷史（VISION 3.4）；「常見問題」清單來源。
+尚未定義。候選方向（見 `.planning/milestones/v1.1-MILESTONE-AUDIT.md` 技術債）：
+- 讓 general 衛教內容真正有資料：實際跑夜間批次生成並經醫師核准
+- 改善中文檢索（2~3 字滑動窗）與短路命中率（目前上限約 60%）
+- 對外開放前的安全補強：AUTH-03（EnvironmentFile）、AUTH-04（常數時間比對）、應用層速率限制
+- 與 doctor-toolbox.com 實際整合方式（本機 vs 對外開放）
 
 ## Core Value
 
@@ -34,13 +34,15 @@
 - ✓ **多診所架構重構**：`clinic_id` 欄位補全、`doc_id` 去前綴、值遷移為健保代碼 `3503190424`、函式預設值移除並設為必填 (Phase 04 TASK-00~02)
 - ✓ **文件擷取與 FAQ 管線 Stage 1**：docx/xlsx 擷取、opencc 簡繁轉換、LLM FAQ 生成、`faq_cache` 表與 40 筆正式資料寫入 (Phase 03 Stage 1)
 - ✓ **穩定測試套件**：123 個 pytest 測試全數通過，正式資料庫安全隔離驗證 (Phase 01~04)
+- ✓ **API 認證強制化**：未設金鑰拒絕啟動、fail-closed、本機開發旗標 (Phase 06)
+- ✓ **快取優先查詢**：保守 FAQ 短路、source 標示、匿名關鍵字聚合統計、短路回答仍過價格遮蔽 (Phase 07)
+- ✓ **匿名一般醫療諮詢**：不綁診所端點、紅旗分級偵測（不走 LLM）、免責聲明、422 不回顯問句 (Phase 08)
+- ✓ **醫師審核閘門與夜間批次**：LLM FAQ 預設 pending、批次 dry-run/優雅降級、樹重建保護 physician_notes (Phase 09)
+- ✓ **穩定測試套件**：578 個 pytest 全過，測試與正式庫資料狀態脫鉤 (Phase 01~09)
 
 ### Active
 
-- [ ] **AUTH**：API 認證強制化（未設金鑰時拒絕啟動或明確警告；寫入/同步端點強制 `X-API-Key`）
-- [ ] **CACHE**：快取優先查詢分流（`handle_query` 先查 `faq_cache`，命中不呼叫 LLM）
-- [ ] **BATCH**：夜間批次生成與維護（預生成 FAQ、重建 `needs_regeneration` 的 PageIndex 樹）
-- [ ] **GENERAL**：一般醫療諮詢入口（不綁診所、免責聲明、紅旗症狀偵測與就醫提示）
+（無；下一個里程碑定義時再加入）
 
 ### Out of Scope
 
@@ -94,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-30 after v1.1 milestone start*
+*Last updated: 2026-10-02 after v1.1 milestone archived*
