@@ -145,3 +145,59 @@ def test_api_response_zero_price_leakage(api_client):
         matches = price_regex.findall(text)
         # 允許被替換後的 "[請致電診所確認]"，但不能有具體數字價格
         assert len(matches) == 0, f"問句 '{p['query']}' 的 API 回應中發現價格洩漏：{matches}"
+
+
+def test_config_has_no_default_clinic(monkeypatch):
+    """測試 APIConfig 不再有預設診所代碼欄位，且環境變數無效果。"""
+    from dataclasses import fields
+    from src.api.config import APIConfig
+
+    attr_name = "default_" + "clinic_id"
+    env_name = "CLINICBRAIN_DEFAULT" + "_CLINIC_ID"
+
+    field_names = {f.name for f in fields(APIConfig)}
+    assert attr_name not in field_names
+    assert hasattr(config, attr_name) is False
+
+    monkeypatch.setenv(env_name, "3503190424")
+    new_cfg = APIConfig()
+    assert hasattr(new_cfg, attr_name) is False
+
+
+def test_get_query_special_missing_clinic_id_returns_400(api_client):
+    """測試 GET /api/v1/query 未帶 Header X-Clinic-ID 查 special 營運時回傳 HTTP 400。"""
+    resp = api_client.get("/api/v1/query?q=請問診所門診營業時間？")
+    assert resp.status_code == 400
+    assert "clinic_id" in resp.json().get("detail", "")
+
+
+def test_post_query_special_header_blank_clinic_id_returns_400(api_client):
+    """測試 POST /api/v1/query，body 無 clinic_id 且 Header 為純空白時回傳 400。"""
+    resp = api_client.post(
+        "/api/v1/query",
+        json={"query": "請問診所門診營業時間？"},
+        headers={"X-Clinic-ID": "   "},
+    )
+    assert resp.status_code == 400
+    assert "clinic_id" in resp.json().get("detail", "")
+
+
+def test_body_clinic_id_takes_priority_over_header(api_client):
+    """測試 Body clinic_id 優先於 Header X-Clinic-ID。"""
+    resp = api_client.post(
+        "/api/v1/query",
+        json={"query": "請問診所門診營業時間？", "clinic_id": "3503190424"},
+        headers={"X-Clinic-ID": "9999999999"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["clinic_info"] is not None
+    assert data["clinic_info"]["clinic_id"] == "3503190424"
+
+
+def test_handle_query_special_without_clinic_id_raises_value_error(isolated_conn):
+    """測試底層 handle_query 查 special 營運時若 clinic_id 為 None 直接拋出 ValueError。"""
+    from src.query.router import handle_query
+    with pytest.raises(ValueError, match="clinic_id"):
+        handle_query(conn=isolated_conn, query="請問診所門診營業時間？", clinic_id=None)
+

@@ -129,12 +129,11 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   - 寫入專用連線 (`dependencies.py:get_write_db`)：僅供同步匯出入使用，開啟 `PRAGMA foreign_keys = ON;`。
 - **多診所動態路由查詢**：
   - 統一入口：`POST /api/v1/query`、`POST /api/v1/clinics/{clinic_id}/query` 與 `GET /api/v1/query`。
-  - 診所識別解析順序：Path/Body `clinic_id` > Header `X-Clinic-ID` > `config.default_clinic_id`。
-  - **⚠️ 已知落差（Phase 5 遺留，尚未修正）**：`src/api/config.py` 的 `default_clinic_id` 目前在程式碼中沒有任何地方讀取（孤兒設定），實作上三者皆未提供時最終解析結果為 `None`，並不會回退到 `default_clinic_id`。本節上述順序為原設計意圖，非現況；已列為後續待辦（修正實作使其回退，或移除該設定），本次僅更正文件、未改程式碼。
+  - 診所識別解析順序：Path/Body `clinic_id` > Header `X-Clinic-ID`，**無預設值**（`config` 已不含預設診所代碼設定，Phase 10 移除）。special 路由兩者皆未提供時 `handle_query` 拋 `ValueError`，API 回 HTTP 400，不會靜默查到任何診所。單診所部署的呼叫端須帶 `X-Clinic-ID` 或 body `clinic_id`。
   - 二次價格防禦：序列化回傳前一律經由 `deep_mask_prices()` 遞迴清洗。
 - **服務啟動與守護常駐**：
   - 啟動腳本：`scripts/run_api_server.py`（支援 `--host`, `--port`, `--reload`, `--workers`, `--log-level`）。
-  - Systemd 守護單元：`clinicbrain-api.service`（相依於 `llama-server.service`，支援開機自啟與故障重啟）。
+  - Systemd 守護單元：`clinicbrain-api.service`（相依於 `llama-server.service`，範本含 `[Install]` 區段可供啟用與故障重啟；**本專案刻意不啟用開機自啟**，由使用者手動啟動）。
 
 ### 2.7 API 認證強制化（Phase 06 新增）
 為保護院所敏感資料與同步端點安全，自 Phase 06 起實施預設拒絕（Fail-Closed）的認證強制化機制：
@@ -227,6 +226,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **資料庫遷移與 Fail-Closed 防禦**：
   - 正式庫遷移指令：先手動備份 `cp clinic.db clinic.db.bak-$(date +%Y%m%d)`，後執行 `python3 scripts/migrate_faq_review_status.py --confirm-prod-backup`。
   - 未遷移庫防禦：未完成遷移之舊庫在寫入 `llm_generated` 時一律拋錯拒絕（Fail-Closed）；檢索端則退化為完全排除 `llm_generated` 內容。
+  - **遷移 DDL 單一來源（Phase 10）**：`scripts/migrate_faq_review_status.py` 的 `ALTER TABLE ... ADD COLUMN` 不再手寫，由 `src/db/clinic_schema.sql` 的 `faq_cache` CREATE TABLE 區塊依欄位名稱擷取（`extract_column_definition`）。約束：`review_status`、`reviewed_at` 的欄位定義必須單行、定義文字內不得含 `--`；解析失敗在連線前即拋 `RuntimeError`（fail-closed）。修改這兩欄定義只需改 schema。
 - **批次執行器與資源防禦 (`src/batch/runner.py`)**：
   - 執行入口：`python3 scripts/run_nightly_batch.py`。
   - 多重資源保護：`--max-faq-topics`（預設 5）、`--max-trees`（預設 3）、`--max-pending`（預設 200，保護醫師審核負擔）、`--time-budget-seconds`（預設 3600.0，超時優雅中斷）、`--llm-timeout`（單次推論逾時 120 秒）。

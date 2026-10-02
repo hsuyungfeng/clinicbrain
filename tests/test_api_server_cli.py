@@ -61,14 +61,16 @@ def test_cli_parse_args_custom(monkeypatch):
 
 
 def test_cli_print_banner_output(capsys):
-    """測試啟動資訊 Banner 正確輸出診所與端點資訊。"""
+    """測試啟動資訊 Banner 正確輸出服務與端點資訊（無預設診所）。"""
     print_banner(host="127.0.0.1", port=8000, reload=False, workers=1)
     captured = capsys.readouterr()
 
     assert "clinicbrain" in captured.out
-    assert "3503190424" in captured.out
     assert "http://127.0.0.1:8000" in captured.out
-    assert "緻妍外科診所" in captured.out
+    assert "無預設診所" in captured.out
+    assert "預設診所代碼" not in captured.out
+    assert "default_clinic" not in captured.out
+
 
 
 def test_phase05_full_e2e_workflow(api_client):

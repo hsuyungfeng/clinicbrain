@@ -84,7 +84,7 @@ def upsert_clinic_note(conn: sqlite3.Connection, clinic_id: str, section: str, n
     conn.commit()
 
 
-DEFAULT_CLINIC_ID = "3503190424"  # 緻妍外科診所健保代碼，供獨立執行腳本測試使用
+DEMO_CLINIC_ID = "3503190424"  # 緻妍外科診所健保代碼，供獨立執行腳本測試使用
 
 
 def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str) -> dict[str, str]:
@@ -115,9 +115,9 @@ def main() -> int:
     db_path = sys.argv[1] if len(sys.argv) > 1 else str(DEFAULT_DB_PATH)
     print(f"連接資料庫：{db_path}")
     conn = sqlite3.connect(db_path)
-    count = seed_sample_notes(conn, clinic_id=DEFAULT_CLINIC_ID)
-    print(f"成功寫入/更新 {count} 筆診所通用備註（{DEFAULT_CLINIC_ID}）")
-    notes = get_clinic_custom_notes(conn, clinic_id=DEFAULT_CLINIC_ID)
+    count = seed_sample_notes(conn, clinic_id=DEMO_CLINIC_ID)
+    print(f"成功寫入/更新 {count} 筆診所通用備註（{DEMO_CLINIC_ID}）")
+    notes = get_clinic_custom_notes(conn, clinic_id=DEMO_CLINIC_ID)
     for sec, note in notes.items():
         print(f"\n[{sec}]:\n{note}")
     conn.close()

@@ -20,6 +20,7 @@ faq_cache 審核狀態欄位結構遷移腳本（Phase 09 BATCH-01）。
 
 import argparse
 from pathlib import Path
+import re
 import sqlite3
 import sys
 
@@ -28,14 +29,82 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+SCHEMA_PATH = PROJECT_ROOT / "src" / "db" / "clinic_schema.sql"
 PROD_DB_PATH = PROJECT_ROOT / "clinic.db"
 
-# 模組級常數（與 clinic_schema.sql 嚴格一致，做成常數以便測試 monkeypatch 驗證交易回滾）
-ALTER_REVIEW_STATUS_SQL = (
-    "ALTER TABLE faq_cache ADD COLUMN review_status TEXT NOT NULL DEFAULT 'approved' "
-    "CHECK (review_status IN ('pending', 'approved', 'rejected'))"
-)
-ALTER_REVIEWED_AT_SQL = "ALTER TABLE faq_cache ADD COLUMN reviewed_at TIMESTAMP"
+
+def extract_column_definition(schema_text: str, table: str, column: str) -> str:
+    """自 schema 內容之目標 table 區塊擷取指定欄位之單行定義（無行尾註解與結尾逗號）。"""
+    start_marker = "CREATE " + "TABLE IF NOT EXISTS " + table + " ("
+    end_marker = "\n);"
+
+    start_pos = schema_text.find(start_marker)
+    if start_pos == -1:
+        raise RuntimeError(f"無法於 schema 中找到資料表 {table} 之定義區塊！")
+
+    end_pos = schema_text.find(end_marker, start_pos)
+    if end_pos == -1:
+        raise RuntimeError(f"無法於 schema 中找到資料表 {table} 定義區塊之結束標記！")
+
+    block = schema_text[start_pos:end_pos]
+
+    matched_def = None
+    pattern = re.compile(r"^\s+" + re.escape(column) + r"\s+(.+)$")
+    for line in block.splitlines():
+        m = pattern.match(line)
+        if m:
+            matched_def = m.group(1)
+            break
+
+    if matched_def is None:
+        raise RuntimeError(f"無法於資料表 {table} 區塊中找到欄位 {column} 之定義！")
+
+    # 檢查行尾註解
+    if "--" in matched_def:
+        comment_idx = matched_def.find("--")
+        before_comment = matched_def[:comment_idx]
+        if before_comment.count("'") % 2 != 0:
+            raise RuntimeError(f"欄位 {column} 定義之單引號字面值內包含註解標記，無法解析！")
+        raw_def = before_comment
+    else:
+        raw_def = matched_def
+
+    cleaned = raw_def.rstrip()
+    if cleaned.endswith(","):
+        cleaned = cleaned[:-1].rstrip()
+
+    if not cleaned:
+        raise RuntimeError(f"欄位 {column} 之定義內容為空！")
+
+    if cleaned.count("(") != cleaned.count(")"):
+        raise RuntimeError(f"欄位 {column} 之定義括號不平衡！")
+
+    if cleaned.count("'") % 2 != 0:
+        raise RuntimeError(f"欄位 {column} 之定義單引號不平衡！")
+
+    return cleaned
+
+
+def build_add_column_sql(table: str, column: str, definition: str) -> str:
+    """組成 ALTER TABLE ... ADD COLUMN 語句。"""
+    return f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+
+
+def derive_alter_statements(schema_path: Path) -> tuple[str, str]:
+    """讀取 schema 檔案並衍生 review_status 與 reviewed_at 之 ALTER 語句。"""
+    if not schema_path.exists():
+        raise FileNotFoundError(f"找不到 schema 檔案：{schema_path}")
+    schema_text = schema_path.read_text(encoding="utf-8")
+    status_def = extract_column_definition(schema_text, "faq_cache", "review_status")
+    reviewed_at_def = extract_column_definition(schema_text, "faq_cache", "reviewed_at")
+    return (
+        build_add_column_sql("faq_cache", "review_status", status_def),
+        build_add_column_sql("faq_cache", "reviewed_at", reviewed_at_def),
+    )
+
+
+# 模組級常數（由 clinic_schema.sql 擷取衍生，單一來源；做成常數以便測試 monkeypatch 驗證交易回滾）
+ALTER_REVIEW_STATUS_SQL, ALTER_REVIEWED_AT_SQL = derive_alter_statements(SCHEMA_PATH)
 
 
 def _existing_review_columns(conn: sqlite3.Connection) -> set[str]:
@@ -51,13 +120,19 @@ def has_review_status_column(conn: sqlite3.Connection) -> bool:
     return len(_existing_review_columns(conn)) == 2
 
 
-def apply_review_status_migration(db_path: Path) -> dict:
+def apply_review_status_migration(db_path: Path, schema_path: Path | None = None) -> dict:
     """
     冪等地將 review_status 與 reviewed_at 結構套用至目標資料庫。
 
     回傳：
         dict: {"added": list[str], "backfilled_pending": int, "repaired_half_state": bool}
     """
+    if schema_path is None:
+        status_sql = ALTER_REVIEW_STATUS_SQL
+        at_sql = ALTER_REVIEWED_AT_SQL
+    else:
+        status_sql, at_sql = derive_alter_statements(schema_path)
+
     conn = sqlite3.connect(str(db_path), isolation_level=None)
     try:
         conn.execute("BEGIN IMMEDIATE")
@@ -75,11 +150,11 @@ def apply_review_status_migration(db_path: Path) -> dict:
 
         # 2. 補齊缺漏欄位
         if "review_status" not in existing_cols:
-            conn.execute(ALTER_REVIEW_STATUS_SQL)
+            conn.execute(status_sql)
             added.append("review_status")
 
         if "reviewed_at" not in existing_cols:
-            conn.execute(ALTER_REVIEWED_AT_SQL)
+            conn.execute(at_sql)
             added.append("reviewed_at")
 
         # 3. 回填 llm_generated 為 pending（Fail-Closed 原則）

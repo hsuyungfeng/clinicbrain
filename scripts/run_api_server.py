@@ -83,7 +83,7 @@ def print_banner(host: str, port: int, reload: bool, workers: int):
     print("=" * 66)
     print(" 🏥 clinicbrain — Taiwan Clinic Medical PageIndex RAG System")
     print(f" 📍 服務監聽位址:   http://{host}:{port}")
-    print(f" 🏢 預設診所代碼:   {config.default_clinic_id} (緻妍外科診所)")
+    print(" 🏢 診所識別:       無預設診所，請求須帶 clinic_id 或 Header X-Clinic-ID")
     print(f" 🗄️  資料庫檔案:     {config.db_path} ({'存在' if config.db_path.exists() else '⚠️ 未找到，請先執行 seed 腳本'})")
     print(f" 📖 API 互動文件:   {docs_status}")
     print(f" 💓 系統健康端點:   http://{host}:{port}/health")

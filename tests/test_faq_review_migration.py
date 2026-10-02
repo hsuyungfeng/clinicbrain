@@ -333,6 +333,127 @@ def test_cli_defense_on_prod_db(monkeypatch, tmp_path: Path):
     conn.close()
 
 
+def test_extract_column_definition_matches_schema():
+    """測試 extract_column_definition 對真實 schema 擷取之結果符合預期。"""
+    from scripts.migrate_faq_review_status import extract_column_definition
+    schema_text = SCHEMA_PATH.read_text(encoding="utf-8")
+    status_def = extract_column_definition(schema_text, "faq_cache", "review_status")
+    at_def = extract_column_definition(schema_text, "faq_cache", "reviewed_at")
+
+    assert status_def == "TEXT NOT NULL DEFAULT 'approved' CHECK (review_status IN ('pending', 'approved', 'rejected'))"
+    assert at_def == "TIMESTAMP"
+
+
+def test_extract_column_definition_fail_closed():
+    """測試 extract_column_definition 在缺欄位、缺區塊、註解符號非法、括號單引號不平衡時 fail-closed。"""
+    from scripts.migrate_faq_review_status import extract_column_definition
+
+    # 1. 缺 table 區塊
+    with pytest.raises(RuntimeError, match="無法於 schema 中找到資料表"):
+        extract_column_definition("CREATE TABLE other (id INT);", "faq_cache", "review_status")
+
+    # 2. 缺欄位
+    dummy_schema = "CREATE TABLE IF NOT EXISTS faq_cache (\n    id INT\n);"
+    with pytest.raises(RuntimeError, match="無法於資料表 faq_cache 區塊中找到欄位"):
+        extract_column_definition(dummy_schema, "faq_cache", "review_status")
+
+    # 3. 單引號內含 --
+    bad_quote = "CREATE TABLE IF NOT EXISTS faq_cache (\n    col1 TEXT DEFAULT '--bad',\n);"
+    with pytest.raises(RuntimeError, match="包含註解標記"):
+        extract_column_definition(bad_quote, "faq_cache", "col1")
+
+    # 4. 括號不平衡
+    bad_paren = "CREATE TABLE IF NOT EXISTS faq_cache (\n    col1 TEXT CHECK (a > 0,\n);"
+    with pytest.raises(RuntimeError, match="括號不平衡"):
+        extract_column_definition(bad_paren, "faq_cache", "col1")
+
+
+def test_build_add_column_sql():
+    """測試 build_add_column_sql 產生正確之 ALTER TABLE 語法。"""
+    from scripts.migrate_faq_review_status import build_add_column_sql
+    sql = build_add_column_sql("faq_cache", "reviewed_at", "TIMESTAMP")
+    assert sql == "ALTER TABLE faq_cache ADD COLUMN reviewed_at TIMESTAMP"
+
+
+def test_alter_follows_schema_definition(tmp_path: Path):
+    """證明測試：修改 schema 定義時，遷移行為隨之改變。"""
+    db1 = tmp_path / "old1.db"
+    db2 = tmp_path / "old2.db"
+    for db in (db1, db2):
+        conn = sqlite3.connect(str(db))
+        conn.executescript(OLD_FAQ_CACHE_DDL)
+        conn.close()
+
+    orig_schema = SCHEMA_PATH.read_text(encoding="utf-8")
+    mod_schema = orig_schema.replace("DEFAULT 'approved' CHECK", "DEFAULT 'pending' CHECK", 1)
+    assert mod_schema != orig_schema
+
+    tmp_schema_file = tmp_path / "modified_schema.sql"
+    tmp_schema_file.write_text(mod_schema, encoding="utf-8")
+
+    # db1 套用修改後的 schema 複本
+    apply_review_status_migration(db1, schema_path=tmp_schema_file)
+    conn1 = sqlite3.connect(str(db1))
+    cur1 = conn1.cursor()
+    cur1.execute("PRAGMA table_info(faq_cache)")
+    cols1 = {r[1]: r for r in cur1.fetchall()}
+    assert cols1["review_status"][4] == "'pending'"
+    conn1.close()
+
+    # db2 套用預設真實 schema
+    apply_review_status_migration(db2)
+    conn2 = sqlite3.connect(str(db2))
+    cur2 = conn2.cursor()
+    cur2.execute("PRAGMA table_info(faq_cache)")
+    cols2 = {r[1]: r for r in cur2.fetchall()}
+    assert cols2["review_status"][4] == "'approved'"
+    conn2.close()
+
+
+def test_unparseable_schema_fails_closed_before_connect(tmp_path: Path, monkeypatch):
+    """測試 schema 不可解析時在連線資料庫之前即 fail-closed，目標資料庫零變動。"""
+    db = tmp_path / "unparseable_test.db"
+    conn = sqlite3.connect(str(db))
+    conn.executescript(OLD_FAQ_CACHE_DDL)
+    conn.close()
+
+    orig_schema = SCHEMA_PATH.read_text(encoding="utf-8")
+    lines = [l for l in orig_schema.splitlines() if not l.strip().startswith("review_status TEXT")]
+    bad_schema_text = "\n".join(lines)
+    bad_schema_path = tmp_path / "bad_schema.sql"
+    bad_schema_path.write_text(bad_schema_text, encoding="utf-8")
+
+    def fail_connect(*args, **kwargs):
+        raise AssertionError("不應在 schema 解析失敗前呼叫 sqlite3.connect！")
+
+    monkeypatch.setattr(sqlite3, "connect", fail_connect)
+
+    with pytest.raises(RuntimeError, match="無法於資料表 faq_cache 區塊中找到欄位 review_status"):
+        apply_review_status_migration(db, schema_path=bad_schema_path)
+
+    monkeypatch.undo()
+
+    # 檢查目標資料庫未被修改
+    conn = sqlite3.connect(str(db))
+    assert not has_review_status_column(conn)
+    conn.close()
+
+
+def test_migration_script_has_no_handwritten_column_ddl():
+    """去重守門測試：確保遷移腳本原始碼不含手寫欄位定義關鍵字。"""
+    script_path = PROJECT_ROOT / "scripts" / "migrate_faq_review_status.py"
+    source = script_path.read_text(encoding="utf-8")
+
+    forbidden_tokens = [
+        "DEFAULT 'approved'",
+        "CHECK (review_status",
+        "TIMESTAMP",
+    ]
+    for token in forbidden_tokens:
+        assert token not in source, f"遷移腳本中不得手寫欄位定義關鍵字: {token}"
+
+
 def test_prod_db_sha256_unmodified():
     """保證正式 clinic.db 在整段測試期間未被修改（與收集階段即時量測值比對，不釘死絕對雜湊）。"""
     assert _get_sha256(PROD_DB_PATH) == _PROD_SHA256_AT_START
+

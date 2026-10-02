@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 診所資料優先與一般疾病簡易資訊
-status: planning
-last_updated: "2026-10-02T06:42:17.605Z"
-last_activity: 2026-10-02
+status: completed_phase
+stopped_at: Phase 10 已完成（3 份計畫全數驗收通過）；準備進入 Phase 11
+last_updated: "2026-10-02T08:55:00.000Z"
+last_activity: 2026-10-02 -- Phase 10 execution complete (589/589 tests passed)
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 3
+  completed_plans: 3
+  percent: 25
 ---
 
 # Project State
@@ -20,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；下一步 /gsd-plan-phase 10
+**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；Phase 10 完成，準備 Phase 11
 
 ## Current Position
 
-Phase: 10 of 13（技術債基礎清理）
-Plan: —
-Status: Not started
-Last activity: 2026-10-02 — v1.2 路線圖建立（4 個 phase，11/11 需求涵蓋）
+Phase: 11 of 13（診所資料優先檢索）
+Plan: TBD
+Status: Ready to plan Phase 11
+Last activity: 2026-10-02 -- Phase 10 execution complete (589/589 tests passed)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██▌░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 24+
-- Tests passing: 578/578 (100%)
+- Total tasks completed: 27+
+- Tests passing: 589/589 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
@@ -45,6 +46,8 @@ Progress: [░░░░░░░░░░] 0%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+- [Phase 10]: 遷移腳本 ALTER 改自 clinic_schema.sql 動態擷取單行定義（消除 DDL 雙寫）；移除 APIConfig.default_clinic_id 孤兒設定，堅持 clinic_id 明確傳入原則。
 
 - [Phase 04]: `clinic_id` 全面標準化為健保代碼 `'3503190424'`，查詢函式強制必填，避免跨診所資料洩漏。
 - [Phase 03]: `faq_cache` 採獨立扁平表，正式庫套用完成並匯入 40 筆真實 FAQ（`source_type='clinic_upload'`）。
@@ -57,7 +60,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 規劃並執行 Phase 10（/gsd-plan-phase 10）
+- 執行 Phase 10（/gsd-execute-phase 10）
 - 之後可考慮：2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04（見 REQUIREMENTS.md Future）
 
 ### Blockers/Concerns
@@ -69,5 +72,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-10-02
-Stopped at: v1.2 路線圖已建立；等待使用者核准後規劃 Phase 10
+Stopped at: Phase 10 規劃完成（3 份計畫，2 個 wave）；準備執行 Phase 10
 Resume file: 無

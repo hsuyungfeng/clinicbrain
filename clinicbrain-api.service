@@ -10,7 +10,6 @@ WorkingDirectory=/home/hsu/Desktop/clinicbrain
 Environment=PYTHONUNBUFFERED=1
 Environment=CLINICBRAIN_HOST=127.0.0.1
 Environment=CLINICBRAIN_PORT=8000
-Environment=CLINICBRAIN_DEFAULT_CLINIC_ID=3503190424
 Environment=CLINICBRAIN_DB_PATH=/home/hsu/Desktop/clinicbrain/clinic.db
 Environment=CLINICBRAIN_ENABLE_DOCS=true
 # 注意：自 Phase 06 起，未設定 CLINICBRAIN_ADMIN_API_KEY 時服務會拒絕啟動。
