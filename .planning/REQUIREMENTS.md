@@ -41,4 +41,19 @@
 - 本里程碑不涉及正式庫 schema 變更之外的資料遷移；任何對正式庫的寫入仍由使用者手動執行。
 
 ## Traceability
-（由 roadmap 填入）
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DEBT-01 | Phase 10 | Pending |
+| DEBT-02 | Phase 10 | Pending |
+| CF-01 | Phase 11 | Pending |
+| CF-02 | Phase 11 | Pending |
+| CF-03 | Phase 11 | Pending |
+| GC-01 | Phase 12 | Pending |
+| GC-02 | Phase 12 | Pending |
+| GC-03 | Phase 12 | Pending |
+| GC-04 | Phase 12 | Pending |
+| DEBT-03 | Phase 12 | Pending |
+| DEBT-04 | Phase 13 | Pending |
+
+涵蓋：11/11（無孤立、無重複）

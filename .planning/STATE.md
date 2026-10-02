@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-10-02T06:42:17.605Z"
 last_activity: 2026-10-02
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** 無進行中的里程碑（v1.0、v1.1 已歸檔）；下一步 /gsd-new-milestone
+**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；下一步 /gsd-plan-phase 10
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 10 of 13（技術債基礎清理）
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-02 — Milestone v1.2 started
+Status: Not started
+Last activity: 2026-10-02 — v1.2 路線圖建立（4 個 phase，11/11 需求涵蓋）
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -51,18 +53,21 @@ Recent decisions affecting current work:
 - [Phase 08]: 一般諮詢端點匿名、不查診所資料、紅旗詞表經使用者定稿（自傷輕生不納入）。
 - [Phase 07]: 查詢路徑維持純檢索；未命中統計只記路由關鍵字聚合計數。
 - [Phase 02]: 本機 llama-server (Qwen3.8-27B) 維持使用，採 Prompt + 驗證器雙層防禦過濾政治立場內容。
+- [v1.2 路線圖]: DEBT-01/02 先行（獨立低風險）；CF 動檢索順序獨立成 Phase 11 並須完整回歸；GC-01~04 與 DEBT-03 併 Phase 12（共用 review_faq）；DEBT-04 真實 LLM 實跑置最後，待新驗證層就緒。
 
 ### Pending Todos
 
-- 下一個里程碑：/gsd-new-milestone（候選方向見 .planning/milestones/v1.1-MILESTONE-AUDIT.md 技術債與 PROJECT.md 的 Next Milestone Goals）
-- 之後可考慮：夜間批次實際生成並經醫師核准（general 內容目前 0 筆）、2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04
+- 規劃並執行 Phase 10（/gsd-plan-phase 10）
+- 之後可考慮：2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04（見 REQUIREMENTS.md Future）
 
 ### Blockers/Concerns
 
 - `src/query/router.py` 的 `extract_search_terms()` 仍非完整中文斷詞：2 字通用詞已由 `_GENERIC_TERMS` 降權（2026-09-30），但「動詞+名詞」黏連殘渣片段（如「音波拉提維持」「甲溝炎要」）尚未過濾，僅浪費一次查詢，不影響結果正確性。
+- Phase 11 擴大 FAQ 候選集會碰到 Phase 7 的 faq_shortcut 保守門檻，需對抗性回歸測試。
+- Phase 13 需 `llama-server` 空閒，且只能在資料庫複本上進行。
 
 ## Session Continuity
 
 Last session: 2026-10-02
-Stopped at: v1.1 與 v1.0 已歸檔（tag v1.0、v1.1）；等待定義下一個里程碑
+Stopped at: v1.2 路線圖已建立；等待使用者核准後規劃 Phase 10
 Resume file: 無
