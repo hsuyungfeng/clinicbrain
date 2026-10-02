@@ -6,25 +6,25 @@
 ## v1.1 Requirements
 
 ### AUTH 認證
-- [ ] **AUTH-01**：未設定 `CLINICBRAIN_ADMIN_API_KEY` 時服務拒絕啟動（提供明確旗標供本機開發關閉，啟動時印出繁體中文警告）。同步端點已掛 `verify_admin_key`，強制金鑰後自動受保護。
+- [x] **AUTH-01**：未設定 `CLINICBRAIN_ADMIN_API_KEY` 時服務拒絕啟動（提供明確旗標供本機開發關閉，啟動時印出繁體中文警告）。同步端點已掛 `verify_admin_key`，強制金鑰後自動受保護。
 
 ### CACHE 快取優先
-- [ ] **CACHE-01**：`handle_query` 已會檢索 `faq_cache`；改為高信心 FAQ 命中時短路回答（直接回 FAQ 原文，不再附帶大量樹狀資料）。查詢路徑維持純檢索，不引入 LLM 合成
-- [ ] **CACHE-02**：回應標示來源欄位（`cache` / `pageindex` / `llm`）
-- [ ] **CACHE-03**：記錄命中/未命中次數（不存問句全文與個資，僅聚合計數或 topic_key）
-- [ ] **CACHE-04**：快取命中的回答一律經 `deep_mask_prices()`，不得因走捷徑而繞過
+- [x] **CACHE-01**：`handle_query` 已會檢索 `faq_cache`；改為高信心 FAQ 命中時短路回答（直接回 FAQ 原文，不再附帶大量樹狀資料）。查詢路徑維持純檢索，不引入 LLM 合成
+- [x] **CACHE-02**：回應標示來源欄位（`cache` / `pageindex` / `llm`）
+- [x] **CACHE-03**：記錄命中/未命中次數（不存問句全文與個資，僅聚合計數或 topic_key）
+- [x] **CACHE-04**：快取命中的回答一律經 `deep_mask_prices()`，不得因走捷徑而繞過
 
 ### BATCH 夜間批次
-- [ ] **BATCH-01**：依常見問題清單預生成 FAQ，經 `upsert_faqs` 寫入（`source_type='llm_generated'`），且通過四層驗證器
-- [ ] **BATCH-02**：重建 `needs_regeneration=1` 的樹，經 `generate_tree` 驗證，不動 `*_physician_notes` 欄位
-- [ ] **BATCH-03**：systemd timer 排程，含 dry-run 模式、執行日誌、LLM 不可用時優雅跳過
-- [ ] **BATCH-04**：常見問題來源 = CACHE-03 未命中統計 + 手動清單（不使用簡體 SFT 資料）
+- [x] **BATCH-01**：依常見問題清單預生成 FAQ，經 `upsert_faqs` 寫入（`source_type='llm_generated'`），且通過四層驗證器
+- [x] **BATCH-02**：重建 `needs_regeneration=1` 的樹，經 `generate_tree` 驗證，不動 `*_physician_notes` 欄位
+- [x] **BATCH-03**：systemd timer 排程，含 dry-run 模式、執行日誌、LLM 不可用時優雅跳過
+- [x] **BATCH-04**：常見問題來源 = CACHE-03 未命中統計 + 手動清單（不使用簡體 SFT 資料）
 
 ### GENERAL 一般諮詢
-- [ ] **GENERAL-01**：general 回答一律附繁體中文免責聲明（非醫囑、建議就醫）
-- [ ] **GENERAL-02**：紅旗症狀偵測，命中時不走 LLM，直接回固定就醫提示
-- [ ] **GENERAL-03**：匿名，不記錄問句全文與個資、不留提問歷史
-- [ ] **GENERAL-04**：不綁診所的獨立端點，不需 `clinic_id`，只查 general 類資料
+- [x] **GENERAL-01**：general 回答一律附繁體中文免責聲明（非醫囑、建議就醫）
+- [x] **GENERAL-02**：紅旗症狀偵測，命中時不走 LLM，直接回固定就醫提示
+- [x] **GENERAL-03**：匿名，不記錄問句全文與個資、不留提問歷史
+- [x] **GENERAL-04**：不綁診所的獨立端點，不需 `clinic_id`，只查 general 類資料
 
 ## Future Requirements（延後）
 - AUTH-02 寫入/同步端點金鑰驗證（已由既有 `verify_admin_key` 涵蓋）
@@ -48,18 +48,18 @@
 ## Traceability
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 6 | Pending |
-| CACHE-01 | Phase 7 | Pending |
-| CACHE-02 | Phase 7 | Pending |
-| CACHE-03 | Phase 7 | Pending |
-| CACHE-04 | Phase 7 | Pending |
-| GENERAL-01 | Phase 8 | Pending |
-| GENERAL-02 | Phase 8 | Pending |
-| GENERAL-03 | Phase 8 | Pending |
-| GENERAL-04 | Phase 8 | Pending |
-| BATCH-01 | Phase 9 | Pending |
-| BATCH-02 | Phase 9 | Pending |
-| BATCH-03 | Phase 9 | Pending |
-| BATCH-04 | Phase 9 | Pending |
+| AUTH-01 | Phase 6 | Complete |
+| CACHE-01 | Phase 7 | Complete |
+| CACHE-02 | Phase 7 | Complete |
+| CACHE-03 | Phase 7 | Complete |
+| CACHE-04 | Phase 7 | Complete |
+| GENERAL-01 | Phase 8 | Complete |
+| GENERAL-02 | Phase 8 | Complete |
+| GENERAL-03 | Phase 8 | Complete |
+| GENERAL-04 | Phase 8 | Complete |
+| BATCH-01 | Phase 9 | Complete |
+| BATCH-02 | Phase 9 | Complete |
+| BATCH-03 | Phase 9 | Complete |
+| BATCH-04 | Phase 9 | Complete |
 
 涵蓋：13/13 條 v1.1 需求皆已對應唯一 phase（Future Requirements 的 AUTH-02~04 不在本里程碑）。

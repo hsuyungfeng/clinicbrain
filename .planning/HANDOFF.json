@@ -7,33 +7,94 @@
   "milestone": "v1.1 上線就緒與成本優化",
   "status": "paused",
   "completed_tasks": [
-    {"id": "P6", "name": "API 認證強制化 (AUTH-01)", "status": "done", "commit": "c06a9fe"},
-    {"id": "P7", "name": "快取優先查詢 (CACHE-01~04)", "status": "done", "commit": "bfb65e5"},
-    {"id": "P8", "name": "一般醫療諮詢入口 (GENERAL-01~04)", "status": "done", "commit": "41af4f9 + 90b422c"},
-    {"id": "P9", "name": "夜間批次生成與維護 (BATCH-01~04)", "status": "done", "commit": "078d4dc"}
+    {
+      "id": "P6",
+      "name": "API 認證強制化 (AUTH-01)",
+      "status": "done",
+      "commit": "c06a9fe"
+    },
+    {
+      "id": "P7",
+      "name": "快取優先查詢 (CACHE-01~04)",
+      "status": "done",
+      "commit": "bfb65e5"
+    },
+    {
+      "id": "P8",
+      "name": "一般醫療諮詢入口 (GENERAL-01~04)",
+      "status": "done",
+      "commit": "41af4f9 + 90b422c"
+    },
+    {
+      "id": "P9",
+      "name": "夜間批次生成與維護 (BATCH-01~04)",
+      "status": "done",
+      "commit": "078d4dc"
+    }
   ],
   "remaining_tasks": [
-    {"id": "A", "name": "正式庫 review_status 遷移（使用者手動）", "status": "not_started"},
-    {"id": "B", "name": "更新 STATE.md / ROADMAP.md 進度並 /gsd-complete-milestone 歸檔 v1.0 與 v1.1", "status": "not_started"},
-    {"id": "C", "name": "查明 2026-10-01 16:31 正式庫被還原成遷移前備份的原因", "status": "not_started"}
+    {
+      "id": "A",
+      "name": "正式庫 review_status 遷移（使用者手動）",
+      "status": "not_started"
+    },
+    {
+      "id": "B",
+      "name": "更新 STATE.md / ROADMAP.md 進度並 /gsd-complete-milestone 歸檔 v1.0 與 v1.1",
+      "status": "not_started"
+    }
   ],
-  "blockers": [
-    {"description": "正式庫 clinic.db 於 16:31:14 被覆蓋成與 clinic.db.bak-20261001 相同內容，執行者不明（使用者尚未回答是否自己還原）", "type": "technical", "workaround": "使用者已於 17:39 重做 cache_stats 遷移，統計功能已恢復"}
-  ],
+  "blockers": [],
   "human_actions_pending": [
-    {"action": "Phase 9 正式庫遷移：停 clinicbrain-api → sqlite3 clinic.db \".backup clinic.db.bak-日期\" → 記錄 sha256sum → python3 scripts/migrate_faq_review_status.py --confirm-prod-backup → 再量 sha256", "context": "啟用 FAQ 審核閘門；遷移前不要執行夜間批次寫入", "blocking": false},
-    {"action": "重開機後手動啟動 API：systemctl --user start clinicbrain-api.service（override 已設 CLINICBRAIN_ALLOW_NO_AUTH=1，勿 enable）", "context": "使用者決定不開機自啟", "blocking": false},
-    {"action": "若要讓 doctor-toolbox.com 或任何外部網路呼叫 API：必須先設 CLINICBRAIN_ADMIN_API_KEY 再對外開放", "context": "目前綁 127.0.0.1 且關閉認證，僅限本機", "blocking": false}
+    {
+      "action": "Phase 9 正式庫遷移：停 clinicbrain-api → sqlite3 clinic.db \".backup clinic.db.bak-日期\" → 記錄 sha256sum → python3 scripts/migrate_faq_review_status.py --confirm-prod-backup → 再量 sha256",
+      "context": "啟用 FAQ 審核閘門；遷移前不要執行夜間批次寫入",
+      "blocking": false
+    },
+    {
+      "action": "重開機後手動啟動 API：systemctl --user start clinicbrain-api.service（override 已設 CLINICBRAIN_ALLOW_NO_AUTH=1，勿 enable）",
+      "context": "使用者決定不開機自啟",
+      "blocking": false
+    },
+    {
+      "action": "若要讓 doctor-toolbox.com 或任何外部網路呼叫 API：必須先設 CLINICBRAIN_ADMIN_API_KEY 再對外開放",
+      "context": "目前綁 127.0.0.1 且關閉認證，僅限本機",
+      "blocking": false
+    }
   ],
   "decisions": [
-    {"decision": "查詢路徑維持純檢索，不引入 LLM 合成", "rationale": "零幻覺、零價格洩漏風險；CACHE 價值在精準度與命中率量測", "phase": "07"},
-    {"decision": "CACHE-03 未命中只記路由關鍵字聚合計數", "rationale": "與 GENERAL-03 匿名衝突的折衷", "phase": "07"},
-    {"decision": "LLM 預生成 FAQ 預設 pending，需醫師核准才可被查詢/匯出", "rationale": "未經醫師審核的 LLM 內容不得被當權威答案", "phase": "09"},
-    {"decision": "樹重建不走審核閘門，改用前像快照 + physician_notes 保護 + 手動標記", "rationale": "避免改 page_index_trees schema 與 Phase 8 consult.py", "phase": "09"},
-    {"decision": "紅旗詞表已由使用者審閱定稿；自傷輕生不納入；血管阻塞升 emergency", "rationale": "醫療內容需使用者最終確認", "phase": "08"},
-    {"decision": "clinicbrain-api.service 不 enable、不開機自啟；nightly service/timer 只放 repo 不安裝", "rationale": "使用者明確決定", "phase": "06-09"}
+    {
+      "decision": "查詢路徑維持純檢索，不引入 LLM 合成",
+      "rationale": "零幻覺、零價格洩漏風險；CACHE 價值在精準度與命中率量測",
+      "phase": "07"
+    },
+    {
+      "decision": "CACHE-03 未命中只記路由關鍵字聚合計數",
+      "rationale": "與 GENERAL-03 匿名衝突的折衷",
+      "phase": "07"
+    },
+    {
+      "decision": "LLM 預生成 FAQ 預設 pending，需醫師核准才可被查詢/匯出",
+      "rationale": "未經醫師審核的 LLM 內容不得被當權威答案",
+      "phase": "09"
+    },
+    {
+      "decision": "樹重建不走審核閘門，改用前像快照 + physician_notes 保護 + 手動標記",
+      "rationale": "避免改 page_index_trees schema 與 Phase 8 consult.py",
+      "phase": "09"
+    },
+    {
+      "decision": "紅旗詞表已由使用者審閱定稿；自傷輕生不納入；血管阻塞升 emergency",
+      "rationale": "醫療內容需使用者最終確認",
+      "phase": "08"
+    },
+    {
+      "decision": "clinicbrain-api.service 不 enable、不開機自啟；nightly service/timer 只放 repo 不安裝",
+      "rationale": "使用者明確決定",
+      "phase": "06-09"
+    }
   ],
   "uncommitted_files": [],
-  "next_action": "確認使用者是否自己在 16:31 還原了 clinic.db；接著請使用者做 Phase 9 的 review_status 正式庫遷移（遷移前後都量 sha256sum）；然後更新 STATE.md 並 /gsd-complete-milestone",
-  "context_notes": "v1.1 四個 Phase 皆由 antigravity 依 PLAN 執行、我獨立驗證後 commit 並已 push (origin/main 同步於 078d4dc)。antigravity 的自我回報不可全信：曾引用舊 sha256 當『正式庫未變』證據。驗證一律自己跑測試 + 用 DB 複本實測。"
+  "next_action": "請使用者做 Phase 9 的 review_status 正式庫遷移（前後量 sha256sum），我再獨立驗證；然後 /gsd-complete-milestone",
+  "context_notes": "v1.1 四個 Phase 皆由 antigravity 依 PLAN 執行、我獨立驗證後 commit 並已 push (origin/main 同步於 078d4dc)。antigravity 的自我回報不可全信：曾引用舊 sha256 當『正式庫未變』證據。驗證一律自己跑測試 + 用 DB 複本實測。 2026-10-02：16:31 正式庫還原為使用者自己所為，已結案，非異常。"
 }

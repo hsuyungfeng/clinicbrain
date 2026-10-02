@@ -21,10 +21,10 @@
 
 ### v1.1 上線就緒與成本優化
 
-- [ ] **Phase 6: API 認證強制化** - 未設管理金鑰時拒絕啟動，確保對外服務預設安全。
-- [ ] **Phase 7: 快取優先查詢** - 高信心 FAQ 命中短路回答、標示來源、匿名聚合命中統計，且不繞過價格遮蔽。
-- [ ] **Phase 8: 一般醫療諮詢入口** - 不綁診所的匿名 general 端點，附免責聲明與不走 LLM 的紅旗症狀偵測。
-- [ ] **Phase 9: 夜間批次生成與維護** - 依未命中統計與手動清單預生成 FAQ、重建過期樹，由 systemd timer 排程。
+- [x] **Phase 6: API 認證強制化** - 未設管理金鑰時拒絕啟動，確保對外服務預設安全。
+- [x] **Phase 7: 快取優先查詢** - 高信心 FAQ 命中短路回答、標示來源、匿名聚合命中統計，且不繞過價格遮蔽。
+- [x] **Phase 8: 一般醫療諮詢入口** - 不綁診所的匿名 general 端點，附免責聲明與不走 LLM 的紅旗症狀偵測。
+- [x] **Phase 9: 夜間批次生成與維護** - 依未命中統計與手動清單預生成 FAQ、重建過期樹，由 systemd timer 排程。
 
 ## Phase Details
 
@@ -139,9 +139,9 @@
 | 3. Document Ingestion | 4/4 (Stage 1) | Stage 1 Complete / OCR Closed | 2026-09-23 |
 | 4. Multi-Clinic Support | 4/4 | Complete | 2026-09-29 |
 | 5. doctor-toolbox.com API | 4/4 | Complete | 2026-09-29 |
-| 6. API 認證強制化 | 0/0 | Not started | - |
-| 7. 快取優先查詢 | 0/0 | Not started | - |
-| 8. 一般醫療諮詢入口 | 0/0 | Not started | - |
-| 9. 夜間批次生成與維護 | 0/0 | Not started | - |
+| 6. API 認證強制化 | 2/2 | Complete | 2026-09-30 |
+| 7. 快取優先查詢 | 4/4 | Complete | 2026-09-30 |
+| 8. 一般醫療諮詢入口 | 4/4 | Complete | 2026-10-01 |
+| 9. 夜間批次生成與維護 | 6/6 | Complete | 2026-10-01 |
 
 
