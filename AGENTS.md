@@ -130,6 +130,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **多診所動態路由查詢**：
   - 統一入口：`POST /api/v1/query`、`POST /api/v1/clinics/{clinic_id}/query` 與 `GET /api/v1/query`。
   - 診所識別解析順序：Path/Body `clinic_id` > Header `X-Clinic-ID` > `config.default_clinic_id`。
+  - **⚠️ 已知落差（Phase 5 遺留，尚未修正）**：`src/api/config.py` 的 `default_clinic_id` 目前在程式碼中沒有任何地方讀取（孤兒設定），實作上三者皆未提供時最終解析結果為 `None`，並不會回退到 `default_clinic_id`。本節上述順序為原設計意圖，非現況；已列為後續待辦（修正實作使其回退，或移除該設定），本次僅更正文件、未改程式碼。
   - 二次價格防禦：序列化回傳前一律經由 `deep_mask_prices()` 遞迴清洗。
 - **服務啟動與守護常駐**：
   - 啟動腳本：`scripts/run_api_server.py`（支援 `--host`, `--port`, `--reload`, `--workers`, `--log-level`）。
@@ -150,19 +151,25 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **保守短路判定規則 (`src/query/faq_shortcut.py`)**：
   - 覆蓋率雙門檻：問句對 FAQ 覆蓋率 $\ge 0.9$、FAQ 對問句覆蓋率 $\ge 0.7$。
   - 歧義邊界（Ambiguity Margin）：最高分與次高分覆蓋率差距需 $\ge 0.1$。
-  - 五維度風險特徵對抗檢查：任何風險特徵不對稱即拒絕短路：
-    1. 數字帶單位（`\d+\s*(天|日|週|周|月|年|次|mg|毫克|g|公克|ml|毫升|u|單位|歲)`）：如「第3天」與「第3週」、「5mg」與「5g」不得混淆。
-    2. 14 個否定詞（`不無沒別勿禁未非免避忌否戒停`）：避免肯定句與否定句語意顛倒。
-    3. 時序方位字（`前、後、內、外、上、下、左、右`）：避免「術前」與「術後」顛倒。
-    4. 人群與體質詞（`孕、兒、童、婦、老、病、障、敏、殘、癌、糖尿、過敏、高血壓、心臟`）：避免特殊體質病患適用一般建議。
-    5. 價格詢問詞（`多少錢、費用、價格、價位、收費、價錢、計費、報價`）：價格相關一律不短路。
-  - 獨立候選集大小：FAQ 檢索固定取 50 筆候選，不與 pageindex tree 檢索的 `top_k=3` 互相干擾。
-  - 命中時直接回傳 FAQ 快取原文（`source='faq_cache'`），略過 pageindex 推理樹與 LLM 生成。
-- **匿名統計表結構 (`cache_stats`)**：
-  - 欄位：`id`, `clinic_id`, `outcome`（`hit` / `miss` / `error` / `bypass`）, `keyword`, `query_date`, `created_at`。
-  - 隱私承諾：**嚴禁記錄問句原文或任何病患個資**。未命中時僅記錄透過固定詞表（`ROUTE_KEYWORD_VOCAB`）白名單過濾出之標準化路由關鍵字，其他文字一律過濾為空。
+  - 最小查詢長度：標準化（NFKC、去語助詞、去標點）後的查詢需 $\ge 4$ 字元，否則不短路（`query_too_short`）。
+  - 營運資訊關鍵字不短路：問句含診所營運關鍵字（`_CLINIC_OPS_KEYWORDS`，如「營業時間」「地址」「電話」）時，`handle_query` 不啟用快取短路，改走原本營運資訊路由。
+  - 風險特徵對稱比對（`extract_risk_features` / `risk_mismatch`）：以原文（僅 NFKC 與轉小寫，不去語助詞、不去標點）對查詢與最佳候選 FAQ 問句各擷取特徵計數，兩者**完全相等**才可短路，任一不對稱即拒絕（`risk_mismatch`）。實際共五個維度：
+    1. 阿拉伯數字（含可選單位）：數字後可接 `個月|小時|分鐘|毫克|天|日|週|周|月|年|次|顆|片|mg|ml|cc|g|%`，數字與單位一併比對（如「3天」與「3週」、「5mg」與「5g」不得混淆；數字無單位時亦以數字本身比對）。
+    2. 中文數字加量詞：中文數字（`一二三四五六七八九十兩半`）後接 `天|日|週|周|個月|月|年|次|小時|分鐘|顆|片|毫克`（如「三天」）。
+    3. 否定/禁忌單字（14 字，逐字計次）：`不無沒別勿禁未非免避忌否戒停`，避免肯定句與否定句語意顛倒。
+    4. 時序/方位字（4 字，逐字計次）：`前後內外`，避免「術前」與「術後」顛倒。
+    5. 人群/體質限定詞（子字串計次）：`懷孕、孕、哺乳、嬰、兒、童、老、糖尿、男、女、過敏、高血壓、抗凝血、服藥、成人、長者`，避免特殊族群適用一般建議。
+  - **價格詢問詞並非獨立風險維度**：程式碼中**沒有**「多少錢、費用、價格」等價格詢問詞規則（舊版文件曾誤載此維度，已更正）。含價格詢問的問句不短路，是仰賴既有機制（覆蓋率門檻、上述風險特徵不對稱、歧義邊界）達成，而非明確的價格詞規則；回覆內容之價格數字另由全域價格屏蔽（`deep_mask_prices()` 等）把關。
+  - 判定順序與理由碼：`no_clinic` → `no_eligible`（僅考慮 `special` 路由且診所相符、或 `general` 路由且 `clinic_id IS NULL` 之 FAQ）→ `query_too_short` → `low_coverage` → `risk_mismatch` → `ambiguous` → `confident`。標準化問句與答案皆相同的重複項目會先合併（保留最小 row id）。
+  - 獨立候選集大小：FAQ 檢索固定取 50 筆候選（`SHORTCUT_CANDIDATE_LIMIT`），不與 pageindex tree 檢索的 `top_k=3` 互相干擾。
+  - 命中時直接回傳 FAQ 快取原文（回應 `source='cache'`；`source` 為 `Literal["cache","pageindex","llm"]`），略過 pageindex 推理樹與 LLM 生成。
+- **匿名統計表結構 (`cache_stats`，日聚合計數)**：
+  - 欄位：`id`, `clinic_id`（`NOT NULL DEFAULT ''`，無效或未提供時為空字串）, `stat_date`, `outcome`（`CHECK IN ('hit','miss','miss_keyword')`）, `keyword`（`NOT NULL DEFAULT ''`）, `count`, `updated_at`；`UNIQUE(clinic_id, stat_date, outcome, keyword)`，同鍵以 UPSERT 累加 `count`，不是逐筆事件紀錄（權威定義見 `src/db/clinic_schema.sql` 與 `src/query/cache_stats.py`）。
+  - `outcome` 語意：`hit` = 快取短路命中，每次命中累加一列（`keyword=''`）；`miss` = 有資格短路但未命中的查詢，每個未命中查詢累加一列（`keyword=''`，為命中率分母）；`miss_keyword` = 該未命中查詢所比對到的每個固定路由關鍵字各累加一列。營運關鍵字查詢不啟用短路，因此不記 `miss`（也不計入命中率分母）。
+  - `clinic_id` 僅在存在於 `clinic_info` 時採用，否則正規化為空字串，防範自由文字注入。
+  - 隱私承諾：**嚴禁記錄問句原文或任何病患個資**。僅記錄透過固定詞表（`ROUTE_KEYWORD_VOCAB`）白名單過濾出之標準化路由關鍵字，詞表外字串一律捨棄。
 - **統計指標語意與灌數限制**：
-  - 命中率計算：`hit_rate` 定義為 `cache_hits / (cache_hits + cache_misses)`（營運資訊查詢與錯誤不計入分母；總數為 0 時回傳 0.0）。
+  - 命中率計算：`hit_rate` 定義為 `hit / (hit + miss)`（營運資訊查詢不計入分母；hit + miss 為 0 時回傳 `None`，API 回應為 `null`，而非 0.0；非零時四捨五入至小數第 4 位）。
   - 灌數風險處理：因自然語言查詢端點維持公開開放，有惡意灌數影響統計指標之風險；此風險採「接受（Accept）」處置，統計資料僅供院所營運熱度與 FAQ 補強參考，嚴禁作為計費、授權或醫療決策依據。
 - **D-09 連線架構取捨**：
   - 為維持查詢端點唯讀連線 `PRAGMA query_only = ON;` 的嚴格唯讀保證，統計記錄採用獨立寫入連線非同步執行。
@@ -248,6 +255,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   2. `local_llm_call` 逾時會轉為 `LocalLLMUnavailableError`，單次逾時即讓批次提前優雅結束（結束碼 0），留待下一晚繼續。
   3. 樹重建繞過審核閘門（如上述，以快照與註記還原為補償防線）。
   4. 未命中關鍵字僅記錄標準化白名單字詞，無法獲知病患真實具體問法。
+  5. 批次的 `existing_questions` 去重（`src/batch/faq_generator.py`）不分審核狀態與資料來源，被駁回（`rejected`）的題目仍視為已存在，因此永遠不會被重新生成；如需重生須由人工另行處理（例如改寫題目文字或人工刪除該列）。
 
 ---
 

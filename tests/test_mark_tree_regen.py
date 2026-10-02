@@ -31,6 +31,10 @@ def _get_sha256(path: Path) -> str:
     return hasher.hexdigest()
 
 
+# 收集階段即時量測正式庫雜湊（只讀），供結尾測試比對
+_PROD_SHA256_AT_START = _get_sha256(PROD_DB_PATH)
+
+
 def test_set_needs_regeneration_modifies_only_target_column(isolated_conn):
     """測試 set_needs_regeneration 僅更動 needs_regeneration，其他欄位與 FTS 檢索完全不受影響。"""
     cur = isolated_conn.cursor()
@@ -180,6 +184,5 @@ def test_cli_prod_db_defense_and_list_mode_ro(monkeypatch):
 
 
 def test_prod_db_sha256_unmodified():
-    """保證正式 clinic.db 之 sha256 在測試前後完全一致。"""
-    current_sha256 = _get_sha256(PROD_DB_PATH)
-    assert current_sha256 == "c51cc4d039379fe00f70d7864b29a952928233fa6caa6e72954900f4c28c65ad"
+    """保證正式 clinic.db 在整段測試期間未被修改（與收集階段即時量測值比對，不釘死絕對雜湊）。"""
+    assert _get_sha256(PROD_DB_PATH) == _PROD_SHA256_AT_START
