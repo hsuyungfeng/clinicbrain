@@ -11,6 +11,10 @@ class SearchHitModel(BaseModel):
     table: str = Field(..., description="來源資料表名稱（如 drugs, service_items, page_index_trees, faq_cache）")
     row_id: Any = Field(..., description="資料表 row_id 或主鍵代碼（例如 int 或字串代碼）")
     fields: Dict[str, Any] = Field(default_factory=dict, description="命中之結構化欄位內容")
+    data_level: Optional[Literal["clinic", "general"]] = Field(
+        None,
+        description="資料層級（僅對 faq_hits 填值）：'clinic' 表示來自該診所資料；'general' 表示來自已審核之一般衛教內容；其餘檢索類別為 null",
+    )
 
 
 class ClinicHoursItem(BaseModel):
@@ -69,4 +73,13 @@ class QueryResponseModel(BaseModel):
     cache_answer: Optional[str] = Field(
         None,
         description="當 source 為 'cache' 時的 FAQ 原文答案（已完成價格遮蔽），其餘情況為 null",
+    )
+    data_level: Optional[Literal["clinic", "general"]] = Field(
+        None,
+        description=(
+            "資料層級標示：'clinic' 表示答案來自該診所自己的資料；"
+            "'general' 表示來自已審核之一般衛教內容，非診所個別醫師意見；"
+            "null 表示無 FAQ 命中。注意：對 source='pageindex' 的非短路回應，"
+            "data_level 只表示最前面 FAQ 命中的層級，不代表回答內容與該 FAQ 相關。"
+        ),
     )

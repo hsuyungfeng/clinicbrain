@@ -1,5 +1,5 @@
 """
-高信心 FAQ 短路判定模組（Phase 07 CACHE-01, CACHE-04）。
+高信心 FAQ 短路判定模組（Phase 07 CACHE-01, CACHE-04 / Phase 11 CF-01, CF-02, CF-03）。
 純函式實作，無資料庫存取、不呼叫 LLM、不依賴 router。
 
 設計原則：
@@ -8,6 +8,15 @@
    標準化查詢長度 >= 4、與次佳覆蓋率差距 >= 0.1、且通過「風險特徵殘餘檢查」。
 3. 風險特徵檢查於去語助詞之前以原文（僅 NFKC 歸一化轉小寫）進行對稱比對，
    確保數字帶單位、否定/禁忌字、時序/方位字、人群/體質限定詞完全一致。
+4. 跨層級（Tiered）檢索原則（Phase 11）：
+   - 為何診所優先：診所自身 FAQ 為院所權威來源，帶診所識別之查詢應優先比對該診所意見。
+   - 為何不混排：診所候選與 general 候選絕不混排計算 margin，避免兩層問句相近時互相抵銷
+     導致 ambiguous，且防止一般通則稀釋或覆蓋診所專屬指示。
+   - CLINIC_RELATED_FLOOR（0.4）成因與取捨：當診所階段因問法稍短而落入 low_coverage 時，
+     若直接退回 general，將導致診所專屬規定（如「術後不可碰水」）被一般衛教（如「可防水淋浴」）
+     錯誤短路取代。以 CLINIC_RELATED_FLOOR 作為相近阻斷下限（query_coverage >= 0.4），
+     視為「相近但不可確認」，整體不短路且禁止退回 general；query_coverage < 0.4 則屬已知
+     取捨之鬆散相鄰釋義放行。
 """
 
 import collections
@@ -28,6 +37,9 @@ MIN_QUERY_COVERAGE: float = 0.9
 MIN_QUESTION_COVERAGE: float = 0.7
 MIN_MARGIN: float = 0.1
 SHORTCUT_CANDIDATE_LIMIT: int = 50  # 短路判定用獨立較大候選集上限，避免 limit 截斷導致漏看歧義
+
+# Phase 11 新增：僅 tiered 判定使用，收緊用，嚴禁更動 Phase 07 既有常數
+CLINIC_RELATED_FLOOR: float = 0.4
 
 # 非文字過濾正規表達式（保留英數字與中日韓統一表意文字）
 _NON_TEXT_PATTERN: Pattern = re.compile(r"[^0-9a-zA-Z\u4e00-\u9fff]+")
@@ -266,4 +278,113 @@ def select_confident_faq(
         query_coverage=b_q_cov,
         question_coverage=b_question_cov,
         margin=margin,
+    )
+
+
+@dataclass(frozen=True)
+class TieredShortcutDecision:
+    """跨層級（Tiered）高信心 FAQ 短路決策結果。"""
+    hit: Optional[SearchHit]
+    level: Optional[str]  # 'clinic' | 'general' | None
+    reason: str
+    clinic_reason: str = "skipped"
+    general_reason: str = "skipped"
+
+
+def select_confident_faq_tiered(
+    query: str,
+    clinic_hits: list[SearchHit],
+    general_hits: list[SearchHit],
+    clinic_id: Optional[str],
+    stopword_pattern: Optional[Pattern] = None,
+) -> TieredShortcutDecision:
+    """跨層級高信心 FAQ 短路判定函式（Phase 11 CF-01, CF-02, CF-03）。
+
+    兩階段判定順序：
+    1. 驗證診所識別：若 clinic_id 為 None、空字串或純空白，回傳 no_clinic（兩層皆 skipped）。
+    2. 診所階段：呼叫既有 select_confident_faq(query, clinic_hits, route='special', clinic_id=clinic_id)。
+       - 若 hit 不為 None：高信心勝出，level='clinic', reason='confident', clinic_reason='confident', general_reason='skipped'。
+       - 若 reason 屬於 {'risk_mismatch', 'ambiguous', 'query_too_short'}：
+         相近但不可確認，為防診所專屬規定被一般通則取代，整體不短路且不退 general。
+         reason=f"clinic_{reason}", clinic_reason=reason, general_reason='skipped'。
+       - 若 reason == 'low_coverage' 且 query_coverage >= CLINIC_RELATED_FLOOR (0.4)：
+         診所有相近內容但覆蓋率未達 0.9，視為相近但不可確認，阻絕退回 general。
+         reason='clinic_related_low_coverage', clinic_reason='low_coverage', general_reason='skipped'。
+    3. 退回 general 階段：
+       僅在診所階段為 'no_eligible' 或 ('low_coverage' 且 query_coverage < CLINIC_RELATED_FLOOR) 時評估。
+       呼叫 select_confident_faq(query, general_hits, route='general', clinic_id=None)。
+       - 若 hit 不為 None：level='general', reason='confident', clinic_reason=clinic_decision.reason, general_reason='confident'。
+       - 否則：hit=None, level=None, reason=f"general_{general_decision.reason}", clinic_reason=clinic_decision.reason, general_reason=general_decision.reason。
+    """
+    if not clinic_id or not clinic_id.strip():
+        return TieredShortcutDecision(
+            hit=None,
+            level=None,
+            reason="no_clinic",
+            clinic_reason="skipped",
+            general_reason="skipped",
+        )
+
+    clinic_decision = select_confident_faq(
+        query=query,
+        faq_hits=clinic_hits,
+        route="special",
+        clinic_id=clinic_id,
+        stopword_pattern=stopword_pattern,
+    )
+
+    if clinic_decision.hit is not None:
+        return TieredShortcutDecision(
+            hit=clinic_decision.hit,
+            level="clinic",
+            reason="confident",
+            clinic_reason="confident",
+            general_reason="skipped",
+        )
+
+    if clinic_decision.reason in {"risk_mismatch", "ambiguous", "query_too_short"}:
+        return TieredShortcutDecision(
+            hit=None,
+            level=None,
+            reason=f"clinic_{clinic_decision.reason}",
+            clinic_reason=clinic_decision.reason,
+            general_reason="skipped",
+        )
+
+    if (
+        clinic_decision.reason == "low_coverage"
+        and clinic_decision.query_coverage >= CLINIC_RELATED_FLOOR
+    ):
+        return TieredShortcutDecision(
+            hit=None,
+            level=None,
+            reason="clinic_related_low_coverage",
+            clinic_reason="low_coverage",
+            general_reason="skipped",
+        )
+
+    # 僅在 no_eligible 或 (low_coverage 且 query_coverage < CLINIC_RELATED_FLOOR) 時評估 general
+    general_decision = select_confident_faq(
+        query=query,
+        faq_hits=general_hits,
+        route="general",
+        clinic_id=None,
+        stopword_pattern=stopword_pattern,
+    )
+
+    if general_decision.hit is not None:
+        return TieredShortcutDecision(
+            hit=general_decision.hit,
+            level="general",
+            reason="confident",
+            clinic_reason=clinic_decision.reason,
+            general_reason="confident",
+        )
+
+    return TieredShortcutDecision(
+        hit=None,
+        level=None,
+        reason=f"general_{general_decision.reason}",
+        clinic_reason=clinic_decision.reason,
+        general_reason=general_decision.reason,
     )

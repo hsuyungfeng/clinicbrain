@@ -13,9 +13,9 @@ from ..dependencies import get_read_db
 from ..models.query import QueryRequest, QueryResponseModel
 
 try:
-    from ...query.router import handle_query, mask_prices
+    from ...query.router import handle_query, mask_prices, faq_hit_level
 except (ImportError, ValueError):
-    from src.query.router import handle_query, mask_prices
+    from src.query.router import handle_query, mask_prices, faq_hit_level
 
 try:
     from ...query.cache_stats import record_query_outcome
@@ -109,9 +109,10 @@ def _execute_query(
         "drug_hits": [_format_hit(h) for h in raw_response.drug_hits],
         "service_item_hits": [_format_hit(h) for h in raw_response.service_item_hits],
         "clinic_custom_notes": raw_response.clinic_custom_notes,
-        "faq_hits": [_format_hit(h) for h in raw_response.faq_hits],
+        "faq_hits": [{**_format_hit(h), "data_level": faq_hit_level(h)} for h in raw_response.faq_hits],
         "source": raw_response.source,
         "cache_answer": raw_response.cache_answer,
+        "data_level": raw_response.data_level,
     }
 
     # 執行二次價格遮蔽遞迴掃描

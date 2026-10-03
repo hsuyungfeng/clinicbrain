@@ -181,7 +181,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
     ```
   - 未執行遷移前，統計寫入會因找不到表而安全忽略；管理端點 `GET /api/v1/cache/stats` 則會明確回傳 HTTP 503 提示「快取統計資料表尚未建立，請先執行遷移腳本」。
 - **已知限制（使用者決策：接受並文件化）**：
-  1. 正式庫 40 筆 FAQ 中有 16 筆問句因不含路由關鍵字被 `classify` 分流為 `general`，而 `general` 路由不檢索 `special` FAQ，導致短路命中率上限約 60%（24/40），其餘問句正常走原本 pageindex 推理樹回應；本階段依計畫不改動 `classify` 或路由邏輯、不新增補強檢索。
+  1. **Phase 11 已解除**：帶 `clinic_id` 的查詢不再受 `classify` 分流限制，正式庫 40 筆診所 FAQ 原文自查短路由 24/40 提升至 38/40；未短路的 2 筆為同一問句對應兩個不同答案（歧義邊界生效，刻意不短路，待醫師合併重複問句後可解除）。`classify` 與路由邏輯本身維持未改動。
   2. 保守門檻與嚴格風險檢查使釋義式或稍微變形之問法多半無法短路，此為防範錯誤醫療建議之預期設計取捨。
   3. 未命中統計僅能記錄命中之標準化路由關鍵字，無法獲知病患真實具體問法，未來 Phase 09 補強 FAQ 時需搭配人工整理清單。
 
@@ -257,6 +257,42 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   4. 未命中關鍵字僅記錄標準化白名單字詞，無法獲知病患真實具體問法。
   5. 批次的 `existing_questions` 去重（`src/batch/faq_generator.py`）不分審核狀態與資料來源，被駁回（`rejected`）的題目仍視為已存在，因此永遠不會被重新生成；如需重生須由人工另行處理（例如改寫題目文字或人工刪除該列）。
 
+### 2.11 診所資料優先檢索（Phase 11 新增）
+為解決帶 `clinic_id` 的查詢因未含程序關鍵字被 `classify` 分流為 `general` 而無法短路命中診所專屬 FAQ 的問題，自 Phase 11 起導入「診所資料優先（Clinic-First）」跨層級檢索架構：
+- **兩階段跨層級（Tiered）檢索規則 (`src/query/faq_shortcut.py:select_confident_faq_tiered`)**：
+  - 觸發條件：`clinic_id` 非空（經正規化後非 None）且非診所營運關鍵字查詢時啟用。
+  - 第一階段（診所優先）：先以診所 `category='special'` FAQ 進行短路評估；高信心命中（`confident`）立即勝出回傳，general FAQ 絕不作為競爭者（避免一般通則稀釋或覆蓋院所專屬指示）。
+  - 阻斷不退規則：診所層若判定為歧義（`ambiguous`）、風險特徵不符（`risk_mismatch`）、問句過短（`query_too_short`），或相近低覆蓋（`low_coverage` 且 `query_coverage >= CLINIC_RELATED_FLOOR = 0.4`），視為「診所有相近內容但不可確認」，整體不短路且嚴格禁止退回 general。
+  - 第二階段（退回 general）：僅當診所層為完全無合格候選（`no_eligible`）或低覆蓋且鬆散相鄰（`low_coverage` 且 `query_coverage < CLINIC_RELATED_FLOOR = 0.4`）時，才評估通過審核閘門（approved）且 `clinic_id IS NULL` 之 general FAQ。
+- **回應結構新增純加法欄位 (`data_level`)**：
+  - 欄位定義：`data_level: Literal["clinic", "general"] | None`，明確標示回答所屬資料層級。
+  - 短路命中時：依短路來源賦予 `'clinic'` 或 `'general'`；`route` 欄位維持原本 `classify` 結果（不因跨層級短路而竄改路由分類）。
+  - 非短路時：對 `source='pageindex'` 的回應，`data_level` 取首筆 FAQ 命中的層級（`faq_hit_level(faq_hits[0])`，無 FAQ 命中時為 `None`），**僅表示最前端候選 FAQ 之來源層級，不代表回答文本內容與該 FAQ 直接相關**。
+  - 列表項目權威性：`faq_hits` 每筆項目皆帶自己的 `data_level`，以該項目自身之 `clinic_id` 是否非空為權威判斷。
+- **隔離宣告局部放寬**：
+  - 放寬範圍極小化：僅放寬診所自己的 special FAQ 可在 general 路由被檢索（解決無程序關鍵字問句分流至 general 後無法短路之問題）。
+  - 其餘隔離維持不變：`clinic_info`、`clinic_hours`、`clinic_custom_notes` 與 `page_index_trees` 對 general 路由之隔離與過濾完全不變；匿名 `/api/v1/general/query` 端點維持完全不變與嚴格隔離。
+- **醫療安全檢查與審核閘門貫徹**：
+  - 所有 Phase 07 既有安全檢查常數（0.9 / 0.7 / 0.1 / 4）與五維風險特徵檢查完全未改動。
+  - 候選集讀取一律經由 `search_faq_cache`，貫徹 `visible_faq_sql` 審核閘門，未獲核准之 `pending`/`rejected` FAQ 永不外洩。
+  - 查詢過程中完全不呼叫外部 LLM 模型。
+- **行為變更與取捨**：
+  - 帶 `clinic_id` 的 special 路由（含程序關鍵字、非營運）：若診所未命中且無相近內容，亦支援退回已審核 general；但若診所有相近內容（覆蓋率 $\ge 0.4$ 的 low_coverage、歧義、風險不符），則不短路且不退 general。
+  - 覆蓋率只是詞彙守衛，不是主題守衛：`CLINIC_RELATED_FLOOR = 0.4`（使用者決策）。複審實測數據：自然釋義配對 24 組中，floor 0.4 擋下 11/24（0.5 僅擋 6/24）；誤擋不同主題 general 為 5/40（vs 3/40）；若設為 0.3 以下，相鄰主題誤擋約達 40%，會嚴重傷害 CF-02 退 general 能力。已知邊界：`query_coverage < 0.4` 的相鄰主題（如診所「縫合後的傷口可以碰水洗澡嗎？」對「縫合後飲食注意」約 0.33）仍會退 general。
+  - 營運規則：general FAQ 入庫審核時，醫師須人工比對同主題診所 FAQ 是否存在指示衝突（Phase 12 GC-04 審核工具將提供輔助顯示）。
+- **修正跨診所外洩**：
+  - `clinic_id` 為 `None` 時，`faq_hits` 與短路候選集嚴格只保留 `clinic_id IS NULL` 之項目，他院 FAQ 不再列出亦不再被標示為 `clinic`。
+  - 因此無 `clinic_id` 時，回應之 `data_level` 只可能是 `'general'` 或 `None`。原先「沒有 clinic_id 時行為不變」正式更正為「**不會列出任何診所專屬 FAQ，其餘行為不變**」。
+- **診所識別正規化 (`clinic_id`) 與 API 行為差異**：
+  - 核心層正規化：`None`、空字串 `""` 與純空白字串 `"   "` 一律視為無 `clinic_id`。營運問句若缺少 `clinic_id`（含空字串）一律拋出 `ValueError`。
+  - API 入口差異：
+    - `POST /api/v1/query` 與 `GET /api/v1/query` 會將空白 `clinic_id` 轉為 `None`。
+    - `POST /api/v1/clinics/{clinic_id}/query` 僅對路徑參數執行 `.strip()`；因此原本空白路徑參數帶營運問句會回 HTTP 200 空資料，現在會正確因 `handle_query` 拋出 `ValueError` 而回傳 HTTP 400（僅此路徑參數入口會將空白傳入 `handle_query`）。
+- **統計語意**：
+  - `cache_eligible`、`hit`、`miss` 記錄規則不變，命中率分母不變；命中率統計包含 general 層級（`cache_stats` 的 `hit` 不區分 `clinic` 或 `general`）。
+- **未涵蓋範圍（CF-04）**：
+  - 診所臨床推理樹與客製化備註之優先化留待後續 Phase（CF-04）規劃；查詢時維持不呼叫 LLM。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -308,6 +344,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `clinicbrain-nightly.service`：夜間批次排程 systemd 配置範本
 * `clinicbrain-nightly.timer`：夜間批次排程定時器範本
 * `docs/nightly-batch.md`：夜間批次與審核營運維護手冊
+* `tests/test_clinic_first_acceptance.py`：診所資料優先檢索量測驗收測試（設計題 G，支援 CLINICBRAIN_ACCEPT_DB 指向複本，驗證 38/40 短路率）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

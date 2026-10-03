@@ -33,7 +33,11 @@ try:
         search_page_index_trees,
         search_faq_cache,
     )
-    from .faq_shortcut import select_confident_faq, SHORTCUT_CANDIDATE_LIMIT
+    from .faq_shortcut import (
+        select_confident_faq,
+        select_confident_faq_tiered,
+        SHORTCUT_CANDIDATE_LIMIT,
+    )
 except ImportError:
     from search import (
         search_drugs,
@@ -41,7 +45,11 @@ except ImportError:
         search_page_index_trees,
         search_faq_cache,
     )
-    from faq_shortcut import select_confident_faq, SHORTCUT_CANDIDATE_LIMIT
+    from faq_shortcut import (
+        select_confident_faq,
+        select_confident_faq_tiered,
+        SHORTCUT_CANDIDATE_LIMIT,
+    )
 
 
 Route = Literal["special", "general"]
@@ -262,6 +270,87 @@ class QueryResponse:
     source: Literal["cache", "pageindex", "llm"] = "pageindex"
     cache_answer: Optional[str] = None
     cache_eligible: bool = True
+    data_level: Optional[Literal["clinic", "general"]] = None
+
+
+def faq_hit_level(hit) -> Literal["clinic", "general"]:
+    """判定單筆 FAQ 命中的資料層級（Phase 11 CF-03）。
+    fields 內 clinic_id 有值（非 None 且非空字串）為 clinic，否則為 general。
+    """
+    cid = hit.fields.get("clinic_id")
+    return "clinic" if cid else "general"
+
+
+def _gather_faq_hits(
+    conn: sqlite3.Connection,
+    terms: list[str],
+    limit: int,
+    clinic_id: Optional[str],
+    route: Route,
+) -> list:
+    """依診所身分與路由彙集 FAQ 檢索結果（Phase 11 CF-01, CF-02, 決策 1）。
+
+    遵守設計規範：
+    1. 無 clinic_id 時：檢索後僅保留 clinic_id IS NULL 的 general FAQ，徹底防堵跨診所外洩。
+    2. 有 clinic_id 且 route=='special'：檢索後診所層級排在 general 之前（穩定排序）。
+    3. 有 clinic_id 且 route=='general'：隔離宣告局部放寬，優先檢索診所自己的 special FAQ，
+       再接續 general FAQ，依 row_id 去重後截斷至 limit。
+    4. 嚴禁在 router.py 撰寫原生 SQL，一律透過 search_faq_cache 檢索。
+    """
+    if clinic_id is None:
+        raw_hits = _search_terms_merged(
+            search_faq_cache,
+            conn,
+            terms,
+            max(limit, SHORTCUT_CANDIDATE_LIMIT),
+            clinic_id=None,
+            category="general" if route == "general" else None,
+        )
+        filtered = [h for h in raw_hits if h.fields.get("clinic_id") is None]
+        return filtered[:limit]
+
+    if route == "special":
+        raw_hits = _search_terms_merged(
+            search_faq_cache,
+            conn,
+            terms,
+            limit,
+            clinic_id=clinic_id,
+            category=None,
+        )
+        # 穩定排序：診所專屬層級在前，general 在後
+        return sorted(raw_hits, key=lambda h: 0 if faq_hit_level(h) == "clinic" else 1)
+
+    # 有效 clinic_id 且 route == "general"：
+    # 局部放寬：先檢索診所自己的 special FAQ，再檢索 general FAQ
+    clinic_special_hits = _search_terms_merged(
+        search_faq_cache,
+        conn,
+        terms,
+        max(limit, SHORTCUT_CANDIDATE_LIMIT),
+        clinic_id=clinic_id,
+        category="special",
+    )
+    clinic_special_hits = [h for h in clinic_special_hits if h.fields.get("clinic_id") == clinic_id]
+
+    general_hits = _search_terms_merged(
+        search_faq_cache,
+        conn,
+        terms,
+        max(limit, SHORTCUT_CANDIDATE_LIMIT),
+        clinic_id=None,
+        category="general",
+    )
+    general_hits = [h for h in general_hits if h.fields.get("clinic_id") is None]
+
+    merged_hits = []
+    seen_ids = set()
+    for h in clinic_special_hits + general_hits:
+        if h.row_id not in seen_ids:
+            seen_ids.add(h.row_id)
+            merged_hits.append(h)
+
+    return merged_hits[:limit]
 
 
 def handle_query(
@@ -282,6 +371,12 @@ def handle_query(
     cache_shortcut 預設為 True。若問句不含診所營運關鍵字且存在高信心精確匹配的 FAQ，
     將短路回傳該 FAQ 原文（已遮蔽價格），其餘非必要欄位清空，加速回應。
     """
+    # clinic_id 正規化：None、空字串或純空白一律視為 None
+    if clinic_id is not None:
+        clinic_id = clinic_id.strip()
+        if not clinic_id:
+            clinic_id = None
+
     route_result = classify(query)
     search_terms = extract_search_terms(query)
 
@@ -300,14 +395,7 @@ def handle_query(
     )
     drug_hits = _search_terms_merged(search_drugs, conn, search_terms, limit)
     service_item_hits = _search_terms_merged(search_service_items, conn, search_terms, limit)
-    faq_hits = _search_terms_merged(
-        search_faq_cache,
-        conn,
-        search_terms,
-        limit,
-        clinic_id=clinic_id if route_result.route == "special" else None,
-        category="general" if route_result.route == "general" else None,
-    )
+    faq_hits = _gather_faq_hits(conn, search_terms, limit, clinic_id, route_result.route)
 
     if route_result.route == "general":
         page_index_hits = [h for h in page_index_hits if h.fields.get("category") == "general"]
@@ -323,47 +411,107 @@ def handle_query(
 
     # 評估是否允許快取短路（營運問句以結構化資訊優先，不短路）
     shortcut_allowed = cache_shortcut and not any(kw in query for kw in _CLINIC_OPS_KEYWORDS)
+    clinic_candidates: list = []
+    general_candidates: list = []
     shortcut_candidates: list = []
-    if shortcut_allowed:
-        shortcut_candidates = _search_terms_merged(
-            search_faq_cache,
-            conn,
-            search_terms,
-            max(limit, SHORTCUT_CANDIDATE_LIMIT),
-            clinic_id=clinic_id if route_result.route == "special" else None,
-            category="general" if route_result.route == "general" else None,
-        )
 
-    for hit_list in (page_index_hits, drug_hits, service_item_hits, faq_hits, shortcut_candidates):
+    if shortcut_allowed:
+        cand_limit = max(limit, SHORTCUT_CANDIDATE_LIMIT)
+        if clinic_id is not None:
+            raw_clinic = _search_terms_merged(
+                search_faq_cache,
+                conn,
+                search_terms,
+                cand_limit,
+                clinic_id=clinic_id,
+                category="special",
+            )
+            clinic_candidates = [h for h in raw_clinic if h.fields.get("clinic_id") == clinic_id]
+
+            raw_gen = _search_terms_merged(
+                search_faq_cache,
+                conn,
+                search_terms,
+                cand_limit,
+                clinic_id=None,
+                category="general",
+            )
+            general_candidates = [h for h in raw_gen if h.fields.get("clinic_id") is None]
+        else:
+            raw_sc = _search_terms_merged(
+                search_faq_cache,
+                conn,
+                search_terms,
+                cand_limit,
+                clinic_id=None,
+                category="general" if route_result.route == "general" else None,
+            )
+            shortcut_candidates = [h for h in raw_sc if h.fields.get("clinic_id") is None]
+
+    hit_lists = [page_index_hits, drug_hits, service_item_hits, faq_hits]
+    if shortcut_allowed:
+        if clinic_id is not None:
+            hit_lists.extend([clinic_candidates, general_candidates])
+        else:
+            hit_lists.append(shortcut_candidates)
+
+    for hit_list in hit_lists:
         for hit in hit_list:
             for key, value in hit.fields.items():
                 if isinstance(value, str):
                     hit.fields[key] = mask_prices(value)
 
     if shortcut_allowed:
-        decision = select_confident_faq(
-            query=query,
-            faq_hits=shortcut_candidates,
-            route=route_result.route,
-            clinic_id=clinic_id,
-            stopword_pattern=_STOPWORD_SPLIT_PATTERN,
-        )
-        if decision.hit is not None:
-            return QueryResponse(
-                route=route_result.route,
-                matched_keywords=route_result.matched_keywords,
-                clinic_info=None,
-                clinic_hours=[],
-                page_index_hits=[],
-                drug_hits=[],
-                service_item_hits=[],
-                clinic_custom_notes={},
-                faq_hits=[decision.hit],
-                source="cache",
-                cache_answer=mask_prices(decision.hit.fields["answer"]),
-                cache_eligible=True,
+        if clinic_id is not None:
+            decision = select_confident_faq_tiered(
+                query=query,
+                clinic_hits=clinic_candidates,
+                general_hits=general_candidates,
+                clinic_id=clinic_id,
+                stopword_pattern=_STOPWORD_SPLIT_PATTERN,
             )
+            if decision.hit is not None:
+                return QueryResponse(
+                    route=route_result.route,
+                    matched_keywords=route_result.matched_keywords,
+                    clinic_info=None,
+                    clinic_hours=[],
+                    page_index_hits=[],
+                    drug_hits=[],
+                    service_item_hits=[],
+                    clinic_custom_notes={},
+                    faq_hits=[decision.hit],
+                    source="cache",
+                    cache_answer=mask_prices(decision.hit.fields["answer"]),
+                    cache_eligible=True,
+                    data_level=decision.level,
+                )
+        else:
+            legacy_decision = select_confident_faq(
+                query=query,
+                faq_hits=shortcut_candidates,
+                route=route_result.route,
+                clinic_id=None,
+                stopword_pattern=_STOPWORD_SPLIT_PATTERN,
+            )
+            if legacy_decision.hit is not None:
+                return QueryResponse(
+                    route=route_result.route,
+                    matched_keywords=route_result.matched_keywords,
+                    clinic_info=None,
+                    clinic_hours=[],
+                    page_index_hits=[],
+                    drug_hits=[],
+                    service_item_hits=[],
+                    clinic_custom_notes={},
+                    faq_hits=[legacy_decision.hit],
+                    source="cache",
+                    cache_answer=mask_prices(legacy_decision.hit.fields["answer"]),
+                    cache_eligible=True,
+                    data_level="general",
+                )
 
+    non_shortcut_level = faq_hit_level(faq_hits[0]) if faq_hits else None
     return QueryResponse(
         route=route_result.route,
         matched_keywords=route_result.matched_keywords,
@@ -377,5 +525,6 @@ def handle_query(
         source="pageindex",
         cache_answer=None,
         cache_eligible=shortcut_allowed,
+        data_level=non_shortcut_level,
     )
 

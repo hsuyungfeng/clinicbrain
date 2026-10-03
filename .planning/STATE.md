@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 診所資料優先與一般疾病簡易資訊
 status: completed_phase
-stopped_at: Phase 10 已完成（3 份計畫全數驗收通過）；準備進入 Phase 11
-last_updated: "2026-10-02T08:55:00.000Z"
-last_activity: 2026-10-02 -- Phase 10 execution complete (589/589 tests passed)
+stopped_at: Phase 11 已完成（4 份計畫全數驗收通過）；準備進入 Phase 12
+last_updated: "2026-10-03T11:46:00.000Z"
+last_activity: 2026-10-03 -- Phase 11 execution complete (662/662 tests passed, 40 FAQ shortcut 38/40)
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 25
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；Phase 10 完成，準備 Phase 11
+**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；Phase 11 完成，準備 Phase 12
 
 ## Current Position
 
-Phase: 11 of 13（診所資料優先檢索）
+Phase: 12 of 13（一般疾病內容生成與審核）
 Plan: TBD
-Status: Ready to plan Phase 11
-Last activity: 2026-10-02 -- Phase 10 execution complete (589/589 tests passed)
+Status: Ready to plan Phase 12
+Last activity: 2026-10-03 -- Phase 11 execution complete (662/662 tests passed, 40 FAQ shortcut 38/40)
 
-Progress: [██▌░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 27+
-- Tests passing: 589/589 (100%)
+- Total tasks completed: 31+
+- Tests passing: 662/662 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
@@ -47,6 +47,7 @@ Progress: [██▌░░░░░░░] 25%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [Phase 11]: 診所資料優先檢索（Tiered 兩階段判定），帶 clinic_id 優先查 special FAQ，短路率 24/40 -> 38/40；相近阻斷下限 CLINIC_RELATED_FLOOR = 0.4；回應結構新增 data_level 標示層級；無 clinic_id 查詢排除所有診所 FAQ。
 - [Phase 10]: 遷移腳本 ALTER 改自 clinic_schema.sql 動態擷取單行定義（消除 DDL 雙寫）；移除 APIConfig.default_clinic_id 孤兒設定，堅持 clinic_id 明確傳入原則。
 
 - [Phase 04]: `clinic_id` 全面標準化為健保代碼 `'3503190424'`，查詢函式強制必填，避免跨診所資料洩漏。
@@ -60,7 +61,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 執行 Phase 10（/gsd-execute-phase 10）
+- 使用者待辦：請醫師合併正式庫 id 4 與 id 19 重複問句（或區分情境），合併後短路率可由 38/40 達 40/40。
+- 規劃 Phase 12（/gsd-plan-phase 12）
 - 之後可考慮：2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04（見 REQUIREMENTS.md Future）
 
 ### Blockers/Concerns
