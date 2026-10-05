@@ -41,6 +41,7 @@
 - 本里程碑不涉及正式庫 schema 變更之外的資料遷移；任何對正式庫的寫入仍由使用者手動執行。
 - **已決策（2026-10-02，Phase 10）**：DEBT-02 採「**移除** `config.default_clinic_id`」，維持 `clinic_id` 必須明確傳入（Phase 4 原則：不靜默查到別家診所）。連帶移除 `clinicbrain-api.service` 範本的 `CLINICBRAIN_DEFAULT_CLINIC_ID` 並修正 AGENTS.md 2.6 的解析順序（Path/Body > Header，無預設）。單診所部署時呼叫端需帶 `X-Clinic-ID` 或 body `clinic_id`。
 - **已決策（2026-10-03，Phase 11）**：`CLINIC_RELATED_FLOOR=0.4`（複審實測：0.4 擋下 11/24 自然釋義配對、誤擋 5/40；0.3 以下會傷害 CF-02）。覆蓋率只是詞彙守衛，不是主題守衛；general FAQ 入庫審核時須人工比對同主題診所 FAQ 是否衝突（GC-04 提供輔助顯示）。Phase 11 一併修正「無 clinic_id 時列出他院 FAQ」的既有外洩（單診所部署原無影響，多診所為跨租戶洩漏）。
+- **已決策（2026-10-05，Phase 12 重新規劃）**：(1) 種子疾病先做 4 種低風險：感冒（升級既有 common-cold-home-care，既有 2 題保留）、流感、急性腸胃炎、過敏性鼻炎；高血壓與偏頭痛延後（慢性病用藥管理，易碰處方邊界）。(2) `data_level='general'` 的回應（經 `/api/v1/query`）新增 `disclaimer` 欄位（純加法，僅 general 層級有值），以符合「所有對外回覆附免責聲明」；此項授權修改 Phase 11 的 router.py 與回應模型。(3) `/api/v1/sync/import` 對 `category='general'` 套用新的劑量與就醫警訊驗證層；special（診所自有內容）維持信任。(4) 種子問題全文須由 planner 提案、使用者逐題核准後才執行；種子先存為 `faq_seeds.proposed.json`（批次不讀），簽核後才改名。(5) Phase 12 計畫由 planner 重寫（舊版 4 份為執行者自寫，經審查 12 blocker 作廢）。
 
 ## Traceability
 
