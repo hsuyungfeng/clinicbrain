@@ -14,14 +14,20 @@ import time
 from typing import Callable, Optional
 
 from src.batch.faq_generator import (
+    TopicGenResult,
     existing_questions,
     generate_topic_faqs,
+    settle_regen_flags,
     write_topic_faqs,
 )
 from src.batch.run_log import RunLogger, content_loggers_silenced
-from src.batch.topic_sources import load_seed_file, select_topics
+from src.batch.topic_sources import SelectedTopic, load_seed_file, select_topics
 from src.batch.tree_rebuild import find_marked_trees, rebuild_tree
-from src.pageindex.faq_review import count_by_status, has_review_status
+from src.pageindex.faq_review import (
+    count_by_status,
+    has_review_status,
+    regen_marked_rows,
+)
 from src.pageindex.llm_client import LocalLLMUnavailableError
 
 
@@ -56,6 +62,9 @@ class BatchSummary:
     faq_inserted: int = 0
     faq_rejected: int = 0
     faq_skipped_existing: int = 0
+    faq_regen_regenerated: int = 0
+    faq_regen_unchanged: int = 0
+    faq_regen_failed: int = 0
     trees_planned: int = 0
     trees_rebuilt: int = 0
     trees_unchanged: int = 0
@@ -135,10 +144,47 @@ def run_batch(
                         keywords=[kw for kw, _ in selection.unmapped_keywords[:10]],
                     )
 
-                # 遍歷候選主題，過濾所有問題已存在者，再截斷至 max_faq_topics
+                # 規劃階段在 select_topics 後，以 regen_marked_rows 取得被標記 (clinic_id, topic_key) 集合
+                marked_rows = regen_marked_rows(conn) if has_review else []
+                marked_keys = {(r["clinic_id"], r["topic_key"]) for r in marked_rows}
+                seed_topic_map = {(t.clinic_id, t.topic_key): t for t in seed.topics}
+
+                unmatched_marked_count = 0
+                marked_selected_topics = []
+                for clinic_id, topic_key in marked_keys:
+                    if (clinic_id, topic_key) in seed_topic_map:
+                        marked_selected_topics.append(
+                            SelectedTopic(
+                                topic=seed_topic_map[(clinic_id, topic_key)],
+                                reason="regen_marked",
+                                hot_count=0,
+                            )
+                        )
+                    else:
+                        unmatched_marked_count += 1
+
+                if unmatched_marked_count > 0:
+                    logger.warning("unmatched_regen_marked_topics", count=unmatched_marked_count)
+
+                # 合併標記主題與既有選題（標記主題排在最前並依 (clinic_id, topic_key) 去重）
+                seen_topic_idents = set()
+                all_candidate_topics = []
+                for st in marked_selected_topics:
+                    ident = (st.topic.clinic_id, st.topic.topic_key)
+                    if ident not in seen_topic_idents:
+                        seen_topic_idents.add(ident)
+                        all_candidate_topics.append(st)
+
                 for st in selection.topics:
+                    ident = (st.topic.clinic_id, st.topic.topic_key)
+                    if ident not in seen_topic_idents:
+                        seen_topic_idents.add(ident)
+                        all_candidate_topics.append(st)
+
+                # 遍歷候選主題，過濾所有問題已存在者（排除被標記重生成題目），再截斷至 max_faq_topics
+                for st in all_candidate_topics:
                     topic = st.topic
-                    existing = existing_questions(conn, topic.clinic_id, topic.topic_key)
+                    existing = existing_questions(conn, topic.clinic_id, topic.topic_key, exclude_regen_marked=True)
                     pending_q = [q for q in topic.questions if q not in existing]
                     if not pending_q:
                         continue
@@ -208,6 +254,12 @@ def run_batch(
                     summary.faq_rejected += len(gen_res.rejected)
                     summary.faq_skipped_existing += gen_res.skipped_existing
 
+                    # 清算重生成旗標
+                    settle = settle_regen_flags(conn, topic, gen_res)
+                    summary.faq_regen_regenerated += settle["regenerated"]
+                    summary.faq_regen_unchanged += settle["unchanged"]
+                    summary.faq_regen_failed += settle["failed"]
+
                     reason_counts = dict(Counter(rej.get("code", "other") for rej in gen_res.rejected))
                     logger.info(
                         "faq_topic_done",
@@ -216,6 +268,9 @@ def run_batch(
                         rejected_count=len(gen_res.rejected),
                         rejected_reasons=reason_counts,
                         skipped_existing=gen_res.skipped_existing,
+                        faq_regen_regenerated=settle["regenerated"],
+                        faq_regen_unchanged=settle["unchanged"],
+                        faq_regen_failed=settle["failed"],
                     )
                 except LocalLLMUnavailableError as e:
                     logger.warning(
@@ -233,6 +288,25 @@ def run_batch(
                         topic_key=topic.topic_key,
                         error_type=type(e).__name__,
                     )
+                    # 依「一次標記一次嘗試」原則，例外時亦對被標記列清算為 failed
+                    try:
+                        marked_for_this_topic = [
+                            r["question"] for r in regen_marked_rows(conn)
+                            if r["clinic_id"] == topic.clinic_id and r["topic_key"] == topic.topic_key
+                        ]
+                        if marked_for_this_topic:
+                            dummy_res = TopicGenResult(
+                                topic_key=topic.topic_key,
+                                requested=len(topic.questions),
+                                skipped_existing=0,
+                                valid=[],
+                                rejected=[],
+                                regen_questions=marked_for_this_topic,
+                            )
+                            settle = settle_regen_flags(conn, topic, dummy_res)
+                            summary.faq_regen_failed += settle["failed"]
+                    except Exception:
+                        pass
 
         # ---------------------------------------------------------------------
         # 6. 樹重建階段

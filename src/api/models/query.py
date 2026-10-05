@@ -83,3 +83,7 @@ class QueryResponseModel(BaseModel):
             "data_level 只表示最前面 FAQ 命中的層級，不代表回答內容與該 FAQ 相關。"
         ),
     )
+    disclaimer: Optional[str] = Field(
+        None,
+        description="法定醫療免責宣告文字。僅在 data_level='general' 時附帶，文字來源為 src/general/disclaimer.py",
+    )

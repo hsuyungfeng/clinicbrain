@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 診所資料優先與一般疾病簡易資訊
 status: completed_phase
-stopped_at: Phase 11 已完成（4 份計畫全數驗收通過）；準備進入 Phase 12
-last_updated: "2026-10-03T11:46:00.000Z"
-last_activity: 2026-10-03 -- Phase 11 execution complete (662/662 tests passed, 40 FAQ shortcut 38/40)
+stopped_at: Phase 12 已完成（6 份計畫全數驗收通過，858 passed）；準備進入 Phase 13
+last_updated: "2026-10-05T17:35:00.000Z"
+last_activity: 2026-10-05 -- Phase 12 execution complete (858/858 tests passed, 5 GC requirements verified)
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
-  percent: 50
+  completed_phases: 3
+  total_plans: 13
+  completed_plans: 13
+  percent: 75
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；Phase 11 完成，準備 Phase 12
+**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；Phase 12 完成，準備 Phase 13
 
 ## Current Position
 
-Phase: 12 of 13（一般疾病內容生成與審核）
+Phase: 13 of 13（真實模型夜間批次預生成實跑與驗證）
 Plan: TBD
-Status: Ready to plan Phase 12
-Last activity: 2026-10-03 -- Phase 11 execution complete (662/662 tests passed, 40 FAQ shortcut 38/40)
+Status: Ready to plan Phase 13
+Last activity: 2026-10-05 -- Phase 12 execution complete (858/858 tests passed, 5 GC requirements verified)
 
-Progress: [█████░░░░░] 50%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 31+
-- Tests passing: 662/662 (100%)
+- Total tasks completed: 37+
+- Tests passing: 858/858 (100%)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
@@ -47,6 +47,7 @@ Progress: [█████░░░░░] 50%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [Phase 12]: GC-01 疾病種子 17 題簽核入庫；GC-02 獨立實作 DX-1~5 劑量與處方攔截器（正例 47/47 攔截，負例 50/50 放行，診所 FAQ 回掃 0 誤拒）；GC-03 就醫警訊強制檢驗（正例 15/15 通過，負例 17/17 攔截）+ disclaimer 查詢回應欄位純加法擴充 + /sync/import general 前置檢驗；GC-04 審核工具增強（list --topic、show 來源與相近診所 FAQ 檢視、approve 警訊強制、faq_coverage 共用純函式）；DEBT-03 駁回題目手動標記重生成（mark-regen 子命令、一次標記一次嘗試、相同答案清除旗標）。
 - [Phase 11]: 診所資料優先檢索（Tiered 兩階段判定），帶 clinic_id 優先查 special FAQ，短路率 24/40 -> 38/40；相近阻斷下限 CLINIC_RELATED_FLOOR = 0.4；回應結構新增 data_level 標示層級；無 clinic_id 查詢排除所有診所 FAQ。
 - [Phase 10]: 遷移腳本 ALTER 改自 clinic_schema.sql 動態擷取單行定義（消除 DDL 雙寫）；移除 APIConfig.default_clinic_id 孤兒設定，堅持 clinic_id 明確傳入原則。
 

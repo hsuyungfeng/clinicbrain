@@ -25,6 +25,7 @@ FAQ_READ_WHITELIST: dict[str, str] = {
     "src/api/routes/sync.py": "已套用 visible_faq_sql 審核過濾之官方雲端同步匯出端點",
     "scripts/migrate_faq_review_status.py": "資料庫結構遷移腳本，執行 table_info 與歷史回填",
     "src/batch/faq_generator.py": "批次生成模組，僅 SELECT question 進行存在性檢查以防重複生成，不對外回傳答案",
+    "src/pageindex/faq_conflicts.py": "相近常見問答衝突比對模組，已套用 visible_faq_sql 審核過濾",
 }
 
 

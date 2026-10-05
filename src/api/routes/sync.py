@@ -3,6 +3,10 @@ doctor-toolbox.com 雙向資料同步端點模組（Phase 05 TASK-03）。
 提供官方 RESTful JSON 契約，負責知識庫、門診時間、自訂備註之增量匯出與驗證匯入。
 嚴格遵守單一權威寫入路徑（upsert_trees、upsert_faqs、upsert_clinic_note），
 並記錄每次操作至 sync_logs 審計資料表。
+
+醫療法規合規政策（Phase 12）：
+- general FAQ：匯入時強制套用第 5 層劑量處方檢測與就醫警訊檢查，任何違規整批駁回（400）。
+- special FAQ：為院所內部特定診療與療程說明，維持信任豁免新層（使用者決策 2026-10-05）。
 """
 
 from datetime import datetime
@@ -29,6 +33,7 @@ try:
     from ...clinic.custom_notes import upsert_clinic_note, VALID_SECTIONS
     from ...query.router import get_clinic_hours, get_clinic_custom_notes, mask_prices
     from ...ingestion.convert_chinese import to_traditional
+    from ...ingestion.generate_faq import validate_single_faq
     from ...pageindex.faq_review import visible_faq_sql
 except (ImportError, ValueError):
     from src.pageindex.db_writer import upsert_trees, CONTENT_FIELDS
@@ -36,6 +41,7 @@ except (ImportError, ValueError):
     from src.clinic.custom_notes import upsert_clinic_note, VALID_SECTIONS
     from src.query.router import get_clinic_hours, get_clinic_custom_notes, mask_prices
     from src.ingestion.convert_chinese import to_traditional
+    from src.ingestion.generate_faq import validate_single_faq
     from src.pageindex.faq_review import visible_faq_sql
 
 logger = logging.getLogger(__name__)
@@ -282,6 +288,33 @@ def import_sync_data(
     cleaned_data = sanitize_and_validate_import_data(
         request.data, auto_convert_simplified=request.auto_convert_simplified
     )
+
+    # 1.1 前置檢核：對所有非明確 special 之 FAQ 進行醫療法規合規檢查（劑量處方與就醫警訊）
+    # 必須在任何寫入（trees, faqs, notes, hours）之前完成，確保原子性與 fail-closed
+    if "faqs" in cleaned_data and isinstance(cleaned_data["faqs"], list):
+        for idx, item in enumerate(cleaned_data["faqs"]):
+            if not isinstance(item, dict):
+                continue
+            raw_cat = item.get("category", "special")
+            if isinstance(raw_cat, str):
+                norm_cat = raw_cat.strip()
+            else:
+                norm_cat = ""
+
+            # 只有確定等於 "special" 才豁免驗證，其餘一切值（包含 general 及其變體、null、未知值）皆走 general 嚴格驗證
+            if norm_cat != "special":
+                q = (item.get("question") or "").strip()
+                a = (item.get("answer") or "").strip()
+                is_valid, reason = validate_single_faq(
+                    {"question": q, "answer": a},
+                    check_dosage=True,
+                    require_doctor_warning=True,
+                )
+                if not is_valid:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"匯入之 general FAQ 第 {idx} 筆未通過醫療合規驗證：{reason}",
+                    )
 
     summary: Dict[str, int] = {
         "trees_inserted": 0,

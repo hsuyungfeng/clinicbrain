@@ -120,8 +120,16 @@ python3 scripts/review_faq.py approve 42 --allow-prod-db
 # 4. 批次駁回違規或不合適之生成項目
 python3 scripts/review_faq.py reject 43 44 --allow-prod-db
 ```
-- **合規再次檢核**：核准操作時系統會重新執行四層醫療合規驗證，杜絕任何違規內容流入。
+- **合規再次檢核**：核准操作時系統會重新執行多層醫療合規驗證（含用藥劑量與就醫警訊），杜絕任何違規內容流入。
 - **增量同步語意**：當審核狀態由 pending 變更為 approved 時，系統自動遞增 `content_version`，以利外部系統進行增量同步。
+
+### 被駁回題目重新生成（Phase 12 DEBT-03）
+指令：`python3 scripts/review_faq.py [--allow-prod-db] mark-regen <id...>`
+說明：
+- 當醫師駁回（reject）某筆 LLM 生成的 FAQ 後，該題預設不會再次被批次選入生成。
+- 醫師可透過 `mark-regen` 子命令將該列標記為 `needs_regeneration = 1`。
+- 「一次標記一次嘗試」機制：下次夜間批次時，系統會將該題重新排入生成候選。若生成的新答案不同，將更新答案並重設為 `pending`（版本遞增）；若生成的答案與原駁回內容完全相同，則清除重生成旗標（維持 `rejected`），不再重複耗費 LLM 資源。
+- 測試建議：進行正式操作前，請先在測試複本（`--db /tmp/test_nightly.db`）上進行演練確認。
 
 ---
 

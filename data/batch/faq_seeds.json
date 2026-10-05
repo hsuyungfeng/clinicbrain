@@ -69,8 +69,81 @@
       "always": true,
       "tree_doc_id": null,
       "questions": [
+        "什麼是感冒？",
+        "感冒常見症狀有哪些？",
+        "感冒什麼時候需要就醫？",
         "感冒時在家要如何照護與休息？",
         "感冒時需要多喝水嗎？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "influenza-basics",
+      "title": "流感基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是流感？",
+        "流感常見症狀有哪些？",
+        "流感什麼時候需要就醫？",
+        "流感患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "acute-gastroenteritis",
+      "title": "急性腸胃炎基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是急性腸胃炎？",
+        "急性腸胃炎常見症狀有哪些？",
+        "急性腸胃炎什麼時候需要就醫？",
+        "急性腸胃炎患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "allergic-rhinitis",
+      "title": "過敏性鼻炎基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是過敏性鼻炎？",
+        "過敏性鼻炎常見症狀有哪些？",
+        "過敏性鼻炎什麼時候需要就醫？",
+        "過敏性鼻炎患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
       ]
     }
   ]

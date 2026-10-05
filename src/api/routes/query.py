@@ -113,6 +113,7 @@ def _execute_query(
         "source": raw_response.source,
         "cache_answer": raw_response.cache_answer,
         "data_level": raw_response.data_level,
+        "disclaimer": raw_response.disclaimer,
     }
 
     # 執行二次價格遮蔽遞迴掃描

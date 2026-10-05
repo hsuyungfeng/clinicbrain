@@ -24,6 +24,8 @@ from src.query.cache_stats import ROUTE_KEYWORD_VOCAB, get_cache_stats
 
 SLUG_REGEX = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
+QUESTION_TAGS = frozenset({"what", "symptoms", "when_to_see_doctor", "home_care"})
+
 
 class SeedFileError(Exception):
     """種子清單檔案載入或校驗錯誤。"""
@@ -43,6 +45,7 @@ class SeedTopic:
     always: bool
     tree_doc_id: Optional[str]
     questions: tuple[str, ...]
+    question_tags: tuple[str, ...] = ()
 
 
 @dataclass
@@ -182,6 +185,22 @@ def validate_seed_data(data: Any) -> list[str]:
                 if not is_valid:
                     errors.append(f"主題 '{topic_key}' 問題 '{q_clean}' 未通過醫療法規合規檢查: {reason}")
 
+        # 8. question_tags 檢核 (可選欄位)
+        question_tags = t.get("question_tags")
+        if question_tags is not None:
+            if not isinstance(question_tags, list):
+                errors.append(f"主題 '{topic_key}' 之 question_tags 必須為列表")
+            else:
+                if len(question_tags) != len(questions):
+                    errors.append(
+                        f"主題 '{topic_key}' 之 question_tags 數量 ({len(question_tags)}) 與 questions ({len(questions)}) 不符"
+                    )
+                for tag in question_tags:
+                    if not isinstance(tag, str) or tag not in QUESTION_TAGS:
+                        errors.append(
+                            f"主題 '{topic_key}' 之 question_tags 包含無效標籤 '{tag}'，必須屬於 {sorted(QUESTION_TAGS)}"
+                        )
+
     return errors
 
 
@@ -213,6 +232,7 @@ def load_seed_file(path: Union[str, Path]) -> SeedFile:
                 always=bool(t.get("always")),
                 tree_doc_id=t.get("tree_doc_id"),
                 questions=tuple(t.get("questions") or []),
+                question_tags=tuple(t.get("question_tags") or []),
             )
         )
 

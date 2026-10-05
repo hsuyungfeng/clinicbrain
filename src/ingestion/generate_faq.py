@@ -2,11 +2,14 @@
 """
 Taiwan Clinic Medical PageIndex RAG System - FAQ 自動生成與驗證模組 (generate_faq)
 Phase 03 Document Ingestion Stage 1: TASK-03
+Phase 12 General Content Generation: GC-02, GC-03
 
 流程：
 1. build_faq_prompt(): 組裝嚴格符合 AGENTS.md 準則之 prompt（價格屏蔽、繁體中文、立場中立）
 2. local_llm_call(): 呼叫本地 LLM（Phase 02 llama-server adapter）
 3. parse_and_validate_faq(): 解析 JSON 並逐項檢核，過濾違規項目，記錄剔除原因
+   - 基礎四層（價格、簡體、政治、保證療效）常駐啟用
+   - 第五層（用藥劑量與處方建議）與第六層（就醫警訊）為條件層，預設關閉
 """
 
 import json
@@ -15,6 +18,7 @@ import re
 from typing import Any, Optional, Tuple, Union
 
 from src.ingestion.convert_chinese import to_traditional
+from src.ingestion.medical_safety import check_dosage_prescription, has_doctor_warning
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +77,12 @@ def build_faq_prompt(source_text: str, source_filename: str) -> str:
     )
 
 
-def validate_single_faq(item: dict[str, Any]) -> Tuple[bool, Optional[str]]:
+def validate_single_faq(
+    item: dict[str, Any],
+    *,
+    check_dosage: bool = False,
+    require_doctor_warning: bool = False,
+) -> Tuple[bool, Optional[str]]:
     """驗證單一 Q&A 項目是否合規。
     
     回傳: (is_valid, reason_if_invalid)
@@ -110,12 +119,26 @@ def validate_single_faq(item: dict[str, Any]) -> Tuple[bool, Optional[str]]:
         if phrase in combined:
             return False, f"檢出違規禁詞: '{phrase}'"
 
+    # 5. 用藥劑量與處方建議檢測（僅對 answer 檢查）
+    if check_dosage:
+        rule_id = check_dosage_prescription(a)
+        if rule_id is not None:
+            return False, f"檢出用藥劑量或處方建議 (規則: {rule_id})"
+
+    # 6. 何時該就醫警訊檢測（僅對 answer 檢查）
+    if require_doctor_warning:
+        if not has_doctor_warning(a):
+            return False, "缺少「何時該就醫」警訊（需具體症狀或數值條件加就醫動作）"
+
     return True, None
 
 
 def parse_and_validate_faq(
     raw_output: str,
     return_rejected: bool = False,
+    *,
+    check_dosage: bool = False,
+    require_doctor_warning: bool = False,
 ) -> Union[list[dict[str, str]], Tuple[list[dict[str, str]], list[dict[str, Any]]]]:
     """解析 LLM 輸出之 JSON 陣列，並逐筆執行嚴格驗證。
 
@@ -125,10 +148,13 @@ def parse_and_validate_faq(
     - 無簡體中文字元（_SIMPLIFIED_CHAR_SAMPLE）
     - 無政治立場用語（_POLITICAL_STANCE_PHRASES）
     - 無保證療效用語（_FORBIDDEN_PHRASES）
+    - 條件啟用：劑量處方檢測（check_dosage=True）、就醫警訊檢測（require_doctor_warning=True）
 
     參數:
         raw_output: LLM 原始回傳字串
         return_rejected: 若為 True，回傳 (valid_faqs, rejected_faqs)；預設 False 僅回傳 valid_faqs
+        check_dosage: 是否啟用第五層劑量與處方建議攔截（預設 False）
+        require_doctor_warning: 是否啟用第六層「何時該就醫」警訊檢核（預設 False）
     回傳:
         符合規範之 Q&A 列表（或與被剔除項目的 tuple）
     """
@@ -163,7 +189,11 @@ def parse_and_validate_faq(
     rejected_faqs: list[dict[str, Any]] = []
 
     for idx, item in enumerate(data):
-        is_valid, reason = validate_single_faq(item)
+        is_valid, reason = validate_single_faq(
+            item,
+            check_dosage=check_dosage,
+            require_doctor_warning=require_doctor_warning,
+        )
         if is_valid:
             valid_faqs.append({
                 "question": item["question"].strip(),

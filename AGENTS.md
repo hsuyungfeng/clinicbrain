@@ -255,43 +255,43 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   2. `local_llm_call` 逾時會轉為 `LocalLLMUnavailableError`，單次逾時即讓批次提前優雅結束（結束碼 0），留待下一晚繼續。
   3. 樹重建繞過審核閘門（如上述，以快照與註記還原為補償防線）。
   4. 未命中關鍵字僅記錄標準化白名單字詞，無法獲知病患真實具體問法。
-  5. 批次的 `existing_questions` 去重（`src/batch/faq_generator.py`）不分審核狀態與資料來源，被駁回（`rejected`）的題目仍視為已存在，因此永遠不會被重新生成；如需重生須由人工另行處理（例如改寫題目文字或人工刪除該列）。
+  5. 批次的 `existing_questions` 去重（`src/batch/faq_generator.py`）不分審核狀態與資料來源，被駁回（`rejected`）的題目仍視為已存在，因此永遠不會被重新生成；如需重生須由人工另行處理（例如改寫題目文字或人工刪除該列；Phase 12 起可由 review_faq mark-regen 明確觸發重生成，見 2.12）。
 
-### 2.11 診所資料優先檢索（Phase 11 新增）
-為解決帶 `clinic_id` 的查詢因未含程序關鍵字被 `classify` 分流為 `general` 而無法短路命中診所專屬 FAQ 的問題，自 Phase 11 起導入「診所資料優先（Clinic-First）」跨層級檢索架構：
-- **兩階段跨層級（Tiered）檢索規則 (`src/query/faq_shortcut.py:select_confident_faq_tiered`)**：
-  - 觸發條件：`clinic_id` 非空（經正規化後非 None）且非診所營運關鍵字查詢時啟用。
-  - 第一階段（診所優先）：先以診所 `category='special'` FAQ 進行短路評估；高信心命中（`confident`）立即勝出回傳，general FAQ 絕不作為競爭者（避免一般通則稀釋或覆蓋院所專屬指示）。
-  - 阻斷不退規則：診所層若判定為歧義（`ambiguous`）、風險特徵不符（`risk_mismatch`）、問句過短（`query_too_short`），或相近低覆蓋（`low_coverage` 且 `query_coverage >= CLINIC_RELATED_FLOOR = 0.4`），視為「診所有相近內容但不可確認」，整體不短路且嚴格禁止退回 general。
-  - 第二階段（退回 general）：僅當診所層為完全無合格候選（`no_eligible`）或低覆蓋且鬆散相鄰（`low_coverage` 且 `query_coverage < CLINIC_RELATED_FLOOR = 0.4`）時，才評估通過審核閘門（approved）且 `clinic_id IS NULL` 之 general FAQ。
-- **回應結構新增純加法欄位 (`data_level`)**：
-  - 欄位定義：`data_level: Literal["clinic", "general"] | None`，明確標示回答所屬資料層級。
-  - 短路命中時：依短路來源賦予 `'clinic'` 或 `'general'`；`route` 欄位維持原本 `classify` 結果（不因跨層級短路而竄改路由分類）。
-  - 非短路時：對 `source='pageindex'` 的回應，`data_level` 取首筆 FAQ 命中的層級（`faq_hit_level(faq_hits[0])`，無 FAQ 命中時為 `None`），**僅表示最前端候選 FAQ 之來源層級，不代表回答文本內容與該 FAQ 直接相關**。
-  - 列表項目權威性：`faq_hits` 每筆項目皆帶自己的 `data_level`，以該項目自身之 `clinic_id` 是否非空為權威判斷。
-- **隔離宣告局部放寬**：
-  - 放寬範圍極小化：僅放寬診所自己的 special FAQ 可在 general 路由被檢索（解決無程序關鍵字問句分流至 general 後無法短路之問題）。
-  - 其餘隔離維持不變：`clinic_info`、`clinic_hours`、`clinic_custom_notes` 與 `page_index_trees` 對 general 路由之隔離與過濾完全不變；匿名 `/api/v1/general/query` 端點維持完全不變與嚴格隔離。
-- **醫療安全檢查與審核閘門貫徹**：
-  - 所有 Phase 07 既有安全檢查常數（0.9 / 0.7 / 0.1 / 4）與五維風險特徵檢查完全未改動。
-  - 候選集讀取一律經由 `search_faq_cache`，貫徹 `visible_faq_sql` 審核閘門，未獲核准之 `pending`/`rejected` FAQ 永不外洩。
-  - 查詢過程中完全不呼叫外部 LLM 模型。
-- **行為變更與取捨**：
-  - 帶 `clinic_id` 的 special 路由（含程序關鍵字、非營運）：若診所未命中且無相近內容，亦支援退回已審核 general；但若診所有相近內容（覆蓋率 $\ge 0.4$ 的 low_coverage、歧義、風險不符），則不短路且不退 general。
-  - 覆蓋率只是詞彙守衛，不是主題守衛：`CLINIC_RELATED_FLOOR = 0.4`（使用者決策）。複審實測數據：自然釋義配對 24 組中，floor 0.4 擋下 11/24（0.5 僅擋 6/24）；誤擋不同主題 general 為 5/40（vs 3/40）；若設為 0.3 以下，相鄰主題誤擋約達 40%，會嚴重傷害 CF-02 退 general 能力。已知邊界：`query_coverage < 0.4` 的相鄰主題（如診所「縫合後的傷口可以碰水洗澡嗎？」對「縫合後飲食注意」約 0.33）仍會退 general。
-  - 營運規則：general FAQ 入庫審核時，醫師須人工比對同主題診所 FAQ 是否存在指示衝突（Phase 12 GC-04 審核工具將提供輔助顯示）。
-- **修正跨診所外洩**：
-  - `clinic_id` 為 `None` 時，`faq_hits` 與短路候選集嚴格只保留 `clinic_id IS NULL` 之項目，他院 FAQ 不再列出亦不再被標示為 `clinic`。
-  - 因此無 `clinic_id` 時，回應之 `data_level` 只可能是 `'general'` 或 `None`。原先「沒有 clinic_id 時行為不變」正式更正為「**不會列出任何診所專屬 FAQ，其餘行為不變**」。
-- **診所識別正規化 (`clinic_id`) 與 API 行為差異**：
-  - 核心層正規化：`None`、空字串 `""` 與純空白字串 `"   "` 一律視為無 `clinic_id`。營運問句若缺少 `clinic_id`（含空字串）一律拋出 `ValueError`。
-  - API 入口差異：
-    - `POST /api/v1/query` 與 `GET /api/v1/query` 會將空白 `clinic_id` 轉為 `None`。
-    - `POST /api/v1/clinics/{clinic_id}/query` 僅對路徑參數執行 `.strip()`；因此原本空白路徑參數帶營運問句會回 HTTP 200 空資料，現在會正確因 `handle_query` 拋出 `ValueError` 而回傳 HTTP 400（僅此路徑參數入口會將空白傳入 `handle_query`）。
-- **統計語意**：
-  - `cache_eligible`、`hit`、`miss` 記錄規則不變，命中率分母不變；命中率統計包含 general 層級（`cache_stats` 的 `hit` 不區分 `clinic` 或 `general`）。
-- **未涵蓋範圍（CF-04）**：
-  - 診所臨床推理樹與客製化備註之優先化留待後續 Phase（CF-04）規劃；查詢時維持不呼叫 LLM。
+### 2.12 一般疾病內容生成與審核（Phase 12 新增）
+為使系統能以合規且安全的方式提供常見疾病（如感冒、流感、急性腸胃炎、過敏性鼻炎）之衛教問答，自 Phase 12 起導入一般疾病內容生成、多層合規防禦與審核增強機制：
+- **擴充疾病種子清單 (GC-01)**：
+  - 種子清單支援擴充主題與可選之 `question_tags` 標籤，分類包含 what、symptoms、when_to_see_doctor、home_care（程式：`src/batch/topic_sources.py:QUESTION_TAGS`；測試：`tests/test_disease_seeds.py::test_question_tags_constant`）。
+  - 簽核四項常見疾病（感冒、流感、急性腸胃炎、過敏性鼻炎）共 17 題繁體中文問答種子入庫，所有項目皆通過格式與分類檢驗（程式：`src/batch/topic_sources.py:load_seed_file`；測試：`tests/test_disease_seeds.py::test_seed_file_structure_and_disease_coverage`）。
+  - 夜間批次預設採用簽核之種子清單，端到端驗收確認 4 主題與 17 題正確載入（程式：`src/batch/runner.py:BatchConfig`；測試：`tests/test_phase12_acceptance.py::test_01_preflight_seed_topics`）。
+- **用藥劑量與處方建議攔截層 (GC-02)**：
+  - 實作劑量與處方安全規則（DX-1~DX-5），攔截阿拉伯數字劑量、中文數字劑量、處方用藥建議，並保留「請遵照醫囑」「請勿自行增減」之免責豁免（程式：`src/ingestion/medical_safety.py:check_dosage_prescription`；測試：`tests/test_medical_safety.py::test_validate_single_faq_default_disabled`）。
+  - 實測精確度：劑量正例 47/47 攔截、負例 50/50 放行；正式庫既有 40 筆診所 FAQ 回掃 0 誤拒（包含診所 FAQ id 6 之「給予抗生素」描述性敘述）（程式：`src/ingestion/medical_safety.py:check_dosage_prescription`；測試：`tests/test_medical_safety.py::test_backscan_clinic_upload_faqs`）。
+  - 批次生成管線全面啟用劑量攔截，違規項目分類為 `dosage_prescription` 拒絕代碼（程式：`src/batch/faq_generator.py:generate_topic_faqs`；測試：`tests/test_medical_safety.py::test_classify_dosage_prescription_code`）。
+- **就醫警訊強制檢驗與免責聲明欄位 (GC-03)**：
+  - General 類別問答之 answer 強制要求具體症狀或數值條件之就醫警訊收尾句，實測正例 15/15 通過、負例 17/17 攔截；單純「若症狀加重請回診」單獨出現視為不合規（程式：`src/ingestion/medical_safety.py:has_doctor_warning`；測試：`tests/test_medical_safety.py::test_classify_missing_doctor_warning_code`）。
+  - 批次生成針對 general 主題注入第 9 條 Prompt 就醫警訊收尾規則，違規者以 `missing_doctor_warning` 剔除（程式：`src/batch/faq_generator.py:build_seed_faq_prompt`；測試：`tests/test_medical_safety.py::test_prompt_build_seed_faq_prompt_rules`）。
+  - 雙向資料同步匯入（`/api/v1/sync/import`）對 general FAQ 實施前置合規檢核，劑量違規或缺警訊者以 HTTP 400 整批原子性阻斷；special 類別維持豁免（程式：`src/api/routes/sync.py:import_sync_data`；測試：`tests/test_sync_general_validation.py::test_sync_import_general_faq_dosage_blocked_and_atomic`）。
+  - 自然語言查詢回應結構純加法擴充 `disclaimer: Optional[str] = None` 欄位；當 `data_level == 'general'` 時自動附帶法定醫療免責宣告文字，診所層級為 null（程式：`src/query/router.py:handle_query`；測試：`tests/test_query_disclaimer_field.py::test_query_response_disclaimer_general_shortcut`）。
+  - 匿名諮詢端點與自然語言查詢端點在 general 題目命中時皆附帶免責聲明（程式：`src/api/routes/query.py:_execute_query`；測試：`tests/test_query_disclaimer_field.py::test_api_query_endpoint_disclaimer`）。
+- **醫師審核工具增強與衝突比對 (GC-04)**：
+  - 提供共用覆蓋率純函式，沿用與快取短路同一套標準化與覆蓋率計算（程式：`src/query/faq_shortcut.py:faq_coverage`；測試：`tests/test_faq_conflicts.py::test_faq_coverage_measurements`）。
+  - 審核 general 問答時自動檢索相近診所 FAQ，門檻引用 `CLINIC_RELATED_FLOOR = 0.4`，嚴格隔離未核准之 LLM 生成診所問答，支援 mode=ro 唯讀連線（程式：`src/pageindex/faq_conflicts.py:find_similar_clinic_faqs`；測試：`tests/test_faq_conflicts.py::test_find_similar_clinic_faqs_retrieval`）。
+  - 審核工具 `review_faq.py list` 支援 `--topic` 主題篩選與來源/驗證結果顯示；`show` 顯示生成來源、驗證結果與相近診所問答；`approve` 強制檢驗 general 警訊（程式：`scripts/review_faq.py:main`；測試：`tests/test_review_faq_cli.py::test_cli_show_general_similar_clinic_faqs`）。
+- **被駁回題目手動標記重生成 (DEBT-03)**：
+  - 唯一標記函式 `mark_for_regeneration` 僅允許標記 `rejected` 狀態之 `llm_generated` 項目（程式：`src/pageindex/faq_review.py:mark_for_regeneration`；測試：`tests/test_faq_regen.py::test_mark_for_regeneration_restrictions`）。
+  - 批次生成 `existing_questions` 支援 `exclude_regen_marked=True`，優先處理被標記之主題（程式：`src/batch/faq_generator.py:existing_questions`；測試：`tests/test_faq_regen.py::test_existing_questions_exclude_regen_marked`）。
+  - CLI `mark-regen` 子命令提供醫師標記入口，未帶 `--allow-prod-db` 於連線前以 code 2 阻斷正式庫操作（程式：`scripts/review_faq.py:main`；測試：`tests/test_review_faq_cli.py::test_cli_mark_regen_subcommand`）。
+  - 端到端重生成生命週期：標記重生成後新答案以 `pending` 入庫且版號遞增；若模型回傳相同答案則清除重生成旗標並維持 `rejected`，避免無限生成（程式：`src/batch/runner.py:run_batch`；測試：`tests/test_phase12_acceptance.py::test_04_regeneration_lifecycle_debt03`）。
+- **端到端驗收保證**：
+  - 17 題正式種子批次生成後預設 pending 隱蔽；醫師 CLI 核准後自然語言與一般諮詢皆正確命中；正式庫 SHA-256 全程未變（程式：`tests/test_phase12_acceptance.py`；測試：`tests/test_phase12_acceptance.py::test_02_e2e_generation_approval_and_consultation`）。
+  - 同步匯出閘門：未核准前不外洩 17 筆 general FAQ，核准後包含於匯出資料（程式：`src/api/routes/sync.py:export_sync_data`；測試：`tests/test_phase12_acceptance.py::test_05_sync_export_gate`）。
+- **已知限制（架構決策接受）**：
+  1. **詞彙守衛非主題守衛**：覆蓋率相近比對（`find_similar_clinic_faqs`）為詞彙重疊守衛；17 題一般疾病種子對院所既有 40 筆醫美外科 FAQ 最高詞彙覆蓋率皆 $\le 0.30$（$< 0.4$），衝突清單為空不代表臨床無指示衝突，審核工具 show 一律附帶醒目警語提示醫師自行比對。
+  2. **免責聲明範圍**：僅自然語言查詢 `/api/v1/query`（在 `data_level == 'general'` 時）與匿名諮詢端點 `/api/v1/general/query` 附帶免責聲明；雙向同步匯出（`/api/v1/sync/export`）與審核工具（`review_faq.py`）維持純淨資料結構，不額外附加免責字串。
+  3. **重生成採一次標記一次嘗試**：為防範模型死循環，被標記之題目在批次中僅嘗試生成一次；若產出實質新內容則更新入庫回到 `pending`，若產出內容未變則清除重生成旗標並維持 `rejected`（計入 `faq_regen_unchanged`），不重複消耗推論配額。
+  4. **劑量／處方層為條件式檢驗**：用藥安全檢核透過 `check_dosage` 與 `require_doctor_warning` 參數啟用，文件擷取（`run_stage1_ingestion.py`）與院所特殊上傳項目預設不強制套用；DX-4/DX-5 對「遵照醫囑」「請勿自行」具有豁免；「給予抗生素」描述性敘述不予攔截；「若醫師開立藥物，請依指示服用」則採保守攔截策略。
+  5. **就醫警訊之結構要求**：警訊收尾必須同時具備「具體症狀或數值條件」與「就醫動作」；單獨「若症狀加重請回診」因缺乏具體辨識指引，視為不合規。
+  6. **審核狀態變更之警訊檢核預設關閉**：`faq_review.set_review_status` 底層預設 `enforce_general_warning=False`，僅醫師審核 CLI（`review_faq approve`）明確傳入 `enforce_general_warning=True` 進行強制把關。
 
 ---
 
@@ -330,13 +330,15 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `src/pageindex/prompt_template.py`：LLM 生成臨床推理樹的 prompt 組裝 + 輸出驗證
 * `src/pageindex/llm_client.py`：本地 LLM（llama-server）呼叫 adapter
 * `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯
+* `src/pageindex/faq_conflicts.py`：相近診所問答衝突檢索模組（支援 visible_faq_sql 與唯讀模式）
 * `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`）
-* `data/batch/faq_seeds.json`：夜間批次 FAQ 與樹主題繁體中文種子清單
+  * `src/ingestion/medical_safety.py`：醫療合規安全驗證器（劑量/處方建議攔截 DX-1~5、就醫警訊收尾句檢驗）
+* `data/batch/faq_seeds.json`：夜間批次 FAQ 與樹主題繁體中文種子清單（含一般疾病種子與標籤）
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
 * `scripts/migrate_cache_stats.py`：`cache_stats` 資料表結構遷移腳本
 * `scripts/migrate_faq_review_status.py`：`faq_cache.review_status` 審核欄位交易性遷移腳本
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具
-* `scripts/review_faq.py`：醫師審核命令列互動工具
+* `scripts/review_faq.py`：醫師審核命令列互動工具（支援 list --topic、show 來源與相近診所 FAQ 檢視、approve、reject、reset 與 mark-regen 重生成標記）
 * `scripts/mark_tree_regen.py`：臨床推理樹待重建手動標記工具
 * `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
 * `scripts/run_api_server.py`：FastAPI 服務啟動入口腳本（支援 CLI 參數）
@@ -345,6 +347,13 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `clinicbrain-nightly.timer`：夜間批次排程定時器範本
 * `docs/nightly-batch.md`：夜間批次與審核營運維護手冊
 * `tests/test_clinic_first_acceptance.py`：診所資料優先檢索量測驗收測試（設計題 G，支援 CLINICBRAIN_ACCEPT_DB 指向複本，驗證 38/40 短路率）
+* `tests/test_phase12_acceptance.py`：Phase 12 一般疾病內容生成與審核端到端整合驗收測試
+* `tests/test_medical_safety.py`：用藥劑量與處方建議、就醫警訊多層醫療合規安全驗證測試
+* `tests/test_disease_seeds.py`：一般疾病種子清單結構、標籤與簽核門檻測試
+* `tests/test_faq_regen.py`：駁回題目手動標記重生成生命週期與批次優先級測試
+* `tests/test_query_disclaimer_field.py`：自然語言查詢免責宣告欄位與資料層級測試
+* `tests/test_sync_general_validation.py`：官方雙向同步匯入 general FAQ 前置合規驗證測試
+* `tests/test_faq_conflicts.py`：相近診所問答衝突檢索與覆蓋率純函式測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

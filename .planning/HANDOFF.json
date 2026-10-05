@@ -1,94 +1,32 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-05T00:00:00+08:00",
+  "timestamp": "2026-10-05T17:39:30+08:00",
   "phase": "12",
-  "phase_name": "Phase 12 一般疾病內容生成與審核 / Phase 13 臨床語音與 SOAP 問答萃取",
+  "phase_name": "12-general-content-generation",
   "phase_dir": ".planning/phases/12-general-content-generation",
-  "plan": null,
-  "task": null,
-  "total_tasks": null,
-  "status": "paused",
+  "plan": 6,
+  "task": 3,
+  "total_tasks": 3,
+  "status": "completed",
   "completed_tasks": [
-    {
-      "id": 1,
-      "name": "Phase 10 技術債清理",
-      "status": "done",
-      "commit": "b6c41fa"
-    },
-    {
-      "id": 2,
-      "name": "Phase 11 診所資料優先檢索實作與驗收（662 passed, 38/40 短路）",
-      "status": "done",
-      "commit": "uncommitted (user handles commit)"
-    },
-    {
-      "id": 3,
-      "name": "Phase 12 規劃完成（12-01 ~ 12-04 四份計畫）",
-      "status": "done",
-      "commit": "uncommitted"
-    },
-    {
-      "id": 4,
-      "name": "Phase 13 臨床語音與 SOAP 問答萃取規劃完成（13-01 ~ 13-04 四份計畫）",
-      "status": "done",
-      "commit": "uncommitted"
-    },
-    {
-      "id": 5,
-      "name": "ROADMAP.md 與 REQUIREMENTS.md 對齊更新（14/14 需求追蹤）",
-      "status": "done",
-      "commit": "uncommitted"
-    }
+    {"id": 1, "name": "Plan 12-01: GC-02, GC-03 劑量/處方攔截與就醫警訊驗證器", "status": "done"},
+    {"id": 2, "name": "Plan 12-02: GC-01 疾病種子清單擴充與簽核硬閘門", "status": "done"},
+    {"id": 3, "name": "Plan 12-03: DEBT-03 駁回 FAQ 標記重生成與審核管理", "status": "done"},
+    {"id": 4, "name": "Plan 12-04: GC-03, GC-02 免責宣告欄位與 sync/import 驗證", "status": "done"},
+    {"id": 5, "name": "Plan 12-05: GC-04, DEBT-03 審核工具增強、衝突比對與 mark-regen", "status": "done"},
+    {"id": 6, "name": "Plan 12-06: 端到端整合驗收、AGENTS.md 2.12 與營運文件更新", "status": "done"}
   ],
-  "remaining_tasks": [
-    {
-      "id": 6,
-      "name": "執行 Phase 12: 一般疾病內容生成與審核（/gsd-execute-phase 12）",
-      "status": "not_started"
-    },
-    {
-      "id": 7,
-      "name": "執行 Phase 13: 臨床語音與 SOAP 問答萃取（/gsd-execute-phase 13）",
-      "status": "not_started"
-    },
-    {
-      "id": 8,
-      "name": "規劃與執行 Phase 14: 真實 LLM 批次實跑驗證",
-      "status": "not_started"
-    }
-  ],
+  "remaining_tasks": [],
   "blockers": [],
-  "human_actions_pending": [
-    {
-      "action": "合併資料庫中重複問句 id 4 與 id 19",
-      "context": "同一問句有兩個不同答案，觸發歧義邊界保護刻意不短路",
-      "blocking": false
-    },
-    {
-      "action": "審閱並提交目前的 Git 變更（user handles commits）",
-      "context": "包含 Phase 11 實作檔案與 Phase 12/13 計畫文件、ROADMAP.md、REQUIREMENTS.md",
-      "blocking": false
-    }
-  ],
+  "human_actions_pending": [],
   "decisions": [
-    {
-      "decision": "新增第 5 層劑量與處方攔截器 (GC-02) 並要求一般衛教必含就醫警訊 (GC-03)",
-      "rationale": "阻止具體用藥劑量與處方外洩，衛教指引必須提醒何時就醫",
-      "phase": "12"
-    },
-    {
-      "decision": "審核工具 review_faq 引入相近診所 FAQ 衝突比對（門檻 0.4）(GC-04)",
-      "rationale": "覆蓋率只是詞彙守衛而非主題守衛，入庫審核階段由醫師比對診所專屬醫囑與一般通則",
-      "phase": "12"
-    }
+    {"decision": "GC-01 四項常見疾病（感冒、流感、急性腸胃炎、過敏性鼻炎）共 17 題正式種子入庫", "rationale": "提供一般疾病常見問答之高標準繁中素材", "phase": "12"},
+    {"decision": "GC-02 獨立實作 DX-1~5 劑量與處方攔截器", "rationale": "阻斷阿拉伯與中文數字劑量及特定處方用藥建議，保留請遵醫囑豁免", "phase": "12"},
+    {"decision": "GC-03 就醫警訊強制檢驗與自然語言免責聲明純加法擴充", "rationale": "確保 general 問答皆具備就醫指引，符合醫療法規", "phase": "12"},
+    {"decision": "GC-04 審核工具支援主題檢視與相近診所 FAQ 檢視", "rationale": "輔助醫師人工比對指示衝突，明示詞彙守衛局限", "phase": "12"},
+    {"decision": "DEBT-03 被駁回題目手動標記重生成生命週期", "rationale": "提供 mark-regen 子命令，一次標記一次嘗試防範無限推論", "phase": "12"}
   ],
-  "uncommitted_files": [
-    ".planning/REQUIREMENTS.md",
-    ".planning/ROADMAP.md",
-    "Plan.md",
-    ".planning/phases/12-general-content-generation/",
-    ".planning/phases/13-clinical-soap-faq-ingestion/"
-  ],
-  "next_action": "Phase 12 的 6 份計畫已由 planner 重寫完成，plan-checker 複審進行中（結果於 agent a47cbf78… 的輸出）。複審通過、blocker 修完後才可交給 antigravity 執行；種子 17 題已獲使用者核准（記於 REQUIREMENTS.md）。",
-  "context_notes": "2026-10-05：antigravity 曾自寫 Phase 12 計畫與新增 Phase 13 SOAP 萃取，經審查前者有 12 blocker 作廢、後者移至 .planning/backlog/soap-extraction-draft（使用者決定列為後續里程碑）。全量基線 669 passed；正式庫以當下 sha256sum 實測為準。"
+  "uncommitted_files": [],
+  "next_action": "規劃或啟動 Phase 13（真實模型夜間批次預生成實跑與驗證）或完成 v1.2 里程碑",
+  "context_notes": "Phase 12 全數完成，全量測試 858 passed，正式資料庫 clinic.db SHA-256 維持 ad24426cadd84db7521250631efbd0067fb3fb2f040ab257a915b73416022b9e"
 }

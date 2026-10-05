@@ -51,6 +51,11 @@ except ImportError:
         SHORTCUT_CANDIDATE_LIMIT,
     )
 
+try:
+    from ..general.disclaimer import DISCLAIMER_TEXT
+except (ImportError, ValueError):
+    from src.general.disclaimer import DISCLAIMER_TEXT
+
 
 Route = Literal["special", "general"]
 
@@ -98,6 +103,8 @@ _STOPWORD_SPLIT_PATTERN = re.compile(
         )
     )
 )
+
+STOPWORD_SPLIT_PATTERN = _STOPWORD_SPLIT_PATTERN
 
 
 def extract_search_terms(query: str) -> list[str]:
@@ -271,6 +278,7 @@ class QueryResponse:
     cache_answer: Optional[str] = None
     cache_eligible: bool = True
     data_level: Optional[Literal["clinic", "general"]] = None
+    disclaimer: Optional[str] = None
 
 
 def faq_hit_level(hit) -> Literal["clinic", "general"]:
@@ -485,6 +493,7 @@ def handle_query(
                     cache_answer=mask_prices(decision.hit.fields["answer"]),
                     cache_eligible=True,
                     data_level=decision.level,
+                    disclaimer=(DISCLAIMER_TEXT if decision.level == "general" else None),
                 )
         else:
             legacy_decision = select_confident_faq(
@@ -509,6 +518,7 @@ def handle_query(
                     cache_answer=mask_prices(legacy_decision.hit.fields["answer"]),
                     cache_eligible=True,
                     data_level="general",
+                    disclaimer=DISCLAIMER_TEXT,
                 )
 
     non_shortcut_level = faq_hit_level(faq_hits[0]) if faq_hits else None
@@ -526,5 +536,6 @@ def handle_query(
         cache_answer=None,
         cache_eligible=shortcut_allowed,
         data_level=non_shortcut_level,
+        disclaimer=(DISCLAIMER_TEXT if non_shortcut_level == "general" else None),
     )
 

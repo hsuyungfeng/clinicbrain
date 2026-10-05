@@ -114,6 +114,21 @@ def score_hit(query_norm: str, question_norm: str) -> tuple[float, float]:
     return intersection_len / len(q_bg), intersection_len / len(ans_bg)
 
 
+def faq_coverage(
+    query_text: str,
+    question_text: str,
+    stopword_pattern: Optional[Pattern] = None,
+) -> tuple[float, float]:
+    """計算標準化查詢與標準化問句之雙向 Bigram 覆蓋率。
+
+    供自然語言檢索與醫師審核工具 (faq_conflicts) 共享同一定義與標準化流程。
+    回傳：(query_coverage, question_coverage)
+    """
+    query_norm = normalize_for_match(query_text, stopword_pattern)
+    question_norm = normalize_for_match(question_text, stopword_pattern)
+    return score_hit(query_norm, question_norm)
+
+
 def extract_risk_features(text: str) -> Counter[str]:
     """自原文擷取風險特徵集合與次數。
 

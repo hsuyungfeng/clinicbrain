@@ -213,3 +213,220 @@ def test_cli_on_unmigrated_database(tmp_path: Path):
 def test_prod_db_sha256_unmodified():
     """保證正式 clinic.db 在整段測試期間未被修改（與收集階段即時量測值比對，不釘死絕對雜湊）。"""
     assert _get_sha256(PROD_DB_PATH) == _PROD_SHA256_AT_START
+
+
+def test_cli_list_filter_topic_and_validation(isolated_db_path: Path, capsys):
+    """測試 list --topic 篩選主題與驗證結果顯示。"""
+    conn = sqlite3.connect(str(isolated_db_path))
+    faqs = [
+        {
+            "clinic_id": "3503190424",
+            "topic_key": "topic-t1",
+            "question": "問題一？",
+            "answer": "這是合格答案，請遵照醫囑回診。",
+            "category": "special",
+        },
+        {
+            "clinic_id": "3503190424",
+            "topic_key": "topic-t2",
+            "question": "問題二？",
+            "answer": "這是另一個主題答案說明。",
+            "category": "special",
+        },
+    ]
+    upsert_faqs(conn, faqs, source_type="llm_generated")
+    conn.close()
+
+    # 1. 指定 topic-t1
+    code = review_cli_main(["--db", str(isolated_db_path), "list", "--topic", "topic-t1"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "問題一？" in out
+    assert "問題二？" not in out
+    assert "來源" in out or "llm_generated" in out
+
+    # 2. 指定不存在的 topic
+    code_none = review_cli_main(["--db", str(isolated_db_path), "list", "--topic", "non-existent"])
+    assert code_none == 0
+    out_none = capsys.readouterr().out
+    assert "目前沒有" in out_none
+
+
+def test_cli_show_general_similar_clinic_faqs(isolated_db_path: Path, capsys):
+    """
+    測試 show 子命令對 general FAQ：
+    - 顯示生成來源與驗證結果
+    - 若有相近診所 FAQ 顯示覆蓋率與問句
+    - 若無相近顯示「無覆蓋率」
+    - 輸出固定警語「覆蓋率只是詞彙守衛，不是主題守衛」
+    - special 項目不顯示相近診所 FAQ 區段
+    """
+    conn = sqlite3.connect(str(isolated_db_path))
+    cur = conn.cursor()
+    # 建立 general 項目（題目與診所「手術後傷口該如何照護？」相近）
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version)
+        VALUES (NULL, 'common-care', '術後傷口如何照護？', '術後請保持傷口清潔乾燥；若出現紅腫化膿，請儘速就醫。', 'general', 'llm_generated', 'pending', 1)
+        """
+    )
+    gen_id1 = cur.lastrowid
+
+    # 建立 general 項目（感冒照護，與診所無相近）
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version)
+        VALUES (NULL, 'common-cold-home-care', '感冒時在家要如何照護與休息？', '感冒期間請多喝水充份休息；若高燒不退，請儘速就醫。', 'general', 'llm_generated', 'pending', 1)
+        """
+    )
+    gen_id2 = cur.lastrowid
+
+    # 建立 special 項目
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version)
+        VALUES ('3503190424', 'hifu-faq', '特殊音波問題？', '音波術後請加強保濕與防曬。', 'special', 'llm_generated', 'pending', 1)
+        """
+    )
+    special_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    # 1. show gen_id1（有相近診所 FAQ）
+    code1 = review_cli_main(["--db", str(isolated_db_path), "show", str(gen_id1)])
+    assert code1 == 0
+    out1 = capsys.readouterr().out
+    assert "生成來源" in out1
+    assert "驗證結果" in out1
+    assert "手術後傷口該如何照護？" in out1
+    assert "0.86" in out1
+    assert "覆蓋率只是詞彙守衛，不是主題守衛" in out1
+
+    # 2. show gen_id2（無相近）
+    code2 = review_cli_main(["--db", str(isolated_db_path), "show", str(gen_id2)])
+    assert code2 == 0
+    out2 = capsys.readouterr().out
+    assert "無覆蓋率" in out2
+    assert "手術後傷口該如何照護？" not in out2
+
+    # 3. show special_id（special 不顯示衝突區段）
+    code3 = review_cli_main(["--db", str(isolated_db_path), "show", str(special_id)])
+    assert code3 == 0
+    out3 = capsys.readouterr().out
+    assert "相近診所 FAQ" not in out3
+
+
+def test_cli_show_and_list_mode_ro_integrity(isolated_db_path: Path):
+    """驗證 show 與 list 全程為唯讀操作，資料庫檔案雜湊值完全未變。"""
+    sha_before = _get_sha256(isolated_db_path)
+    review_cli_main(["--db", str(isolated_db_path), "list"])
+    review_cli_main(["--db", str(isolated_db_path), "show", "1"])
+    sha_after = _get_sha256(isolated_db_path)
+    assert sha_before == sha_after
+
+
+def test_cli_approve_general_warning_enforcement(isolated_db_path: Path, capsys):
+    """驗證 approve 於 general 項目強制要求就醫警訊，違規者阻擋。"""
+    conn = sqlite3.connect(str(isolated_db_path))
+    cur = conn.cursor()
+    # 建立無警訊的 general 項目
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version)
+        VALUES (NULL, 'common-cold-home-care', '感冒無警訊問答？', '感冒期間請多喝溫開水充分休息即可。', 'general', 'llm_generated', 'pending', 1)
+        """
+    )
+    no_warn_id = cur.lastrowid
+
+    # 建立有警訊的 general 項目
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version)
+        VALUES (NULL, 'common-cold-home-care', '感冒有警訊問答？', '感冒期間請多喝溫開水；若出現胸痛或高燒，請立即就醫。', 'general', 'llm_generated', 'pending', 1)
+        """
+    )
+    with_warn_id = cur.lastrowid
+
+    # 建立含劑量的 general 項目
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version)
+        VALUES (NULL, 'common-cold-home-care', '感冒劑量違規？', '若疼痛難耐建議吃止痛藥 500mg 每日三次；若持續發燒請就醫。', 'general', 'llm_generated', 'pending', 1)
+        """
+    )
+    dosage_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    # 1. 無警訊核准失敗 -> 回傳 1，輸出含 validation_failed 與 何時該就醫
+    code_no_warn = review_cli_main(["--db", str(isolated_db_path), "approve", str(no_warn_id)])
+    assert code_no_warn == 1
+    out_no_warn = capsys.readouterr().out
+    assert "validation_failed" in out_no_warn
+    assert "何時該就醫" in out_no_warn
+
+    # 2. 有警訊核准成功 -> 回傳 0
+    code_with_warn = review_cli_main(["--db", str(isolated_db_path), "approve", str(with_warn_id)])
+    assert code_with_warn == 0
+
+    # 3. 劑量違規核准失敗 -> 回傳 1，輸出含 用藥劑量
+    code_dosage = review_cli_main(["--db", str(isolated_db_path), "approve", str(dosage_id)])
+    assert code_dosage == 1
+    out_dosage = capsys.readouterr().out
+    assert "用藥劑量" in out_dosage
+
+
+def test_cli_mark_regen_subcommand(isolated_db_path: Path, monkeypatch, capsys):
+    """
+    驗證 mark-regen 子命令：
+    - 正確標記 rejected llm 列為 needs_regeneration=1
+    - 對 clinic_upload 列回報 not_llm_generated 並回傳 1
+    - 正式庫未帶 --allow-prod-db 時連線前阻斷（回傳 2）
+    """
+    conn = sqlite3.connect(str(isolated_db_path))
+    cur = conn.cursor()
+    # 建立 rejected llm 列
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version, needs_regeneration)
+        VALUES ('3503190424', 'test-regen-cli', '待重生成問題？', '舊答案', 'special', 'llm_generated', 'rejected', 1, 0)
+        """
+    )
+    rej_id = cur.lastrowid
+
+    # 建立 clinic_upload 列
+    cur.execute(
+        """
+        INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status, content_version, needs_regeneration)
+        VALUES ('3503190424', 'test-regen-cli', '診所上傳問題？', '診所答案', 'special', 'clinic_upload', 'approved', 1, 0)
+        """
+    )
+    upload_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    # 1. 成功標記 rejected llm 列
+    code_ok = review_cli_main(["--db", str(isolated_db_path), "mark-regen", str(rej_id)])
+    assert code_ok == 0
+    out_ok = capsys.readouterr().out
+    assert "已標記重新生成" in out_ok
+
+    conn = sqlite3.connect(str(isolated_db_path))
+    cur = conn.cursor()
+    cur.execute("SELECT needs_regeneration FROM faq_cache WHERE id = ?", (rej_id,))
+    assert cur.fetchone()[0] == 1
+    conn.close()
+
+    # 2. 標記 clinic_upload 列被拒絕
+    code_skip = review_cli_main(["--db", str(isolated_db_path), "mark-regen", str(upload_id)])
+    assert code_skip == 1
+    out_skip = capsys.readouterr().out
+    assert "not_llm_generated" in out_skip
+
+    # 3. 正式庫連線前阻斷（未帶 --allow-prod-db）
+    def fail_connect(*args, **kwargs):
+        raise AssertionError("mark-regen 正式庫防護失效：連線前未阻斷！")
+
+    monkeypatch.setattr(sqlite3, "connect", fail_connect)
+    code_prod = review_cli_main(["--db", str(PROD_DB_PATH), "mark-regen", "1"])
+    assert code_prod == 2
