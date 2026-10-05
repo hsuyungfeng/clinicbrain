@@ -171,6 +171,22 @@ def test_extract_risk_features_remaining_qualifiers(word):
     assert risk_mismatch(q1, q2) is True
 
 
+@pytest.mark.parametrize("word", [
+    "小孩", "孩子", "寶寶", "小朋友", "長輩", "高齡",
+])
+def test_extract_risk_features_colloquial_population_words(word):
+    """Phase 11 稽核補強：口語人群詞（小孩/孩子/寶寶/小朋友/長輩/高齡）必須被視為風險特徵。
+
+    背景：Phase 11 讓原先被分流為 general 的 FAQ 可以短路後，實測在長問句尾端加上
+    「小孩可以嗎」等口語人群詞會誤短路（舊詞表缺這些詞）。對稱比對只會讓更多問句不短路。
+    """
+    q1 = f"音波拉提術後注意事項（{word}）"
+    q2 = "音波拉提術後注意事項"
+    assert extract_risk_features(q1)["q" + word] == 1
+    assert risk_mismatch(q1, q2) is True
+    assert risk_mismatch(q2, q1) is True
+
+
 def test_risk_mismatch_symmetry():
     """測試風險特徵不匹配檢查之對稱性。"""
     t1 = "術後可以洗臉嗎"
