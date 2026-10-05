@@ -208,7 +208,7 @@ def run_batch(
                     summary.faq_rejected += len(gen_res.rejected)
                     summary.faq_skipped_existing += gen_res.skipped_existing
 
-                    reason_counts = dict(Counter(rej.reason for rej in gen_res.rejected))
+                    reason_counts = dict(Counter(rej.get("code", "other") for rej in gen_res.rejected))
                     logger.info(
                         "faq_topic_done",
                         topic_key=topic.topic_key,

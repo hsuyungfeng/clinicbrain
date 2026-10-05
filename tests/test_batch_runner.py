@@ -353,6 +353,33 @@ def test_single_item_failure_isolation(isolated_conn, tmp_path: Path):
     assert summary.faq_inserted > 0  # 主題 2 成功入庫
 
 
+def test_rejected_items_do_not_cause_topic_failure(isolated_conn, tmp_path: Path):
+    """Phase 12 稽核補強：驗證器拒絕項目時，該主題不得被記為失敗，且拒絕代碼須進日誌。
+
+    背景：`gen_res.rejected` 的元素是 `{"code": ...}` 字典，runner 原本以 `rej.reason`
+    屬性存取而拋 AttributeError，被外層 except 吞掉記為 faq_topic_failed。既有的
+    test_single_item_failure_isolation 只斷言 faq_rejected（在例外前就已累加），掩蓋了此 bug。
+    """
+    seed_file = _create_test_seed_file(tmp_path / "seed.json")
+
+    def mock_llm(p: str) -> str:
+        if "主題1" in p:
+            return "不是合法 JSON 純文字"
+        return _mock_llm_response(p)
+
+    logger = RunLogger(tmp_path / "logs", echo=False)
+    cfg = BatchConfig(seed_path=seed_file, snapshot_dir=tmp_path / "snapshots", max_faq_topics=2)
+    summary = run_batch(
+        isolated_conn, cfg, llm_call=mock_llm, health_check=lambda: None, logger=logger
+    )
+
+    assert summary.errors == 0, "被拒絕項目不應讓主題處理失敗"
+    assert summary.faq_rejected >= 1
+    joined = "\n".join(logger.lines)
+    assert "faq_topic_failed" not in joined
+    assert "json_invalid" in joined, "拒絕代碼應出現在 faq_topic_done 日誌"
+
+
 def test_backlog_protection_skips_faq(isolated_conn, tmp_path: Path):
     """測試 pending 積壓達上限時跳過 FAQ 生成，但仍繼續執行樹重建。"""
     seed_file = _create_test_seed_file(tmp_path / "seed.json")
