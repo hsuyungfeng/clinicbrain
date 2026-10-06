@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 13 of 13（真實模型夜間批次預生成實跑與驗證）-- COMPLETED
-Plan: 13-01、13-02 均已執行完畢（SUMMARY 與 13-REPORT.md 產出）
-Status: Milestone v1.2 Completed
-Last activity: 2026-10-06 -- Phase 13 真機批次實跑驗證完成，全量測試 904 passed（含 3 項 real LLM 實跑測試），正式庫 SHA-256 恆定
+Phase: 14 of 14（臨床語音與 SOAP 紀錄擷取）-- COMPLETED
+Plan: 14-01、14-02、14-03 均已執行完畢（SUMMARY 產出）
+Status: Phase 14 Completed
+Last activity: 2026-10-06 -- Phase 14 完成臨床語音與 SOAP 紀錄推播、S/O/A/P 切分、一般醫學特徵擷取、個資去識別化與醫師專屬檢索，全量回歸測試 919 passed，正式庫 SHA-256 恆定
 
 Progress: [██████████] 100%
 
@@ -36,9 +36,9 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total tasks completed: 41+
-- Tests passing: 904/904（901 單元回歸測試 + 3 項真實 LLM 實跑測試，1 skipped）
-- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
+- Total tasks completed: 45+
+- Tests passing: 919/919（919 單元與端到端回歸測試，1 skipped，真實 LLM 批次實跑測試離線跳過）
+- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, soap_records/soap_records_fts (trigram) 支援
 
 ## Accumulated Context
 
@@ -47,6 +47,7 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [Phase 14 2026-10-06]: 支援外部推播（doctor-toolbox.com）與語音聽寫紀錄入庫；section_parser 自動切分 S/O/A/P 並安全退化至 subjective；extract_general_medical_insights 自動萃取一般醫學特徵、症狀與居家照護摘要；deid 模組遮蔽台灣身分證、電話、姓名，並套用 deep_mask_prices 洗清金額；patient_token 採 HMAC-SHA256 偽名化衍生；soap_writer 提供唯一權威 upsert；FastAPI /api/v1/soap/records、/search、/records/{external_id} 強制 verify_admin_key 認證與診所隔離；公開端點嚴格隔離；單一來源遷移腳本維護 trigram FTS5 虛擬表與 3 觸發器。
 - [Phase 12 複審補強 2026-10-06]: 劑量層 DX-2 涵蓋只有數量的句子、否定詞須緊鄰動詞才豁免、詞庫補劑型與英文學名；警訊層排除勸人別就醫的反向句並支援條列式；DEBT-03 補 `mark-regen --seed`（種子外題目拒絕標記）、`list` 顯示「待重生」、批次日誌記 unchanged/failed 列 id。詞庫仍為封閉式，最終靠醫師審核。
 - [Phase 12]: GC-01 疾病種子 17 題簽核入庫；GC-02 獨立實作 DX-1~5 劑量與處方攔截器（正例 47/47 攔截，負例 50/50 放行，診所 FAQ 回掃 0 誤拒）；GC-03 就醫警訊強制檢驗（正例 15/15 通過，負例 17/17 攔截）+ disclaimer 查詢回應欄位純加法擴充 + /sync/import general 前置檢驗；GC-04 審核工具增強（list --topic、show 來源與相近診所 FAQ 檢視、approve 警訊強制、faq_coverage 共用純函式）；DEBT-03 駁回題目手動標記重生成（mark-regen 子命令、一次標記一次嘗試、相同答案清除旗標）。
 - [Phase 11]: 診所資料優先檢索（Tiered 兩階段判定），帶 clinic_id 優先查 special FAQ，短路率 24/40 -> 38/40；相近阻斷下限 CLINIC_RELATED_FLOOR = 0.4；回應結構新增 data_level 標示層級；無 clinic_id 查詢排除所有診所 FAQ。

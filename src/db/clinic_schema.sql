@@ -339,6 +339,61 @@ CREATE TABLE IF NOT EXISTS cache_stats (
 CREATE INDEX IF NOT EXISTS idx_cache_stats_date ON cache_stats(stat_date);
 
 -- ========================================
+-- SOAP Records Tables (Phase 14: 臨床語音與 SOAP 紀錄擷取)
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS soap_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clinic_id TEXT NOT NULL REFERENCES clinic_info(clinic_id),
+    external_id TEXT NOT NULL,
+    patient_token TEXT NOT NULL,
+    subjective TEXT,
+    objective TEXT,
+    assessment TEXT,
+    plan TEXT,
+    raw_text TEXT NOT NULL,
+    tags TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(clinic_id, external_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_soap_records_clinic_id ON soap_records(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_soap_records_external_id ON soap_records(external_id);
+CREATE INDEX IF NOT EXISTS idx_soap_records_patient_token ON soap_records(patient_token);
+CREATE INDEX IF NOT EXISTS idx_soap_records_created_at ON soap_records(created_at);
+
+-- FTS5 for soap_records (trigram tokenizer for CJK matching)
+CREATE VIRTUAL TABLE IF NOT EXISTS soap_records_fts USING fts5(
+    subjective,
+    objective,
+    assessment,
+    plan,
+    tags,
+    content='soap_records',
+    content_rowid='id',
+    tokenize='trigram'
+);
+
+-- Trigger for soap_records FTS updates
+CREATE TRIGGER IF NOT EXISTS soap_records_ai AFTER INSERT ON soap_records BEGIN
+    INSERT INTO soap_records_fts(rowid, subjective, objective, assessment, plan, tags)
+    VALUES (new.id, new.subjective, new.objective, new.assessment, new.plan, new.tags);
+END;
+
+CREATE TRIGGER IF NOT EXISTS soap_records_ad AFTER DELETE ON soap_records BEGIN
+    INSERT INTO soap_records_fts(soap_records_fts, rowid, subjective, objective, assessment, plan, tags)
+    VALUES ('delete', old.id, old.subjective, old.objective, old.assessment, old.plan, old.tags);
+END;
+
+CREATE TRIGGER IF NOT EXISTS soap_records_au AFTER UPDATE ON soap_records BEGIN
+    INSERT INTO soap_records_fts(soap_records_fts, rowid, subjective, objective, assessment, plan, tags)
+    VALUES ('delete', old.id, old.subjective, old.objective, old.assessment, old.plan, old.tags);
+    INSERT INTO soap_records_fts(rowid, subjective, objective, assessment, plan, tags)
+    VALUES (new.id, new.subjective, new.objective, new.assessment, new.plan, new.tags);
+END;
+
+-- ========================================
 -- Sample Data (for testing)
 -- ========================================
 

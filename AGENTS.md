@@ -26,6 +26,7 @@
 - `faq_cache` + `faq_cache_fts`：文件擷取/夜間批次產出的常見問答快取（見 2.4）
 - `cache_stats`：快取優先查詢之匿名聚合命中統計（見 2.8）
 - `sync_logs`：雙向資料同步契約審計紀錄（見 2.5）
+- `soap_records` + `soap_records_fts`：臨床語音與 SOAP 紀錄及全文檢索（見 2.13）
 - `clinic_info` / `clinic_hours` / `clinic_custom_notes`：診所專屬層
 
 重建指令：
@@ -297,6 +298,23 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   5. **就醫警訊之結構要求**：警訊收尾必須同時具備「具體症狀或數值條件」與「就醫動作」；單獨「若症狀加重請回診」因缺乏具體辨識指引，視為不合規。
   6. **審核狀態變更之警訊檢核預設關閉**：`faq_review.set_review_status` 底層預設 `enforce_general_warning=False`，僅醫師審核 CLI（`review_faq approve`）明確傳入 `enforce_general_warning=True` 進行強制把關。
 
+### 2.13 臨床語音與 SOAP 紀錄擷取（Phase 14 新增）
+為接收外部雲端推播（如 `https://doctor-toolbox.com/`）或院內語音聽寫逐字稿，並將臨床資料分析擷取應用於醫療輔助與檢索，自 Phase 14 起導入 SOAP 紀錄接收、去識別化與專屬醫師檢索架構：
+- **結構化與純文字雙重相容 (`src/soap/section_parser.py`)**：
+  - 支援傳入已結構化之 S/O/A/P 欄位，或從 `raw_text` / `transcript` 純文字中依臨床常見中英標記（S/主訴/病史、O/客觀檢查/理學檢查、A/評估/診斷、P/處置/計畫/醫囑）自動正則切分；無明顯標記時安全退化歸入主訴（`subjective`）。
+  - **一般醫學特徵擷取 (`extract_general_medical_insights`)**：從臨床文本中自動辨識常見病症、症狀與衛教照護指示，歸納為一般醫學特徵並回傳摘要與標籤。
+- **病患個資去識別化與二次防禦 (`src/soap/deid.py`)**：
+  - 身分證字號遮蔽（支援台灣身分證驗證與掩碼）、行動電話（09xx-xxx-xxx）、市話、病患姓名標籤遮蔽為 `[已遮蔽]`。
+  - 價格數字全面套用 `deep_mask_prices()` 遮蔽為 `[請致電診所確認]`，杜絕未核定金額寫入。
+  - `patient_token` 衍生：未提供 token 且有外部病患識別時，以 HMAC-SHA256 結合伺服器金鑰與診所代碼生成偽名化 token，防範外部病患代碼關聯。
+- **單一權威寫入函式 (`src/soap/soap_writer.py:upsert_soap_records`)**：
+  - 以 `(clinic_id, external_id)` 為唯一約束進行冪等 UPSERT；內容未變則安全跳過，更新時自動更新 `updated_at`。
+- **醫師專屬 FTS 檢索與嚴格權限隔離 (`src/api/routes/soap.py`)**：
+  - `POST /api/v1/soap/records`、`POST /api/v1/soap/search`、`GET /api/v1/soap/records/{external_id}` 掛載 `verify_admin_key` 認證。
+  - 強制綁定 `clinic_id`，落實嚴格診所隔離；公開自然語言查詢端點（`/api/v1/query` 與 `/api/v1/general/query`）完全無法存取 `soap_records`。
+- **資料庫遷移單一來源 (`scripts/migrate_soap_schema.py`)**：
+  - 從 `src/db/clinic_schema.sql` 動態解析 `soap_records` 表、`soap_records_fts` trigram 虛擬表與 3 個同步觸發器 DDL，支援 `--confirm-prod-backup` 與 `--dry-run`。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -315,14 +333,17 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `src/api/`：FastAPI 服務層（`app.py`, `config.py`, `dependencies.py`, `models/`, `routes/`, `security.py`, `access_log_filter.py`）
   * `src/api/access_log_filter.py`：uvicorn 存取日誌路徑過濾器（防止一般諮詢問句與 IP 洩漏）
   * `src/api/models/general.py`：一般醫療諮詢請求與回應 Pydantic 資料模型
+  * `src/api/models/soap.py`：SOAP 紀錄推播與醫師檢索 Pydantic 資料模型
   * `src/api/models/cache_stats.py`：快取統計回應 Pydantic 資料模型
   * `src/api/security.py`：認證組態單一檢查函式與安全防護定義
   * `src/api/routes/general.py`：一般醫療諮詢匿名對外端點（僅 POST，掛載 AnonymousRoute）
+  * `src/api/routes/soap.py`：SOAP 接收與專屬醫師檢索 API 路由端點（需管理者金鑰）
   * `src/api/routes/query.py`：自然語言查詢與多診所動態路由端點
   * `src/api/routes/cache_stats.py`：快取命中統計查詢端點（需管理者金鑰）
   * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
   * `src/api/routes/health.py`：系統與資料庫健康檢查端點
 * `src/batch/`：夜間批次排程與生成核心模組（`runner.py`, `run_log.py`, `topic_sources.py`, `faq_generator.py`, `tree_rebuild.py`）
+* `src/soap/`：SOAP 紀錄處理核心模組（`section_parser.py`, `deid.py`, `soap_writer.py`）
 * `src/general/`：一般醫療諮詢核心業務模組（`__init__.py`, `disclaimer.py`, `red_flags.py`, `consult.py`）
 * `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應 Python 模組）
 * `src/query/faq_shortcut.py`：高信心 FAQ 短路判定與五維風險特徵比對純函式
@@ -341,6 +362,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
 * `scripts/migrate_cache_stats.py`：`cache_stats` 資料表結構遷移腳本
 * `scripts/migrate_faq_review_status.py`：`faq_cache.review_status` 審核欄位交易性遷移腳本
+* `scripts/migrate_soap_schema.py`：`soap_records` 與 FTS5 觸發器單一來源 DDL 遷移腳本
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具
 * `scripts/review_faq.py`：醫師審核命令列互動工具（支援 list --topic、show 來源與相近診所 FAQ 檢視、approve、reject、reset 與 mark-regen 重生成標記）
 * `scripts/mark_tree_regen.py`：臨床推理樹待重建手動標記工具
@@ -350,6 +372,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `clinicbrain-nightly.service`：夜間批次排程 systemd 配置範本
 * `clinicbrain-nightly.timer`：夜間批次排程定時器範本
 * `docs/nightly-batch.md`：夜間批次與審核營運維護手冊
+* `docs/soap-ingestion.md`：臨床語音與 SOAP 紀錄推播與檢索操作手冊
 * `tests/test_clinic_first_acceptance.py`：診所資料優先檢索量測驗收測試（設計題 G，支援 CLINICBRAIN_ACCEPT_DB 指向複本，驗證 38/40 短路率）
 * `tests/test_phase12_acceptance.py`：Phase 12 一般疾病內容生成與審核端到端整合驗收測試
 * `tests/test_medical_safety.py`：用藥劑量與處方建議、就醫警訊多層醫療合規安全驗證測試
@@ -359,6 +382,9 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `tests/test_sync_general_validation.py`：官方雙向同步匯入 general FAQ 前置合規驗證測試
 * `tests/test_faq_conflicts.py`：相近診所問答衝突檢索與覆蓋率純函式測試
 * `tests/test_real_llm_batch.py`：DEBT-04 本地真機 LLM（Qwen 27B）夜間批次生成、推理樹重建與日誌隱私端到端實跑驗證測試（自動檢測 llama-server，離線則安全跳過）
+* `tests/test_soap_writer.py`：SOAP 紀錄權威寫入與 FTS5 觸發器同步驗證測試
+* `tests/test_soap_deid_parser.py`：SOAP S/O/A/P 切分、一般醫學特徵擷取與去識別化測試
+* `tests/test_soap_api.py`：SOAP API 推播接收、醫師專屬檢索與嚴格權限隔離端到端測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

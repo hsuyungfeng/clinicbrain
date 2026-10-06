@@ -53,6 +53,19 @@ def _reset_cache_stats(db_path: Path):
     temp_conn.close()
 
 
+def _ensure_soap_records(db_path: Path):
+    """確保測試複本資料庫具備 soap_records 與其 FTS5 / Triggers 結構。"""
+    schema_sql_path = PROJECT_ROOT / "src" / "db" / "clinic_schema.sql"
+    if not schema_sql_path.exists():
+        return
+    sql_text = schema_sql_path.read_text(encoding="utf-8")
+    from scripts.migrate_soap_schema import extract_soap_ddl
+    soap_ddl = extract_soap_ddl(sql_text)
+    temp_conn = sqlite3.connect(str(db_path))
+    temp_conn.executescript(soap_ddl)
+    temp_conn.close()
+
+
 @pytest.fixture(scope="session")
 def session_db_path(tmp_path_factory) -> Path:
     """Session 層級的資料庫複本（供唯讀查詢與檢索測試使用）。"""
@@ -64,6 +77,7 @@ def session_db_path(tmp_path_factory) -> Path:
     shutil.copy2(PROD_DB_PATH, target_path)
     _ensure_faq_cache(target_path)
     _reset_cache_stats(target_path)
+    _ensure_soap_records(target_path)
     return target_path
 
 
@@ -85,6 +99,7 @@ def isolated_db_path(tmp_path: Path) -> Path:
     shutil.copy2(PROD_DB_PATH, target_path)
     _ensure_faq_cache(target_path)
     _reset_cache_stats(target_path)
+    _ensure_soap_records(target_path)
     return target_path
 
 
