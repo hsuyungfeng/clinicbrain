@@ -37,6 +37,19 @@ from src.pageindex.faq_review import (
 from src.query.faq_shortcut import CLINIC_RELATED_FLOOR
 
 PROD_DB_PATH = PROJECT_ROOT / "clinic.db"
+DEFAULT_SEED_PATH = PROJECT_ROOT / "data" / "batch" / "faq_seeds.json"
+
+
+def _load_seed_questions(seed_path: str):
+    """載入種子清單，回傳 (clinic_id, topic_key, question) 集合；載入失敗時警告並回傳 None（略過種子檢查）。"""
+    from src.batch.topic_sources import SeedFileError, load_seed_file
+
+    try:
+        seed = load_seed_file(seed_path)
+    except SeedFileError as e:
+        print(f"⚠️ 無法載入種子清單，略過「是否在種子內」檢查：{e}", file=sys.stderr)
+        return None
+    return {(t.clinic_id, t.topic_key, q.strip()) for t in seed.topics for q in t.questions}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -99,6 +112,11 @@ def main(argv: list[str] | None = None) -> int:
     # mark-regen 子命令
     parser_mr = subparsers.add_parser("mark-regen", help="標記指定被駁回之 FAQ 為待重新生成")
     parser_mr.add_argument("ids", type=int, nargs="+", help="欲標記重新生成的 FAQ ID 清單")
+    parser_mr.add_argument(
+        "--seed",
+        default=str(DEFAULT_SEED_PATH),
+        help="人寫種子清單路徑；不在種子內的題目夜間批次不會重生成，故拒絕標記（預設 data/batch/faq_seeds.json）",
+    )
 
     args = parser.parse_args(argv)
 
@@ -154,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     print(f"📋 狀態為 '{args.status}' 的 LLM 生成問答清單（共 {len(faqs)} 筆）：")
                     print("-" * 88)
-                    print(f"{'ID':<6} {'類別':<8} {'機構代碼':<12} {'主題/療程':<20} {'來源':<14} {'驗證':<6} {'問題摘要'}")
+                    print(f"{'ID':<6} {'類別':<8} {'機構代碼':<12} {'主題/療程':<20} {'來源':<14} {'驗證':<6} {'重生':<6} {'問題摘要'}")
                     print("-" * 88)
                     for f in faqs:
                         c_id = f["clinic_id"] or "通用"
@@ -163,7 +181,8 @@ def main(argv: list[str] | None = None) -> int:
                         v_rep = validation_report(f)
                         v_status = "OK" if v_rep["ok"] else "FAIL"
                         q_summary = f["question"][:28] + ("..." if len(f["question"]) > 28 else "")
-                        print(f"{f['id']:<6} {f['category']:<8} {c_id:<12} {t_key:<20} {s_type:<14} {v_status:<6} {q_summary}")
+                        regen = "待重生" if f.get("needs_regeneration") else "-"
+                        print(f"{f['id']:<6} {f['category']:<8} {c_id:<12} {t_key:<20} {s_type:<14} {v_status:<6} {regen:<6} {q_summary}")
                         if not v_rep["ok"] and v_rep["reason"]:
                             print(f"       ↳ 驗證未通過原因: {v_rep['reason']}")
                     print("-" * 88)
@@ -236,7 +255,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 2
 
-            res = mark_for_regeneration(conn, args.ids)
+            seed_questions = _load_seed_questions(args.seed)
+            res = mark_for_regeneration(conn, args.ids, seed_questions=seed_questions)
             if res.changed:
                 print(f"✅ 已標記重新生成：{res.changed}，下次夜間批次將重新生成（結果一律 pending）")
 

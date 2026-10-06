@@ -255,7 +255,8 @@ def run_batch(
                     summary.faq_skipped_existing += gen_res.skipped_existing
 
                     # 清算重生成旗標
-                    settle = settle_regen_flags(conn, topic, gen_res)
+                    settle_details: dict = {}
+                    settle = settle_regen_flags(conn, topic, gen_res, details=settle_details)
                     summary.faq_regen_regenerated += settle["regenerated"]
                     summary.faq_regen_unchanged += settle["unchanged"]
                     summary.faq_regen_failed += settle["failed"]
@@ -271,6 +272,8 @@ def run_batch(
                         faq_regen_regenerated=settle["regenerated"],
                         faq_regen_unchanged=settle["unchanged"],
                         faq_regen_failed=settle["failed"],
+                        faq_regen_unchanged_ids=settle_details.get("unchanged_ids", []),
+                        faq_regen_failed_ids=settle_details.get("failed_ids", []),
                     )
                 except LocalLLMUnavailableError as e:
                     logger.warning(

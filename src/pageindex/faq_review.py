@@ -151,6 +151,7 @@ def get_faq(conn: sqlite3.Connection, faq_id: int) -> Optional[dict[str, Any]]:
 def mark_for_regeneration(
     conn: sqlite3.Connection,
     faq_ids: list[int],
+    seed_questions: Optional[set[tuple[Optional[str], str, str]]] = None,
 ) -> ReviewResult:
     """
     手動標記指定被駁回之 LLM 生成 FAQ 為待重新生成 (needs_regeneration = 1)。
@@ -160,6 +161,8 @@ def mark_for_regeneration(
     - 僅允許標記 source_type='llm_generated' 且 review_status='rejected' 的列
     - 若已經被標記 (needs_regeneration == 1)，回報 skipped ('already_marked')
     - 標記操作不變更 content_version，亦不變更 review_status
+    - 若提供 seed_questions（(clinic_id, topic_key, question) 集合，來自人寫種子清單），
+      不在其中的列回報 skipped ('not_in_seed')：夜間批次只重生成種子內題目，種子外的旗標會永遠殘留
     """
     if not has_review_status(conn):
         raise RuntimeError(
@@ -173,7 +176,8 @@ def mark_for_regeneration(
     for faq_id in faq_ids:
         cur.execute(
             """
-            SELECT id, source_type, review_status, needs_regeneration
+            SELECT id, source_type, review_status, needs_regeneration,
+                   clinic_id, topic_key, question
             FROM faq_cache
             WHERE id = ?
             """,
@@ -184,7 +188,7 @@ def mark_for_regeneration(
             skipped.append((faq_id, "not_found"))
             continue
 
-        _, src_type, status, needs_reg = row
+        _, src_type, status, needs_reg, row_clinic, row_topic, row_question = row
         if src_type != "llm_generated":
             skipped.append((faq_id, "not_llm_generated"))
             continue
@@ -195,6 +199,10 @@ def mark_for_regeneration(
 
         if needs_reg == 1:
             skipped.append((faq_id, "already_marked"))
+            continue
+
+        if seed_questions is not None and (row_clinic, row_topic, (row_question or "").strip()) not in seed_questions:
+            skipped.append((faq_id, "not_in_seed"))
             continue
 
         cur.execute(

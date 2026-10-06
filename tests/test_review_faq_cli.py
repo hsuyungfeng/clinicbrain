@@ -376,7 +376,7 @@ def test_cli_approve_general_warning_enforcement(isolated_db_path: Path, capsys)
     assert "用藥劑量" in out_dosage
 
 
-def test_cli_mark_regen_subcommand(isolated_db_path: Path, monkeypatch, capsys):
+def test_cli_mark_regen_subcommand(isolated_db_path: Path, tmp_path: Path, monkeypatch, capsys):
     """
     驗證 mark-regen 子命令：
     - 正確標記 rejected llm 列為 needs_regeneration=1
@@ -405,8 +405,19 @@ def test_cli_mark_regen_subcommand(isolated_db_path: Path, monkeypatch, capsys):
     conn.commit()
     conn.close()
 
+    # mark-regen 預設會檢查題目是否在種子清單內（複審 W7），此處以含該題的暫存種子檔放行
+    import json
+    seed_file = tmp_path / "seed.json"
+    seed_file.write_text(
+        json.dumps({"schema_version": 1, "topics": [{
+            "topic_key": "test-regen-cli", "title": "測試", "category": "special", "clinic_id": "3503190424",
+            "keywords": [], "always": True, "questions": ["待重生成問題？"],
+        }], "tree_procedure_names": {}}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
     # 1. 成功標記 rejected llm 列
-    code_ok = review_cli_main(["--db", str(isolated_db_path), "mark-regen", str(rej_id)])
+    code_ok = review_cli_main(["--db", str(isolated_db_path), "mark-regen", "--seed", str(seed_file), str(rej_id)])
     assert code_ok == 0
     out_ok = capsys.readouterr().out
     assert "已標記重新生成" in out_ok

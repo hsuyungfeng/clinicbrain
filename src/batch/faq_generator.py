@@ -354,6 +354,7 @@ def settle_regen_flags(
     conn: sqlite3.Connection,
     topic: SeedTopic,
     result: TopicGenResult,
+    details: Optional[dict[str, list[int]]] = None,
 ) -> dict[str, int]:
     """
     依「一次標記，一次嘗試」原則清算本次重生成旗標。
@@ -364,6 +365,7 @@ def settle_regen_flags(
       若該題在 result.valid 中（代表答案相同 unchanged）：計 unchanged
       若不在 result.valid 中（被合規檢查拒絕或遺漏）：計 failed
     回傳: {"regenerated": int, "unchanged": int, "failed": int}
+    若傳入 details，會填入 "unchanged_ids"／"failed_ids"（列 id，非敏感資訊，供日誌追蹤）。
     """
     from src.pageindex.faq_review import clear_regeneration_flag, has_review_status
 
@@ -376,6 +378,8 @@ def settle_regen_flags(
     failed = 0
 
     valid_questions = {item.get("question", "").strip() for item in result.valid}
+    unchanged_ids: list[int] = []
+    failed_ids: list[int] = []
 
     for q in result.regen_questions:
         cur.execute(
@@ -399,7 +403,13 @@ def settle_regen_flags(
             clear_regeneration_flag(conn, [faq_id])
             if q.strip() in valid_questions:
                 unchanged += 1
+                unchanged_ids.append(faq_id)
             else:
                 failed += 1
+                failed_ids.append(faq_id)
+
+    if details is not None:
+        details["unchanged_ids"] = unchanged_ids
+        details["failed_ids"] = failed_ids
 
     return {"regenerated": regenerated, "unchanged": unchanged, "failed": failed}
