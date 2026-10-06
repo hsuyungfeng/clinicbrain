@@ -92,3 +92,25 @@ Plans:
 | 11. 診所資料優先檢索 | 4/4 | Complete | 2026-10-03 |
 | 12. 一般疾病內容生成與審核 | 6/6 | Complete | 2026-10-05 |
 | 13. 真實 LLM 批次實跑驗證 | 2/2 | Complete | 2026-10-06 |
+| 14. 臨床語音與 SOAP 紀錄擷取 | 0/3 | In Progress | - |
+
+### Phase 14: 臨床語音與 SOAP 紀錄擷取
+
+**Goal**: 透過官方 API 接收外部系統（如 doctor-toolbox.com）推播之臨床文字，安全解析切分為 S/O/A/P 結構並入庫至專屬 SQLite 資料表與 FTS5 虛擬表，提供院所醫師內部全文檢索與個資去識別化防護。
+**Depends on**: Phase 13
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09
+**Success Criteria** (what must be TRUE):
+
+  1. `soap_records` 資料表與 `soap_records_fts`（`tokenize='trigram'`）虛擬表結構正確建立，且三向觸發器保持全文檢索即時同步。
+  2. 具備單一權威寫入函式 `upsert_soap_records`，依 `(clinic_id, external_id)` 實現冪等 UPSERT 與內容比對。
+  3. `section_parser` 能正確切分繁體中文常見臨床段落前綴；未標記文本安全 fallback 至 subjective。
+  4. 醫療個資防禦就緒：台灣身分證字號、手機號碼、市話、姓名自動遮蔽；金額數字自動清洗為 `[請致電診所確認]`；生成不可逆之 `patient_token`。
+  5. API 端點 `POST /api/v1/soap/records` 支援結構化或純文字推播；`POST /api/v1/soap/search` 與 `GET /api/v1/soap/records/{external_id}` 支援醫師內部 FTS5 檢索與權限隔離；公開自然語言端點絕無存取權限。
+  6. 全量回歸測試通過，正式 `clinic.db` SHA-256 全程未變。
+
+**Plans**: 3 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — SOAP 資料庫結構、trigram FTS5 虛擬表、觸發器、單一來源遷移與權威寫入模組
+- [ ] 14-02-PLAN.md — 臨床文字 S/O/A/P 結構切分器、台灣病患個資去識別化與價格清洗守衛
+- [ ] 14-03-PLAN.md — FastAPI 接收與檢索端點、醫師權限隔離、端到端驗收測試與營運文件
