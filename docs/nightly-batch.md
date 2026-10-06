@@ -147,9 +147,27 @@ python3 scripts/review_faq.py reject 43 44 --allow-prod-db
 
 ---
 
-## 8. 可選手動冒煙測試（僅限隔離複本）
+## 8. 可選手動冒煙測試與自動化真機驗證（僅限隔離複本）
 
-若需以真實本地 LLM 進行端到端批次功能驗證，**嚴禁於正式 clinic.db 上執行**。請依下列步驟於測試複本操作：
+### 本地推論運算開銷參考（Phase 13 DEBT-04 實測數據）
+- **硬體與模型規格**：NVIDIA GeForce RTX 2080 Ti (11GB VRAM) + Qwen3.8-27B-UD-Q4_K_XL（經由 `llama-server`）。
+- **推論耗時與吞吐量**：
+  - 單題常見疾病 FAQ 生成：約 30~45 秒（推論速度約 18~22 tokens/sec）。
+  - 單篇臨床推理樹生成/重建：約 120~150 秒（含深度思考 `<think>` 與四段結構嚴格檢核）。
+  - 日誌隱私：批次內部靜音機制生效，`nightly-*.log` 零敏感字元洩漏。
+- **超時與參數配置建議**：
+  - `src/pageindex/llm_client.py` 預設配置：`timeout=360.0`, `max_tokens=6144`, `reasoning_effort="low"`。
+  - 若在低配硬體上運作，建議啟動批次時將 `--llm-timeout` 調高至 180 秒以上。
+
+### 自動化真機驗收測試
+專案提供完整端到端真機測試套件，會在隔離暫存複本上驗收真實推論、審核閘門、推理樹前像快照與日誌隱私：
+```bash
+python3 -m pytest tests/test_real_llm_batch.py -v
+```
+> **注意**：若本機 `llama-server` 離線，測試將自動優雅跳過（SKIPPED），不影響常規回歸測試。
+
+### 手動演練流程（手動複本）
+若需以 CLI 進行人工逐步驗證，**嚴禁於正式 clinic.db 上執行**。請依下列步驟於測試複本操作：
 1. 複製資料庫至暫存目錄：
    ```bash
    cp clinic.db /tmp/test_nightly.db

@@ -256,6 +256,10 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   3. 樹重建繞過審核閘門（如上述，以快照與註記還原為補償防線）。
   4. 未命中關鍵字僅記錄標準化白名單字詞，無法獲知病患真實具體問法。
   5. 批次的 `existing_questions` 去重（`src/batch/faq_generator.py`）不分審核狀態與資料來源，被駁回（`rejected`）的題目仍視為已存在，因此永遠不會被重新生成；如需重生須由人工另行處理（例如改寫題目文字或人工刪除該列；Phase 12 起可由 review_faq mark-regen 明確觸發重生成，見 2.12）。
+- **真實本地模型批次驗證（Phase 13 DEBT-04 完成）**：
+  - 於完全隔離之資料庫複本上，以真實本機推論引擎（`llama-server` + Qwen3.8-27B-UD-Q4_K_XL）完成端到端全流程實跑驗證（測試：`tests/test_real_llm_batch.py`）。
+  - 實測單題 FAQ 生成耗時約 32 秒，通過五層醫療合規檢核並寫入 `review_status='pending'`，對外檢索維持零洩漏；臨床推理樹重建耗時約 140 秒，自動建立前像快照並完整保護既有醫師權威註記；`RunLogger` 經白名單審核確認日誌完全無病患個資或模型內容洩漏。
+  - 正式 `clinic.db` 全程以唯讀保護並比對 SHA-256 雜湊值（`ad24426cadd84db7521250631efbd0067fb3fb2f040ab257a915b73416022b9e`），驗收確認正式庫零寫入零污染。
 
 ### 2.12 一般疾病內容生成與審核（Phase 12 新增）
 為使系統能以合規且安全的方式提供常見疾病（如感冒、流感、急性腸胃炎、過敏性鼻炎）之衛教問答，自 Phase 12 起導入一般疾病內容生成、多層合規防禦與審核增強機制：
@@ -354,6 +358,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `tests/test_query_disclaimer_field.py`：自然語言查詢免責宣告欄位與資料層級測試
 * `tests/test_sync_general_validation.py`：官方雙向同步匯入 general FAQ 前置合規驗證測試
 * `tests/test_faq_conflicts.py`：相近診所問答衝突檢索與覆蓋率純函式測試
+* `tests/test_real_llm_batch.py`：DEBT-04 本地真機 LLM（Qwen 27B）夜間批次生成、推理樹重建與日誌隱私端到端實跑驗證測試（自動檢測 llama-server，離線則安全跳過）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

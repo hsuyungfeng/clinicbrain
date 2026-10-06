@@ -50,7 +50,7 @@ def check_llm_health(timeout: int = 5) -> str:
         ) from e
 
 
-def local_llm_call(prompt: str, timeout: int = 90) -> str:
+def local_llm_call(prompt: str, timeout: int = 420) -> str:
     """呼叫本機 llama-server，回傳 message.content（忽略 reasoning_content）。
 
     函式簽章完全符合 generate_tree(procedure_name, llm_call) 的介面需求。
@@ -62,7 +62,8 @@ def local_llm_call(prompt: str, timeout: int = 90) -> str:
     payload = {
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.2,
-        "max_tokens": 2048,
+        "max_tokens": 6144,
+        "reasoning_effort": "low",
     }
     encoded_data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
@@ -101,9 +102,16 @@ def local_llm_call(prompt: str, timeout: int = 90) -> str:
 
     # 嚴格驗證 content，絕不使用 reasoning_content
     if content is None or not str(content).strip():
-        raise LocalLLMUnavailableError("本地 LLM 回應之 content 為空（可能未完成生成或僅輸出思考過程）")
+        fr = choices[0].get("finish_reason")
+        rc_len = len(message.get("reasoning_content") or "")
+        usage = resp_json.get("usage", {})
+        raise LocalLLMUnavailableError(
+            f"本地 LLM 回應之 content 為空（可能未完成生成或僅輸出思考過程，finish_reason={fr}, rc_len={rc_len}, usage={usage}）"
+        )
 
-    return str(content).strip()
+    from src.ingestion.convert_chinese import to_traditional
+
+    return to_traditional(str(content).strip())
 
 
 if __name__ == "__main__":

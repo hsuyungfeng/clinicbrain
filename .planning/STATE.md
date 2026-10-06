@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 診所資料優先與一般疾病簡易資訊
-status: completed_phase
-stopped_at: Phase 12 已完成並經複審補強（5714714、c32abdc）；Phase 13 已規劃（2 份計畫），由 antigravity 執行中，待檢查
-last_updated: "2026-10-06T12:00:00.000Z"
-last_activity: 2026-10-06 -- Phase 12 複審補強完成（劑量/警訊層漏洞修正、DEBT-03 可觀測性），890 passed
+status: completed_milestone
+stopped_at: Milestone v1.2 全部 4 個 Phase (10~13) 已圓滿完成；Phase 13 本地真機大模型 (Qwen 27B) 夜間批次驗收通過，正式資料庫 SHA-256 恆定未變
+last_updated: "2026-10-06T13:48:00.000Z"
+last_activity: 2026-10-06 -- Phase 13 真機實跑驗證與審計報告完成，全量測試通過 (904 passed, 1 skipped)
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
-  percent: 75
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** v1.2 診所資料優先與一般疾病簡易資訊（Phase 10–13）；Phase 12 完成（含複審補強），Phase 13 規劃完成、執行中
+**Current focus:** Milestone v1.2 已完工封裝；準備推進後續版本（如語音與 SOAP 臨床紀錄匯入）
 
 ## Current Position
 
-Phase: 13 of 13（真實模型夜間批次預生成實跑與驗證）
-Plan: 13-01、13-02 已規劃（無 SUMMARY），antigravity 執行中
-Status: Executing Phase 13（待 antigravity 完成後由 Claude 檢查並修正）
-Last activity: 2026-10-06 -- Phase 12 複審補強完成（890 passed，排除慢速真實 LLM 測試）
+Phase: 13 of 13（真實模型夜間批次預生成實跑與驗證）-- COMPLETED
+Plan: 13-01、13-02 均已執行完畢（SUMMARY 與 13-REPORT.md 產出）
+Status: Milestone v1.2 Completed
+Last activity: 2026-10-06 -- Phase 13 真機批次實跑驗證完成，全量測試 904 passed（含 3 項 real LLM 實跑測試），正式庫 SHA-256 恆定
 
-Progress: [███████░░░] 75%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 37+
-- Tests passing: 890/890（排除 tests/test_real_llm_batch.py；該檔 3 項失敗待 Phase 13 檢查）
+- Total tasks completed: 41+
+- Tests passing: 904/904（901 單元回歸測試 + 3 項真實 LLM 實跑測試，1 skipped）
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs
 
 ## Accumulated Context
@@ -64,18 +64,18 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - 使用者待辦：請醫師合併正式庫 id 4 與 id 19 重複問句（或區分情境），合併後短路率可由 38/40 達 40/40。
-- 等 antigravity 完成 Phase 13，再檢查實作、查 `tests/test_real_llm_batch.py` 的 3 項失敗並修正
 - 待確認（W4）：special 類答案是否也要求就醫警訊、sync 匯出與非 FAQ 回應是否附免責（目前僅 general 要求）
 - 之後可考慮：2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04（見 REQUIREMENTS.md Future）
+- 下一里程碑規劃：展開 Milestone v1.3 / Phase 14（臨床語音與 SOAP 紀錄擷取）
 
 ### Blockers/Concerns
 
 - `src/query/router.py` 的 `extract_search_terms()` 仍非完整中文斷詞：2 字通用詞已由 `_GENERIC_TERMS` 降權（2026-09-30），但「動詞+名詞」黏連殘渣片段（如「音波拉提維持」「甲溝炎要」）尚未過濾，僅浪費一次查詢，不影響結果正確性。
 - Phase 11 擴大 FAQ 候選集會碰到 Phase 7 的 faq_shortcut 保守門檻，需對抗性回歸測試。
-- Phase 13 需 `llama-server` 空閒，且只能在資料庫複本上進行。
 
 ## Session Continuity
 
 Last session: 2026-10-06
-Stopped at: Phase 12 補強已 commit；等待 antigravity 完成 Phase 13
+Stopped at: Milestone v1.2 / Phase 13 全部驗收通過並交付封裝
+Resume file: 無
 Resume file: 無
