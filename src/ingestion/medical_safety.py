@@ -5,7 +5,7 @@ Phase 12 General Content Generation: GC-02, GC-03
 設計原則：
 1. 本模組為純函式庫，不依賴日誌與資料庫，專注於高效能、線性的醫療安全合規比對。
 2. 檢查前一律以 unicodedata.normalize("NFKC") 標準化並轉為小寫，杜絕全形、拉丁大寫與變形字繞過。
-3. DX-1 ~ DX-6 六大劑量處方規則：
+3. DX-1 ~ DX-6 六大劑量處方規則（DX-2 亦涵蓋「每次吃2顆」這類只有數量、無藥名的句子；藥名詞庫為封閉式，最終仰賴醫師審核）：
    - DX-1: 具體數字與範圍搭配藥用嚴格單位 (mg, mcg, iu, 毫克, 微克, 國際單位等)。
    - DX-2: 服用/塗抹/注射等給藥動詞搭配份量單位 (顆, 錠, 粒, 膠囊, 匙, 滴等)。
    - DX-3: 同句具名藥物或泛稱「藥」搭配份量，或具名藥物搭配頻率 (每天N次, 每N小時, 飯前飯後睡前)。
@@ -40,12 +40,19 @@ _DX2_VERB_ALL = re.compile(
 _DX2_VERB_EAT = re.compile(
     rf"吃\s*(?:約|大約|至少|至多|最多|每次|一次)?\s*{_RANGE}\s*(?:錠|膠囊|湯匙|茶匙|匙|滴)"
 )
+# 只有數量、句中無藥名的劑量句（如「每次吃2顆」「吃3片就夠了」），歸入 DX-2
+_DX2_QTY = re.compile(
+    rf"(?:(?:每次|一次|每回|每日|每天|一天|一日)\s*(?:吃|服用|使用)?\s*{_RANGE}\s*(?:顆|片|粒|包|錠)"
+    rf"|吃\s*{_RANGE}\s*(?:顆|片|粒|包)(?!吐司|土司|麵包|餅|水果|蘋果|西瓜|火腿|起司|乳酪|肉|魚|蛋糕|海苔|檸檬|薑))"
+)
 _DX6 = re.compile(r"(?<![a-z])(?:q\d{1,2}h|qd|bid|tid|qid|prn|hs|qhs)(?![a-z])")
 
 _DW_SPECIFIC = (
     "抗生素|止痛藥|止痛劑|止痛貼|退燒藥|退燒劑|退燒栓劑|消炎藥|消炎劑|類固醇|抗組織胺|抗過敏藥|制酸|胃藥|"
     "感冒藥|咳嗽藥|止咳藥|止瀉藥|止吐藥|化痰藥|鼻噴劑|鼻用噴劑|去充血劑|抗病毒|克流感|奧司他韋|瑞樂沙|"
-    "普拿疼|阿斯匹靈|阿司匹林|布洛芬|乙醯胺酚|撲熱息痛"
+    "普拿疼|阿斯匹靈|阿司匹林|布洛芬|乙醯胺酚|撲熱息痛|撲痛|"
+    "糖漿|栓劑|噴劑|針劑|口服液|止瀉劑|退燒貼|退燒針|"
+    "acetaminophen|paracetamol|ibuprofen|aspirin|tylenol|panadol"
 )
 _RE_DW_SPECIFIC = re.compile(f"(?:{_DW_SPECIFIC})")
 _RE_DW_GENERIC = re.compile(r"藥")
@@ -54,14 +61,18 @@ _FREQ = re.compile(
 )
 _AMOUNT = re.compile(rf"{_RANGE}\s*{_UNIT_AMOUNT}")
 
-_V_FWD = "服用|吃|使用|塗抹|塗|擦|貼|施打|注射|開立|開|處方|購買|買|口服|吞服|噴|點|搭配"
+_V_FWD = "服用|吃|喝|飲用|使用|塗抹|塗|擦|貼|施打|注射|開立|開|處方|購買|買|口服|吞服|噴|點|搭配"
 _V_REV = "服用|吃|使用|塗抹|口服|吞服|即可"
 _DX4_FWD = re.compile(rf"(?:{_V_FWD})[^,，。；;、：:！!？?\n]{{0,4}}?(?:{_DW_SPECIFIC})")
 _DX4_REV = re.compile(rf"(?:{_DW_SPECIFIC})[^,，。；;、：:！!？?\n]{{0,4}}?(?:{_V_REV})")
 _DX5 = re.compile(r"(?:服用|服藥|吞服|吃藥|口服藥)|吃[^,，。；;、：:！!？?\n]{0,3}藥")
 
 # 豁免模式（否定、現況、遵醫囑）
-_NEG = re.compile(r"(?:請勿|切勿|勿|不要|不可|不宜|不建議|避免|禁止|不得|不應|不能|別)")
+# 否定詞須緊鄰給藥動詞才可豁免（「請勿擔心可吃止痛藥」不得因同子句有否定詞而放行）
+_NEG = re.compile(
+    r"(?:請勿|切勿|勿|不要|不可|不宜|不建議|避免|禁止|不得|不應|不能|別)"
+    r"(?:自行|擅自|隨意|任意|隨便|亂|貿然)*(?:服用|服藥|吃|使用|購買|買|塗抹|施打|注射|口服|吞服)"
+)
 _STATE = re.compile(r"(?:正在|目前|曾經|曾|長期|已經|有在|在)(?:服用|服藥|使用|吃)")
 _DOCTOR = re.compile(r"(?:依|遵|按|照)(?:照|從)?(?:醫囑|(?:醫師|藥師)(?:的)?(?:指示|處方|囑咐|建議|評估|診斷)?)")
 
@@ -100,7 +111,7 @@ def check_dosage_prescription(answer: str) -> Optional[str]:
             return "DX-3"
 
     # 4. 給藥動詞搭配份量單位（無豁免）
-    if _DX2_VERB_ALL.search(t) or _DX2_VERB_EAT.search(t):
+    if _DX2_VERB_ALL.search(t) or _DX2_VERB_EAT.search(t) or _DX2_QTY.search(t):
         return "DX-2"
 
     # 5. 子句層級：給藥動詞與藥物組合（含豁免檢查）
@@ -120,8 +131,25 @@ def check_dosage_prescription(answer: str) -> Optional[str]:
 # ---------------------------------------------------------
 _ACTION = re.compile(r"就醫|就診|看診|回診|急診|醫院|門診|掛號|119|送醫|求醫|諮詢醫師|醫療院所|聯絡醫師")
 _NEG_ACTION = re.compile(
-    r"(?:不用|不需要?|無須|無需|不必|毋須|毋需)(?:特別|再|要)?(?:就醫|就診|看診|回診|急診|去醫院|到醫院|至醫院|送醫)"
+    r"(?:不用|不需要?|無須|無需|不必|毋須|毋需|不要|別)(?:特別|再|要)?(?:就醫|就診|看診|回診|急診|去醫院|到醫院|至醫院|送醫)"
+    r"|(?:不用|不需要?|無須|無需|不必|毋須|毋需|不要|別)[^,，。；;！!？?\n請應須]{0,6}?"
+    r"(?:就醫|就診|看診|回診|急診|醫院|門診|掛號|送醫|求醫)"
 )
+_BULLET = re.compile(r"^\s*(?:[-*•·]|\d+\s*[.、)）]|[①-⑩]|[一二三四五六七八九十]+\s*[、.])\s*")
+
+
+def _merge_bullets(text: str) -> str:
+    """把條列行併入前一行（前一行以冒號結尾或亦為條列鏈），使「請儘速就醫：」與其後條件同屬一句。"""
+    out = []
+    chain = False
+    for line in text.split("\n"):
+        if out and _BULLET.match(line) and (chain or out[-1].rstrip().endswith((":", "："))):
+            out[-1] = out[-1].rstrip() + "，" + _BULLET.sub("", line)
+            chain = True
+        else:
+            out.append(line)
+            chain = False
+    return "\n".join(out)
 _SYMPTOM = re.compile(
     "胸痛|呼吸急促|呼吸困難|喘鳴|血便|黑便|嘔血|意識不清|意識改變|昏迷|抽搐|痙攣|頸部僵硬|脫水|尿量(?:明顯)?減少|"
     "口乾|嘴唇乾裂|嘴唇發紫|無法進食|嘔吐不止|持續嘔吐|反覆嘔吐|高燒|高熱|發燒不退|劇烈頭痛|劇烈腹痛|嚴重腹痛|"
@@ -153,7 +181,7 @@ def has_doctor_warning(answer: str) -> bool:
     同一句中必須同時包含「具體條件」（症狀或數值門檻）與「就醫動作」，
     且該句不可包含否定就醫動作之詞句。
     """
-    t = _norm(answer)
+    t = _merge_bullets(_norm(answer))
     for sent in _SENT.split(t):
         if not sent.strip():
             continue

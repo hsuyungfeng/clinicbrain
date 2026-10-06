@@ -317,3 +317,56 @@ def test_wiring_special_topic_dosage_interception(isolated_conn):
     res2 = generate_topic_faqs(conn, topic, mock_llm_safe_no_warning)
     assert len(res2.valid) == 1
     assert len(res2.rejected) == 0
+
+
+# ---------------------------------------------------------
+# 複審補強（2026-10-06）：獨立語料，非封閉語料之外的新正負例
+# ---------------------------------------------------------
+DOSAGE_POS_EXTRA = [
+    # 只有數量、無藥名的劑量句（原 DX-2 漏攔）
+    "每次吃２顆，每天３次", "小孩一次吃半顆", "吃3片就夠了", "每日兩次，每次一顆", "一次吃兩粒，一天吃三次",
+    # 否定詞不緊鄰動詞，不得整句豁免
+    "請勿擔心可吃止痛藥", "別擔心可以吃退燒藥", "避免疼痛可吃止痛藥",
+    # 未列名劑型與英文學名
+    "可喝感冒糖漿緩解", "咳嗽時可服用止咳糖漿", "可使用栓劑退燒", "建議吃acetaminophen", "可吃Tylenol",
+]
+
+DOSAGE_NEG_EXTRA = [
+    "請勿自行服用抗生素，需由醫師評估。", "不要隨便亂吃藥。", "避免擅自服用止痛藥。", "切勿自行購買消炎藥。",
+    "每天吃三餐，定時定量。", "每次洗手至少二十秒。",
+]
+
+WARN_NEG_EXTRA = [
+    "高燒超過3天也無需前往醫院", "呼吸困難時無需到急診", "胸痛時不要去醫院", "胸痛時大多不必急著就醫",
+    "症狀持續或惡化時請盡速就醫",
+]
+
+WARN_POS_EXTRA = [
+    "若出現以下情形請儘速就醫：\n1. 高燒超過3天\n2. 呼吸困難",
+    "出現下列症狀時應就醫：\n- 持續高燒\n- 呼吸急促",
+    "胸痛或呼吸困難時，請不要拖延，立即就醫。",
+]
+
+
+@pytest.mark.parametrize("s", DOSAGE_POS_EXTRA)
+def test_dosage_extra_positive(s):
+    from src.ingestion.medical_safety import check_dosage_prescription
+    assert check_dosage_prescription(s) is not None, s
+
+
+@pytest.mark.parametrize("s", DOSAGE_NEG_EXTRA)
+def test_dosage_extra_negative(s):
+    from src.ingestion.medical_safety import check_dosage_prescription
+    assert check_dosage_prescription(s) is None, s
+
+
+@pytest.mark.parametrize("s", WARN_NEG_EXTRA)
+def test_warning_extra_negative(s):
+    from src.ingestion.medical_safety import has_doctor_warning
+    assert has_doctor_warning(s) is False, s
+
+
+@pytest.mark.parametrize("s", WARN_POS_EXTRA)
+def test_warning_extra_positive(s):
+    from src.ingestion.medical_safety import has_doctor_warning
+    assert has_doctor_warning(s) is True, s
