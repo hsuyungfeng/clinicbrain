@@ -1,32 +1,69 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-05T17:39:30+08:00",
-  "phase": "12",
-  "phase_name": "12-general-content-generation",
-  "phase_dir": ".planning/phases/12-general-content-generation",
-  "plan": 6,
-  "task": 3,
-  "total_tasks": 3,
-  "status": "completed",
+  "timestamp": "2026-10-06T12:00:00+08:00",
+  "phase": "13",
+  "phase_name": "13-real-llm-batch-verification",
+  "phase_dir": ".planning/phases/13-real-llm-batch-verification",
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "in_progress",
   "completed_tasks": [
-    {"id": 1, "name": "Plan 12-01: GC-02, GC-03 劑量/處方攔截與就醫警訊驗證器", "status": "done"},
-    {"id": 2, "name": "Plan 12-02: GC-01 疾病種子清單擴充與簽核硬閘門", "status": "done"},
-    {"id": 3, "name": "Plan 12-03: DEBT-03 駁回 FAQ 標記重生成與審核管理", "status": "done"},
-    {"id": 4, "name": "Plan 12-04: GC-03, GC-02 免責宣告欄位與 sync/import 驗證", "status": "done"},
-    {"id": 5, "name": "Plan 12-05: GC-04, DEBT-03 審核工具增強、衝突比對與 mark-regen", "status": "done"},
-    {"id": 6, "name": "Plan 12-06: 端到端整合驗收、AGENTS.md 2.12 與營運文件更新", "status": "done"}
+    {
+      "id": 1,
+      "name": "Phase 12 一般疾病內容生成與審核（GC-01~04、DEBT-03）",
+      "status": "done",
+      "commit": "d73a263"
+    },
+    {
+      "id": 2,
+      "name": "Phase 12 複審補強：劑量/警訊層漏洞修正",
+      "status": "done",
+      "commit": "5714714"
+    },
+    {
+      "id": 3,
+      "name": "Phase 12 複審補強：DEBT-03 重生成可觀測性（mark-regen --seed、list 重生欄、日誌 id）",
+      "status": "done",
+      "commit": "c32abdc"
+    },
+    {
+      "id": 4,
+      "name": "Phase 13 規劃（13-01、13-02）",
+      "status": "done",
+      "commit": "eaa18d5"
+    }
   ],
-  "remaining_tasks": [],
+  "remaining_tasks": [
+    {
+      "id": 5,
+      "name": "Phase 13 執行（antigravity 進行中）",
+      "status": "in_progress"
+    },
+    {
+      "id": 6,
+      "name": "檢查 Phase 13 實作，查 tests/test_real_llm_batch.py 的 3 項失敗並修正",
+      "status": "not_started"
+    }
+  ],
   "blockers": [],
-  "human_actions_pending": [],
-  "decisions": [
-    {"decision": "GC-01 四項常見疾病（感冒、流感、急性腸胃炎、過敏性鼻炎）共 17 題正式種子入庫", "rationale": "提供一般疾病常見問答之高標準繁中素材", "phase": "12"},
-    {"decision": "GC-02 獨立實作 DX-1~5 劑量與處方攔截器", "rationale": "阻斷阿拉伯與中文數字劑量及特定處方用藥建議，保留請遵醫囑豁免", "phase": "12"},
-    {"decision": "GC-03 就醫警訊強制檢驗與自然語言免責聲明純加法擴充", "rationale": "確保 general 問答皆具備就醫指引，符合醫療法規", "phase": "12"},
-    {"decision": "GC-04 審核工具支援主題檢視與相近診所 FAQ 檢視", "rationale": "輔助醫師人工比對指示衝突，明示詞彙守衛局限", "phase": "12"},
-    {"decision": "DEBT-03 被駁回題目手動標記重生成生命週期", "rationale": "提供 mark-regen 子命令，一次標記一次嘗試防範無限推論", "phase": "12"}
+  "human_actions_pending": [
+    {
+      "action": "合併資料庫中重複問句 id 4 與 id 19",
+      "context": "同一問句有兩個不同答案，觸發歧義邊界保護刻意不短路",
+      "blocking": false
+    },
+    {
+      "action": "確認 W4：special 類答案是否也要求就醫警訊、sync 匯出與非 FAQ 回應是否附免責",
+      "context": "目前僅 general 要求，為先前使用者決策",
+      "blocking": false
+    }
   ],
-  "uncommitted_files": [],
-  "next_action": "規劃或啟動 Phase 13（真實模型夜間批次預生成實跑與驗證）或完成 v1.2 里程碑",
-  "context_notes": "Phase 12 全數完成，全量測試 858 passed，正式資料庫 clinic.db SHA-256 維持 ad24426cadd84db7521250631efbd0067fb3fb2f040ab257a915b73416022b9e"
+  "decisions": [],
+  "uncommitted_files": [
+    "src/pageindex/llm_client.py",
+    "tests/test_real_llm_batch.py"
+  ],
+  "next_action": "等 antigravity 完成 Phase 13 後，檢查實作與 SUMMARY、查 test_real_llm_batch.py 失敗原因並修正；跑真實 LLM 測試前確認 llama-server 空閒。",
+  "context_notes": "全量測試 890 passed（排除慢速的 tests/test_real_llm_batch.py，該檔 3 項失敗未查）。正式 clinic.db sha256 前綴 ad24426c…，全程未變。上列兩個未提交檔屬 antigravity 的 Phase 13 進行中工作，勿動。"
 }
