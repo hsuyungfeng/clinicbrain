@@ -1,69 +1,91 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-06T12:00:00+08:00",
-  "phase": "13",
-  "phase_name": "13-real-llm-batch-verification",
-  "phase_dir": ".planning/phases/13-real-llm-batch-verification",
-  "plan": null,
-  "task": null,
-  "total_tasks": null,
-  "status": "in_progress",
+  "timestamp": "2026-10-07T13:03:00+08:00",
+  "phase": "14",
+  "phase_name": "14-soap-remaining",
+  "phase_dir": ".planning/pipeline/phase14-remaining",
+  "plan": 1,
+  "task": 1,
+  "total_tasks": 4,
+  "status": "paused",
   "completed_tasks": [
     {
       "id": 1,
-      "name": "Phase 12 一般疾病內容生成與審核（GC-01~04、DEBT-03）",
+      "name": "Phase 14 剩餘項目規劃與兩輪審查修訂（PLAN.md 實施核定修訂版）",
       "status": "done",
-      "commit": "d73a263"
+      "commit": "pending"
     },
     {
       "id": 2,
-      "name": "Phase 12 複審補強：劑量/警訊層漏洞修正",
+      "name": "項目一測試撰寫（tests/test_soap_hardening.py 增加 3 個測試）",
       "status": "done",
-      "commit": "5714714"
-    },
-    {
-      "id": 3,
-      "name": "Phase 12 複審補強：DEBT-03 重生成可觀測性（mark-regen --seed、list 重生欄、日誌 id）",
-      "status": "done",
-      "commit": "c32abdc"
-    },
-    {
-      "id": 4,
-      "name": "Phase 13 規劃（13-01、13-02）",
-      "status": "done",
-      "commit": "eaa18d5"
+      "commit": "pending"
     }
   ],
   "remaining_tasks": [
     {
+      "id": 3,
+      "name": "修改 scripts/migrate_soap_schema.py 第 106 行使項目一測試轉綠",
+      "status": "not_started"
+    },
+    {
+      "id": 4,
+      "name": "項目二：section_parser.py parse_soap_text 行內切分與標記嚴格化",
+      "status": "not_started"
+    },
+    {
       "id": 5,
-      "name": "Phase 13 執行（antigravity 進行中）",
-      "status": "in_progress"
+      "name": "項目三：section_parser.py extract_general_medical_insights 否定語境防禦與特徵擷取",
+      "status": "not_started"
     },
     {
       "id": 6,
-      "name": "檢查 Phase 13 實作，查 tests/test_real_llm_batch.py 的 3 項失敗並修正",
+      "name": "全套回歸驗收（failed=0，正式庫 SHA-256 驗證）並撰寫 IMPL_REPORT.md",
       "status": "not_started"
     }
   ],
   "blockers": [],
   "human_actions_pending": [
     {
-      "action": "合併資料庫中重複問句 id 4 與 id 19",
-      "context": "同一問句有兩個不同答案，觸發歧義邊界保護刻意不短路",
-      "blocking": false
-    },
-    {
-      "action": "確認 W4：special 類答案是否也要求就醫警訊、sync 匯出與非 FAQ 回應是否附免責",
-      "context": "目前僅 general 要求，為先前使用者決策",
+      "action": "確認決策五：行內單字母標記（S/O/A/P）僅限行首與括號有效之保守規則",
+      "context": "防止客觀檢查中脈搏 P: 80 被誤切進 Plan，目前暫採保守規則實作",
       "blocking": false
     }
   ],
-  "decisions": [],
-  "uncommitted_files": [
-    "src/pageindex/llm_client.py",
-    "tests/test_real_llm_batch.py"
+  "decisions": [
+    {
+      "decision": "決策一：臨床疑似／R/O 語意採方案 A（保守排除）",
+      "rationale": "未確診疾病零污染，r/o、rule out、疑似、鑑別診斷納入排除片語",
+      "phase": "14"
+    },
+    {
+      "decision": "決策二：Assessment 為空降級採方案 A（保守留空）",
+      "rationale": "conditions 保持 []，不讀取 subjective，杜絕主訴病患擔憂污染",
+      "phase": "14"
+    },
+    {
+      "decision": "決策三：英文臨床縮寫對照採方案 A（不擅自映射）",
+      "rationale": "特徵擷取僅依繁體中文標準詞比對，避免未簽核之語意誤差",
+      "phase": "14"
+    },
+    {
+      "decision": "決策四：取消單字母空白分隔採方案 A（強制標點）",
+      "rationale": "英文標記一律強制要求冒號、句點、成對括號或連字號，徹底根除 A 35-year-old 衝突",
+      "phase": "14"
+    },
+    {
+      "decision": "決策五：行內單字母標記暫採保守（僅限行首與成對括號有效）",
+      "rationale": "徹底避免客觀檢查中脈搏 P: 80 縮寫被誤切入 Plan，待使用者確認",
+      "phase": "14"
+    }
   ],
-  "next_action": "等 antigravity 完成 Phase 13 後，檢查實作與 SUMMARY、查 test_real_llm_batch.py 失敗原因並修正；跑真實 LLM 測試前確認 llama-server 空閒。",
-  "context_notes": "全量測試 890 passed（排除慢速的 tests/test_real_llm_batch.py，該檔 3 項失敗未查）。正式 clinic.db sha256 前綴 ad24426c…，全程未變。上列兩個未提交檔屬 antigravity 的 Phase 13 進行中工作，勿動。"
+  "uncommitted_files": [
+    "tests/test_soap_hardening.py",
+    ".planning/pipeline/phase14-remaining/PLAN.md",
+    ".planning/pipeline/phase14-remaining/PLAN.v1.md",
+    ".planning/pipeline/phase14-remaining/PLAN.v2.md",
+    ".planning/pipeline/phase14-remaining/PLAN.v3.md"
+  ],
+  "next_action": "執行步驟 1-B：修訂 scripts/migrate_soap_schema.py 第 106 行條件為 if not args.dry_run and is_prod and not args.confirm_prod_backup:，並以 pytest tests/test_soap_hardening.py -k migrate_soap_schema 確認轉綠。",
+  "context_notes": "正式資料庫 clinic.db SHA-256 前綴 ad24426c... 恆定受保。白名單與 Git 唯讀禁令遵守中。"
 }
