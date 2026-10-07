@@ -232,3 +232,34 @@ def test_public_query_endpoints_isolation(client):
     )
     assert gen_resp.status_code == 200
     assert gen_resp.json()["status"] == "no_match"
+
+
+def test_red_api_ingest_tags_negation_clean(client):
+    """測試 19：推播接收端到端入庫之 tags 不含否定與排除關鍵字。"""
+    clinic_id = "3503190424"
+    payload = {
+        "clinic_id": clinic_id,
+        "records": [
+            {
+                "external_id": "REC-NEG-TAG-01",
+                "raw_text": (
+                    "主訴：無發燒，咳嗽\n"
+                    "診斷：排除流感，感冒"
+                ),
+            }
+        ],
+    }
+
+    resp = client.post("/api/v1/soap/records", json=payload)
+    assert resp.status_code == 200
+
+    get_resp = client.get(f"/api/v1/soap/records/REC-NEG-TAG-01?clinic_id={clinic_id}")
+    assert get_resp.status_code == 200
+    rec = get_resp.json()
+    tags = rec.get("tags", [])
+
+    assert "感冒" in tags
+    assert "咳嗽" in tags
+    assert "發燒" not in tags
+    assert "流感" not in tags
+

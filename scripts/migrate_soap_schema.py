@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError:
         is_prod = target_path.resolve() == PROD_DB_PATH.resolve()
 
-    if is_prod and not args.confirm_prod_backup:
+    if not args.dry_run and is_prod and not args.confirm_prod_backup:
         print(
             "🛑 拒絕操作正式資料庫！\n"
             "您嘗試對正式 clinic.db 執行 schema 遷移，但未提供 --confirm-prod-backup 旗標。\n"

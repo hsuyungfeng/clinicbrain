@@ -133,3 +133,46 @@ def test_search_like_wildcards_escaped(client):
     r = client.post("/api/v1/soap/search", json={"clinic_id": CLINIC, "query": "%"})
     assert r.status_code == 200
     assert r.json()["total"] == 0  # 「%」只比對字面百分號，不得變成萬用字元
+
+
+def test_guard_migrate_soap_schema_nonexistent_db_exits_two(tmp_path):
+    import scripts.migrate_soap_schema as migrate_script
+
+    nonexistent = tmp_path / "nonexistent.db"
+    ret = migrate_script.main(["--db", str(nonexistent)])
+    assert ret == 2
+
+
+def test_red_migrate_soap_schema_dry_run_exits_zero(tmp_path, monkeypatch, capsys):
+    import scripts.migrate_soap_schema as migrate_script
+
+    fake_prod = tmp_path / "clinic.db"
+    fake_prod.touch()
+    monkeypatch.setattr(migrate_script, "PROD_DB_PATH", fake_prod)
+
+    ret = migrate_script.main(["--dry-run"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    assert "CREATE TABLE IF NOT EXISTS soap_records" in captured.out
+
+
+def test_red_migrate_soap_schema_dry_run_no_connect(tmp_path, monkeypatch, capsys):
+    import sqlite3
+    import scripts.migrate_soap_schema as migrate_script
+
+    fake_prod = tmp_path / "clinic.db"
+    fake_prod.touch()
+    monkeypatch.setattr(migrate_script, "PROD_DB_PATH", fake_prod)
+
+    connect_calls = []
+
+    def mock_connect(*args, **kwargs):
+        connect_calls.append((args, kwargs))
+        raise RuntimeError("sqlite3.connect should not be called in dry-run!")
+
+    monkeypatch.setattr(sqlite3, "connect", mock_connect)
+
+    ret = migrate_script.main(["--dry-run"])
+    assert ret == 0
+    assert len(connect_calls) == 0
+
