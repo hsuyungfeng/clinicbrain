@@ -122,7 +122,8 @@
    * 呼叫既有 `deep_mask_prices()`，所有具體數字金額（例如 `500元`、`NT$1,200`、`自費3000`）全面替換為 `[請致電診所確認]`。
 3. **病患代碼偽名化 (`patient_token`)**：
    * 外部 `patient_id` 不得直接儲存於資料庫。
-   * 系統透過 `generate_patient_token(patient_id, clinic_id)`，以 HMAC-SHA256 搭配 `CLINICBRAIN_ADMIN_API_KEY`（或預設 salt）計算不可逆匿名代碼。
+   * 系統透過 `generate_patient_token(patient_id, clinic_id)`，以 HMAC-SHA256 搭配環境變數 `CLINICBRAIN_DEID_KEY`（未設定時退回 `CLINICBRAIN_ADMIN_API_KEY`）計算匿名代碼。**程式碼內沒有預設金鑰**；兩者皆未設定時，帶 `patient_id` 的推播回 HTTP 503（Fail-Closed）。更換金鑰會使既有 token 與新 token 不再相同，請勿隨意輪替。
+   * 外部傳入的 `patient_token`、`external_id` 僅允許 `A-Za-z0-9_.:-`（最長 64 字）且不得形似身分證或電話，否則回 HTTP 400；`tags` 同樣經過去識別化。
 4. **公開查詢嚴格隔離**：
    * 大眾匿名諮詢端點（`/api/v1/general/query`）與公開自然語言端點（`/api/v1/query`）完全不包含 `soap_records` 表的任何讀取或聯集查詢邏輯。
 

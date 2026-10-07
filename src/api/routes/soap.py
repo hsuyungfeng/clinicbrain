@@ -27,12 +27,12 @@ from ..models.soap import (
 try:
     from ...soap.soap_writer import upsert_soap_records
     from ...soap.section_parser import parse_soap_text, extract_general_medical_insights
-    from ...soap.deid import deidentify_text, generate_patient_token
+    from ...soap.deid import DeidKeyError, deidentify_text, generate_patient_token, is_safe_identifier
     from ...query.router import get_clinic_info
 except (ImportError, ValueError):
     from src.soap.soap_writer import upsert_soap_records
     from src.soap.section_parser import parse_soap_text, extract_general_medical_insights
-    from src.soap.deid import deidentify_text, generate_patient_token
+    from src.soap.deid import DeidKeyError, deidentify_text, generate_patient_token, is_safe_identifier
     from src.query.router import get_clinic_info
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,11 @@ def _verify_clinic_exists(conn: sqlite3.Connection, clinic_id: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"無效的診所代碼：'{clinic_id}'",
         )
+
+
+def _escape_like(s: str) -> str:
+    """跳脫 LIKE 萬用字元，使 % 與 _ 只比對字面。"""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 @router.post(
@@ -83,6 +88,12 @@ def ingest_soap_records(
     total_symptoms: List[str] = []
 
     for idx, item in enumerate(req.records):
+        # 0. 外部識別欄位不得夾帶個資（回應只回報筆序，不回顯內容）
+        if not is_safe_identifier(item.external_id):
+            raise HTTPException(status_code=400, detail=f"第 {idx} 筆 external_id 格式不合法或疑似含個資")
+        if item.patient_token and item.patient_token.strip() and not is_safe_identifier(item.patient_token):
+            raise HTTPException(status_code=400, detail=f"第 {idx} 筆 patient_token 格式不合法或疑似含個資")
+
         raw_source = item.raw_text or item.transcript or ""
 
         # 1. 段落剖析（若有傳入已拆分之欄位則優先採用，否則切分 raw_source）
@@ -127,7 +138,13 @@ def ingest_soap_records(
         if item.patient_token and item.patient_token.strip():
             final_token = item.patient_token.strip()
         else:
-            final_token = generate_patient_token(item.patient_id, req.clinic_id)
+            try:
+                final_token = generate_patient_token(item.patient_id, req.clinic_id)
+            except DeidKeyError:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="服務未設定去識別化金鑰（CLINICBRAIN_DEID_KEY），無法處理 patient_id",
+                )
 
         # 5. 去識別化與價格清洗
         clean_s = deidentify_text(s_val or "")
@@ -144,7 +161,7 @@ def ingest_soap_records(
             "assessment": clean_a,
             "plan": clean_p,
             "raw_text": clean_raw,
-            "tags": ",".join(merged_tags),
+            "tags": ",".join(deidentify_text(t) for t in merged_tags),
         })
 
     try:
@@ -152,13 +169,13 @@ def ingest_soap_records(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"SOAP 寫入格式檢驗失敗：{e}",
+            detail="SOAP 寫入格式檢驗失敗：缺少必填欄位或欄位為空",
         )
     except Exception as e:
         logger.exception("SOAP 紀錄推播寫入發生未預期異常")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"SOAP 紀錄入庫失敗：{e}",
+            detail="SOAP 紀錄入庫失敗，請查看伺服器日誌",
         )
 
     return SoapIngestResponse(
@@ -216,19 +233,19 @@ def search_soap_records(
                    r.raw_text, r.tags, r.created_at, r.updated_at
             FROM soap_records r
             WHERE r.clinic_id = ? AND (
-                r.subjective LIKE ? OR
-                r.objective LIKE ? OR
-                r.assessment LIKE ? OR
-                r.plan LIKE ? OR
-                r.tags LIKE ?
+                r.subjective LIKE ? ESCAPE '\\' OR
+                r.objective LIKE ? ESCAPE '\\' OR
+                r.assessment LIKE ? ESCAPE '\\' OR
+                r.plan LIKE ? ESCAPE '\\' OR
+                r.tags LIKE ? ESCAPE '\\'
             )
         """
-        like_pattern = f"%{query_str}%"
+        like_pattern = f"%{_escape_like(query_str)}%"
         params.extend([like_pattern, like_pattern, like_pattern, like_pattern, like_pattern])
 
     if req.tag and req.tag.strip():
-        sql += " AND r.tags LIKE ?"
-        params.append(f"%{req.tag.strip()}%")
+        sql += " AND r.tags LIKE ? ESCAPE '\\'"
+        params.append(f"%{_escape_like(req.tag.strip())}%")
 
     sql += " ORDER BY r.created_at DESC LIMIT ?"
     params.append(req.limit)

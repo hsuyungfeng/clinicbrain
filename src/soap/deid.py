@@ -8,6 +8,7 @@ Phase 14: 臨床語音與 SOAP 紀錄擷取 (D-06, D-07)
 
 import hashlib
 import hmac
+import os
 import re
 from typing import Optional
 
@@ -24,10 +25,34 @@ _ID_LETTER_MAP = {
     "I": 34, "O": 35,
 }
 
-_ID_PATTERN = re.compile(r"\b([A-Z][1289A-D]\d{8})\b", re.IGNORECASE)
-_MOBILE_PATTERN = re.compile(r"\b(09\d{2}[-\s]?\d{3}[-\s]?\d{3}|09\d{8})\b")
-_LANDLINE_PATTERN = re.compile(r"\b(0\d{1,2}[-\s]?\d{7,8})\b")
-_NAME_LABEL_PATTERN = re.compile(r"((?:病患姓名|患者姓名|病患|患者|姓名)[：:\s]+)([\u4e00-\u9fa5]{2,4})")
+# 注意：不可使用 \b。Python 3 的 \b 在 Unicode 下把中文字視為 \w，
+# 「身分證A123456789」「電話0912345678」中英數交界沒有 \b，會整段漏遮蔽。
+_ID_PATTERN = re.compile(r"(?<![A-Za-z0-9])([A-Z][1289A-D]\d{8})(?!\d)", re.IGNORECASE)
+_MOBILE_PATTERN = re.compile(r"(?<!\d)(09\d{2}[-\s]?\d{3}[-\s]?\d{3}|09\d{8})(?!\d)")
+_LANDLINE_PATTERN = re.compile(r"(?<!\d)(0\d{1,2}[-\s]?\d{7,8})(?!\d)")
+# 「姓名」標籤後可直接接姓名；「病患／患者」因常接症狀描述（患者持續發燒），必須帶分隔符才遮蔽
+_NAME_LABEL_PATTERN = re.compile(
+    r"((?:病患姓名|患者姓名|姓名)[：:\s]*|(?:病患|患者)[：:\s]+)([\u4e00-\u9fa5]{2,4})"
+)
+
+# patient_token／external_id 等外部傳入識別欄位允許的字元（拒絕姓名、空白與標點夾帶個資）
+_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9_.:\-]{1,64}$")
+
+
+class DeidKeyError(RuntimeError):
+    """未設定去識別化 HMAC 金鑰（Fail-Closed，不使用內建預設值）。"""
+
+
+def contains_pii_identifier(text: str) -> bool:
+    """文字內是否含身分證／居留證號或電話（用於拒絕外部識別欄位夾帶個資）。"""
+    t = text or ""
+    return bool(_ID_PATTERN.search(t) or _MOBILE_PATTERN.search(t) or _LANDLINE_PATTERN.search(t))
+
+
+def is_safe_identifier(value: str) -> bool:
+    """外部識別碼是否為安全格式：限定字元集、長度，且不得形似身分證或電話。"""
+    v = (value or "").strip()
+    return bool(_SAFE_IDENTIFIER.match(v)) and not contains_pii_identifier(v)
 
 
 def validate_taiwan_id(id_str: str) -> bool:
@@ -97,12 +122,17 @@ def generate_patient_token(patient_id: Optional[str], clinic_id: str) -> str:
     特點：
     - 同一診所內相同外部 patient_id 產生相同 token（支援縱向歷程比對）。
     - 跨診所資料隔離（即使不同診所代號相同，其 token 亦不相同）。
-    - 不可逆雜湊，無法反推原始身分證或病歷號。
+    - 金鑰取自環境變數 CLINICBRAIN_DEID_KEY（未設定時退回 CLINICBRAIN_ADMIN_API_KEY），
+      程式碼內不得有預設金鑰：身分證字號搜尋空間小，公開 salt 等於可被字典攻擊還原。
+    - 兩者皆未設定時拋出 DeidKeyError（Fail-Closed）。
     """
+    secret = (os.environ.get("CLINICBRAIN_DEID_KEY") or os.environ.get("CLINICBRAIN_ADMIN_API_KEY") or "").strip()
+    if not secret:
+        raise DeidKeyError("未設定 CLINICBRAIN_DEID_KEY（或 CLINICBRAIN_ADMIN_API_KEY），無法產生病患代號")
+
     clean_clinic = (clinic_id or "default").strip()
     clean_pid = (patient_id or "anonymous").strip()
 
-    salt = b"clinicbrain_deid_v1"
     key = f"{clean_clinic}:{clean_pid}".encode("utf-8")
-    token_hex = hmac.new(salt, key, hashlib.sha256).hexdigest()[:12].upper()
+    token_hex = hmac.new(secret.encode("utf-8"), key, hashlib.sha256).hexdigest()[:12].upper()
     return f"PTK-{token_hex}"

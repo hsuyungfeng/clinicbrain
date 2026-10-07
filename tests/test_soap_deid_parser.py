@@ -112,8 +112,9 @@ def test_deidentify_price_masking():
     assert "[請致電診所確認]" in cleaned
 
 
-def test_generate_patient_token_deterministic_and_isolated():
+def test_generate_patient_token_deterministic_and_isolated(monkeypatch):
     """測試 patient_token 同診所確定性與跨診所隔離。"""
+    monkeypatch.setenv("CLINICBRAIN_DEID_KEY", "test-deid-key")
     t1 = generate_patient_token("PID-999", "3503190424")
     t2 = generate_patient_token("PID-999", "3503190424")
     t3 = generate_patient_token("PID-999", "OTHER-CLINIC")

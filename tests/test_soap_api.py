@@ -19,6 +19,7 @@ def client(isolated_db_path, monkeypatch):
     """建立指向 isolated_db_path 測試複本之 TestClient。"""
     monkeypatch.setattr(config, "db_path", isolated_db_path)
     monkeypatch.setattr(config, "allow_no_auth", True)
+    monkeypatch.setenv("CLINICBRAIN_DEID_KEY", "test-deid-key")  # patient_token 需要 HMAC 金鑰（無預設值）
     with TestClient(app) as test_client:
         yield test_client
 
