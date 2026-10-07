@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: 診所資料優先與一般疾病簡易資訊
+milestone: v1.3
+milestone_name: 臨床語音與 SOAP 紀錄擷取
 status: completed_milestone
-stopped_at: Milestone v1.2 全部 4 個 Phase (10~13) 已圓滿完成；Phase 13 本地真機大模型 (Qwen 27B) 夜間批次驗收通過，正式資料庫 SHA-256 恆定未變
-last_updated: "2026-10-06T13:48:00.000Z"
-last_activity: 2026-10-06 -- Phase 13 真機實跑驗證與審計報告完成，全量測試通過 (904 passed, 1 skipped)
+stopped_at: Milestone v1.3 / Phase 14（含剩餘項目改善管線）已圓滿完成，全套回歸測試 945 passed (SOAP 專屬 69 passed)，正式資料庫 SHA-256 恆定未變
+last_updated: "2026-10-07T15:15:00.000Z"
+last_activity: 2026-10-07 -- Phase 14 剩餘項目強化完成（Dry-Run 修復、切分標記嚴格化、否定防禦），全量測試通過
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** Milestone v1.2 已完工封裝；準備推進後續版本（如語音與 SOAP 臨床紀錄匯入）
+**Current focus:** Milestone v1.3 已封裝歸檔；準備推進 Phase 15（臨床 SOAP 衛教提煉與審核流）
 
 ## Current Position
 
 Phase: 14 of 14（臨床語音與 SOAP 紀錄擷取）-- COMPLETED
-Plan: 14-01、14-02、14-03 均已執行完畢（SUMMARY 產出）
-Status: Phase 14 Completed
-Last activity: 2026-10-06 -- Phase 14 完成臨床語音與 SOAP 紀錄推播、S/O/A/P 切分、一般醫學特徵擷取、個資去識別化與醫師專屬檢索，全量回歸測試 919 passed，正式庫 SHA-256 恆定
+Plan: 14-01、14-02、14-03 及 phase14-remaining 均已執行完畢
+Status: Milestone v1.3 Completed
+Last activity: 2026-10-07 -- Phase 14 完成臨床文字推播、確定性 S/O/A/P 切分、一般醫學特徵擷取、個資去識別化與專屬醫師檢索，回歸測試 69 項 SOAP 測試全數通過，正式庫 SHA-256 恆定
 
 Progress: [██████████] 100%
 
@@ -36,47 +36,28 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total tasks completed: 45+
-- Tests passing: 919/919（919 單元與端到端回歸測試，1 skipped，真實 LLM 批次實跑測試離線跳過）
+- Total tasks completed: 50+
+- Tests passing: 945 passed（SOAP 模組 69/69 passed）
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, soap_records/soap_records_fts (trigram) 支援
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
+- [Phase 14 2026-10-07]: 使用者五項醫療語意決策全數採納：疑似/R/O 排除（方案 A）、Assessment 為空 conditions 留空（方案 A）、英文縮寫不擅自映射（方案 A）、取消單字母空白分隔並強制標點（方案 A）、行內單字母標記不承認（保守規則，僅行首與成對括號承認，排除脈搏 P: 80 衝突）；粗括號放寬前導切分；後置否定容許最多 4 個非標點字元；migrate_soap_schema 支援 --dry-run 純記憶體預覽。
 - [Phase 14 2026-10-06]: 支援外部推播（doctor-toolbox.com）與語音聽寫紀錄入庫；section_parser 自動切分 S/O/A/P 並安全退化至 subjective；extract_general_medical_insights 自動萃取一般醫學特徵、症狀與居家照護摘要；deid 模組遮蔽台灣身分證、電話、姓名，並套用 deep_mask_prices 洗清金額；patient_token 採 HMAC-SHA256 偽名化衍生；soap_writer 提供唯一權威 upsert；FastAPI /api/v1/soap/records、/search、/records/{external_id} 強制 verify_admin_key 認證與診所隔離；公開端點嚴格隔離；單一來源遷移腳本維護 trigram FTS5 虛擬表與 3 觸發器。
-- [Phase 12 複審補強 2026-10-06]: 劑量層 DX-2 涵蓋只有數量的句子、否定詞須緊鄰動詞才豁免、詞庫補劑型與英文學名；警訊層排除勸人別就醫的反向句並支援條列式；DEBT-03 補 `mark-regen --seed`（種子外題目拒絕標記）、`list` 顯示「待重生」、批次日誌記 unchanged/failed 列 id。詞庫仍為封閉式，最終靠醫師審核。
-- [Phase 12]: GC-01 疾病種子 17 題簽核入庫；GC-02 獨立實作 DX-1~5 劑量與處方攔截器（正例 47/47 攔截，負例 50/50 放行，診所 FAQ 回掃 0 誤拒）；GC-03 就醫警訊強制檢驗（正例 15/15 通過，負例 17/17 攔截）+ disclaimer 查詢回應欄位純加法擴充 + /sync/import general 前置檢驗；GC-04 審核工具增強（list --topic、show 來源與相近診所 FAQ 檢視、approve 警訊強制、faq_coverage 共用純函式）；DEBT-03 駁回題目手動標記重生成（mark-regen 子命令、一次標記一次嘗試、相同答案清除旗標）。
+- [Phase 12 複審補強 2026-10-06]: 劑量層 DX-2 涵蓋只有數量的句子、否定詞須緊鄰動詞才豁免、詞庫補劑型與英文學名；警訊層排除勸人別就醫的反向句並支援條列式；DEBT-03 補 `mark-regen --seed`（種子外題目拒絕標記）、`list` 顯示「待重生」、批次日誌記 unchanged/failed 列 id。
 - [Phase 11]: 診所資料優先檢索（Tiered 兩階段判定），帶 clinic_id 優先查 special FAQ，短路率 24/40 -> 38/40；相近阻斷下限 CLINIC_RELATED_FLOOR = 0.4；回應結構新增 data_level 標示層級；無 clinic_id 查詢排除所有診所 FAQ。
 - [Phase 10]: 遷移腳本 ALTER 改自 clinic_schema.sql 動態擷取單行定義（消除 DDL 雙寫）；移除 APIConfig.default_clinic_id 孤兒設定，堅持 clinic_id 明確傳入原則。
 
-- [Phase 04]: `clinic_id` 全面標準化為健保代碼 `'3503190424'`，查詢函式強制必填，避免跨診所資料洩漏。
-- [Phase 03]: `faq_cache` 採獨立扁平表，正式庫套用完成並匯入 40 筆真實 FAQ（`source_type='clinic_upload'`）。
-- [Phase 03]: 結案 Stage 2 圖片 OCR 與 `美容醫學/` 掃描教科書，判定投資報酬率極低且非衛教素材，不展開 OCR 管線。
-- [Phase 09]: LLM 預生成 FAQ 預設 pending，需醫師核准才可被查詢/匯出；樹重建不走閘門（前像快照 + physician_notes 保護 + 手動標記）。
-- [Phase 08]: 一般諮詢端點匿名、不查診所資料、紅旗詞表經使用者定稿（自傷輕生不納入）。
-- [Phase 07]: 查詢路徑維持純檢索；未命中統計只記路由關鍵字聚合計數。
-- [Phase 02]: 本機 llama-server (Qwen3.8-27B) 維持使用，採 Prompt + 驗證器雙層防禦過濾政治立場內容。
-- [v1.2 路線圖]: DEBT-01/02 先行（獨立低風險）；CF 動檢索順序獨立成 Phase 11 並須完整回歸；GC-01~04 與 DEBT-03 併 Phase 12（共用 review_faq）；DEBT-04 真實 LLM 實跑置最後，待新驗證層就緒。
-
 ### Pending Todos
 
+- 正式環境資料庫遷移：需由管理員備份正式庫後執行 `python3 scripts/migrate_soap_schema.py --confirm-prod-backup`。
 - 使用者待辦：請醫師合併正式庫 id 4 與 id 19 重複問句（或區分情境），合併後短路率可由 38/40 達 40/40。
-- 待確認（W4）：special 類答案是否也要求就醫警訊、sync 匯出與非 FAQ 回應是否附免責（目前僅 general 要求）
-- 之後可考慮：2~3 字滑動窗改善檢索、應用層速率限制、AUTH-03/04（見 REQUIREMENTS.md Future）
-- 下一里程碑規劃：展開 Milestone v1.3 / Phase 14（臨床語音與 SOAP 紀錄擷取）
-
-### Blockers/Concerns
-
-- `src/query/router.py` 的 `extract_search_terms()` 仍非完整中文斷詞：2 字通用詞已由 `_GENERIC_TERMS` 降權（2026-09-30），但「動詞+名詞」黏連殘渣片段（如「音波拉提維持」「甲溝炎要」）尚未過濾，僅浪費一次查詢，不影響結果正確性。
-- Phase 11 擴大 FAQ 候選集會碰到 Phase 7 的 faq_shortcut 保守門檻，需對抗性回歸測試。
+- 下一階段規劃：Phase 15（臨床 SOAP 衛教提煉與審核流）。
 
 ## Session Continuity
 
-Last session: 2026-10-06
-Stopped at: Milestone v1.2 / Phase 13 全部驗收通過並交付封裝
-Resume file: 無
+Last session: 2026-10-07
+Stopped at: Milestone v1.3 完成封裝歸檔
 Resume file: 無
