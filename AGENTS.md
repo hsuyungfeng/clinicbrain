@@ -108,6 +108,23 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 `scripts/run_stage1_ingestion.py` 端到端入口。任何自動擷取/生成的內容寫入時
 `source_type` 應標記為 `'clinic_upload'`，不要跟手寫或無來源依據的 LLM 生成混淆。
 
+**檔案轉 Markdown 前處理器（`src/ingestion/markdown_convert.py`，選用依賴 markitdown）**：
+`convert_to_markdown(path)` 把本機 docx/xlsx/pdf/pptx 轉成保留表格與清單的 Markdown，補強
+`extract_text.py`（新增 pdf/pptx、表格保留為 Markdown 表格）。使用順序：`convert_to_markdown` →
+`convert_chinese.to_traditional` → 價格屏蔽／去識別化 → 切塊 → `generate_faq`；本模組只負責第一步。
+- 純本地推理：只接受本機路徑（拒絕 http/file/data URI），`MarkItDown(enable_plugins=False)`，**不得**傳入
+  任何 LLM／雲端 Document Intelligence 客戶端（圖片描述、音訊轉錄皆需外部服務，一律不用）；內嵌 base64 圖片一律濾除。
+- 陷阱：markitdown 對格式不符的檔案不報錯而是退回純文字模式吐亂碼（如 `~$xxx.docx` Office 暫存鎖檔），
+  因此轉換前先驗檔頭（zip／`%PDF-`）；掃描版 PDF 無文字層會得到空內容並拋 `MarkdownConvertError`（本模組無 OCR）。
+- 尚未接進 `run_stage1_ingestion.py`；未安裝 markitdown 時對應測試自動略過。
+- docx 轉出的標題數通常為 0（診所文件不用 Word 標題樣式），切塊需改看編號或粗體行，不能假設有 `#` 標題。
+
+**手動 OCR 草稿工具（`scripts/ocr_draft.py` + `src/ingestion/ocr_draft.py`）**：醫師指定**單張**圖片，以本機
+Tesseract（chi_tra+eng）輸出草稿供人工對照。固定警語（未經驗證、不得入庫）、含疑似價格字樣會警示、輸出不覆蓋
+既有檔（`--force` 才可）。**絕不寫入資料庫**：兩個檔案不得 import `sqlite3`／`db_writer`／`faq_writer`／`faq_review`／
+`custom_notes`（`tests/test_ocr_draft.py` 以 AST 掃描把關）。理由：20 張隨機抽樣僅 7 張過粗篩門檻，表格型圖片辨識成亂碼，
+Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
+
 ### 2.5 雙向資料同步契約與審計紀錄 (`sync_logs`，2026-09-29 Phase 05 新增)
 為達成與雲端平台（如 `doctor-toolbox.com`、院所 HIS/EHR）之資料同步，本專案提供標準官方 RESTful JSON 契約，徹底摒棄舊系統 `DrtoolboxLocalServer` 採用之 mitmproxy 攔截作法。
 
@@ -261,6 +278,8 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   - 於完全隔離之資料庫複本上，以真實本機推論引擎（`llama-server` + Qwen3.8-27B-UD-Q4_K_XL）完成端到端全流程實跑驗證（測試：`tests/test_real_llm_batch.py`）。
   - 實測單題 FAQ 生成耗時約 32 秒，通過五層醫療合規檢核並寫入 `review_status='pending'`，對外檢索維持零洩漏；臨床推理樹重建耗時約 140 秒，自動建立前像快照並完整保護既有醫師權威註記；`RunLogger` 經白名單審核確認日誌完全無病患個資或模型內容洩漏。
   - 正式 `clinic.db` 全程以唯讀保護並比對 SHA-256 雜湊值（`ad24426cadd84db7521250631efbd0067fb3fb2f040ab257a915b73416022b9e`），驗收確認正式庫零寫入零污染。
+  - `llm_client.local_llm_call` 現參數：`max_tokens=6144`、`reasoning_effort="low"`、預設逾時 420 秒；回傳前對模型輸出套用 `to_traditional`（簡轉繁）。**取捨**：模型偶發的簡體輸出會被悄悄轉成繁體，下游四層驗證的「簡體字」檢查對 LLM 輸出不再觸發也不留痕；其餘四層驗證仍獨立把關。
+  - 日誌新增 `faq_regen_unchanged_ids`／`faq_regen_failed_ids`（列 id，非敏感資訊，不含題目或答案）。
 
 ### 2.12 一般疾病內容生成與審核（Phase 12 新增）
 為使系統能以合規且安全的方式提供常見疾病（如感冒、流感、急性腸胃炎、過敏性鼻炎）之衛教問答，自 Phase 12 起導入一般疾病內容生成、多層合規防禦與審核增強機制：
@@ -269,11 +288,12 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
   - 簽核四項常見疾病（感冒、流感、急性腸胃炎、過敏性鼻炎）共 17 題繁體中文問答種子入庫，所有項目皆通過格式與分類檢驗（程式：`src/batch/topic_sources.py:load_seed_file`；測試：`tests/test_disease_seeds.py::test_seed_file_structure_and_disease_coverage`）。
   - 夜間批次預設採用簽核之種子清單，端到端驗收確認 4 主題與 17 題正確載入（程式：`src/batch/runner.py:BatchConfig`；測試：`tests/test_phase12_acceptance.py::test_01_preflight_seed_topics`）。
 - **用藥劑量與處方建議攔截層 (GC-02)**：
-  - 實作劑量與處方安全規則（DX-1~DX-5），攔截阿拉伯數字劑量、中文數字劑量、處方用藥建議，並保留「請遵照醫囑」「請勿自行增減」之免責豁免（程式：`src/ingestion/medical_safety.py:check_dosage_prescription`；測試：`tests/test_medical_safety.py::test_validate_single_faq_default_disabled`）。
-  - 實測精確度：劑量正例 47/47 攔截、負例 50/50 放行；正式庫既有 40 筆診所 FAQ 回掃 0 誤拒（包含診所 FAQ id 6 之「給予抗生素」描述性敘述）（程式：`src/ingestion/medical_safety.py:check_dosage_prescription`；測試：`tests/test_medical_safety.py::test_backscan_clinic_upload_faqs`）。
+  - 實作劑量與處方安全規則（DX-1~DX-6），攔截阿拉伯數字劑量、中文數字劑量、處方用藥建議，並保留「請遵照醫囑」「請勿自行增減」之免責豁免（程式：`src/ingestion/medical_safety.py:check_dosage_prescription`；測試：`tests/test_medical_safety.py::test_validate_single_faq_default_disabled`）。
+  - **2026-10-06 複審補強（`5714714`）**：① DX-2 涵蓋「只有數量、句中無藥名」的劑量句（「每次吃2顆」「小孩一次吃半顆」「吃3片就夠了」，「吃N片」排除吐司、水果等食物）；② DX-4/DX-5 的否定豁免改為**否定詞必須緊鄰給藥動詞**（`請勿自行服用…` 豁免，`請勿擔心可吃止痛藥` 不豁免）；③ 詞庫補糖漿、栓劑、噴劑、針劑、口服液、止瀉劑、退燒貼／針與 acetaminophen、tylenol 等英文學名。**詞庫為封閉式，未列名的藥與劑型仍可能漏攔，最終仰賴醫師審核。**
+  - 實測精確度（封閉語料，不代表泛化能力；複審另以 50 句獨立正例實測曾漏 20 句，補強後以獨立新語料測試）：劑量正例 47/47 攔截、負例 50/50 放行；正式庫既有 40 筆診所 FAQ 回掃 0 誤拒（包含診所 FAQ id 6 之「給予抗生素」描述性敘述）（程式：`src/ingestion/medical_safety.py:check_dosage_prescription`；測試：`tests/test_medical_safety.py::test_backscan_clinic_upload_faqs`）。
   - 批次生成管線全面啟用劑量攔截，違規項目分類為 `dosage_prescription` 拒絕代碼（程式：`src/batch/faq_generator.py:generate_topic_faqs`；測試：`tests/test_medical_safety.py::test_classify_dosage_prescription_code`）。
 - **就醫警訊強制檢驗與免責聲明欄位 (GC-03)**：
-  - General 類別問答之 answer 強制要求具體症狀或數值條件之就醫警訊收尾句，實測正例 15/15 通過、負例 17/17 攔截；單純「若症狀加重請回診」單獨出現視為不合規（程式：`src/ingestion/medical_safety.py:has_doctor_warning`；測試：`tests/test_medical_safety.py::test_classify_missing_doctor_warning_code`）。
+  - General 類別問答之 answer 強制要求具體症狀或數值條件之就醫警訊收尾句，實測正例 15/15 通過、負例 17/17 攔截；單純「若症狀加重請回診」單獨出現視為不合規。**複審補強**：勸人別就醫的反向句（「胸痛時不要去醫院」「無需前往醫院」）不算警訊；條列式「請儘速就醫：1. 高燒超過3天 2. 呼吸困難」會併入前一行判斷（LLM 回答「何時就醫」最常見的格式）。已知寬鬆：「出現高燒時應就醫」（單獨一個危險症狀即算具體條件）視為合格（程式：`src/ingestion/medical_safety.py:has_doctor_warning`；測試：`tests/test_medical_safety.py::test_classify_missing_doctor_warning_code`）。
   - 批次生成針對 general 主題注入第 9 條 Prompt 就醫警訊收尾規則，違規者以 `missing_doctor_warning` 剔除（程式：`src/batch/faq_generator.py:build_seed_faq_prompt`；測試：`tests/test_medical_safety.py::test_prompt_build_seed_faq_prompt_rules`）。
   - 雙向資料同步匯入（`/api/v1/sync/import`）對 general FAQ 實施前置合規檢核，劑量違規或缺警訊者以 HTTP 400 整批原子性阻斷；special 類別維持豁免（程式：`src/api/routes/sync.py:import_sync_data`；測試：`tests/test_sync_general_validation.py::test_sync_import_general_faq_dosage_blocked_and_atomic`）。
   - 自然語言查詢回應結構純加法擴充 `disclaimer: Optional[str] = None` 欄位；當 `data_level == 'general'` 時自動附帶法定醫療免責宣告文字，診所層級為 null（程式：`src/query/router.py:handle_query`；測試：`tests/test_query_disclaimer_field.py::test_query_response_disclaimer_general_shortcut`）。
@@ -285,7 +305,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **被駁回題目手動標記重生成 (DEBT-03)**：
   - 唯一標記函式 `mark_for_regeneration` 僅允許標記 `rejected` 狀態之 `llm_generated` 項目（程式：`src/pageindex/faq_review.py:mark_for_regeneration`；測試：`tests/test_faq_regen.py::test_mark_for_regeneration_restrictions`）。
   - 批次生成 `existing_questions` 支援 `exclude_regen_marked=True`，優先處理被標記之主題（程式：`src/batch/faq_generator.py:existing_questions`；測試：`tests/test_faq_regen.py::test_existing_questions_exclude_regen_marked`）。
-  - CLI `mark-regen` 子命令提供醫師標記入口，未帶 `--allow-prod-db` 於連線前以 code 2 阻斷正式庫操作（程式：`scripts/review_faq.py:main`；測試：`tests/test_review_faq_cli.py::test_cli_mark_regen_subcommand`）。
+  - CLI `mark-regen` 子命令提供醫師標記入口，未帶 `--allow-prod-db` 於連線前以 code 2 阻斷正式庫操作；新增 `--seed`（預設 `data/batch/faq_seeds.json`），**題目不在人寫種子清單內者回報 `not_in_seed` 並拒絕標記**（夜間批次只重生成種子內題目，種子外的旗標會永遠殘留）；種子檔載入失敗時僅警告並略過此檢查。`list` 新增「重生」欄顯示「待重生」（程式：`scripts/review_faq.py:main`；測試：`tests/test_review_faq_cli.py::test_cli_mark_regen_subcommand`）。
   - 端到端重生成生命週期：標記重生成後新答案以 `pending` 入庫且版號遞增；若模型回傳相同答案則清除重生成旗標並維持 `rejected`，避免無限生成（程式：`src/batch/runner.py:run_batch`；測試：`tests/test_phase12_acceptance.py::test_04_regeneration_lifecycle_debt03`）。
 - **端到端驗收保證**：
   - 17 題正式種子批次生成後預設 pending 隱蔽；醫師 CLI 核准後自然語言與一般諮詢皆正確命中；正式庫 SHA-256 全程未變（程式：`tests/test_phase12_acceptance.py`；測試：`tests/test_phase12_acceptance.py::test_02_e2e_generation_approval_and_consultation`）。
@@ -306,7 +326,10 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 - **病患個資去識別化與二次防禦 (`src/soap/deid.py`)**：
   - 身分證字號遮蔽（支援台灣身分證驗證與掩碼）、行動電話（09xx-xxx-xxx）、市話、病患姓名標籤遮蔽為 `[已遮蔽]`。
   - 價格數字全面套用 `deep_mask_prices()` 遮蔽為 `[請致電診所確認]`，杜絕未核定金額寫入。
-  - `patient_token` 衍生：未提供 token 且有外部病患識別時，以 HMAC-SHA256 結合伺服器金鑰與診所代碼生成偽名化 token，防範外部病患代碼關聯。
+  - `patient_token` 衍生：未提供 token 且有外部病患識別時，以 HMAC-SHA256 結合環境變數 `CLINICBRAIN_DEID_KEY`（退回 `CLINICBRAIN_ADMIN_API_KEY`）與診所代碼生成偽名化 token；**程式碼內不得有預設金鑰**（身分證搜尋空間小，公開 salt 可被字典攻擊還原），未設定金鑰時帶 `patient_id` 的推播回 503（Fail-Closed）。
+  - 遮蔽正則不得使用 `\b`（Unicode 下中文字視為 `\w`，「身分證A123456789」會漏遮蔽），改用 `(?<![A-Za-z0-9])`／`(?<!\d)` 前後斷言。
+  - 外部傳入的 `patient_token`／`external_id` 須為安全字元集且不得形似身分證或電話，`tags` 一併去識別化。
+  - **已知限制**：自由文本中沒有「姓名／病患：」等標籤的人名無法可靠偵測，不會被遮蔽；推播來源應在上游去識別化，本層僅為二次防線。
 - **單一權威寫入函式 (`src/soap/soap_writer.py:upsert_soap_records`)**：
   - 以 `(clinic_id, external_id)` 為唯一約束進行冪等 UPSERT；內容未變則安全跳過，更新時自動更新 `updated_at`。
 - **醫師專屬 FTS 檢索與嚴格權限隔離 (`src/api/routes/soap.py`)**：
@@ -357,7 +380,9 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯
 * `src/pageindex/faq_conflicts.py`：相近診所問答衝突檢索模組（支援 visible_faq_sql 與唯讀模式）
 * `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`）
-  * `src/ingestion/medical_safety.py`：醫療合規安全驗證器（劑量/處方建議攔截 DX-1~5、就醫警訊收尾句檢驗）
+  * `src/ingestion/medical_safety.py`：醫療合規安全驗證器（劑量/處方建議攔截 DX-1~6、就醫警訊收尾句檢驗）
+  * `src/ingestion/markdown_convert.py`：markitdown 檔案轉 Markdown 前處理器（僅本機、無外掛、無外部 LLM、濾除內嵌圖片、檔頭檢查）
+  * `src/ingestion/ocr_draft.py`：手動單張圖片 OCR 草稿模組（本機 Tesseract，絕不入庫）
 * `data/batch/faq_seeds.json`：夜間批次 FAQ 與樹主題繁體中文種子清單（含一般疾病種子與標籤）
 * `scripts/seed_database.py`：藥品/服務項目 CSV 匯入腳本，並呼叫 `seed_clinic_info`/`seed_sample_notes`
 * `scripts/migrate_cache_stats.py`：`cache_stats` 資料表結構遷移腳本
@@ -366,6 +391,7 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具
 * `scripts/review_faq.py`：醫師審核命令列互動工具（支援 list --topic、show 來源與相近診所 FAQ 檢視、approve、reject、reset 與 mark-regen 重生成標記）
 * `scripts/mark_tree_regen.py`：臨床推理樹待重建手動標記工具
+* `scripts/ocr_draft.py`：手動 OCR 草稿 CLI（單張圖片、固定警語、預設印到標準輸出）
 * `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
 * `scripts/run_api_server.py`：FastAPI 服務啟動入口腳本（支援 CLI 參數）
 * `clinicbrain-api.service`：API 服務 systemd 配置範本
@@ -385,6 +411,10 @@ slug，可為 NULL）、`question`/`answer`、`category`（`'special'`/`'general
 * `tests/test_soap_writer.py`：SOAP 紀錄權威寫入與 FTS5 觸發器同步驗證測試
 * `tests/test_soap_deid_parser.py`：SOAP S/O/A/P 切分、一般醫學特徵擷取與去識別化測試
 * `tests/test_soap_api.py`：SOAP API 推播接收、醫師專屬檢索與嚴格權限隔離端到端測試
+* `tests/test_soap_hardening.py`：SOAP 去識別化與 API 防護補強測試（中文緊鄰遮蔽、HMAC 金鑰 Fail-Closed、外部識別欄位夾帶個資、錯誤不洩漏、LIKE 跳脫）
+* `tests/test_regen_observability.py`：DEBT-03 重生成可觀測性測試（`mark-regen --seed`、`list` 重生欄、settle 回報列 id）
+* `tests/test_markdown_convert.py`：markitdown 轉換前處理器測試（選用依賴，未安裝時略過）
+* `tests/test_ocr_draft.py`：手動 OCR 草稿工具測試（含「不得 import 資料庫模組」AST 把關）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
