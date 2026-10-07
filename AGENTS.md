@@ -338,6 +338,35 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **資料庫遷移單一來源 (`scripts/migrate_soap_schema.py`)**：
   - 從 `src/db/clinic_schema.sql` 動態解析 `soap_records` 表、`soap_records_fts` trigram 虛擬表與 3 個同步觸發器 DDL，支援 `--confirm-prod-backup` 與 `--dry-run`。
 
+### 2.14 臨床 SOAP 衛教提煉與審核流（Phase 15 新增）
+為將去識別化之 SOAP 臨床紀錄轉化為合規安全之衛教問答，並提供醫師權威簽核流程，自 Phase 15 起導入臨床衛教提煉與草稿審核架構：
+- **衛教草稿提煉 (`src/soap/distiller.py:distill_soap_records`)**：
+  - 依疾病（`condition`）分組聚合相同診所 SOAP 紀錄之居家照護重點，只採納出現次數達門檻（`min_occurrences`，預設 2）之照護敘述。
+  - 生成標準化問答對（問題為 `【照護指引】罹患{condition}應注意哪些居家照護事項？`），強制附加「何時該就醫」警訊與醫療免責宣告。
+  - 提煉產物通過 `deep_mask_prices()` 價格清洗、禁詞攔截與 DX 劑量/處方建議檢驗，違規項目安全跳過。
+  - `metadata` 保存溯源資訊（`record_count` 參考病歷筆數、標的疾病、診所代碼），不得含病患個資。
+- **草稿暫存與權威寫入 (`src/pageindex/faq_writer.py`)**：
+  - 擴充 `source_type='soap_distilled'`，寫入 `faq_cache` 時強制設定 `review_status='pending'`。
+  - **寫入路徑絕不自動 ALTER**：`upsert_faqs` 不會替資料庫新增 `metadata` 欄位（任何來源皆然，含 `/api/v1/sync/import`），避免未經確認變更正式庫。寫入 `soap_distilled` 時若缺 `metadata` 欄位（或缺審核欄位），一律拋 `RuntimeError`（Fail-Closed）。
+  - **遷移單一來源**：`faq_cache.metadata` 欄位定義在 `src/db/clinic_schema.sql`，由 `scripts/migrate_faq_metadata.py` 擷取並冪等套用（沿用 `migrate_faq_review_status.py` 的 `extract_column_definition`，欄位定義須單行、不含 `--`）。正式庫遷移須先手動備份：
+    ```bash
+    cp clinic.db clinic.db.bak-$(date +%Y%m%d)
+    python3 scripts/migrate_faq_metadata.py --confirm-prod-backup
+    ```
+    未帶 `--confirm-prod-backup` 於連線前以結束碼 2 拒絕；`--dry-run` 僅預覽 DDL。測試複本由 `tests/conftest.py` 顯式套用此遷移。
+  - **重跑冪等**：內容（問題/答案/類別/主題）未變時，只刷新 `metadata`，不遞增 `content_version`、不重設審核狀態（已核准草稿不會被重跑打回 `pending`）；內容實質變更才遞增版號並回到 `pending`。
+  - 在未獲醫師審核核准前，`visible_faq_sql` 確保待審（`pending`）與已駁回（`rejected`）草稿對公開查詢端點（`/api/v1/query` 與 `/api/v1/general/query`）、快取短路與同步匯出絕對隱蔽不可見（Fail-Closed 隔離）。條件為 `source_type IS NULL OR source_type NOT IN ('llm_generated','soap_distilled') OR review_status='approved'`；**必須保留 `IS NULL` 分支**——SQL 的 `NOT IN` 遇 NULL 結果為 unknown，會讓 `source_type` 為 NULL 的既有列誤被隱藏。
+- **醫師審核工具擴充 (`scripts/review_faq.py` 與 `src/pageindex/faq_review.py`)**：
+  - `list` 命令支援 `--source soap_distilled` 篩選專用提煉草稿。
+  - `show` 命令自動解析 `metadata` 並顯示 `[臨床病歷溯源]` 區塊（參考病歷數與標的疾病）。
+  - `approve` / `reject` 命令支援核准與駁回，核准時自動重跑醫療合規檢核，核准後始開放對外短路命中。`set_review_status` 對非 `llm_generated`／`soap_distilled` 之列回報跳過碼 `not_reviewable`（原 `not_llm_generated`）；`mark_for_regeneration` 仍僅限 `llm_generated`（`soap_distilled` 無重生成流程）。
+- **批次執行 CLI 腳本 (`scripts/distill_soap_faqs.py`)**：
+  - 提供 `--clinic-id`、`--min-occurrences`、`--dry-run` 與 `--confirm-prod-backup`。
+  - 對正式庫操作若未帶 `--dry-run` 且未帶 `--confirm-prod-backup` 於連線前回退結束碼 2。
+  - `--dry-run` 以唯讀連線（SQLite `mode=ro` URI）開啟資料庫，零資料庫變更，且不要求資料庫已遷移 `metadata` 欄位。
+  - 實際寫入時若資料庫尚未遷移（缺 `metadata` 或審核欄位），印出中止訊息並以結束碼 2 退出，不會自動補欄位。
+- **測試慣例**：`tests/test_faq_review_soap.py` 含「寫入路徑不自動 ALTER」與「重跑不重設已核准」回歸測試；`tests/test_faq_review_gate.py::test_visible_faq_sql` 把關 `IS NULL` 分支。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -388,6 +417,9 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/migrate_cache_stats.py`：`cache_stats` 資料表結構遷移腳本
 * `scripts/migrate_faq_review_status.py`：`faq_cache.review_status` 審核欄位交易性遷移腳本
 * `scripts/migrate_soap_schema.py`：`soap_records` 與 FTS5 觸發器單一來源 DDL 遷移腳本
+* `scripts/migrate_faq_metadata.py`：`faq_cache.metadata` 欄位單一來源遷移腳本（`--confirm-prod-backup`、`--dry-run`）
+* `scripts/distill_soap_faqs.py`：SOAP 衛教提煉批次 CLI（dry-run 唯讀）
+* `src/soap/distiller.py`：SOAP 衛教提煉與草稿生成模組
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具
 * `scripts/review_faq.py`：醫師審核命令列互動工具（支援 list --topic、show 來源與相近診所 FAQ 檢視、approve、reject、reset 與 mark-regen 重生成標記）
 * `scripts/mark_tree_regen.py`：臨床推理樹待重建手動標記工具

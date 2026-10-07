@@ -36,11 +36,19 @@ def has_review_status(conn: sqlite3.Connection) -> bool:
     return ("review_status" in cols) and ("reviewed_at" in cols)
 
 
+def has_metadata_column(conn: sqlite3.Connection) -> bool:
+    """檢查 faq_cache 是否有 metadata 欄位。"""
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(faq_cache)")
+    cols = {row[1] for row in cur.fetchall()}
+    return "metadata" in cols
+
+
 def visible_faq_sql(conn: sqlite3.Connection) -> str:
     """產生供 faq_cache 查詢 WHERE 子句共用的可見性 SQL 片段。"""
     if has_review_status(conn):
-        return "(source_type IS NOT 'llm_generated' OR review_status = 'approved')"
-    return "(source_type IS NOT 'llm_generated')"
+        return "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled') OR review_status = 'approved')"
+    return "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled'))"
 
 
 def count_by_status(conn: sqlite3.Connection) -> dict[str, int]:
@@ -59,23 +67,42 @@ def list_faqs(
     offset: int = 0,
     *,
     topic_key: Optional[str] = None,
+    source_type: Optional[str] = None,
 ) -> list[dict[str, Any]]:
-    """列出指定審核狀態的 LLM 生成 FAQ 列表（依 id 升冪排列）。可選 topic_key 篩選。"""
+    """列出指定審核狀態的 FAQ 列表（依 id 升冪排列）。可選 topic_key, source_type 篩選。"""
     if not has_review_status(conn):
         return []
     cur = conn.cursor()
-    where_clauses = ["source_type = 'llm_generated'", "review_status = ?"]
+    where_clauses = ["review_status = ?"]
     params: list[Any] = [status]
+    if source_type is not None:
+        where_clauses.append("source_type = ?")
+        params.append(source_type)
+    else:
+        where_clauses.append("source_type IN ('llm_generated', 'soap_distilled')")
+
     if topic_key is not None:
         where_clauses.append("topic_key = ?")
         params.append(topic_key)
+
     where_sql = " AND ".join(where_clauses)
     params.extend([limit, offset])
+
+    has_meta = has_metadata_column(conn)
+    select_meta = ", metadata" if has_meta else ""
+    columns = [
+        "id", "clinic_id", "topic_key", "question", "answer", "category",
+        "source_type", "content_version", "needs_regeneration",
+        "review_status", "reviewed_at", "created_at", "updated_at",
+    ]
+    if has_meta:
+        columns.append("metadata")
+
     cur.execute(
         f"""
         SELECT id, clinic_id, topic_key, question, answer, category,
                source_type, content_version, needs_regeneration,
-               review_status, reviewed_at, created_at, updated_at
+               review_status, reviewed_at, created_at, updated_at{select_meta}
         FROM faq_cache
         WHERE {where_sql}
         ORDER BY id ASC
@@ -83,11 +110,6 @@ def list_faqs(
         """,
         tuple(params),
     )
-    columns = [
-        "id", "clinic_id", "topic_key", "question", "answer", "category",
-        "source_type", "content_version", "needs_regeneration",
-        "review_status", "reviewed_at", "created_at", "updated_at",
-    ]
     return [dict(zip(columns, row)) for row in cur.fetchall()]
 
 
@@ -111,39 +133,46 @@ def validation_report(faq: dict[str, Any]) -> dict[str, Any]:
 def get_faq(conn: sqlite3.Connection, faq_id: int) -> Optional[dict[str, Any]]:
     """取得指定 ID 之 FAQ 詳細資訊。"""
     has_review = has_review_status(conn)
+    has_meta = has_metadata_column(conn)
     cur = conn.cursor()
+    select_meta = ", metadata" if has_meta else ""
+
     if has_review:
-        cur.execute(
-            """
-            SELECT id, clinic_id, topic_key, question, answer, category,
-                   source_type, content_version, needs_regeneration,
-                   review_status, reviewed_at, created_at, updated_at
-            FROM faq_cache
-            WHERE id = ?
-            """,
-            (faq_id,),
-        )
         columns = [
             "id", "clinic_id", "topic_key", "question", "answer", "category",
             "source_type", "content_version", "needs_regeneration",
             "review_status", "reviewed_at", "created_at", "updated_at",
         ]
-    else:
+        if has_meta:
+            columns.append("metadata")
         cur.execute(
-            """
+            f"""
             SELECT id, clinic_id, topic_key, question, answer, category,
                    source_type, content_version, needs_regeneration,
-                   created_at, updated_at
+                   review_status, reviewed_at, created_at, updated_at{select_meta}
             FROM faq_cache
             WHERE id = ?
             """,
             (faq_id,),
         )
+    else:
         columns = [
             "id", "clinic_id", "topic_key", "question", "answer", "category",
             "source_type", "content_version", "needs_regeneration",
             "created_at", "updated_at",
         ]
+        if has_meta:
+            columns.append("metadata")
+        cur.execute(
+            f"""
+            SELECT id, clinic_id, topic_key, question, answer, category,
+                   source_type, content_version, needs_regeneration,
+                   created_at, updated_at{select_meta}
+            FROM faq_cache
+            WHERE id = ?
+            """,
+            (faq_id,),
+        )
     row = cur.fetchone()
     return dict(zip(columns, row)) if row else None
 
@@ -316,8 +345,8 @@ def set_review_status(
             continue
 
         _, src_type, old_status, question, answer, _, category = row
-        if src_type != "llm_generated":
-            skipped.append((faq_id, "not_llm_generated"))
+        if src_type not in ("llm_generated", "soap_distilled"):
+            skipped.append((faq_id, "not_reviewable"))
             continue
 
         if old_status == new_status:

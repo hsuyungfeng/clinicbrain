@@ -66,6 +66,12 @@ def _ensure_soap_records(db_path: Path):
     temp_conn.close()
 
 
+def _ensure_faq_metadata(db_path: Path):
+    """確保測試複本具備 faq_cache.metadata 欄位（寫入路徑不會自動 ALTER）。"""
+    from scripts.migrate_faq_metadata import apply_metadata_migration
+    apply_metadata_migration(db_path)
+
+
 @pytest.fixture(scope="session")
 def session_db_path(tmp_path_factory) -> Path:
     """Session 層級的資料庫複本（供唯讀查詢與檢索測試使用）。"""
@@ -78,6 +84,7 @@ def session_db_path(tmp_path_factory) -> Path:
     _ensure_faq_cache(target_path)
     _reset_cache_stats(target_path)
     _ensure_soap_records(target_path)
+    _ensure_faq_metadata(target_path)
     return target_path
 
 
@@ -100,6 +107,7 @@ def isolated_db_path(tmp_path: Path) -> Path:
     _ensure_faq_cache(target_path)
     _reset_cache_stats(target_path)
     _ensure_soap_records(target_path)
+    _ensure_faq_metadata(target_path)
     return target_path
 
 

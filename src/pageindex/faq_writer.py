@@ -23,7 +23,15 @@ except ImportError:
 
 CONTENT_FIELDS = ("question", "answer", "category", "topic_key")
 VALID_CATEGORIES = ("special", "general")
-VALID_SOURCE_TYPES = ("manual", "llm_generated", "clinic_upload")
+VALID_SOURCE_TYPES = ("manual", "llm_generated", "clinic_upload", "soap_distilled")
+
+
+def has_metadata_column(conn: sqlite3.Connection) -> bool:
+    """檢查 faq_cache 資料表是否已具備 metadata 欄位。"""
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(faq_cache)")
+    cols = {row[1] for row in cur.fetchall()}
+    return "metadata" in cols
 
 
 def upsert_faqs(
@@ -39,12 +47,13 @@ def upsert_faqs(
         - category: 'special' | 'general'（必填）
         - clinic_id: Optional[str]（category='special' 時必填非空；general 時可為 None）
         - topic_key: Optional[str]（對應之療程/主題 slug，可為 None）
-    source_type: 'manual' | 'llm_generated' | 'clinic_upload'
+        - metadata: Optional[str]（JSON 字串，可選）
+    source_type: 'manual' | 'llm_generated' | 'clinic_upload' | 'soap_distilled'
 
-    審核狀態規範（Phase 09）：
-        - source_type='llm_generated' 寫入時 review_status 預設為 'pending'
+    審核狀態規範（Phase 09 & Phase 15）：
+        - source_type in ('llm_generated', 'soap_distilled') 寫入時 review_status 預設為 'pending'
         - 'manual' 與 'clinic_upload' 寫入時 review_status 預設為 'approved'
-        - 若資料庫尚未遷移審核欄位且欲寫入 'llm_generated'，直接拋出 RuntimeError（Fail-Closed 原則）
+        - 若資料庫尚未遷移審核欄位且欲寫入 'llm_generated' / 'soap_distilled'，直接拋出 RuntimeError（Fail-Closed 原則）
 
     回傳: (inserted, updated, unchanged)
     """
@@ -54,12 +63,19 @@ def upsert_faqs(
         )
 
     has_review = has_review_status(conn)
-    if source_type == "llm_generated" and not has_review:
+    if source_type in ("llm_generated", "soap_distilled") and not has_review:
         raise RuntimeError(
-            "資料庫尚未建立審核欄位，禁止寫入 llm_generated 內容！請先執行 scripts/migrate_faq_review_status.py 遷移腳本。"
+            "資料庫尚未建立審核欄位，禁止寫入待審核內容！請先執行 scripts/migrate_faq_review_status.py 遷移腳本。"
         )
 
-    target_review_status = "pending" if source_type == "llm_generated" else "approved"
+    # 不在寫入路徑自動 ALTER（避免未經確認變更正式庫）；遷移請用 scripts/migrate_faq_metadata.py
+    has_meta = has_metadata_column(conn)
+    if source_type == "soap_distilled" and not has_meta:
+        raise RuntimeError(
+            "資料庫尚未建立 metadata 欄位，禁止寫入 soap_distilled 內容！請先執行 scripts/migrate_faq_metadata.py 遷移腳本。"
+        )
+
+    target_review_status = "pending" if source_type in ("llm_generated", "soap_distilled") else "approved"
 
     cursor = conn.cursor()
     inserted = 0
@@ -92,6 +108,7 @@ def upsert_faqs(
             clinic_id = str(clinic_id).strip() if clinic_id else None
 
         topic_key = str(topic_key).strip() if topic_key else None
+        metadata = faq.get("metadata")
 
         # 以 (clinic_id, topic_key, question) 進行比對
         cursor.execute(
@@ -105,7 +122,26 @@ def upsert_faqs(
         existing = cursor.fetchone()
 
         if existing is None:
-            if has_review:
+            if has_review and has_meta:
+                cursor.execute(
+                    """
+                    INSERT INTO faq_cache (
+                        clinic_id, topic_key, question, answer, category,
+                        source_type, content_version, needs_regeneration, review_status, metadata
+                    ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
+                    """,
+                    (
+                        clinic_id,
+                        topic_key,
+                        question,
+                        answer,
+                        category,
+                        source_type,
+                        target_review_status,
+                        metadata,
+                    ),
+                )
+            elif has_review:
                 cursor.execute(
                     """
                     INSERT INTO faq_cache (
@@ -147,10 +183,41 @@ def upsert_faqs(
             new_content = (question, answer, category, topic_key)
 
             if existing_content == new_content:
+                # 內容未變：不遞增版號、不重設審核狀態（避免已核准草稿被重跑打回 pending）
+                if metadata and has_meta:
+                    cursor.execute(
+                        "UPDATE faq_cache SET metadata = ? WHERE id = ? AND metadata IS NOT ?",
+                        (metadata, existing_id, metadata),
+                    )
                 unchanged += 1
                 continue
 
-            if has_review:
+            if has_review and has_meta:
+                cursor.execute(
+                    """
+                    UPDATE faq_cache
+                    SET answer = ?,
+                        category = ?,
+                        source_type = ?,
+                        content_version = ?,
+                        needs_regeneration = 0,
+                        review_status = ?,
+                        reviewed_at = NULL,
+                        metadata = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (
+                        answer,
+                        category,
+                        source_type,
+                        existing_version + 1,
+                        target_review_status,
+                        metadata,
+                        existing_id,
+                    ),
+                )
+            elif has_review:
                 cursor.execute(
                     """
                     UPDATE faq_cache

@@ -255,11 +255,12 @@ CREATE TABLE IF NOT EXISTS faq_cache (
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
     category TEXT NOT NULL,   -- 'special' or 'general'
-    source_type TEXT DEFAULT 'manual',  -- 'manual' | 'llm_generated' | 'clinic_upload'
+    source_type TEXT DEFAULT 'manual',  -- 'manual' | 'llm_generated' | 'clinic_upload' | 'soap_distilled'
     content_version INTEGER NOT NULL DEFAULT 1,
     needs_regeneration BOOLEAN NOT NULL DEFAULT 0,
     review_status TEXT NOT NULL DEFAULT 'approved' CHECK (review_status IN ('pending', 'approved', 'rejected')), -- 審核狀態（預設 approved 讓既有/手寫/診所上傳內容零回歸；llm_generated 於寫入時明確指定 pending）
     reviewed_at TIMESTAMP,    -- 審核時間
+    metadata TEXT,            -- 溯源元資料 JSON（soap_distilled 使用：參考病歷筆數、標的疾病；不得含病患個資）
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(clinic_id, topic_key, question)

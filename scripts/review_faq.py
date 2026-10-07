@@ -87,6 +87,12 @@ def main(argv: list[str] | None = None) -> int:
         help="篩選指定主題識別碼 (topic_key)",
     )
     parser_list.add_argument(
+        "--source",
+        choices=["soap_distilled", "llm_generated", "clinic_upload", "manual"],
+        default=None,
+        help="篩選資料來源型態 (source_type)",
+    )
+    parser_list.add_argument(
         "--limit",
         type=int,
         default=50,
@@ -163,14 +169,16 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
 
             if args.subcommand == "list":
-                faqs = list_faqs(conn, status=args.status, limit=args.limit, topic_key=args.topic)
+                faqs = list_faqs(conn, status=args.status, limit=args.limit, topic_key=args.topic, source_type=args.source)
                 counts = count_by_status(conn)
 
                 if not faqs:
                     filter_msg = f"（主題: {args.topic}）" if args.topic else ""
-                    print(f"目前沒有狀態為 '{args.status}' {filter_msg}的 LLM 生成常見問答。")
+                    if args.source:
+                        filter_msg += f"（來源: {args.source}）"
+                    print(f"目前沒有狀態為 '{args.status}' {filter_msg}的常見問答。")
                 else:
-                    print(f"📋 狀態為 '{args.status}' 的 LLM 生成問答清單（共 {len(faqs)} 筆）：")
+                    print(f"📋 狀態為 '{args.status}' 的問答清單（共 {len(faqs)} 筆）：")
                     print("-" * 88)
                     print(f"{'ID':<6} {'類別':<8} {'機構代碼':<12} {'主題/療程':<20} {'來源':<14} {'驗證':<6} {'重生':<6} {'問題摘要'}")
                     print("-" * 88)
@@ -214,6 +222,19 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"內容版本：v{faq.get('content_version', 1)}")
                 print(f"主題識別：{faq.get('topic_key') or '無'}")
                 print(f"審核狀態：{faq.get('review_status', '未定義')}")
+
+                if faq.get("metadata"):
+                    import json
+                    try:
+                        meta = json.loads(faq["metadata"])
+                        print("-" * 60)
+                        print("【臨床病歷溯源】")
+                        print(f"- 來源型態：SOAP 臨床照護摘要提煉 ({meta.get('source', 'soap_distilled')})")
+                        print(f"- 參考病歷筆數：{meta.get('record_count', 0)} 筆")
+                        print(f"- 標的疾病：{meta.get('condition', '未知')}")
+                    except Exception:
+                        pass
+
                 print("-" * 60)
                 print("【驗證結果】")
                 v_rep = validation_report(faq)

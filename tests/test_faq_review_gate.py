@@ -192,7 +192,7 @@ def test_visible_faq_sql():
     conn_old = sqlite3.connect(":memory:")
     conn_old.executescript(OLD_FAQ_MINIMAL_DDL)
     sql_old = visible_faq_sql(conn_old)
-    assert sql_old == "(source_type IS NOT 'llm_generated')"
+    assert sql_old == "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled'))"
 
     # 插入測試資料驗證查詢行為
     conn_old.execute(
@@ -215,7 +215,7 @@ def test_visible_faq_sql():
     conn_new.execute("ALTER TABLE faq_cache ADD COLUMN reviewed_at TIMESTAMP")
 
     sql_new = visible_faq_sql(conn_new)
-    assert sql_new == "(source_type IS NOT 'llm_generated' OR review_status = 'approved')"
+    assert sql_new == "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled') OR review_status = 'approved')"
 
     conn_new.execute(
         """
@@ -321,7 +321,7 @@ def test_set_review_status_edge_cases(isolated_conn):
     res_not_found = set_review_status(isolated_conn, [999999], REVIEW_APPROVED)
     assert res_not_found.skipped == [(999999, "not_found")]
 
-    # 2. clinic_upload 項目不需審核，應回傳 not_llm_generated
+    # 2. clinic_upload 項目不需審核，應回傳 not_reviewable
     cur = isolated_conn.cursor()
     cur.execute(
         """
@@ -333,7 +333,7 @@ def test_set_review_status_edge_cases(isolated_conn):
     isolated_conn.commit()
 
     res_upload = set_review_status(isolated_conn, [upload_id], REVIEW_REJECTED)
-    assert res_upload.skipped == [(upload_id, "not_llm_generated")]
+    assert res_upload.skipped == [(upload_id, "not_reviewable")]
 
     # 3. 非法狀態值拋 ValueError
     with pytest.raises(ValueError):
