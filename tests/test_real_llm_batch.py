@@ -53,7 +53,7 @@ def _get_expected_prod_sha256() -> str:
     if PROD_SHA256_FILE.exists():
         first_line = PROD_SHA256_FILE.read_text(encoding="utf-8").strip()
         return first_line.split()[0]
-    return "ad24426cadd84db7521250631efbd0067fb3fb2f040ab257a915b73416022b9e"
+    return "5fb8328d612916c36f0033fd518688831cbc550c439730ac4c297135ee722101"
 
 
 def _calc_file_sha256(path: Path) -> str:
