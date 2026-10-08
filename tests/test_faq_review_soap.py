@@ -104,6 +104,9 @@ def test_review_writer_never_alters_unmigrated_db(tmp_path):
     _ensure_faq_cache(db)
     conn = sqlite3.connect(str(db))
     try:
+        if has_metadata_column(conn):
+            conn.execute("ALTER TABLE faq_cache DROP COLUMN metadata")
+            conn.commit()
         assert not has_metadata_column(conn)
         faq = {"clinic_id": "3503190424", "topic_key": "care-x", "question": "Q?", "answer": "A", "category": "special", "metadata": "{}"}
         with pytest.raises(RuntimeError):

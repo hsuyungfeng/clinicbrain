@@ -104,6 +104,9 @@ def main(argv: list[str] | None = None) -> int:
         conn = sqlite3.connect(f"file:{target_path.resolve()}?mode=ro", uri=True)
         try:
             res = distill_soap_records(conn, args.clinic_id, args.min_occurrences, dry_run=True)
+            if res.get("warning"):
+                print(f"⚠️ 警告：{res['warning']}", file=sys.stderr)
+                return 2
             print(f"🔍 [Dry-Run 模式] 診所 '{args.clinic_id}' 的 SOAP 衛教提煉預覽結果：")
             print(f"✨ 預計產出 {res['distilled_count']} 筆衛教 FAQ 草稿（標的疾病：{res['conditions']}）。")
             for idx, f in enumerate(res["faqs"]):
@@ -126,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
             res = distill_soap_records(conn, args.clinic_id, args.min_occurrences)
         except RuntimeError as e:
             print(f"❌ 提煉中止：{e}", file=sys.stderr)
+            return 2
+        if res.get("warning"):
+            print(f"⚠️ 提煉中止：{res['warning']}", file=sys.stderr)
             return 2
         print(f"✅ 提煉完成！成功產出 {res['distilled_count']} 筆待審核衛教草稿（標的疾病：{res['conditions']}）。")
         print("提示：提煉草稿預設為 'pending' 狀態，請使用 review_faq 工具進行醫師簽核。")

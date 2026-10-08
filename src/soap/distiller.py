@@ -73,6 +73,15 @@ def distill_soap_records(
     clinic_id = str(clinic_id).strip()
 
     cur = conn.cursor()
+    tables = {r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "soap_records" not in tables:
+        return {
+            "distilled_count": 0,
+            "conditions": [],
+            "faqs": [],
+            "warning": "目標資料庫尚未建立 soap_records 資料表，請先執行 scripts/migrate_soap_schema.py",
+        }
+
     cur.execute(
         """
         SELECT id, subjective, objective, assessment, plan, raw_text
