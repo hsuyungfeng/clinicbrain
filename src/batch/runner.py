@@ -7,7 +7,7 @@
 """
 
 from collections import Counter
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 import sqlite3
 import time
@@ -44,6 +44,10 @@ class BatchConfig:
     dry_run: bool = False
     skip_faq: bool = False
     skip_trees: bool = False
+    enable_soap_distill: bool = True
+    soap_clinic_id: str = "3503190424"
+    soap_min_occurrences: int = 2
+    soap_only: bool = False
     max_faq_topics: int = 5
     max_trees: int = 3
     since_days: int = 14
@@ -57,6 +61,8 @@ class BatchSummary:
     """夜間批次執行結果摘要。"""
 
     status: str = "completed"
+    soap_distilled_count: int = 0
+    soap_conditions: list[str] = field(default_factory=list)
     faq_topics_planned: int = 0
     faq_topics_processed: int = 0
     faq_inserted: int = 0
@@ -96,11 +102,41 @@ def run_batch(
             dry_run=cfg.dry_run,
             skip_faq=cfg.skip_faq,
             skip_trees=cfg.skip_trees,
+            enable_soap_distill=cfg.enable_soap_distill,
+            soap_only=cfg.soap_only,
             max_faq_topics=cfg.max_faq_topics,
             max_trees=cfg.max_trees,
             max_pending=cfg.max_pending,
             time_budget_seconds=cfg.time_budget_seconds,
         )
+
+        # ---------------------------------------------------------------------
+        # 0. SOAP 臨床居家照護衛教提煉階段
+        # ---------------------------------------------------------------------
+        if cfg.enable_soap_distill or cfg.soap_only:
+            try:
+                from src.soap.distiller import distill_soap_records
+                distill_res = distill_soap_records(
+                    conn,
+                    clinic_id=cfg.soap_clinic_id,
+                    min_occurrences=cfg.soap_min_occurrences,
+                    dry_run=cfg.dry_run,
+                )
+                summary.soap_distilled_count = distill_res.get("distilled_count", 0)
+                summary.soap_conditions = distill_res.get("conditions", [])
+                logger.info(
+                    "soap_distill_done",
+                    distilled_count=summary.soap_distilled_count,
+                    conditions=summary.soap_conditions,
+                    dry_run=cfg.dry_run,
+                )
+            except Exception as e:
+                summary.errors += 1
+                logger.error("soap_distill_failed", error_type=type(e).__name__)
+
+        if cfg.soap_only:
+            logger.info("soap_only_complete", **summary.as_dict())
+            return summary
 
         seed = load_seed_file(cfg.seed_path)
 

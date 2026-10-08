@@ -104,6 +104,28 @@ def create_parser() -> argparse.ArgumentParser:
         help="略過臨床推理樹重建階段",
     )
     parser.add_argument(
+        "--skip-soap",
+        action="store_true",
+        help="略過 SOAP 臨床居家照護提煉階段",
+    )
+    parser.add_argument(
+        "--soap-only",
+        action="store_true",
+        help="僅執行 SOAP 臨床居家照護提煉階段",
+    )
+    parser.add_argument(
+        "--soap-clinic-id",
+        type=str,
+        default="3503190424",
+        help="SOAP 提煉之診所機構代碼",
+    )
+    parser.add_argument(
+        "--soap-min-occurrences",
+        type=_positive_int,
+        default=2,
+        help="SOAP 居家照護出現頻率門檻",
+    )
+    parser.add_argument(
         "--max-faq-topics",
         type=_positive_int,
         default=5,
@@ -231,6 +253,10 @@ def main(
             dry_run=args.dry_run,
             skip_faq=args.skip_faq,
             skip_trees=args.skip_trees,
+            enable_soap_distill=not args.skip_soap,
+            soap_clinic_id=args.soap_clinic_id,
+            soap_min_occurrences=args.soap_min_occurrences,
+            soap_only=args.soap_only,
             max_faq_topics=args.max_faq_topics,
             max_trees=args.max_trees,
             since_days=args.since_days,
@@ -249,6 +275,7 @@ def main(
 
         print("\n==================== 批次執行摘要 ====================")
         print(f"執行狀態：{summary.status}")
+        print(f"SOAP 提煉：產出 {summary.soap_distilled_count} 筆衛教草稿 (標的疾病: {', '.join(summary.soap_conditions) or '無'})")
         print(f"FAQ 主題：規劃 {summary.faq_topics_planned} 個，處理 {summary.faq_topics_processed} 個")
         print(f"FAQ 筆數：新增 {summary.faq_inserted} 筆，剔除 {summary.faq_rejected} 筆，略過既有 {summary.faq_skipped_existing} 筆")
         print(f"推理樹：規劃 {summary.trees_planned} 棵，重建 {summary.trees_rebuilt} 棵，未變 {summary.trees_unchanged} 棵，略過 {summary.trees_skipped} 棵")

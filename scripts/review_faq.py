@@ -12,6 +12,7 @@ FAQ 醫師審核工具 CLI（Phase 09 BATCH-01 Task 2 / Phase 12 GC-04, DEBT-03�
 """
 
 import argparse
+import json
 from pathlib import Path
 import sqlite3
 import sys
@@ -28,6 +29,7 @@ from src.pageindex.faq_review import (
     REVIEW_REJECTED,
     count_by_status,
     get_faq,
+    has_metadata_column,
     has_review_status,
     list_faqs,
     mark_for_regeneration,
@@ -124,6 +126,9 @@ def main(argv: list[str] | None = None) -> int:
         help="人寫種子清單路徑；不在種子內的題目夜間批次不會重生成，故拒絕標記（預設 data/batch/faq_seeds.json）",
     )
 
+    # pending-summary 子命令
+    subparsers.add_parser("pending-summary", help="晨間醫師審核摘要檢視")
+
     args = parser.parse_args(argv)
 
     if not args.subcommand:
@@ -155,8 +160,8 @@ def main(argv: list[str] | None = None) -> int:
         print("=" * 70, file=sys.stderr)
         return 2
 
-    # 3. 唯讀命令：list 與 show
-    if args.subcommand in ("list", "show"):
+    # 3. 唯讀命令：list, show, pending-summary
+    if args.subcommand in ("list", "show", "pending-summary"):
         conn_str = f"file:{target_path.resolve()}?mode=ro"
         conn = sqlite3.connect(conn_str, uri=True)
         try:
@@ -168,7 +173,108 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 2
 
-            if args.subcommand == "list":
+            if args.subcommand == "pending-summary":
+                cur = conn.cursor()
+                has_meta = has_metadata_column(conn)
+                meta_select = ", metadata" if has_meta else ""
+                cur.execute(
+                    f"""
+                    SELECT id, clinic_id, topic_key, question, category, source_type, created_at{meta_select}
+                    FROM faq_cache
+                    WHERE review_status = 'pending'
+                    ORDER BY id ASC
+                    """
+                )
+                rows = cur.fetchall()
+                total_pending = len(rows)
+
+                print("==================== 晨間醫師簽核通報摘要 ====================")
+                print(f"待簽核草稿總筆數：{total_pending} 筆\n")
+
+                if total_pending == 0:
+                    print("目前無任何待簽核衛教草稿。")
+                    print("==============================================================")
+                    return 0
+
+                soap_items = []
+                llm_items = []
+                other_items = []
+
+                for r in rows:
+                    f_id, c_id, top_key, q, cat, src_type, created = r[:7]
+                    meta_raw = r[7] if has_meta and len(r) > 7 else None
+                    meta = {}
+                    if meta_raw:
+                        if isinstance(meta_raw, dict):
+                            meta = meta_raw
+                        elif isinstance(meta_raw, str):
+                            try:
+                                meta = json.loads(meta_raw)
+                            except Exception:
+                                meta = {}
+
+                    item_info = {
+                        "id": f_id,
+                        "clinic_id": c_id,
+                        "topic_key": top_key,
+                        "question": q,
+                        "category": cat,
+                        "source_type": src_type,
+                        "created_at": created,
+                        "metadata": meta,
+                    }
+
+                    if src_type == "soap_distilled":
+                        soap_items.append(item_info)
+                    elif src_type == "llm_generated":
+                        llm_items.append(item_info)
+                    else:
+                        other_items.append(item_info)
+
+                if soap_items:
+                    print(f"【SOAP 臨床病歷提煉衛教草稿】共 {len(soap_items)} 筆：")
+                    by_cond = {}
+                    for item in soap_items:
+                        cond = (item["metadata"].get("condition") or item["topic_key"] or "未分類").replace("care-", "")
+                        rec_cnt = item["metadata"].get("record_count", 0)
+                        if cond not in by_cond:
+                            by_cond[cond] = []
+                        by_cond[cond].append((item, rec_cnt))
+
+                    for cond, items in by_cond.items():
+                        print(f"  • 標的疾病：{cond}")
+                        for item, rec_cnt in items:
+                            print(f"    - [ID {item['id']}] {item['question']} (參考病歷: {rec_cnt} 筆)")
+                    print()
+
+                if llm_items:
+                    print(f"【LLM 預生成問答草稿】共 {len(llm_items)} 筆：")
+                    for item in llm_items:
+                        print(f"  - [ID {item['id']}] {item['question']} (主題: {item['topic_key']})")
+                    print()
+
+                if other_items:
+                    print(f"【其他待審草稿】共 {len(other_items)} 筆：")
+                    for item in other_items:
+                        print(f"  - [ID {item['id']}] {item['question']} (來源: {item['source_type']})")
+                    print()
+
+                pending_ids = [str(r[0]) for r in rows]
+                id_list_str = " ".join(pending_ids[:10])
+                if len(pending_ids) > 10:
+                    id_list_str += " ..."
+
+                print("【簽核指引】")
+                print("  • 檢視單筆詳細資訊與醫療驗證：")
+                print("    python3 scripts/review_faq.py show <ID>")
+                print("  • 審核核准指定項目：")
+                print(f"    python3 scripts/review_faq.py approve {id_list_str}")
+                print("  • 駁回指定項目：")
+                print(f"    python3 scripts/review_faq.py reject {id_list_str}")
+                print("==============================================================")
+                return 0
+
+            elif args.subcommand == "list":
                 faqs = list_faqs(conn, status=args.status, limit=args.limit, topic_key=args.topic, source_type=args.source)
                 counts = count_by_status(conn)
 
@@ -224,7 +330,6 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"審核狀態：{faq.get('review_status', '未定義')}")
 
                 if faq.get("metadata"):
-                    import json
                     try:
                         meta = json.loads(faq["metadata"])
                         print("-" * 60)

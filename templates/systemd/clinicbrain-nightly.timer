@@ -1,0 +1,11 @@
+[Unit]
+Description=clinicbrain Nightly Batch 03:00 AM Timer Schedule
+Documentation=https://github.com/hsuyungfeng/clinicbrain
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=clinicbrain-nightly.service
+
+[Install]
+WantedBy=timers.target

@@ -26,6 +26,8 @@ FAQ_READ_WHITELIST: dict[str, str] = {
     "scripts/migrate_faq_review_status.py": "資料庫結構遷移腳本，執行 table_info 與歷史回填",
     "src/batch/faq_generator.py": "批次生成模組，僅 SELECT question 進行存在性檢查以防重複生成，不對外回傳答案",
     "src/pageindex/faq_conflicts.py": "相近常見問答衝突比對模組，已套用 visible_faq_sql 審核過濾",
+    "scripts/review_faq.py": "醫師審核 CLI 工具，提供待審草稿全區塊通報摘要、檢視與狀態處置",
+    "scripts/verify_e2e_closed_loop.py": "端到端閉環實機驗證腳本，測試完成後清除範本資料",
 }
 
 

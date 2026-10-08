@@ -1,0 +1,16 @@
+[Unit]
+Description=clinicbrain Nightly Batch & SOAP Distillation Schedule Service
+Documentation=https://github.com/hsuyungfeng/clinicbrain
+After=network.target llama-server.service
+
+[Service]
+Type=oneshot
+User=hsu
+WorkingDirectory=/home/hsu/Desktop/clinicbrain
+ExecStart=/usr/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_nightly_batch.py --allow-prod-db
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
