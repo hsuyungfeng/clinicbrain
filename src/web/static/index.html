@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clinicbrain 診所衛教與管理系統</title>
+    <link rel="stylesheet" href="/admin/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
+    <!-- 頂部導覽列 -->
+    <header class="bg-indigo-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🩺</span>
+                <h1 class="text-xl font-bold tracking-wide">clinicbrain 診所管理 Web App</h1>
+                <span class="bg-indigo-700 text-indigo-200 text-xs px-2 py-1 rounded">緻妍診所專用</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="authStatusBadge" class="text-xs bg-yellow-600 text-yellow-100 px-2.5 py-1 rounded-full font-medium">未驗證 API Key</span>
+                <button id="btnOpenAuthModal" class="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded transition">設定 API Key</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主選單頁籤 -->
+    <nav class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-8">
+            <button class="nav-tab active py-4 px-2 font-medium text-sm border-b-2 border-indigo-600 text-indigo-600" data-tab="tab-dashboard">
+                📊 總覽儀表板
+            </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-review">
+                📝 待審衛教草稿簽核
+            </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-upload">
+                📁 文件拖曳上傳中心
+            </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-soap">
+                🩺 臨床 SOAP 紀錄瀏覽
+            </button>
+        </div>
+    </nav>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- 頁籤 1：總覽儀表板 -->
+        <section id="tab-dashboard" class="tab-content block">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">系統狀態與統計摘要</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
+                    <div class="text-xs text-gray-500 font-medium">待簽核草稿總筆數</div>
+                    <div id="statPendingTotal" class="text-3xl font-bold text-amber-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-2">包含專屬、通用與 SOAP 提煉</div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
+                    <div class="text-xs text-gray-500 font-medium">已核准發布衛教問答</div>
+                    <div id="statApprovedTotal" class="text-3xl font-bold text-green-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-2">快取短路庫即時生效中</div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-rose-500">
+                    <div class="text-xs text-gray-500 font-medium">已被駁回草稿數</div>
+                    <div id="statRejectedTotal" class="text-3xl font-bold text-rose-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-2">已被醫師判定不合規項目</div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+                    <div class="text-xs text-gray-500 font-medium">臨床 SOAP 病歷筆數</div>
+                    <div id="statSoapTotal" class="text-3xl font-bold text-blue-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-2">全區去識別化病歷總計</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="font-bold text-gray-700 mb-3">待審草稿分類拆解</h3>
+                    <ul class="divide-y divide-gray-100 text-sm">
+                        <li class="py-2.5 flex justify-between">
+                            <span class="text-gray-600">SOAP 臨床病歷提煉草稿 (soap_distilled)</span>
+                            <span id="statPendingSoapDistilled" class="font-semibold text-amber-600">--</span>
+                        </li>
+                        <li class="py-2.5 flex justify-between">
+                            <span class="text-gray-600">診所專屬療程與文件草稿 (special)</span>
+                            <span id="statPendingSpecial" class="font-semibold text-amber-600">--</span>
+                        </li>
+                        <li class="py-2.5 flex justify-between">
+                            <span class="text-gray-600">通用醫學常識與衛教草稿 (general)</span>
+                            <span id="statPendingGeneral" class="font-semibold text-amber-600">--</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="font-bold text-gray-700 mb-3">系統安全與防禦機制說明</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-2">
+                        • <strong>Fail-Closed 隔離性</strong>：未簽核之 pending 草稿絕對無法透過自然語言查詢與快取短路對外透露。
+                    </p>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-2">
+                        • <strong>去識別化與價格防禦</strong>：所有檔案上傳與病歷均強制經由 <code>deidentify_text()</code> 與 <code>deep_mask_prices()</code> 處理。
+                    </p>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        • <strong>唯讀資料庫保護</strong>：查詢操作全程採用 <code>PRAGMA query_only = ON;</code> 唯讀連線保護。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 頁籤 2：待審草稿簽核 -->
+        <section id="tab-review" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800">待簽核衛教草稿 (Pending Queue)</h2>
+                <div class="flex space-x-3">
+                    <select id="reviewFilterCategory" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="">全部分類 (Category)</option>
+                        <option value="special">診所專屬 (special)</option>
+                        <option value="general">通用醫學 (general)</option>
+                    </select>
+                    <select id="reviewFilterSource" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="">全部來源 (Source)</option>
+                        <option value="soap_distilled">SOAP 病歷提煉</option>
+                        <option value="llm_generated">LLM 預生成</option>
+                        <option value="clinic_upload">診所上傳文件</option>
+                    </select>
+                    <button id="btnRefreshReview" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded transition">
+                        重新整理
+                    </button>
+                </div>
+            </div>
+
+            <div id="reviewCardsContainer" class="space-y-4">
+                <div class="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200">
+                    載入待審草稿中...
+                </div>
+            </div>
+        </section>
+
+        <!-- 頁籤 3：文件上傳中心 -->
+        <section id="tab-upload" class="tab-content hidden">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">診所衛教與項目文件上傳</h2>
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-3xl mx-auto">
+                <form id="uploadForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">機構代碼 (Clinic ID)</label>
+                        <input type="text" id="uploadClinicId" value="3503190424" required class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">選擇或拖曳檔案 (.docx, .xlsx, .pdf，最大 15MB)</label>
+                        <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition bg-gray-50">
+                            <span class="text-3xl block mb-2">📄</span>
+                            <span class="text-sm text-gray-600" id="dropZoneText">拖曳檔案至此處，或點擊選擇檔案</span>
+                            <input type="file" id="fileInput" accept=".docx,.xlsx,.pdf" class="hidden">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="chkPreviewOnly" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="chkPreviewOnly" class="text-sm text-gray-700 font-medium">僅預覽文字解析與價格清洗結果（不寫入資料庫）</label>
+                    </div>
+
+                    <button type="submit" id="btnSubmitUpload" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-md transition text-sm">
+                        開始上傳與解析
+                    </button>
+                </form>
+
+                <!-- 上傳結果與預覽區 -->
+                <div id="uploadResultArea" class="mt-6 hidden border-t border-gray-200 pt-4">
+                    <h3 class="font-bold text-gray-800 mb-2">解析與清洗成果</h3>
+                    <div id="uploadResultContent" class="bg-gray-50 p-4 rounded text-xs font-mono overflow-x-auto max-h-96">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 頁籤 4：臨床 SOAP 瀏覽 -->
+        <section id="tab-soap" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800">臨床 SOAP 結構化病歷檢視</h2>
+                <div class="flex space-x-3">
+                    <input type="text" id="soapClinicId" value="3503190424" aria-label="機構代碼" class="text-sm border border-gray-300 rounded px-3 py-1.5 w-32">
+                    <input type="text" id="soapSearchKeyword" placeholder="搜尋診斷或主訴關鍵字..." class="text-sm border border-gray-300 rounded px-3 py-1.5 w-64">
+                    <button id="btnSearchSoap" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded transition">
+                        查詢
+                    </button>
+                </div>
+            </div>
+            <div id="soapRecordsContainer" class="space-y-4">
+                <div class="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200">
+                    點擊查詢以載入臨床 SOAP 紀錄...
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- API Key 設定對話框 Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">設定管理員 API Key</h3>
+            <p class="text-xs text-gray-500 mb-4">請輸入本機或伺服器設定之 <code>CLINICBRAIN_ADMIN_API_KEY</code> 金鑰。金鑰僅暫存於當前瀏覽器 Session。</p>
+            <input type="password" id="inputApiKey" placeholder="請輸入 Admin API Key..." class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="flex justify-end space-x-3">
+                <button id="btnCloseAuthModal" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">取消</button>
+                <button id="btnSaveApiKey" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">儲存並刷新</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin/app.js"></script>
+</body>
+</html>

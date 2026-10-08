@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser_list.add_argument(
         "--source",
-        choices=["soap_distilled", "llm_generated", "clinic_upload", "manual"],
+        choices=["soap_distilled", "llm_generated", "web_upload", "clinic_upload", "manual"],
         default=None,
         help="篩選資料來源型態 (source_type)",
     )

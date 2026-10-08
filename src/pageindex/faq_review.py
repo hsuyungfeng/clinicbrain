@@ -44,11 +44,18 @@ def has_metadata_column(conn: sqlite3.Connection) -> bool:
     return "metadata" in cols
 
 
+# 受審核閘門控管的來源：未經醫師核准（review_status='approved'）前對外完全隱蔽。
+# web_upload = 診所人員經 Web 管理介面上傳文件擷取之草稿（Phase 18）。
+# 注意：sync 匯入與 CLI 擷取使用的 clinic_upload 視為院所權威來源，恆為可見。
+REVIEW_GATED_SOURCES = ("llm_generated", "soap_distilled", "web_upload")
+_GATED_SQL_LIST = ", ".join(f"'{s}'" for s in REVIEW_GATED_SOURCES)
+
+
 def visible_faq_sql(conn: sqlite3.Connection) -> str:
     """產生供 faq_cache 查詢 WHERE 子句共用的可見性 SQL 片段。"""
     if has_review_status(conn):
-        return "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled') OR review_status = 'approved')"
-    return "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled'))"
+        return f"(source_type IS NULL OR source_type NOT IN ({_GATED_SQL_LIST}) OR review_status = 'approved')"
+    return f"(source_type IS NULL OR source_type NOT IN ({_GATED_SQL_LIST}))"
 
 
 def count_by_status(conn: sqlite3.Connection) -> dict[str, int]:
@@ -80,7 +87,7 @@ def list_faqs(
         where_clauses.append("source_type = ?")
         params.append(source_type)
     else:
-        where_clauses.append("source_type IN ('llm_generated', 'soap_distilled')")
+        where_clauses.append(f"source_type IN ({_GATED_SQL_LIST})")
 
     if topic_key is not None:
         where_clauses.append("topic_key = ?")
@@ -350,7 +357,7 @@ def set_review_status(
             continue
 
         _, src_type, old_status, question, answer, _, category = row
-        if src_type not in ("llm_generated", "soap_distilled"):
+        if src_type not in REVIEW_GATED_SOURCES:
             skipped.append((faq_id, "not_reviewable"))
             continue
 

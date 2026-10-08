@@ -17,13 +17,13 @@ import sqlite3
 from typing import Any, Iterable, Optional
 
 try:
-    from .faq_review import has_review_status
+    from .faq_review import REVIEW_GATED_SOURCES, has_review_status
 except ImportError:
-    from src.pageindex.faq_review import has_review_status
+    from src.pageindex.faq_review import REVIEW_GATED_SOURCES, has_review_status
 
 CONTENT_FIELDS = ("question", "answer", "category", "topic_key")
 VALID_CATEGORIES = ("special", "general")
-VALID_SOURCE_TYPES = ("manual", "llm_generated", "clinic_upload", "soap_distilled")
+VALID_SOURCE_TYPES = ("manual", "llm_generated", "clinic_upload", "soap_distilled", "web_upload")
 
 
 def has_metadata_column(conn: sqlite3.Connection) -> bool:
@@ -63,7 +63,7 @@ def upsert_faqs(
         )
 
     has_review = has_review_status(conn)
-    if source_type in ("llm_generated", "soap_distilled") and not has_review:
+    if source_type in REVIEW_GATED_SOURCES and not has_review:
         raise RuntimeError(
             "資料庫尚未建立審核欄位，禁止寫入待審核內容！請先執行 scripts/migrate_faq_review_status.py 遷移腳本。"
         )
@@ -75,7 +75,7 @@ def upsert_faqs(
             "資料庫尚未建立 metadata 欄位，禁止寫入 soap_distilled 內容！請先執行 scripts/migrate_faq_metadata.py 遷移腳本。"
         )
 
-    target_review_status = "pending" if source_type in ("llm_generated", "soap_distilled") else "approved"
+    target_review_status = "pending" if source_type in REVIEW_GATED_SOURCES else "approved"
 
     cursor = conn.cursor()
     inserted = 0

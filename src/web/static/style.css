@@ -1,0 +1,37 @@
+/* clinicbrain Web App 自訂樣式 */
+.nav-tab.active {
+    border-bottom-color: #4f46e5;
+    color: #4f46e5;
+}
+
+.tab-content {
+    animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.badge-source {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+}
+
+.badge-soap {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-llm {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge-upload {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}

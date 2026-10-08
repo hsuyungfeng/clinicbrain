@@ -236,7 +236,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 為達成離峰預先生成常見問答、減輕醫師日常重複解答負擔，並自動更新過期臨床推理樹，自 Phase 09 起導入夜間批次與審核閘門架構：
 - **醫師審核閘門語意 (`faq_cache.review_status`)**：
   - 狀態列舉：`pending`（待審核）、`approved`（已核准）、`rejected`（已駁回）。
-  - 可見性規則：`manual`（手寫）與 `clinic_upload`（診所上傳）恆常對外可見；由本地模型生成之 `llm_generated` 資料預設寫入為 `pending`，在未獲醫師核准前對外完全隱蔽。
+  - 可見性規則：`manual`（手寫）與 `clinic_upload`（CLI／同步匯入之院所權威來源）恆常對外可見；由本地模型生成之 `llm_generated` 資料預設寫入為 `pending`，在未獲醫師核准前對外完全隱蔽。
   - 單一權威讀取與寫入路徑：
     - `src/pageindex/faq_review.py:visible_faq_sql` 為所有 FAQ 查詢可見性過濾條件的唯一來源；新增任何 FAQ 讀取邏輯一律須經 `search_faq_cache` 或引用此條件。
     - `src/pageindex/faq_review.py:set_review_status` 為修改審核狀態之唯一寫入路徑；核准前強制重跑四層醫療合規檢核；可見性改變時自動遞增 `content_version`。
@@ -395,6 +395,18 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **審核工具**：`review_faq.py list --category general|special` 與 `pending-summary --category ...`；pending-summary 將 LLM 草稿分為「診所專屬」與「通用衛教」兩區，仍不提供批次核准指令。`faq_review.list_faqs` 新增 `category` 篩選。
 - **已知限制**：① 被駁回且未標記重生成的題目永不重新生成（見 2.10 已知限制 5）；② general 草稿的醫學正確性完全仰賴醫師審核，四層檢驗僅攔截格式／合規類風險；③ 慢性病主題的衛教不涵蓋用藥，若醫師需要用藥說明須人工撰寫（`manual` 來源）。
 - **測試**：`tests/test_general_faq_seeds.py`、`tests/test_nightly_general_batch.py`（含複審新增的矛盾旗標與 pending 隱蔽測試）、`tests/test_general_expansion_e2e.py`。
+
+### 2.17 診所資料上傳與管理 Web App（Phase 18 新增）
+讓診所人員與醫師以瀏覽器完成「文件上傳 → 待審草稿 → 醫師簽核 → 對外生效」，免用 CLI：
+- **審核閘門來源集中定義**：`src/pageindex/faq_review.py:REVIEW_GATED_SOURCES = ('llm_generated','soap_distilled','web_upload')` 是「未核准前對外隱蔽」來源的唯一定義，`visible_faq_sql`、`list_faqs`、`set_review_status` 與 `faq_writer`（預設 `pending`、缺審核欄位時 Fail-Closed 拒寫）皆引用它；新增受控來源只改這一處。
+- **為何新增 `web_upload` 而非沿用 `clinic_upload`**：`clinic_upload`（CLI 擷取、`/api/v1/sync/import`）被定義為院所權威來源，**恆為可見**；若 Web 上傳沿用它，即使 `review_status='pending'` 也會被公開端點查到（Fail-Open）。Web 上傳因此使用獨立的 `web_upload`，由 `upsert_faqs` 直接以 `pending` 寫入（無「先 approved 再改回 pending」的競態窗口）。
+- **管理 API（`src/api/routes/admin.py`，前綴 `/api/v1/admin`，全部掛 `verify_admin_key`）**：
+  - `POST /upload`：僅 `.docx/.xlsx/.pdf`、上限 15MB（最多多讀 1 byte 判斷超限）；檔名取 basename 防路徑穿越；驗證檔頭（zip `PK\x03\x04`／`%PDF-`）；診所代碼須存在於 `clinic_info`（否則 404）；內文依序 `to_traditional` → `deidentify_text` → `deep_mask_prices`；單檔最多 200 段、單段答案 3000 字；每段再過 `validate_single_faq` 四層驗證，違規段落單筆剔除並回報 `rejected_paragraphs`；`preview_only=true` 不寫庫。暫存檔於 `finally` 刪除。
+  - `GET /review/faqs`（`status`／`category` 以 pattern 驗證，`clinic_id`、`source_type`、分頁；回傳含 `metadata` 溯源）、`POST /review/faqs/{id}/approve|reject`（走唯一權威 `set_review_status`，核准前重跑合規驗證）、`GET /review/summary`（唯讀連線）。
+- **前端（`src/web/static/`，純 HTML／Vanilla JS，掛載於 `/admin`）**：所有動態內容以 `textContent` 寫入（防儲存型 XSS）；API Key 存 `sessionStorage`（分頁關閉即失效），經 `X-API-Key` 標頭送出，不用 Cookie（故無 CSRF 面）；SOAP 檢索使用 `POST /api/v1/soap/search`（需金鑰與機構代碼，問句不進 URL）。`/admin` 回應帶 CSP（`script-src 'self'`、`frame-ancestors 'none'`）、`X-Frame-Options: DENY`、`no-store`。樣式使用 jsdelivr CDN 的 Tailwind CSS（僅樣式，無第三方腳本）；離線部署時樣式會退化但功能不受影響。
+- **正式庫保護**：測試全程用 `isolated_db_path` 複本；Web 服務使用的資料庫由 `config.db_path` 決定，部署時才指向正式庫。
+- **已知限制**：① 文件段落轉草稿的規則簡單（以空行分段、`問：／答：` 或問號結尾辨識問答），醫師須逐筆檢視；同一檔案改段落順序重傳會產生不同「指示 N」題目；② 相同診所＋主題＋題目重傳且內容有變時，既有已核准項目會回到 `pending`（需重新簽核）；③ 全域 CORS 為 `allow_origins=["*"]`（沿用既有設定），管理端點仰賴金鑰標頭而非來源限制；④ OCR 不支援，掃描版 PDF 會被拒絕。
+- **測試**：`tests/test_admin_api.py`（含複審回歸：web_upload＋pending 隱蔽、檔頭／診所／段落數／保證療效剔除／過濾參數／路徑穿越）、`tests/test_web_ui.py`（含安全標頭）、`tests/test_webapp_e2e.py`（上傳→pending→公開端點隱蔽→核准→快取短路命中）。
 
 ---
 

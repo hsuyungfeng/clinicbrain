@@ -192,7 +192,7 @@ def test_visible_faq_sql():
     conn_old = sqlite3.connect(":memory:")
     conn_old.executescript(OLD_FAQ_MINIMAL_DDL)
     sql_old = visible_faq_sql(conn_old)
-    assert sql_old == "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled'))"
+    assert sql_old == "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled', 'web_upload'))"
 
     # 插入測試資料驗證查詢行為
     conn_old.execute(
@@ -215,7 +215,7 @@ def test_visible_faq_sql():
     conn_new.execute("ALTER TABLE faq_cache ADD COLUMN reviewed_at TIMESTAMP")
 
     sql_new = visible_faq_sql(conn_new)
-    assert sql_new == "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled') OR review_status = 'approved')"
+    assert sql_new == "(source_type IS NULL OR source_type NOT IN ('llm_generated', 'soap_distilled', 'web_upload') OR review_status = 'approved')"
 
     conn_new.execute(
         """
