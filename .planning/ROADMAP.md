@@ -22,7 +22,7 @@
 | 13. 真實 LLM 批次實跑驗證 | 2/2 | Complete | 2026-10-06 |
 | 14. 臨床語音與 SOAP 紀錄擷取 | 3/3 | Complete | 2026-10-07 |
 | 15. 臨床 SOAP 衛教提煉與審核流 | 3/3 | Complete | 2026-10-07 |
-| 16. 定時自動化同步與批次提煉排程 | 0/3 | Planned | - |
+| 16. 定時自動化同步與批次提煉排程 | 3/3 | Complete | 2026-10-08 |
 | 17. 定時一般醫學知識補充與批次擴充 | 0/2 | Planned | - |
 | 18. 各診所資料上傳與管理 Web App | 0/4 | Planned | - |
 
@@ -33,14 +33,14 @@
 **Goal**: 在維持公開端點嚴格隔離的前提下，建立醫師審核工具，將去識別化之 SOAP Assessment/Plan 臨床照護摘要提煉轉化為衛教問答草稿（pending 狀態），經醫師簽核後方可發布至診所 FAQ 或推理樹供查詢引用。
 **Status**: Complete (10/10 單元測試、5/5 步驟業務閉環實機通過)
 
-### Phase 16: 定時自動化同步與批次提煉排程
+### Phase 16: 定時自動化同步與批次提煉排程 (已完成)
 
-**Goal**: 建立夜間自動化排程機制，整合外部系統（doctor-toolbox.com / EHR）推播同步，於離峰時間自動對未提煉之 SOAP 紀錄執行分組提煉並生成 pending 草稿，支援醫師晨間一鍵簽核。
-**Depends on**: Phase 15 (SOAP 衛教提煉器與審核流), Phase 09 (夜間批次架構)
+**Goal**: 建立夜間自動化排程機制，整合外部系統（doctor-toolbox.com / EHR）推播同步，於離峰時間自動對未提煉之 SOAP 紀錄執行分組提煉並生成 pending 草稿，支援醫師晨間審核通報。
+**Status**: Complete (1002/1002 測試通過、Fail-Closed 防護、正式庫零污染)
 **Scope**:
-  1. 擴充 `scripts/run_nightly_batch.py`，納入 SOAP 衛教提煉子任務。
-  2. 整合 Systemd Timer 與 Cron 排程範本，支援自動排程與離線重試。
-  3. 新增批次提煉審計日誌與摘要報表輸出。
+  1. 擴充 `src/batch/runner.py` 與 `scripts/run_nightly_batch.py`，整合前置 SOAP 衛教提煉。
+  2. 實作 `src/sync/soap_sync_runner.py` 前置增量同步，強化去識別化與 URL 防護。
+  3. 提供 Systemd Timer 排程範本與 `scripts/review_faq.py pending-summary` 晨間通報工具。
 
 ### Phase 17: 定時一般醫學知識補充與批次擴充
 

@@ -25,20 +25,20 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 15 of 18（臨床 SOAP 衛教提煉與審核流）-- COMPLETED
-Plan: 15-01、15-02、15-03 及業務閉環實機驗證（verify_e2e_closed_loop.py）均已執行完畢
-Status: Phase 15 Completed (Milestone v1.4 進行中，下一個為 Phase 16)
-Last activity: 2026-10-08 -- 完成 Phase 15 實機 5 步驟業務閉環驗證；排除語音轉錄複雜度（僅採 API 文字推播）；正式規劃 Phase 16（批次提煉排程）、Phase 17（一般醫學知識補充）與 Phase 18（診所管理 Web App）
+Phase: 16 of 18（定時自動化同步與批次提煉排程）-- COMPLETED
+Plan: 16-01、16-02、16-03 均已實作、加固與全套回歸驗證通過
+Status: Phase 16 Completed (Milestone v1.4 進行中，下一個為 Phase 17)
+Last activity: 2026-10-08 -- 完成 Phase 16 夜間排程整合、前置同步拉取、Systemd 範本與晨間醫師審核通報；通過 Claude 6 項對抗性安全加固；全套回歸 1002 測試全數通過；正式庫 SHA-256 恆定未變
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 50+
-- Tests passing: 945 passed（SOAP 模組 69/69 passed）
-- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, soap_records/soap_records_fts (trigram) 支援
+- Total tasks completed: 53+
+- Tests passing: 1002 passed, 1 skipped, 3 deselected (Phase 16 專屬與加固 22/22 passed)
+- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, soap_records/soap_records_fts (trigram) 支援，clinic.db SHA-256 (5fb8328d...) 零污染
 
 ## Accumulated Context
 
