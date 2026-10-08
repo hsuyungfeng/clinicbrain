@@ -440,6 +440,19 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **已知限制**：① 回答品質取決於已核准資料的覆蓋度——這正是此頁籤要讓醫師看見的；② 檢索為詞彙式（FTS5 trigram），措辭差異大的問法可能找不到資料；③ 單題約 1～3 分鐘，與 AI 生成互斥執行。
 - **測試**：`tests/test_admin_ask.py`（僅用可見資料、無資料／紅旗不呼叫模型、價格屏蔽與合規標示、認證與錯誤碼、唯讀、頁籤結構）。
 
+### 2.20 批次補齊答案（先讓 LLM 補、最後一起審）（Phase 21 新增）
+文件上傳後常有大量「答案待補齊」的草稿（問題清單，或文章被切成標題片段）。醫師希望先由本機 LLM 批次補齊，最後再一起審核：
+- **草稿三種型態（`answer_generator.classify_draft`）**：① `question`（題目欄是問句，或佔位題下答案欄為單行問句）；② `topic`（佔位題下答案欄為單行短片段，如「- 常見疑難傷口型別」，≤40 字、非問句，視為標題／小標題）；③ `content`（已有實質內容，未明確 `overwrite` 不得覆蓋）。
+- **標題片段以文件內文為依據**：同一份文件（同診所＋同 `topic_key`）的其他段落作為依據——短片段入「文件大綱」（≤15 條）、實質段落入「內文節錄」（總量 ≤1500 字）；Prompt 要求只能使用文件內資訊、資訊不足須回「資料不足」、輸出固定「問題：／答案：」兩段並自擬病患問句（≤80 字、以「？」結尾，不合格則用保底問句 `關於「<片段>」有哪些重點？`）。同文件無任何內文可依據時回 422，不憑空生成。此型態使用 `_local_llm_ask_call`（忠實引用取樣：關閉重複懲罰，見 2.19）；`metadata.generated_from='document_context'`。模型自擬的問句若與同文件既有題目重複（UNIQUE 限制），自動改用保底問句重試一次。
+- **背景作業（`src/pageindex/batch_answer_job.py`）**：單題約 1～3.5 分鐘（標題片段帶文件內文，實測 200 秒），故由伺服器背景執行緒逐題處理，不綁在 HTTP 請求上。`POST /api/v1/admin/review/batch-generate`（`faq_ids` 1～100、`StrictInt`、`extra=forbid`）啟動；`GET /review/batch-generate/status` 查進度（`state`: idle／running／done／cancelled／aborted，`total/processed/ok/skipped/failed[]/ok_ids/current_id`）；`POST /review/batch-generate/cancel`（目前題目完成後停止，已完成者保留）。皆掛 `verify_admin_key`。
+  - **同時只允許一個作業**（再啟動回 409）；與單題生成、向 LLM 提問共用 `_GENERATION_LOCK`（本機模型一次只服務一件事），等鎖期間仍可被取消。
+  - **每題各自連線、各自 commit**：中途取消、服務重啟只會中斷「進行中那一題」，已補齊的不會遺失；作業狀態只存記憶體，重啟後歸零。
+  - **失敗隔離**：單題合規未通過或非預期錯誤只記入 `failed`，不影響其他題；已完整／已核准／非待審來源記為 `skipped`（`GenerationError.skippable`）；**本機 LLM 離線則整批中止**（`aborted`），不空轉剩餘題目。
+  - **合規把關完全沿用單題流程**（價格屏蔽、四層、劑量、就醫警訊）；產出一律 `pending`、`metadata.answer_source='local_llm'`，批次**絕不核准**任何項目。
+- **前端**：待審頁籤工具列新增「🤖 批量補齊答案 (N)」（有勾選則只補勾選中「答案待補齊」者，否則補目前可見的全部；單次最多 100 筆，並預估所需時間後二次確認）、「顯示範圍」下拉（全部／只看答案待補齊／只看 AI 生成待確認）、進度面板（進度條、成功／失敗／略過、可取消、失敗原因）。重新整理頁面會接續顯示仍在進行的作業；作業結束後自動重載清單並切到「只看 AI 生成待確認」，方便逐筆檢視後批量核准。全選／反選只作用於**目前可見**的卡片，被篩選隱藏的卡片會自動移出選取集合，避免誤對看不到的項目批量核准。
+- **已知限制**：① 作業進度不跨服務重啟；② 內文節錄上限 1500 字，超長文件只取前段；③ 標題片段生成的品質取決於同文件內文是否涵蓋該主題，涵蓋不足時模型應回「資料不足」而被捨棄；④ 仍需醫師逐筆檢視 AI 內容後才核准。
+- **測試**：`tests/test_batch_answer_job.py`（型態判定含使用者實例 ID 671、標題片段以內文為依據、無依據／資料不足被拒、撞題保底、批次完成／失敗隔離／略過／LLM 離線中止／單一作業與取消／驗證與認證）、`tests/test_web_ui_v2.py`（新控制項與端點接線）。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -493,6 +506,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/migrate_faq_metadata.py`：`faq_cache.metadata` 欄位單一來源遷移腳本（`--confirm-prod-backup`、`--dry-run`）
 * `scripts/distill_soap_faqs.py`：SOAP 衛教提煉批次 CLI（dry-run 唯讀）
 * `src/pageindex/rag_ask.py`：管理端向 LLM 提問檢驗（僅用對外可見資料、紅旗／無資料不呼叫模型）
+* `src/pageindex/batch_answer_job.py`：待審草稿背景批次補齊作業（單一作業、逐題 commit、LLM 離線中止）
 * `src/pageindex/answer_generator.py`：待審草稿 AI 輔助答案生成（本機 LLM、輸出端四層檢驗、樂觀鎖寫入）
 * `src/soap/distiller.py`：SOAP 衛教提煉與草稿生成模組
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具

@@ -131,7 +131,22 @@
                 <button id="btnSelectAll" class="btn btn-ghost">☑️ 全選</button>
                 <button id="btnInvertSelect" class="btn btn-ghost">🔄 反選</button>
                 <button id="btnClearSelect" class="btn btn-ghost">⏹️ 清除</button>
+                <span class="toolbar-sep"></span>
+                <select id="reviewView" class="view-select" aria-label="顯示範圍">
+                    <option value="all">顯示：全部</option>
+                    <option value="needs">只看「答案待補齊」</option>
+                    <option value="ai">只看「AI 生成待確認」</option>
+                </select>
+                <button id="btnBatchGenerate" class="btn btn-soft">🤖 批量補齊答案</button>
                 <span id="selectionCounter" class="selection-counter">已選取 0 / 0 筆</span>
+            </div>
+            <div id="batchGenPanel" class="batchgen-panel hidden" role="status" aria-live="polite">
+                <div class="batchgen-head">
+                    <span id="batchGenText" class="batchgen-text"></span>
+                    <button id="btnCancelBatchGen" class="btn btn-danger-soft">取消</button>
+                </div>
+                <div class="progress"><div id="batchGenBar" class="progress-bar"></div></div>
+                <div id="batchGenDetail" class="batchgen-detail"></div>
             </div>
 
             <div id="reviewCardsContainer" class="faq-list">

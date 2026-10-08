@@ -27,32 +27,45 @@ _THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 class GenerationError(Exception):
     """生成流程中可預期的失敗（含 http_status 供 API 對應）。"""
 
-    def __init__(self, message: str, http_status: int = 422):
+    def __init__(self, message: str, http_status: int = 422, skippable: bool = False):
         super().__init__(message)
         self.http_status = http_status
+        self.skippable = skippable   # 批次作業中視為「略過」而非「失敗」（例如已完整、已核准）
 
 
-def extract_question_text(question: str, answer: str) -> Optional[str]:
-    """取得「真正要被回答的問題」。
+_BULLET_PREFIX = re.compile(r"^[\s\-\*•·●■□▪◆◇▶►\u2022]+")
+MAX_TOPIC_FRAGMENT_CHARS = 40
+CONTEXT_CHARS = 1500
 
-    - 問題欄是實際問句：直接使用。
-    - 問題欄是上傳文件的佔位題（【診所文件】… - 指示 N）且答案欄僅為單行問句
-      （問題清單型文件）：以答案欄的那行問句為準。
-    - 其餘（佔位題但答案是多行指示內容）：回傳 None，代表此列已有實質內容，不應被覆蓋。
+
+def classify_draft(question: str, answer: str) -> tuple[str, Optional[str]]:
+    """判斷草稿類型，回傳 (kind, text)：
+
+    - ("question", 問句)：題目欄是實際問句，或佔位題下答案欄僅為單行問句（問題清單型文件）。
+    - ("topic", 片段)：佔位題下答案欄僅為單行短片段（文章的標題／小標題，例如「- 常見疑難傷口型別」）；
+      需要以同一份文件的內文為依據撰寫說明。
+    - ("content", None)：佔位題但答案已是實質內容（多行或較長），不應被覆蓋。
     """
     q = (question or "").strip()
     if not q.startswith(PLACEHOLDER_QUESTION_PREFIX):
-        return q or None
+        return ("question", q) if q else ("content", None)
     a = (answer or "").strip()
-    if not a:
-        return None
     lines = [ln for ln in a.splitlines() if ln.strip()]
     if len(lines) != 1:
-        return None
-    cand = _LEAD_NUMBERING.sub("", lines[0].strip()).strip()
+        return ("content", None)
+    cand = _LEAD_NUMBERING.sub("", _BULLET_PREFIX.sub("", lines[0].strip())).strip()
     if 4 <= len(cand) <= 120 and cand.endswith(("？", "?")):
-        return cand
-    return None
+        return ("question", cand)
+    cand = cand.strip("：:。；;、，, ")
+    if 2 <= len(cand) <= MAX_TOPIC_FRAGMENT_CHARS:
+        return ("topic", cand)
+    return ("content", None)
+
+
+def extract_question_text(question: str, answer: str) -> Optional[str]:
+    """取得「真正要被回答的問題」（kind 為 question 時）；其餘回傳 None。"""
+    kind, text = classify_draft(question, answer)
+    return text if kind == "question" else None
 
 
 def is_answer_thin(question: str, answer: str) -> bool:
@@ -60,7 +73,7 @@ def is_answer_thin(question: str, answer: str) -> bool:
     a = (answer or "").strip()
     if len(a) < THIN_ANSWER_CHARS:
         return True
-    return (question or "").startswith(PLACEHOLDER_QUESTION_PREFIX) and extract_question_text(question, answer) is not None
+    return (question or "").startswith(PLACEHOLDER_QUESTION_PREFIX) and classify_draft(question, answer)[0] in ("question", "topic")
 
 
 def build_answer_prompt(question: str, topic: str) -> str:
@@ -78,6 +91,61 @@ def build_answer_prompt(question: str, topic: str) -> str:
     )
 
 
+def build_topic_prompt(fragment: str, doc_title: str, outline: list[str], excerpts: list[str]) -> str:
+    outline_txt = "\n".join(f"- {o}" for o in outline) or "（無）"
+    excerpt_txt = "\n".join(f"{n}. {e}" for n, e in enumerate(excerpts, 1)) or "（無）"
+    return (
+        "你是台灣診所的衛教助理。下方「文件」是診所提供的衛教文章節錄；請只根據文件內容，"
+        f"針對主題「{fragment}」撰寫一則衛教問答。\n"
+        "規則（必須全部遵守）：\n"
+        "1. 只能使用文件裡有的資訊，不可加入文件以外的醫學知識或臆測；文件資訊不足時，只輸出「資料不足」四個字。\n"
+        "2. 先擬一個一般民眾會問的問題（以「？」結尾，30 字內），再回答，答案約 150～300 字，繁體中文（台灣用語）。\n"
+        "3. 不得出現任何金額、價格、折扣或優惠；不得出現具體藥品名稱與劑量；不下診斷、不開處方。\n"
+        "4. 不得使用「保證」「根治」「百分之百」「一定有效」等療效保證用語。\n"
+        "5. 答案最後一句必須是就醫警訊：列出具體症狀或數值條件（例如高燒超過3天、傷口紅腫化膿），並說明應儘速就醫。\n"
+        "6. 嚴格依下列格式輸出兩段，不要加其他文字或符號：\n問題：<問題>\n答案：<答案>\n\n"
+        f"文件標題：{doc_title}\n文件大綱：\n{outline_txt}\n文件內文節錄：\n{excerpt_txt}\n"
+    )
+
+
+_QA_PARSE = re.compile(r"問題\s*[:：]\s*(.+?)\s*\n+\s*答案\s*[:：]\s*(.+)", re.DOTALL)
+
+
+def parse_topic_output(text: str, fragment: str) -> tuple[str, str]:
+    """解析「問題：／答案：」兩段；問題不合格時以片段組出保底問句。"""
+    m = _QA_PARSE.search(text or "")
+    if not m:
+        raise GenerationError("模型回覆格式不符或資料不足，已捨棄，請重試", 422)
+    q, a = m.group(1).strip(), m.group(2).strip()
+    if not (4 <= len(q) <= 80 and q.endswith(("？", "?"))):
+        q = f"關於「{fragment}」有哪些重點？"
+    return q, a
+
+
+def _document_context(conn: sqlite3.Connection, faq_id: int, clinic_id, topic_key) -> tuple[list[str], list[str]]:
+    """同一份文件的其他段落：短片段作大綱，實質段落作內文節錄（總量受限，避免 prompt 過長）。"""
+    rows = conn.execute(
+        "SELECT answer FROM faq_cache WHERE clinic_id IS ? AND topic_key IS ? AND id != ? ORDER BY id",
+        (clinic_id, topic_key, faq_id),
+    ).fetchall()
+    outline: list[str] = []
+    excerpts: list[str] = []
+    budget = CONTEXT_CHARS
+    for (ans,) in rows:
+        t = (ans or "").strip()
+        if not t:
+            continue
+        if len(t) < THIN_ANSWER_CHARS:
+            frag = _BULLET_PREFIX.sub("", t).strip()
+            if frag and len(outline) < 15 and frag not in outline:
+                outline.append(frag)
+        elif budget > 0:
+            piece = t[:min(220, budget)]
+            excerpts.append(piece)
+            budget -= len(piece)
+    return outline, excerpts
+
+
 def _clean_llm_output(raw: str) -> str:
     text = _THINK_BLOCK.sub("", raw or "").strip()
     text = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", text).strip()
@@ -91,6 +159,7 @@ def generate_answer_for_faq(
     llm_call: Callable[[str], str],
     *,
     overwrite: bool = False,
+    grounded_llm_call: Optional[Callable[[str], str]] = None,
 ) -> dict:
     """為指定待審草稿生成答案並寫回（狀態維持 pending）。失敗拋 GenerationError。"""
     from .faq_review import sanitize_faq_text
@@ -109,21 +178,33 @@ def generate_answer_for_faq(
     _, topic_key, question, answer, source_type, review_status, category = tuple(row)
 
     if source_type not in REVIEW_GATED_SOURCES:
-        raise GenerationError("僅限待審來源草稿可使用 AI 生成", 409)
+        raise GenerationError("僅限待審來源草稿可使用 AI 生成", 409, skippable=True)
     if review_status == "approved":
-        raise GenerationError("已核准項目不可直接改寫，請先退回待審", 409)
+        raise GenerationError("已核准項目不可直接改寫，請先退回待審", 409, skippable=True)
 
-    real_q = extract_question_text(question, answer)
-    if real_q is None:
+    kind, frag = classify_draft(question, answer)
+    if kind == "content":
         if not overwrite:
-            raise GenerationError("此草稿已有實質內容，若要覆蓋請明確指定 overwrite", 409)
-        real_q = (question or "").strip()
+            raise GenerationError("此草稿已有實質內容，若要覆蓋請明確指定 overwrite", 409, skippable=True)
+        kind, frag = "question", (question or "").strip()
     elif not overwrite and not is_answer_thin(question, answer):
-        raise GenerationError("此草稿答案已完整，若要重新生成請明確指定 overwrite", 409)
+        raise GenerationError("此草稿答案已完整，若要重新生成請明確指定 overwrite", 409, skippable=True)
 
     topic = re.sub(r"^doc-", "", topic_key or "") or "一般衛教"
-    raw = llm_call(build_answer_prompt(real_q, topic))
-    text = sanitize_faq_text(_clean_llm_output(raw))
+    if kind == "topic":
+        # 標題片段：以同一份文件內文為依據；模型自擬問句。使用「忠實引用」取樣的呼叫（若有提供）
+        clinic_id = conn.execute("SELECT clinic_id FROM faq_cache WHERE id = ?", (faq_id,)).fetchone()[0]
+        outline, excerpts = _document_context(conn, faq_id, clinic_id, topic_key)
+        if not excerpts:
+            raise GenerationError("同一份文件中沒有可作為依據的內文，無法針對此標題生成", 422)
+        raw = (grounded_llm_call or llm_call)(build_topic_prompt(frag, topic, outline, excerpts))
+        real_q, text = parse_topic_output(_clean_llm_output(raw), frag)
+        text = sanitize_faq_text(text)
+        real_q = sanitize_faq_text(real_q)
+    else:
+        real_q = frag
+        raw = llm_call(build_answer_prompt(real_q, topic))
+        text = sanitize_faq_text(_clean_llm_output(raw))
 
     if not (MIN_ANSWER_CHARS <= len(text) <= MAX_ANSWER_CHARS):
         raise GenerationError(f"模型回覆長度不符（{len(text)} 字），已捨棄，請重試", 422)
@@ -146,21 +227,29 @@ def generate_answer_for_faq(
         except (TypeError, ValueError):
             meta = {}
         meta["answer_source"] = "local_llm"
+        if kind == "topic":
+            meta["generated_from"] = "document_context"
         meta_sql, meta_params = ", metadata = ?", [json.dumps(meta, ensure_ascii=False)]
 
+    update_sql = f"""
+        UPDATE faq_cache
+        SET question = ?, answer = ?, review_status = 'pending', reviewed_at = NULL,
+            content_version = content_version + 1, updated_at = CURRENT_TIMESTAMP{meta_sql}
+        WHERE id = ? AND answer IS ? AND review_status != 'approved'
+    """
     try:
-        cur = conn.execute(
-            f"""
-            UPDATE faq_cache
-            SET question = ?, answer = ?, review_status = 'pending', reviewed_at = NULL,
-                content_version = content_version + 1, updated_at = CURRENT_TIMESTAMP{meta_sql}
-            WHERE id = ? AND answer IS ? AND review_status != 'approved'
-            """,
-            [new_question, text, *meta_params, faq_id, answer],
-        )
+        cur = conn.execute(update_sql, [new_question, text, *meta_params, faq_id, answer])
     except sqlite3.IntegrityError as e:
         conn.rollback()
-        raise GenerationError("同診所同主題已有相同題目，請先處理重複項目", 409) from e
+        if kind != "topic":
+            raise GenerationError("同診所同主題已有相同題目，請先處理重複項目", 409) from e
+        # 標題片段的問句由模型自擬，同一份文件內可能撞題：改用以片段組成的保底問句重試一次
+        new_question = f"關於「{frag}」有哪些重點？"
+        try:
+            cur = conn.execute(update_sql, [new_question, text, *meta_params, faq_id, answer])
+        except sqlite3.IntegrityError as e2:
+            conn.rollback()
+            raise GenerationError("同診所同主題已有相同題目，請先處理重複項目", 409) from e2
     if cur.rowcount != 1:
         conn.rollback()
         raise GenerationError("草稿在生成期間已被他人修改，請重新整理後再試", 409)

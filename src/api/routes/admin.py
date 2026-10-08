@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt
 from ...ingestion.convert_chinese import to_traditional
 from ...ingestion.extract_text import extract_docx_text, extract_xlsx_text
 from ...ingestion.generate_faq import validate_single_faq
+from ...pageindex import batch_answer_job
 from ...pageindex.rag_ask import ask_with_data
 from ...pageindex.answer_generator import GenerationError, generate_answer_for_faq, is_answer_thin
 from ...pageindex.faq_review import (
@@ -30,6 +31,7 @@ from ...pageindex.faq_review import (
 )
 from ...pageindex.faq_writer import upsert_faqs
 from ...soap.deid import deidentify_text
+from ..config import config
 from ..dependencies import get_read_db, get_write_db, verify_admin_key
 from .query import deep_mask_prices
 
@@ -81,6 +83,11 @@ class AskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(..., min_length=1, max_length=300)
     clinic_id: str = Field(..., min_length=1, max_length=40)
+
+
+class BatchGenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    faq_ids: list[StrictInt] = Field(..., min_length=1, max_length=batch_answer_job.MAX_JOB_IDS)
 
 
 class GenerateAnswerRequest(BaseModel):
@@ -509,7 +516,9 @@ def generate_admin_faq_answer(
         try:
             return {
                 "status": "ok",
-                **generate_answer_for_faq(conn, faq_id, _local_llm_call, overwrite=req.overwrite),
+                **generate_answer_for_faq(
+                    conn, faq_id, _local_llm_call, overwrite=req.overwrite, grounded_llm_call=_local_llm_ask_call
+                ),
             }
         except GenerationError as e:
             raise HTTPException(status_code=e.http_status, detail=str(e)) from e
@@ -548,3 +557,26 @@ def admin_ask_llm(
             ) from e
     finally:
         _GENERATION_LOCK.release()
+
+
+@router.post("/review/batch-generate", summary="啟動背景批次補齊答案（本機 LLM 逐題處理，完成後再一起審核）")
+def start_batch_generate(req: BatchGenerateRequest):
+    """同時只允許一個作業；每題結果一律 pending。進度以 GET /review/batch-generate/status 查詢。"""
+    try:
+        return batch_answer_job.start(
+            config.db_path, req.faq_ids, _local_llm_call, _local_llm_ask_call, _GENERATION_LOCK
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+
+@router.get("/review/batch-generate/status", summary="查詢批次補齊作業進度")
+def batch_generate_status():
+    return batch_answer_job.snapshot()
+
+
+@router.post("/review/batch-generate/cancel", summary="取消批次補齊作業（目前題目完成後停止）")
+def cancel_batch_generate():
+    return {"status": "ok", "cancelling": batch_answer_job.cancel()}

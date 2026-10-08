@@ -151,16 +151,21 @@ function initReviewSection() {
     document.getElementById("reviewFilterCategory").addEventListener("change", loadReviewFaqs);
     document.getElementById("reviewFilterSource").addEventListener("change", loadReviewFaqs);
     document.getElementById("btnSelectAll").addEventListener("click", () => {
-        reviewState.cards.forEach((_, id) => reviewState.selected.add(id));
+        reviewState.cards.forEach((entry, id) => { if (isCardVisible(entry)) reviewState.selected.add(id); });
         syncSelectionUi();
     });
     document.getElementById("btnInvertSelect").addEventListener("click", () => {
-        reviewState.cards.forEach((_, id) => {
+        reviewState.cards.forEach((entry, id) => {
+            if (!isCardVisible(entry)) return;
             if (reviewState.selected.has(id)) reviewState.selected.delete(id);
             else reviewState.selected.add(id);
         });
         syncSelectionUi();
     });
+    document.getElementById("reviewView").addEventListener("change", applyViewFilter);
+    document.getElementById("btnBatchGenerate").addEventListener("click", startBatchGenerate);
+    document.getElementById("btnCancelBatchGen").addEventListener("click", cancelBatchGenerate);
+    pollBatchGenerate(true);   // 重新整理頁面後，若伺服器仍有作業進行中，接續顯示進度
     document.getElementById("btnClearSelect").addEventListener("click", () => {
         reviewState.selected.clear();
         syncSelectionUi();
@@ -176,7 +181,12 @@ function syncSelectionUi() {
         card.classList.toggle("selected", on);
     });
     const n = reviewState.selected.size;
-    document.getElementById("selectionCounter").textContent = `已選取 ${n} / ${reviewState.cards.size} 筆`;
+    let visibleCount = 0;
+    reviewState.cards.forEach(entry => { if (isCardVisible(entry)) visibleCount++; });
+    document.getElementById("selectionCounter").textContent = `已選取 ${n} / ${visibleCount} 筆`;
+    let needs = 0;
+    reviewState.cards.forEach(entry => { if (entry.state && entry.state.needsAnswer && isCardVisible(entry)) needs++; });
+    document.getElementById("btnBatchGenerate").textContent = needs > 0 ? `🤖 批量補齊答案 (${needs})` : "🤖 批量補齊答案";
     document.getElementById("actionBarCount").textContent = `已選取 ${n} 筆草稿`;
     document.getElementById("btnBatchApprove").textContent = `✅ 批量核准 (${n})`;
     document.getElementById("btnBatchReject").textContent = `❌ 批量駁回 (${n})`;
@@ -218,7 +228,7 @@ async function loadReviewFaqs() {
         if (data.total > faqs.length) {
             showToast(`僅顯示前 ${faqs.length} 筆（共 ${data.total} 筆），處理後請重新整理`, "info");
         }
-        syncSelectionUi();
+        applyViewFilter();
     } catch (e) {
         setStatusBox(container, "連線失敗", "error");
     }
@@ -241,7 +251,8 @@ function createFaqReviewCard(faq) {
         else reviewState.selected.delete(faq.id);
         syncSelectionUi();
     });
-    reviewState.cards.set(faq.id, { card, checkbox });
+    const entry = { card, checkbox, state: null };
+    reviewState.cards.set(faq.id, entry);
 
     const body = el("div", "faq-body");
 
@@ -272,6 +283,7 @@ function createFaqReviewCard(faq) {
 
     const state = { question: faq.question, answer: faq.answer, needsAnswer: !!faq.needs_answer,
                     aiGenerated: !!(faq.metadata && faq.metadata.answer_source === "local_llm") };
+    entry.state = state;
     function paint() {
         qEl.textContent = `【問】${state.question}`;
         aEl.textContent = state.answer;
@@ -279,6 +291,7 @@ function createFaqReviewCard(faq) {
         aiBadge.classList.toggle("hidden", !state.aiGenerated);
         btnGen.textContent = state.needsAnswer ? "🤖 本地 LLM 生成解答" : "🔄 重新生成解答";
         btnGen.classList.toggle("primary-soft", state.needsAnswer);
+        if (reviewState.cards.has(faq.id)) applyViewFilter();
     }
 
     // 內聯編輯區
@@ -397,6 +410,104 @@ function createFaqReviewCard(faq) {
     card.appendChild(body);
     paint();
     return card;
+}
+
+function isCardVisible(entry) {
+    return !entry.card.classList.contains("hidden");
+}
+
+function applyViewFilter() {
+    const mode = document.getElementById("reviewView").value;
+    reviewState.cards.forEach((entry, id) => {
+        const st = entry.state || {};
+        const show = mode === "all" || (mode === "needs" && st.needsAnswer) || (mode === "ai" && st.aiGenerated);
+        entry.card.classList.toggle("hidden", !show);
+        if (!show) reviewState.selected.delete(id);   // 被隱藏的卡片不可留在選取集合中，避免誤批量操作
+    });
+    syncSelectionUi();
+}
+
+// ---- 批量補齊答案：伺服器背景作業，逐題由本機 LLM 處理；完成後再由醫師一起審核 ----
+const batchGen = { timer: null, lastState: "idle" };
+
+async function startBatchGenerate() {
+    const selectedNeeds = [];
+    const allNeeds = [];
+    reviewState.cards.forEach((entry, id) => {
+        if (!(entry.state && entry.state.needsAnswer) || !isCardVisible(entry)) return;
+        allNeeds.push(id);
+        if (reviewState.selected.has(id)) selectedNeeds.push(id);
+    });
+    const ids = (selectedNeeds.length > 0 ? selectedNeeds : allNeeds).slice(0, 100);
+    if (ids.length === 0) { showToast("目前沒有「答案待補齊」的草稿", "info"); return; }
+    const mins = Math.round(ids.length * 3);
+    const scope = selectedNeeds.length > 0 ? "所選" : "全部";
+    if (!window.confirm(`將由本機 LLM 逐題補齊${scope} ${ids.length} 筆「答案待補齊」的草稿（約需 ${mins} 分鐘，可先離開此頁）。\n補齊後仍為待審，不會自動核准；完成後再一起審核。\n確定開始嗎？`)) return;
+    try {
+        const resp = await fetch("/api/v1/admin/review/batch-generate", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ faq_ids: ids }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) { showToast(`無法開始：${typeof data.detail === "string" ? data.detail : "格式不正確"}`, "error"); return; }
+        showToast(`已開始批量補齊 ${ids.length} 筆，進度見上方面板`, "success");
+        batchGen.lastState = "running";
+        pollBatchGenerate(false);
+    } catch (e) {
+        showToast("網路請求失敗", "error");
+    }
+}
+
+async function cancelBatchGenerate() {
+    if (!window.confirm("確定取消？目前這一題完成後會停止，已補齊的答案會保留。")) return;
+    try {
+        await fetch("/api/v1/admin/review/batch-generate/cancel", { method: "POST", headers: getAuthHeaders() });
+        showToast("已要求取消，目前題目完成後停止", "info");
+    } catch (e) {
+        showToast("網路請求失敗", "error");
+    }
+}
+
+function renderBatchGenPanel(s) {
+    const panel = document.getElementById("batchGenPanel");
+    if (!s || s.state === "idle") { panel.classList.add("hidden"); return; }
+    panel.classList.remove("hidden");
+    const running = s.state === "running";
+    const names = { running: "批量補齊進行中", done: "批量補齊完成", cancelled: "批量補齊已取消", aborted: "批量補齊已中止" };
+    document.getElementById("batchGenText").textContent =
+        `${names[s.state] || s.state}：${s.processed} / ${s.total}　成功 ${s.ok}・失敗 ${s.failed.length}・略過 ${s.skipped}` +
+        (running && s.current_id ? `（處理中：ID ${s.current_id}）` : "");
+    document.getElementById("batchGenBar").style.width = `${s.total ? Math.round((s.processed / s.total) * 100) : 0}%`;
+    document.getElementById("btnCancelBatchGen").classList.toggle("hidden", !running);
+    const detail = document.getElementById("batchGenDetail");
+    detail.replaceChildren();
+    if (s.message) detail.appendChild(el("div", "", s.message));
+    s.failed.slice(0, 8).forEach(f => detail.appendChild(el("div", "batchgen-fail", `ID ${f.id}：${f.reason}`)));
+    if (s.failed.length > 8) detail.appendChild(el("div", "", `…另有 ${s.failed.length - 8} 筆失敗`));
+}
+
+async function pollBatchGenerate(silent) {
+    clearTimeout(batchGen.timer);
+    let s;
+    try {
+        const resp = await fetch("/api/v1/admin/review/batch-generate/status", { headers: getAuthHeaders() });
+        if (!resp.ok) return;
+        s = await resp.json();
+    } catch (e) { return; }
+    renderBatchGenPanel(s);
+    if (s.state === "running") {
+        batchGen.lastState = "running";
+        batchGen.timer = setTimeout(() => pollBatchGenerate(false), 5000);
+        return;
+    }
+    if (batchGen.lastState === "running" && s.state !== "idle") {
+        // 剛結束：重載清單並切到「AI 生成待確認」，方便最後一起審
+        batchGen.lastState = s.state;
+        document.getElementById("reviewView").value = "ai";
+        await loadReviewFaqs();
+        showToast(`${s.state === "done" ? "批量補齊完成" : "批量補齊結束"}：成功 ${s.ok}、失敗 ${s.failed.length}。已切換到「AI 生成待確認」，請逐筆檢視後批量核准`, s.failed.length ? "info" : "success");
+    }
 }
 
 function removeCard(id) {

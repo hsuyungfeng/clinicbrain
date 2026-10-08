@@ -59,3 +59,16 @@ def test_upload_center_supports_multi_file_and_folder(client):
     # 上傳區塊不得以 HTML 字串置入動態資料（檔名來自使用者本機）
     sect = js[js.index("// 上傳佇列"):js.index("// 6. SOAP 瀏覽")]
     assert not re.search(r"innerHTML|insertAdjacentHTML|document\.write|outerHTML|eval\(", sect)
+
+
+def test_batch_generate_ui_wiring(client):
+    html = client.get("/admin/").text
+    for ident in ("btnBatchGenerate", "reviewView", "batchGenPanel", "batchGenBar", "btnCancelBatchGen"):
+        assert f'id="{ident}"' in html
+    assert 'value="needs"' in html and 'value="ai"' in html
+    js = client.get("/admin/app.js").text
+    for token in ("/api/v1/admin/review/batch-generate", "batch-generate/status", "batch-generate/cancel",
+                  "pollBatchGenerate", "applyViewFilter", "isCardVisible"):
+        assert token in js
+    # 被篩選隱藏的卡片不得留在選取集合（避免誤批量核准看不到的項目）
+    assert "reviewState.selected.delete(id)" in js
