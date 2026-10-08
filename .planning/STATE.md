@@ -25,20 +25,20 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 16 of 18（定時自動化同步與批次提煉排程）-- COMPLETED
-Plan: 16-01、16-02、16-03 均已實作、加固與全套回歸驗證通過
-Status: Phase 16 Completed (Milestone v1.4 進行中，下一個為 Phase 17)
-Last activity: 2026-10-08 -- 完成 Phase 16 夜間排程整合、前置同步拉取、Systemd 範本與晨間醫師審核通報；通過 Claude 6 項對抗性安全加固；全套回歸 1002 測試全數通過；正式庫 SHA-256 恆定未變
+Phase: 17 of 18（定時一般醫學知識補充與批次擴充）-- COMPLETED
+Plan: 17-01、17-02、17-03 均已實作、加固與全套回歸驗證通過
+Status: Phase 17 Completed (Milestone v1.4 進行中，下一個為 Phase 18)
+Last activity: 2026-10-08 -- 完成 Phase 17 通用種子庫擴充（8 主題 32 題）、general-only 批次調度與斷點續跑、審核 CLI 篩選與 E2E 驗收；通過 Claude 4 項加固；全套回歸 1012 測試全數通過；正式庫 SHA-256 恆定未變
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 53+
-- Tests passing: 1002 passed, 1 skipped, 3 deselected (Phase 16 專屬與加固 22/22 passed)
-- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, soap_records/soap_records_fts (trigram) 支援，clinic.db SHA-256 (5fb8328d...) 零污染
+- Total tasks completed: 56+
+- Tests passing: 1012 passed, 1 skipped, 3 deselected (Phase 17 專屬與加固全過)
+- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, 15 種子主題 (32+ 題)，soap_records/soap_records_fts (trigram) 支援，clinic.db SHA-256 (5fb8328d...) 零污染
 
 ## Accumulated Context
 
