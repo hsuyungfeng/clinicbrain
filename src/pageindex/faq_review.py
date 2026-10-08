@@ -68,8 +68,9 @@ def list_faqs(
     *,
     topic_key: Optional[str] = None,
     source_type: Optional[str] = None,
+    category: Optional[str] = None,
 ) -> list[dict[str, Any]]:
-    """列出指定審核狀態的 FAQ 列表（依 id 升冪排列）。可選 topic_key, source_type 篩選。"""
+    """列出指定審核狀態的 FAQ 列表（依 id 升冪排列）。可選 topic_key, source_type, category 篩選。"""
     if not has_review_status(conn):
         return []
     cur = conn.cursor()
@@ -84,6 +85,10 @@ def list_faqs(
     if topic_key is not None:
         where_clauses.append("topic_key = ?")
         params.append(topic_key)
+
+    if category is not None:
+        where_clauses.append("category = ?")
+        params.append(category)
 
     where_sql = " AND ".join(where_clauses)
     params.extend([limit, offset])

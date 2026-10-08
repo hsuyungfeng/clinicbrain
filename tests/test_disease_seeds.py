@@ -183,13 +183,21 @@ def test_seed_file_structure_and_disease_coverage():
         "hyaluronic-acid-filler-faq",
     }
 
-    # 檢查 4 個 general 主題
+    # 檢查 12 個 general 主題
     general_topics = [t for t in loaded.topics if t.category == "general"]
     expected_general_keys = {
         "common-cold-home-care",
         "influenza-basics",
         "acute-gastroenteritis",
         "allergic-rhinitis",
+        "hypertension-basics",
+        "diabetes-type2-care",
+        "urticaria-care",
+        "asthma-home-care",
+        "gerd-management",
+        "gout-basics",
+        "herpes-zoster-care",
+        "migraine-basics",
     }
     assert {t.topic_key for t in general_topics} == expected_general_keys
 
@@ -214,8 +222,8 @@ def test_seed_file_structure_and_disease_coverage():
             valid, reason = validate_single_faq({"question": q, "answer": "請致電診所確認"})
             assert valid, f"問題 '{q}' 未通過合規檢查: {reason}"
 
-    # 驗證總共有 17 題 general 問題
-    assert total_general_questions == 17
+    # 驗證總共有 49 題 general 問題
+    assert total_general_questions == 49
 
     # 感冒主題保留既有兩題原文
     cold_topic = next(t for t in general_topics if t.topic_key == "common-cold-home-care")

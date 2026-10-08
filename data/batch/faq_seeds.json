@@ -145,6 +145,174 @@
         "when_to_see_doctor",
         "home_care"
       ]
+    },
+    {
+      "topic_key": "hypertension-basics",
+      "title": "高血壓基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是高血壓？",
+        "高血壓常見症狀有哪些？",
+        "高血壓什麼時候需要就醫？",
+        "高血壓患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "diabetes-type2-care",
+      "title": "第二型糖尿病照護與衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是第二型糖尿病？",
+        "第二型糖尿病常見症狀有哪些？",
+        "第二型糖尿病什麼時候需要就醫？",
+        "第二型糖尿病患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "urticaria-care",
+      "title": "蕁麻疹照護與基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是蕁麻疹？",
+        "蕁麻疹常見症狀有哪些？",
+        "蕁麻疹什麼時候需要就醫？",
+        "蕁麻疹患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "asthma-home-care",
+      "title": "氣喘日常照護與基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是氣喘？",
+        "氣喘常見症狀有哪些？",
+        "氣喘什麼時候需要就醫？",
+        "氣喘患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "gerd-management",
+      "title": "胃食道逆流基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是胃食道逆流？",
+        "胃食道逆流常見症狀有哪些？",
+        "胃食道逆流什麼時候需要就醫？",
+        "胃食道逆流患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "gout-basics",
+      "title": "痛風基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是痛風？",
+        "痛風常見症狀有哪些？",
+        "痛風什麼時候需要就醫？",
+        "痛風患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "herpes-zoster-care",
+      "title": "帶狀皰疹照護與基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是帶狀皰疹？",
+        "帶狀皰疹常見症狀有哪些？",
+        "帶狀皰疹什麼時候需要就醫？",
+        "帶狀皰疹患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
+    },
+    {
+      "topic_key": "migraine-basics",
+      "title": "偏頭痛基本衛教",
+      "category": "general",
+      "clinic_id": null,
+      "keywords": [],
+      "always": true,
+      "tree_doc_id": null,
+      "questions": [
+        "什麼是偏頭痛？",
+        "偏頭痛常見症狀有哪些？",
+        "偏頭痛什麼時候需要就醫？",
+        "偏頭痛患者在家要如何照護？"
+      ],
+      "question_tags": [
+        "what",
+        "symptoms",
+        "when_to_see_doctor",
+        "home_care"
+      ]
     }
   ]
 }

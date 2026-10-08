@@ -50,6 +50,8 @@ class BatchConfig:
     soap_only: bool = False
     soap_sync_url: Optional[str] = None
     soap_sync_api_key: Optional[str] = field(default=None, repr=False)
+    general_only: bool = False
+    skip_general: bool = False
     max_faq_topics: int = 5
     max_trees: int = 3
     since_days: int = 14
@@ -66,6 +68,8 @@ class BatchSummary:
     soap_distilled_count: int = 0
     soap_conditions: list[str] = field(default_factory=list)
     soap_sync_status: str = "skipped"
+    general_generated_count: int = 0
+    general_skipped_count: int = 0
     faq_topics_planned: int = 0
     faq_topics_processed: int = 0
     faq_inserted: int = 0
@@ -116,7 +120,7 @@ def run_batch(
         # ---------------------------------------------------------------------
         # 0. SOAP 臨床居家照護衛教提煉階段
         # ---------------------------------------------------------------------
-        soap_stage = cfg.enable_soap_distill or cfg.soap_only
+        soap_stage = (cfg.enable_soap_distill or cfg.soap_only) and not cfg.general_only
 
         # 0a. 前置增量同步：失敗只降級（沿用本機既有病歷繼續提煉），不中斷批次、不影響後續階段
         if soap_stage and cfg.soap_sync_url and not cfg.dry_run:
@@ -250,11 +254,24 @@ def run_batch(
                         seen_topic_idents.add(ident)
                         all_candidate_topics.append(st)
 
+                # 依據 general_only / skip_general 過濾主題
+                if cfg.general_only:
+                    all_candidate_topics = [
+                        st for st in all_candidate_topics if st.topic.category == "general"
+                    ]
+                elif cfg.skip_general:
+                    all_candidate_topics = [
+                        st for st in all_candidate_topics if st.topic.category != "general"
+                    ]
+
                 # 遍歷候選主題，過濾所有問題已存在者（排除被標記重生成題目），再截斷至 max_faq_topics
                 for st in all_candidate_topics:
                     topic = st.topic
                     existing = existing_questions(conn, topic.clinic_id, topic.topic_key, exclude_regen_marked=True)
                     pending_q = [q for q in topic.questions if q not in existing]
+                    skipped_count = len(topic.questions) - len(pending_q)
+                    if topic.category == "general":
+                        summary.general_skipped_count += skipped_count
                     if not pending_q:
                         continue
                     planned_topics.append((st, pending_q))
@@ -273,7 +290,7 @@ def run_batch(
         # 2. 樹重建規劃階段
         # ---------------------------------------------------------------------
         planned_trees = []
-        if not cfg.skip_trees:
+        if not cfg.skip_trees and not cfg.general_only:
             marked_trees = find_marked_trees(conn, limit=cfg.max_trees)
             summary.trees_planned = len(marked_trees)
             for tree_info in marked_trees:
@@ -322,6 +339,9 @@ def run_batch(
                     summary.faq_inserted += ins
                     summary.faq_rejected += len(gen_res.rejected)
                     summary.faq_skipped_existing += gen_res.skipped_existing
+
+                    if topic.category == "general":
+                        summary.general_generated_count += ins
 
                     # 清算重生成旗標
                     settle_details: dict = {}

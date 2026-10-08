@@ -115,6 +115,17 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="僅執行 SOAP 臨床居家照護提煉階段",
     )
+    general_mode = parser.add_mutually_exclusive_group()
+    general_mode.add_argument(
+        "--general-only",
+        action="store_true",
+        help="僅執行一般醫學常識 FAQ 預生成階段",
+    )
+    general_mode.add_argument(
+        "--skip-general",
+        action="store_true",
+        help="略過一般醫學常識 FAQ 主題預生成",
+    )
     parser.add_argument(
         "--soap-sync-url",
         type=str,
@@ -194,6 +205,10 @@ def main(
     parser = create_parser()
     args = parser.parse_args(argv)
 
+    if args.general_only and args.soap_only:
+        sys.stderr.write("錯誤：旗標 --general-only 與 --soap-only 互斥，不可同時指定。\n")
+        return 2
+
     db_path = Path(args.db).resolve()
     if not db_path.exists():
         sys.stderr.write(f"錯誤：找不到指定的目標資料庫檔案：{db_path}\n")
@@ -267,6 +282,8 @@ def main(
             soap_only=args.soap_only,
             soap_sync_url=args.soap_sync_url,
             soap_sync_api_key=os.environ.get("CLINICBRAIN_SOAP_SYNC_API_KEY") or None,
+            general_only=args.general_only,
+            skip_general=args.skip_general,
             max_faq_topics=args.max_faq_topics,
             max_trees=args.max_trees,
             since_days=args.since_days,
@@ -287,6 +304,7 @@ def main(
         print(f"執行狀態：{summary.status}")
         print(f"SOAP 前置同步：{summary.soap_sync_status}")
         print(f"SOAP 提煉：產出 {summary.soap_distilled_count} 筆衛教草稿 (標的疾病: {', '.join(summary.soap_conditions) or '無'})")
+        print(f"一般衛教 FAQ：新增 {summary.general_generated_count} 筆，略過既有 {summary.general_skipped_count} 筆")
         print(f"FAQ 主題：規劃 {summary.faq_topics_planned} 個，處理 {summary.faq_topics_processed} 個")
         print(f"FAQ 筆數：新增 {summary.faq_inserted} 筆，剔除 {summary.faq_rejected} 筆，略過既有 {summary.faq_skipped_existing} 筆")
         print(f"推理樹：規劃 {summary.trees_planned} 棵，重建 {summary.trees_rebuilt} 棵，未變 {summary.trees_unchanged} 棵，略過 {summary.trees_skipped} 棵")

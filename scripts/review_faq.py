@@ -95,6 +95,12 @@ def main(argv: list[str] | None = None) -> int:
         help="篩選資料來源型態 (source_type)",
     )
     parser_list.add_argument(
+        "--category",
+        choices=["special", "general"],
+        default=None,
+        help="篩選問答類別 (category)",
+    )
+    parser_list.add_argument(
         "--limit",
         type=int,
         default=50,
@@ -127,7 +133,13 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # pending-summary 子命令
-    subparsers.add_parser("pending-summary", help="晨間醫師審核摘要檢視")
+    parser_ps = subparsers.add_parser("pending-summary", help="晨間醫師審核摘要檢視")
+    parser_ps.add_argument(
+        "--category",
+        choices=["special", "general"],
+        default=None,
+        help="篩選問答類別 (category)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -177,19 +189,29 @@ def main(argv: list[str] | None = None) -> int:
                 cur = conn.cursor()
                 has_meta = has_metadata_column(conn)
                 meta_select = ", metadata" if has_meta else ""
+                
+                where_clauses = ["review_status = 'pending'"]
+                params = []
+                if getattr(args, "category", None):
+                    where_clauses.append("category = ?")
+                    params.append(args.category)
+                where_sql = " AND ".join(where_clauses)
+
                 cur.execute(
                     f"""
                     SELECT id, clinic_id, topic_key, question, category, source_type, created_at{meta_select}
                     FROM faq_cache
-                    WHERE review_status = 'pending'
+                    WHERE {where_sql}
                     ORDER BY id ASC
-                    """
+                    """,
+                    tuple(params),
                 )
                 rows = cur.fetchall()
                 total_pending = len(rows)
 
                 print("==================== 晨間醫師簽核通報摘要 ====================")
-                print(f"待簽核草稿總筆數：{total_pending} 筆\n")
+                filter_desc = f"（類別: {args.category}）" if getattr(args, "category", None) else ""
+                print(f"待簽核草稿總筆數{filter_desc}：{total_pending} 筆\n")
 
                 if total_pending == 0:
                     print("目前無任何待簽核衛教草稿。")
@@ -197,7 +219,8 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
 
                 soap_items = []
-                llm_items = []
+                llm_general_items = []
+                llm_special_items = []
                 other_items = []
 
                 for r in rows:
@@ -227,7 +250,10 @@ def main(argv: list[str] | None = None) -> int:
                     if src_type == "soap_distilled":
                         soap_items.append(item_info)
                     elif src_type == "llm_generated":
-                        llm_items.append(item_info)
+                        if cat == "general":
+                            llm_general_items.append(item_info)
+                        else:
+                            llm_special_items.append(item_info)
                     else:
                         other_items.append(item_info)
 
@@ -247,9 +273,15 @@ def main(argv: list[str] | None = None) -> int:
                             print(f"    - [ID {item['id']}] {item['question']} (參考病歷: {rec_cnt} 筆)")
                     print()
 
-                if llm_items:
-                    print(f"【LLM 預生成問答草稿】共 {len(llm_items)} 筆：")
-                    for item in llm_items:
+                if llm_special_items:
+                    print(f"【LLM 預生成診所專屬草稿】共 {len(llm_special_items)} 筆：")
+                    for item in llm_special_items:
+                        print(f"  - [ID {item['id']}] {item['question']} (主題: {item['topic_key']})")
+                    print()
+
+                if llm_general_items:
+                    print(f"【LLM 預生成通用衛教草稿】共 {len(llm_general_items)} 筆：")
+                    for item in llm_general_items:
                         print(f"  - [ID {item['id']}] {item['question']} (主題: {item['topic_key']})")
                     print()
 
@@ -269,13 +301,22 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             elif args.subcommand == "list":
-                faqs = list_faqs(conn, status=args.status, limit=args.limit, topic_key=args.topic, source_type=args.source)
+                faqs = list_faqs(
+                    conn,
+                    status=args.status,
+                    limit=args.limit,
+                    topic_key=args.topic,
+                    source_type=args.source,
+                    category=args.category,
+                )
                 counts = count_by_status(conn)
 
                 if not faqs:
                     filter_msg = f"（主題: {args.topic}）" if args.topic else ""
                     if args.source:
                         filter_msg += f"（來源: {args.source}）"
+                    if args.category:
+                        filter_msg += f"（類別: {args.category}）"
                     print(f"目前沒有狀態為 '{args.status}' {filter_msg}的常見問答。")
                 else:
                     print(f"📋 狀態為 '{args.status}' 的問答清單（共 {len(faqs)} 筆）：")
