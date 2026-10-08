@@ -42,7 +42,7 @@ _Q_PREFIXES = ("問：", "問:", "Q:", "Q：", "q:", "q：")
 
 # AI 生成：單一本機 llama-server 一次只服務一題，避免請求堆疊拖垮推論
 _GENERATION_LOCK = threading.Lock()
-LLM_GENERATE_TIMEOUT_SECONDS = 180
+LLM_GENERATE_TIMEOUT_SECONDS = 300
 
 
 def _local_llm_call(prompt: str) -> str:

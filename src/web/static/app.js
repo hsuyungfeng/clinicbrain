@@ -356,7 +356,7 @@ function createFaqReviewCard(faq) {
     btnGen.addEventListener("click", async () => {
         const overwrite = !state.needsAnswer;
         if (overwrite && !window.confirm("此草稿已有答案，重新生成會覆蓋目前內容。確定要重新生成嗎？")) return;
-        setBusy(btnGen, "本機模型生成中（約 1～2 分鐘）", true);
+        setBusy(btnGen, "本機模型生成中（約 1～3 分鐘，請勿關閉頁面）", true);
         card.classList.add("working");
         try {
             const resp = await fetch(`/api/v1/admin/review/faqs/${faq.id}/generate-answer`, {
