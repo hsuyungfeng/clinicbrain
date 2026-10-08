@@ -10,7 +10,7 @@
 - ✅ **v1.1 上線就緒與成本優化** — Phase 6–9（2026-10-02 完成）— [歸檔](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 診所資料優先與一般疾病簡易資訊** — Phase 10–13（2026-10-06 完成）— [歸檔](milestones/v1.2-ROADMAP.md)
 - ✅ **v1.3 臨床語音與 SOAP 紀錄擷取** — Phase 14（2026-10-07 完成）— [歸檔](milestones/v1.3-ROADMAP.md)
-- 🚧 **v1.4 臨床衛教提煉與進階防護** — Phase 15+（進行中）
+- ✅ **v1.4 臨床衛教提煉與進階防護** — Phase 15–18（2026-10-08 完成）
 
 ## Progress
 
@@ -24,7 +24,7 @@
 | 15. 臨床 SOAP 衛教提煉與審核流 | 3/3 | Complete | 2026-10-07 |
 | 16. 定時自動化同步與批次提煉排程 | 3/3 | Complete | 2026-10-08 |
 | 17. 定時一般醫學知識補充與批次擴充 | 3/3 | Complete | 2026-10-08 |
-| 18. 各診所資料上傳與管理 Web App | 0/4 | Planned | - |
+| 18. 各診所資料上傳與管理 Web App | 3/3 | Complete | 2026-10-08 |
 
 ## Phase Details
 
@@ -51,12 +51,12 @@
   2. 自動化離峰批次生成管線（支援 `--general-only`、`--skip-general` 與斷點續跑）。
   3. 待審一般衛教問答審核流擴充（支援 `--category` 篩選）與 E2E 閉環驗收。
 
-### Phase 18: 各診所資料上傳與管理 Web App
+### Phase 18: 各診所資料上傳與管理 Web App (已完成)
 
 **Goal**: 提供直覺友善的輕量 Web 介面，供各診所人員上傳診所文件（DOCX/XLSX/PDF）、檢視 SOAP 紀錄與溯源、並提供視覺化醫師簽核與營運資訊管理介面。
-**Depends on**: Phase 05 (FastAPI 服務層), Phase 15 (審核工具)
+**Status**: Complete (15/15 測試通過、全套回歸 1013 通過、Fail-Closed 隔離、正式庫零污染)
 **Scope**:
-  1. 檔案上傳與自動處理介面（DOCX / XLSX / PDF）。
+  1. 檔案上傳與自動處理介面（DOCX / XLSX / PDF 上傳、去識別化與價格清洗）。
   2. 視覺化醫師簽核儀表板（pending 草稿卡片、溯源病歷對照、一鍵核准/駁回）。
-  3. 診所營運資料管理（門診時間、自訂備註、診所資訊編輯）。
-  4. 多診所權限隔離與管理員認證。
+  3. 獨立 source_type='web_upload' 審核閘門防禦（避免 clinic_upload 恆可見造成 Fail-Open）。
+  4. 多診所權限隔離與 verify_admin_key 認證安全。

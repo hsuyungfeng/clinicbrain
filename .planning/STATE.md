@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: 臨床語音與 SOAP 紀錄擷取
+milestone: v1.4
+milestone_name: 臨床衛教提煉與進階防護
 status: completed_milestone
-stopped_at: Milestone v1.3 / Phase 14（含剩餘項目改善管線）已圓滿完成，全套回歸測試 945 passed (SOAP 專屬 69 passed)，正式資料庫 SHA-256 恆定未變
-last_updated: "2026-10-07T15:15:00.000Z"
-last_activity: 2026-10-07 -- Phase 14 剩餘項目強化完成（Dry-Run 修復、切分標記嚴格化、否定防禦），全量測試通過
+stopped_at: Milestone v1.4 / Phase 15–18 全數圓滿完成，全套回歸測試 1013 passed，正式資料庫 SHA-256 恆定未變
+last_updated: "2026-10-08T15:55:00.000Z"
+last_activity: 2026-10-08 -- Phase 18 診所資料上傳與管理 Web App 實作與加固完成，全套回歸測試全過
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 12
+  completed_plans: 12
   percent: 100
 ---
 
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** Milestone v1.4 推進中；已完成 Phase 15 及端到端業務閉環驗證，準備進入 Phase 16（定時自動化同步與批次提煉排程）
+**Current focus:** Milestone v1.4 圓滿收官；已完成 Phase 15–18 全部規劃與閉環實機驗證
 
 ## Current Position
 
-Phase: 17 of 18（定時一般醫學知識補充與批次擴充）-- COMPLETED
-Plan: 17-01、17-02、17-03 均已實作、加固與全套回歸驗證通過
-Status: Phase 17 Completed (Milestone v1.4 進行中，下一個為 Phase 18)
-Last activity: 2026-10-08 -- 完成 Phase 17 通用種子庫擴充（8 主題 32 題）、general-only 批次調度與斷點續跑、審核 CLI 篩選與 E2E 驗收；通過 Claude 4 項加固；全套回歸 1012 測試全數通過；正式庫 SHA-256 恆定未變
+Phase: 18 of 18（各診所資料上傳與管理 Web App）-- COMPLETED
+Plan: 18-01、18-02、18-03 均已實作、加固與全套回歸驗證通過
+Status: Milestone v1.4 Completed (全部 18 個 Phase 全數通過驗收)
+Last activity: 2026-10-08 -- 完成 Phase 18 Web 後端管理端點、單頁管理系統 (SPA)、CSP/防嵌入標頭、web_upload 審核閘門防護；通過 Claude 對抗性加固；全套回歸 1013 測試全數通過；正式庫 SHA-256 恆定未變
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total tasks completed: 56+
-- Tests passing: 1012 passed, 1 skipped, 3 deselected (Phase 17 專屬與加固全過)
+- Total tasks completed: 59+
+- Tests passing: 1013 passed, 1 skipped, 17 deselected (Phase 18 專屬與加固 15/15 passed)
 - SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, 15 種子主題 (32+ 題)，soap_records/soap_records_fts (trigram) 支援，clinic.db SHA-256 (5fb8328d...) 零污染
 
 ## Accumulated Context
