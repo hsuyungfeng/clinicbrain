@@ -8,18 +8,24 @@ import json
 from pathlib import Path
 import sqlite3
 import tempfile
-from typing import Any, Optional
+import threading
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ...ingestion.convert_chinese import to_traditional
 from ...ingestion.extract_text import extract_docx_text, extract_xlsx_text
 from ...ingestion.generate_faq import validate_single_faq
+from ...pageindex.answer_generator import GenerationError, generate_answer_for_faq, is_answer_thin
 from ...pageindex.faq_review import (
+    MAX_BATCH_SIZE,
+    batch_review_faqs,
     get_faq,
     has_metadata_column,
     has_review_status,
     set_review_status,
+    update_faq_content,
 )
 from ...pageindex.faq_writer import upsert_faqs
 from ...soap.deid import deidentify_text
@@ -33,6 +39,35 @@ MAX_ANSWER_CHARS = 3000
 _ZIP_MAGIC = b"PK\x03\x04"
 _PDF_MAGIC = b"%PDF-"
 _Q_PREFIXES = ("問：", "問:", "Q:", "Q：", "q:", "q：")
+
+# AI 生成：單一本機 llama-server 一次只服務一題，避免請求堆疊拖垮推論
+_GENERATION_LOCK = threading.Lock()
+LLM_GENERATE_TIMEOUT_SECONDS = 180
+
+
+def _local_llm_call(prompt: str) -> str:
+    """呼叫本機 llama-server（測試時以 monkeypatch 替換）。"""
+    from ...pageindex.llm_client import local_llm_call
+
+    return local_llm_call(prompt, timeout=LLM_GENERATE_TIMEOUT_SECONDS)
+
+
+class BatchReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["approve", "reject"]
+    faq_ids: list[StrictInt] = Field(..., min_length=1, max_length=MAX_BATCH_SIZE)
+
+
+class UpdateFaqRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question: Optional[str] = Field(None, max_length=200)
+    answer: Optional[str] = Field(None, max_length=3000)
+
+
+class GenerateAnswerRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    overwrite: bool = False
+
 
 router = APIRouter(
     prefix="/api/v1/admin",
@@ -314,6 +349,7 @@ def get_admin_review_faqs(
                     item["metadata"] = json.loads(item["metadata"])
             except Exception:
                 pass
+        item["needs_answer"] = is_answer_thin(item.get("question"), item.get("answer"))
         faqs.append(item)
 
     return {
@@ -402,3 +438,66 @@ def get_admin_review_summary(
         "rejected_total": rejected_total,
         "soap_records_total": soap_records_total,
     }
+
+
+@router.post("/review/batch", summary="批量核准／駁回待審草稿（單一交易）")
+def batch_admin_review(
+    req: BatchReviewRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """單次最多 100 筆；核准前逐筆重跑合規檢驗，未通過者列入 failed_ids，其餘同一交易生效。"""
+    if not has_review_status(conn):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="資料庫尚未建立審核欄位")
+    try:
+        result = batch_review_faqs(conn, req.faq_ids, req.action)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    return {"status": "ok", "action": req.action, **result}
+
+
+@router.patch("/review/faqs/{faq_id}", summary="內聯修訂待審草稿的題目／答案")
+def patch_admin_faq(
+    faq_id: int,
+    req: UpdateFaqRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    try:
+        update_faq_content(conn, faq_id, question=req.question, answer=req.answer)
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+    faq = get_faq(conn, faq_id)
+    return {"status": "ok", "id": faq_id, "faq": faq}
+
+
+@router.post("/review/faqs/{faq_id}/generate-answer", summary="以本機 LLM 為待審草稿生成衛教答案")
+def generate_admin_faq_answer(
+    faq_id: int,
+    req: GenerateAnswerRequest = GenerateAnswerRequest(),
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """走本機 llama-server；生成內容須通過價格屏蔽、四層合規、劑量與就醫警訊檢驗才寫入，狀態維持 pending。"""
+    from ...pageindex.llm_client import LocalLLMUnavailableError
+
+    if not _GENERATION_LOCK.acquire(blocking=False):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="已有一筆答案正在生成，請稍後再試")
+    try:
+        try:
+            return {
+                "status": "ok",
+                **generate_answer_for_faq(conn, faq_id, _local_llm_call, overwrite=req.overwrite),
+            }
+        except GenerationError as e:
+            raise HTTPException(status_code=e.http_status, detail=str(e)) from e
+        except LocalLLMUnavailableError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="本機 LLM 服務目前無法使用，請確認 llama-server 已啟動後再試",
+            ) from e
+    finally:
+        _GENERATION_LOCK.release()

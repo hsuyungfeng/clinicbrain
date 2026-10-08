@@ -28,6 +28,7 @@ FAQ_READ_WHITELIST: dict[str, str] = {
     "src/pageindex/faq_conflicts.py": "相近常見問答衝突比對模組，已套用 visible_faq_sql 審核過濾",
     "scripts/review_faq.py": "醫師審核 CLI 工具，提供待審草稿全區塊通報摘要、檢視與狀態處置",
     "src/api/routes/admin.py": "Web 管理端點，強制 verify_admin_key；刻意檢視 pending/rejected 待審草稿與統計，僅限醫師／管理者，不對公開端點開放",
+    "src/pageindex/answer_generator.py": "Phase 19 AI 答案生成：僅對待審來源（REVIEW_GATED_SOURCES）的 pending/rejected 草稿讀寫，生成後狀態維持 pending，不對外回傳未核准內容",
     "scripts/verify_e2e_closed_loop.py": "端到端閉環實機驗證腳本，測試完成後清除範本資料",
 }
 

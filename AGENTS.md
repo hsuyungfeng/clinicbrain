@@ -408,6 +408,21 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **已知限制**：① 文件段落轉草稿的規則簡單（以空行分段、`問：／答：` 或問號結尾辨識問答），醫師須逐筆檢視；同一檔案改段落順序重傳會產生不同「指示 N」題目；② 相同診所＋主題＋題目重傳且內容有變時，既有已核准項目會回到 `pending`（需重新簽核）；③ 全域 CORS 為 `allow_origins=["*"]`（沿用既有設定），管理端點仰賴金鑰標頭而非來源限制；④ OCR 不支援，掃描版 PDF 會被拒絕。
 - **測試**：`tests/test_admin_api.py`（含複審回歸：web_upload＋pending 隱蔽、檔頭／診所／段落數／保證療效剔除／過濾參數／路徑穿越）、`tests/test_web_ui.py`（含安全標頭）、`tests/test_webapp_e2e.py`（上傳→pending→公開端點隱蔽→核准→快取短路命中）。
 
+### 2.18 Web 臨床操作體驗與 AI 協同工作流（Phase 19 新增）
+解決醫師實機反饋的兩個痛點：上傳「只有問題清單」的文件缺答案、逐筆簽核太繁瑣。三個新端點皆掛 `verify_admin_key`：
+- **批量簽核 `POST /api/v1/admin/review/batch`**：`{action: approve|reject, faq_ids: [int]}`（`extra=forbid`、`StrictInt`、1～100 筆，布林與字串被拒；後端 `batch_review_faqs` 先對 ID 去重）。走唯一權威 `set_review_status` 的**單一次 commit**：逐筆合規檢驗失敗者（含 `not_reviewable`，即 `manual`／`clinic_upload` 等權威來源）列入 `failed_ids`／`failed_reasons`，其餘於同一交易生效；任何非預期例外一律 `rollback`，不留半提交。回傳 `success_count`／`failed_count`／`processed_ids`／`failed_ids`。
+- **內聯修訂 `PATCH /api/v1/admin/review/faqs/{id}`**（`faq_review.update_faq_content`）：僅限審核閘門來源（`REVIEW_GATED_SOURCES`）且**非 approved** 的列——已核准內容不得被靜默改寫（須先退回待審）；文字先 `deidentify_text` ＋ `deep_mask_prices`，再過四層驗證＋劑量檢驗（general 另需就醫警訊）；修訂後狀態一律回到 `pending`（被駁回的草稿修訂後重新進入待審）、`content_version` +1、`metadata.answer_source='manual_edit'`；題目與同診所同主題重複回 422，找不到 404、不可編輯 409。
+- **本機 LLM 生成 `POST /api/v1/admin/review/faqs/{id}/generate-answer`**（`src/pageindex/answer_generator.py`）：
+  - 僅走本機 `llama-server`（`admin._local_llm_call`，逾時 180 秒；實測 Qwen3.8-27B 單題約 68 秒，故前端提示「約 1～2 分鐘」），內容不外流雲端；`_GENERATION_LOCK` 非阻塞鎖使同時只處理一題（忙碌回 429），鎖於 `finally` 釋放；LLM 離線回 503 並給繁中處置提示。
+  - 「真正的問題」判定：題目欄為實際問句則直接使用；題目欄是上傳佔位題（`【診所文件】… - 指示 N`）且答案欄僅為**單行問句**（問題清單型文件）時，以該行為問句，生成成功後把題目欄改寫為真正問句（否則公開查詢無法比對）。佔位題但答案是多行指示內容者視為已有實質內容，未明確 `overwrite=true` 不得覆蓋（409）；答案已完整（≥30 字且非問題清單）同樣需 `overwrite`。
+  - 輸出檢驗（全部通過才寫入）：移除 `<think>` 區塊與「答：」前綴 → `sanitize_faq_text`（去識別化＋價格屏蔽）→ 長度 100～600 字 → `validate_single_faq(check_dosage=True, require_doctor_warning=True)`（簡體／政治立場／保證療效／價格／劑量／具體症狀的就醫警訊）。未通過回 422 並**不寫入**。Prompt 注入（題目要求忽略規則、輸出價格）無法繞過輸出端檢驗。
+  - 寫入以樂觀鎖（`WHERE answer IS ? AND review_status != 'approved'`）防並行修改；狀態維持 `pending`，`metadata.answer_source='local_llm'`，前端標示「本機 LLM 生成・待醫師確認」。
+- **列表 `GET /review/faqs`** 新增 `needs_answer`（`answer_generator.is_answer_thin`）供前端標示「⚠️ 答案待補齊」，判定邏輯只在後端一處。
+- **前端（`src/web/static/`）**：全選／反選／清除與「已選取 X / Y 筆」計數、底部浮動操作列（選取時滑入，批量核准／駁回，每 100 筆分批送出，失敗項目保留於清單並提示原因）、卡片 checkbox 與點擊卡片空白處切換、單題「🤖 本地 LLM 生成解答」（有答案時改為「🔄 重新生成」並二次確認 overwrite）、「✏️ 編輯」內聯編輯、Spinner／骨架屏／Toast。來源篩選補上 `web_upload`（先前遺漏，網頁上傳草稿原本無法篩出）。**所有伺服器或使用者資料一律以 `textContent` 寫入**；`tests/test_web_ui_v2.py` 以靜態掃描確認審核區塊不含 `innerHTML`／`insertAdjacentHTML`／`document.write`／`eval`（SOAP 區塊僅剩固定字串）。
+- **不做批量 AI 生成**：本機模型一次只能處理一題且單題需 1～2 分鐘，批量生成會長時間佔用推論並與夜間批次爭用；醫師逐題決定是否生成。
+- **已知限制**：① AI 生成內容的醫學正確性仍完全仰賴醫師逐筆確認，檢驗僅攔截格式／合規類風險；② 生成不會參考診所既有 FAQ 或推理樹，屬一般性衛教；③ 單次列表最多載入 200 筆，超過時提示處理後重新整理；④ 批量核准不會阻擋「答案待補齊」的列（醫師可能刻意核准純指示文字），僅在介面標示警示。
+- **測試**：`tests/test_admin_batch_and_ai.py`（批量／編輯／生成／認證）、`tests/test_phase19_hardening.py`（權威來源不可被批量改動、鎖釋放、think 區塊、prompt 注入、XSS 純文字、欄位白名單）、`tests/test_web_ui_v2.py`、`tests/test_clinical_ux_e2e.py`（問題清單上傳 → 生成 → 全選／反選 → 批量核准 → 公開查詢短路命中，未生成者仍隱蔽）。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -460,6 +475,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/migrate_soap_schema.py`：`soap_records` 與 FTS5 觸發器單一來源 DDL 遷移腳本
 * `scripts/migrate_faq_metadata.py`：`faq_cache.metadata` 欄位單一來源遷移腳本（`--confirm-prod-backup`、`--dry-run`）
 * `scripts/distill_soap_faqs.py`：SOAP 衛教提煉批次 CLI（dry-run 唯讀）
+* `src/pageindex/answer_generator.py`：待審草稿 AI 輔助答案生成（本機 LLM、輸出端四層檢驗、樂觀鎖寫入）
 * `src/soap/distiller.py`：SOAP 衛教提煉與草稿生成模組
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具
 * `scripts/review_faq.py`：醫師審核命令列互動工具（支援 list --topic、show 來源與相近診所 FAQ 檢視、approve、reject、reset 與 mark-regen 重生成標記）

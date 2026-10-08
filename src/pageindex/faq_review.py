@@ -12,6 +12,7 @@ Phase 12 General Content Generation: DEBT-03 (人工標記重生成與審核增�
 """
 
 from dataclasses import dataclass, field
+import json
 import sqlite3
 from typing import Any, Optional
 
@@ -434,3 +435,124 @@ def set_review_status(
 
     conn.commit()
     return ReviewResult(changed=changed, skipped=skipped)
+
+
+# ---------------------------------------------------------------------------
+# Phase 19：批量簽核與內聯修訂
+# ---------------------------------------------------------------------------
+MAX_BATCH_SIZE = 100
+MAX_QUESTION_CHARS = 200
+MAX_ANSWER_CHARS = 3000
+
+
+def sanitize_faq_text(text: str) -> str:
+    """去識別化＋價格屏蔽（寫入前的二次防線）。"""
+    from src.api.routes.query import deep_mask_prices
+    from src.soap.deid import deidentify_text
+
+    cleaned = deep_mask_prices(deidentify_text(text or ""))
+    return cleaned if isinstance(cleaned, str) else str(cleaned)
+
+
+def batch_review_faqs(conn: sqlite3.Connection, faq_ids: list[int], action: str) -> dict:
+    """批量核准／駁回：單一交易、單一權威路徑（set_review_status）。
+
+    - action 僅限 approve／reject；ID 去重後最多 MAX_BATCH_SIZE 筆（呼叫端另做型別驗證）。
+    - 逐筆合規檢驗失敗者略過並回報原因，其餘於同一次 commit 生效；
+      任何非預期例外一律 rollback，不留下半提交狀態。
+    """
+    if action not in ("approve", "reject"):
+        raise ValueError("action 僅限 approve 或 reject")
+    ids = list(dict.fromkeys(int(i) for i in faq_ids))
+    if not ids:
+        raise ValueError("faq_ids 不可為空")
+    if len(ids) > MAX_BATCH_SIZE:
+        raise ValueError(f"單次批次最多 {MAX_BATCH_SIZE} 筆")
+    new_status = REVIEW_APPROVED if action == "approve" else REVIEW_REJECTED
+    try:
+        res = set_review_status(conn, ids, new_status, enforce_general_warning=True)
+    except Exception:
+        conn.rollback()
+        raise
+    return {
+        "success_count": len(res.changed),
+        "failed_count": len(res.skipped),
+        "processed_ids": res.changed,
+        "failed_ids": [i for i, _ in res.skipped],
+        "failed_reasons": {str(i): r for i, r in res.skipped},
+    }
+
+
+def update_faq_content(
+    conn: sqlite3.Connection,
+    faq_id: int,
+    question: Optional[str] = None,
+    answer: Optional[str] = None,
+) -> bool:
+    """內聯修訂待審草稿的題目／答案。
+
+    - 僅限待審來源（REVIEW_GATED_SOURCES）且非 approved 的列；已核准項目不得靜默改寫對外內容。
+    - 文字先去識別化＋價格屏蔽，再過四層驗證（含劑量）；失敗拋 ValueError，不寫入。
+    - 修訂後狀態一律回到 pending（被駁回的草稿修訂後重新進入待審）。
+    - 找不到回 LookupError；不可編輯回 PermissionError；題目重複回 ValueError。
+    """
+    from src.ingestion.generate_faq import validate_single_faq
+
+    if question is None and answer is None:
+        raise ValueError("至少需提供 question 或 answer")
+    if not has_review_status(conn):
+        raise RuntimeError("資料庫尚未建立審核欄位")
+
+    row = conn.execute(
+        "SELECT question, answer, source_type, review_status, category FROM faq_cache WHERE id = ?",
+        (faq_id,),
+    ).fetchone()
+    if row is None:
+        raise LookupError("找不到指定的 FAQ")
+    old_q, old_a, src, status_, category = tuple(row)
+    if src not in REVIEW_GATED_SOURCES:
+        raise PermissionError("僅限待審來源草稿可編輯")
+    if status_ == REVIEW_APPROVED:
+        raise PermissionError("已核准項目不可直接編輯，請先退回待審")
+
+    new_q = sanitize_faq_text(question).strip() if question is not None else old_q
+    new_a = sanitize_faq_text(answer).strip() if answer is not None else old_a
+    if not new_q or not new_a:
+        raise ValueError("題目與答案不可為空")
+    if len(new_q) > MAX_QUESTION_CHARS or len(new_a) > MAX_ANSWER_CHARS:
+        raise ValueError("題目或答案超過長度上限")
+    ok, reason = validate_single_faq(
+        {"question": new_q, "answer": new_a},
+        check_dosage=True,
+        require_doctor_warning=(category == "general"),
+    )
+    if not ok:
+        raise ValueError(f"未通過合規檢驗：{reason}")
+
+    meta_sql, meta_params = "", []
+    if has_metadata_column(conn):
+        old = conn.execute("SELECT metadata FROM faq_cache WHERE id = ?", (faq_id,)).fetchone()[0]
+        try:
+            meta = json.loads(old) if old else {}
+            if not isinstance(meta, dict):
+                meta = {}
+        except (TypeError, ValueError):
+            meta = {}
+        meta["answer_source"] = "manual_edit"
+        meta_sql, meta_params = ", metadata = ?", [json.dumps(meta, ensure_ascii=False)]
+
+    try:
+        conn.execute(
+            f"""
+            UPDATE faq_cache
+            SET question = ?, answer = ?, review_status = 'pending', reviewed_at = NULL,
+                content_version = content_version + 1, updated_at = CURRENT_TIMESTAMP{meta_sql}
+            WHERE id = ?
+            """,
+            [new_q, new_a, *meta_params, faq_id],
+        )
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        raise ValueError("同診所同主題已有相同題目") from e
+    conn.commit()
+    return True

@@ -116,7 +116,7 @@
                         <option value="">全部來源 (Source)</option>
                         <option value="soap_distilled">SOAP 病歷提煉</option>
                         <option value="llm_generated">LLM 預生成</option>
-                        <option value="clinic_upload">診所上傳文件</option>
+                        <option value="web_upload">網頁上傳文件</option>
                     </select>
                     <button id="btnRefreshReview" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded transition">
                         重新整理
@@ -124,10 +124,16 @@
                 </div>
             </div>
 
-            <div id="reviewCardsContainer" class="space-y-4">
-                <div class="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200">
-                    載入待審草稿中...
-                </div>
+            <div class="selection-toolbar">
+                <button id="btnSelectAll" class="btn btn-ghost">☑️ 全選</button>
+                <button id="btnInvertSelect" class="btn btn-ghost">🔄 反選</button>
+                <button id="btnClearSelect" class="btn btn-ghost">⏹️ 清除</button>
+                <span id="selectionCounter" class="selection-counter">已選取 0 / 0 筆</span>
+            </div>
+
+            <div id="reviewCardsContainer" class="faq-list">
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
             </div>
         </section>
 
@@ -202,6 +208,14 @@
         </div>
     </div>
 
+    <div id="actionBar" class="action-bar" role="region" aria-label="批量操作">
+        <span id="actionBarCount" class="action-bar-count">已選取 0 筆草稿</span>
+        <div class="btn-row">
+            <button id="btnBatchReject" class="btn btn-danger-soft">❌ 批量駁回 (0)</button>
+            <button id="btnBatchApprove" class="btn btn-success">✅ 批量核准 (0)</button>
+        </div>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="/admin/app.js"></script>
 </body>
 </html>
