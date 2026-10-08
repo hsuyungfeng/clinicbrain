@@ -11,6 +11,7 @@
 - ✅ **v1.2 診所資料優先與一般疾病簡易資訊** — Phase 10–13（2026-10-06 完成）— [歸檔](milestones/v1.2-ROADMAP.md)
 - ✅ **v1.3 臨床語音與 SOAP 紀錄擷取** — Phase 14（2026-10-07 完成）— [歸檔](milestones/v1.3-ROADMAP.md)
 - ✅ **v1.4 臨床衛教提煉與進階防護** — Phase 15–18（2026-10-08 完成）
+- 🚧 **v1.5 臨床操作體驗與 AI 協同工作流** — Phase 19+（進行中）
 
 ## Progress
 
@@ -25,6 +26,7 @@
 | 16. 定時自動化同步與批次提煉排程 | 3/3 | Complete | 2026-10-08 |
 | 17. 定時一般醫學知識補充與批次擴充 | 3/3 | Complete | 2026-10-08 |
 | 18. 各診所資料上傳與管理 Web App | 3/3 | Complete | 2026-10-08 |
+| 19. Web 管理介面臨床體驗升級與 AI 輔助生成 | 0/3 | Planned | - |
 
 ## Phase Details
 
@@ -60,3 +62,13 @@
   2. 視覺化醫師簽核儀表板（pending 草稿卡片、溯源病歷對照、一鍵核准/駁回）。
   3. 獨立 source_type='web_upload' 審核閘門防禦（避免 clinic_upload 恆可見造成 Fail-Open）。
   4. 多診所權限隔離與 verify_admin_key 認證安全。
+
+### Phase 19: Web 管理介面臨床體驗升級與 AI 輔助生成
+
+**Goal**: 依據臨床實機操作回饋，全面美化 Web App 管理介面，並新增「全選／反選／批量簽核」與「本地 LLM 自動生成衛教解答」功能，打通從純題目到完整衛教問答之高效率審核閉環。
+**Depends on**: Phase 18 (Web App 基礎), Phase 02 (本地 LLM 推理層)
+**Scope**:
+  1. 批量簽核 API（`POST /api/v1/admin/review/batch`）與單題/批量 AI 生成衛教答案 API（`generate-answer`）。
+  2. UI 全面美化（現代醫療科技感、微陰影與流暢卡片、讀取狀態骨架屏）。
+  3. 簽核列表批量控制項（全選、反選、清除選取、浮動快捷操作列）。
+  4. 待審卡片「🤖 AI 生成答案」與「內聯編輯 (Inline Edit)」支援。
