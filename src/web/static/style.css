@@ -151,3 +151,11 @@ header.bg-indigo-900 { background: linear-gradient(90deg, var(--navy), #1e293b);
 .ask-hist-item { background: var(--surface); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.5rem 0.8rem; font-size: 0.85rem; }
 .ask-hist-item summary { cursor: pointer; font-weight: 600; color: #334155; }
 .ask-hist-body { box-shadow: none; }
+
+/* ---- 多檔／資料夾上傳佇列 ---- */
+.upload-tools { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.7rem; }
+.upload-queue { margin-top: 0.7rem; max-height: 18rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }
+.upload-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; padding: 0.35rem 0.6rem; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 0.5rem; }
+.upload-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; }
+.upload-size { color: #94a3b8; white-space: nowrap; }
+.upload-note { color: #92400e; white-space: nowrap; }

@@ -471,81 +471,203 @@ async function runBatch(action) {
 }
 
 // 5. 文件拖曳上傳
+// 上傳佇列（支援多選檔案、整個資料夾、拖曳資料夾；逐檔送出，各檔獨立回報）
+const UPLOAD_EXTS = [".docx", ".xlsx", ".pdf"];
+const UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
+const UPLOAD_MAX_FILES = 200;
+const uploadState = { queue: [], busy: false };
+
+function fileStem(name) {
+    const base = name.split("/").pop();
+    const dot = base.lastIndexOf(".");
+    return (dot > 0 ? base.slice(0, dot) : base).toLowerCase();
+}
+
+function addUploadFiles(entries) {
+    // entries: [{file, path}]
+    let skippedType = 0;
+    entries.forEach(({ file, path }) => {
+        const name = file.name || "";
+        const lower = name.toLowerCase();
+        if (name.startsWith("~$") || name.startsWith(".")) { return; }          // Office 暫存鎖檔、隱藏檔
+        if (!UPLOAD_EXTS.some(ext => lower.endsWith(ext))) { skippedType++; return; }
+        if (uploadState.queue.length >= UPLOAD_MAX_FILES) { return; }
+        const item = { file, path: path || name, status: "wait", note: "" };
+        if (file.size > UPLOAD_MAX_BYTES) { item.status = "skip"; item.note = "超過 15MB"; }
+        else if (file.size === 0) { item.status = "skip"; item.note = "檔案為空"; }
+        else if (uploadState.queue.some(q => q.path === item.path && q.file.size === file.size)) { return; }
+        else if (uploadState.queue.some(q => q.status !== "skip" && fileStem(q.path) === fileStem(item.path))) {
+            // 後端以檔名（不含副檔名）作為主題鍵，同名檔會互相覆蓋，故只收第一個
+            item.status = "skip"; item.note = "檔名重複（後端以檔名為主題鍵，會互相覆蓋）";
+        }
+        uploadState.queue.push(item);
+    });
+    if (skippedType > 0) showToast(`已略過 ${skippedType} 個非 .docx／.xlsx／.pdf 的檔案`, "info");
+    if (uploadState.queue.length >= UPLOAD_MAX_FILES) showToast(`清單上限 ${UPLOAD_MAX_FILES} 個檔案，其餘未加入`, "info");
+    renderUploadQueue();
+}
+
+function renderUploadQueue() {
+    const box = document.getElementById("uploadQueue");
+    const labels = { wait: "待上傳", busy: "處理中", ok: "完成", err: "失敗", skip: "略過" };
+    const cls = { wait: "badge-id", busy: "badge-llm", ok: "badge-ai", err: "badge-warn", skip: "badge-upload" };
+    box.replaceChildren();
+    uploadState.queue.forEach(item => {
+        const row = el("div", "upload-row");
+        const st = badge(labels[item.status], cls[item.status]);
+        if (item.status === "busy") st.prepend(el("span", "spinner"), document.createTextNode(" "));
+        row.appendChild(st);
+        row.appendChild(el("span", "upload-name", item.path));
+        row.appendChild(el("span", "upload-size", `${(item.file.size / 1024).toFixed(0)} KB`));
+        if (item.note) row.appendChild(el("span", "upload-note", item.note));
+        box.appendChild(row);
+    });
+    const ready = uploadState.queue.filter(q => q.status === "wait").length;
+    const ok = uploadState.queue.filter(q => q.status === "ok").length;
+    const err = uploadState.queue.filter(q => q.status === "err").length;
+    const skip = uploadState.queue.filter(q => q.status === "skip").length;
+    document.getElementById("uploadSummary").textContent = uploadState.queue.length === 0
+        ? "尚未加入檔案"
+        : `共 ${uploadState.queue.length} 個：待上傳 ${ready}・完成 ${ok}・失敗 ${err}・略過 ${skip}`;
+}
+
+// 遞迴讀取拖曳進來的資料夾（readEntries 一次最多回 100 筆，需迴圈讀到空為止）
+function readAllEntries(reader) {
+    return new Promise((resolve, reject) => {
+        const all = [];
+        const pump = () => reader.readEntries(batch => {
+            if (batch.length === 0) resolve(all);
+            else { all.push(...batch); pump(); }
+        }, reject);
+        pump();
+    });
+}
+
+async function collectFromEntry(entry, out) {
+    if (entry.isFile) {
+        const file = await new Promise((res, rej) => entry.file(res, rej));
+        out.push({ file, path: entry.fullPath.replace(/^\//, "") });
+    } else if (entry.isDirectory) {
+        const children = await readAllEntries(entry.createReader());
+        for (const child of children) {
+            if (out.length >= UPLOAD_MAX_FILES * 3) return;   // 防止誤拖超大目錄
+            await collectFromEntry(child, out);
+        }
+    }
+}
+
 function initUploadSection() {
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
-    const dropZoneText = document.getElementById("dropZoneText");
+    const folderInput = document.getElementById("folderInput");
     const form = document.getElementById("uploadForm");
 
     dropZone.addEventListener("click", () => fileInput.click());
+    document.getElementById("btnPickFolder").addEventListener("click", () => folderInput.click());
+    document.getElementById("btnClearQueue").addEventListener("click", () => {
+        if (uploadState.busy) return;
+        uploadState.queue = [];
+        document.getElementById("uploadResultArea").classList.add("hidden");
+        renderUploadQueue();
+    });
 
     fileInput.addEventListener("change", () => {
-        if (fileInput.files.length > 0) {
-            dropZoneText.textContent = `已選擇檔案: ${fileInput.files[0].name}`;
-        }
+        addUploadFiles(Array.from(fileInput.files).map(f => ({ file: f, path: f.name })));
+        fileInput.value = "";
+    });
+    folderInput.addEventListener("change", () => {
+        addUploadFiles(Array.from(folderInput.files).map(f => ({ file: f, path: f.webkitRelativePath || f.name })));
+        folderInput.value = "";
     });
 
     dropZone.addEventListener("dragover", (e) => {
         e.preventDefault();
         dropZone.classList.add("border-indigo-500", "bg-indigo-50");
     });
-
     dropZone.addEventListener("dragleave", () => {
         dropZone.classList.remove("border-indigo-500", "bg-indigo-50");
     });
-
-    dropZone.addEventListener("drop", (e) => {
+    dropZone.addEventListener("drop", async (e) => {
         e.preventDefault();
         dropZone.classList.remove("border-indigo-500", "bg-indigo-50");
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            dropZoneText.textContent = `已選擇檔案: ${fileInput.files[0].name}`;
+        // webkitGetAsEntry 必須在事件處理器同步階段取得，之後才能非同步遞迴
+        const items = Array.from(e.dataTransfer.items || []);
+        const entries = items.map(it => (it.webkitGetAsEntry ? it.webkitGetAsEntry() : null)).filter(Boolean);
+        const plainFiles = Array.from(e.dataTransfer.files || []);
+        try {
+            const collected = [];
+            if (entries.length > 0) {
+                for (const entry of entries) await collectFromEntry(entry, collected);
+            } else {
+                plainFiles.forEach(f => collected.push({ file: f, path: f.name }));
+            }
+            addUploadFiles(collected);
+        } catch (err) {
+            showToast("讀取拖曳內容失敗，請改用「選擇資料夾」按鈕", "error");
         }
     });
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const file = fileInput.files[0];
-        if (!file) {
-            alert("請先選擇或拖曳上傳檔案");
+        if (uploadState.busy) return;
+        const todo = uploadState.queue.filter(q => q.status === "wait" || q.status === "err");
+        if (todo.length === 0) {
+            showToast("清單中沒有可上傳的檔案，請先選擇或拖曳檔案／資料夾", "error");
             return;
         }
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("clinic_id", document.getElementById("uploadClinicId").value.trim());
-        formData.append("preview_only", document.getElementById("chkPreviewOnly").checked ? "true" : "false");
-
+        const clinicId = document.getElementById("uploadClinicId").value.trim();
+        const preview = document.getElementById("chkPreviewOnly").checked;
         const btn = document.getElementById("btnSubmitUpload");
-        btn.disabled = true;
-        btn.textContent = "上傳與解析處理中...";
-
         const resultArea = document.getElementById("uploadResultArea");
         const resultContent = document.getElementById("uploadResultContent");
+        uploadState.busy = true;
+        btn.disabled = true;
+        resultArea.classList.remove("hidden");
+        resultContent.textContent = "";
+        const lines = [];
+        let inserted = 0, rejected = 0, okCount = 0, errCount = 0;
 
-        try {
-            const resp = await fetch("/api/v1/admin/upload", {
-                method: "POST",
-                headers: getAuthHeaders(),
-                body: formData
-            });
-            const data = await resp.json();
-
-            resultArea.classList.remove("hidden");
-            if (resp.ok) {
-                resultContent.textContent = JSON.stringify(data, null, 2);
-                loadDashboardSummary();
-            } else {
-                resultContent.textContent = `❌ 錯誤 (HTTP ${resp.status}): ${data.detail || "上傳失敗"}`;
+        for (const item of todo) {
+            item.status = "busy"; item.note = "";
+            renderUploadQueue();
+            btn.textContent = `上傳與解析中… (${okCount + errCount + 1}/${todo.length})`;
+            const formData = new FormData();
+            formData.append("file", item.file);
+            formData.append("clinic_id", clinicId);
+            formData.append("preview_only", preview ? "true" : "false");
+            try {
+                const resp = await fetch("/api/v1/admin/upload", { method: "POST", headers: getAuthHeaders(), body: formData });
+                const data = await resp.json().catch(() => ({}));
+                if (resp.ok) {
+                    item.status = "ok";
+                    const n = preview ? (data.faqs_preview || []).length : (data.total_faqs || 0);
+                    inserted += preview ? 0 : (data.inserted || 0) + (data.updated || 0);
+                    rejected += data.rejected_paragraphs || 0;
+                    item.note = `${preview ? "預覽" : "草稿"} ${n} 段` + (data.rejected_paragraphs ? `，剔除 ${data.rejected_paragraphs} 段` : "");
+                    okCount++;
+                } else {
+                    item.status = "err";
+                    item.note = typeof data.detail === "string" ? data.detail : `HTTP ${resp.status}`;
+                    errCount++;
+                }
+            } catch (err) {
+                item.status = "err"; item.note = "連線失敗"; errCount++;
             }
-        } catch (err) {
-            resultArea.classList.remove("hidden");
-            resultContent.textContent = `❌ 請求連線失敗: ${err.message}`;
-        } finally {
-            btn.disabled = false;
-            btn.textContent = "開始上傳與解析";
+            lines.push(`${item.status === "ok" ? "✅" : "❌"} ${item.path} — ${item.note}`);
+            resultContent.textContent = lines.join("\n");
+            renderUploadQueue();
         }
+
+        resultContent.textContent = lines.join("\n") +
+            `\n\n合計：成功 ${okCount} 個、失敗 ${errCount} 個` +
+            (preview ? "（僅預覽，未寫入資料庫）" : `；新增／更新草稿 ${inserted} 筆，剔除 ${rejected} 段；請至「待審衛教草稿簽核」檢視`);
+        uploadState.busy = false;
+        btn.disabled = false;
+        btn.textContent = "開始上傳與解析";
+        if (!preview) loadDashboardSummary();
+        showToast(`上傳完成：成功 ${okCount}、失敗 ${errCount}`, errCount ? "info" : "success");
     });
+    renderUploadQueue();
 }
 
 // 6. SOAP 瀏覽

@@ -46,3 +46,16 @@ def test_css_has_clinical_theme(client):
     css = client.get("/admin/style.css").text
     for token in (".action-bar", ".spinner", ".skeleton", ".badge-warn", ".faq-card"):
         assert token in css
+
+
+def test_upload_center_supports_multi_file_and_folder(client):
+    html = client.get("/admin/").text
+    assert re.search(r'id="fileInput"[^>]*\bmultiple\b', html)
+    assert re.search(r'id="folderInput"[^>]*\bwebkitdirectory\b', html)
+    for ident in ("btnPickFolder", "btnClearQueue", "uploadQueue", "uploadSummary"):
+        assert f'id="{ident}"' in html
+    js = client.get("/admin/app.js").text
+    assert "webkitGetAsEntry" in js and "readEntries" in js
+    # 上傳區塊不得以 HTML 字串置入動態資料（檔名來自使用者本機）
+    sect = js[js.index("// 上傳佇列"):js.index("// 6. SOAP 瀏覽")]
+    assert not re.search(r"innerHTML|insertAdjacentHTML|document\.write|outerHTML|eval\(", sect)
