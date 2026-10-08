@@ -378,7 +378,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 提煉階段中途失敗同樣 `rollback()`，避免未提交交易被後續階段一併提交。
 - **去識別化與二次防護（`process_soap_records`，比照 `/api/v1/soap/records`）**：S/O/A/P 與 `raw_text` 一律經 `deidentify_text()`（內含身分證／電話／姓名標籤遮蔽與 `deep_mask_prices()`）；`tags` 逐項去識別化後以逗號串接。`external_id` 與外部 `patient_token` 必須通過 `is_safe_identifier`，否則略過該筆（計入 `skipped_unsafe`）。僅有 `patient_id`（或兩者皆無）時一律以 HMAC 衍生 token，**未設定 `CLINICBRAIN_DEID_KEY` 即略過該筆（Fail-Closed）**；嚴禁把原始病患識別碼當 token，也不得以 `PTK-{external_id}` 等可預測值備援。
 - **晨間審核通報**：`python3 scripts/review_faq.py pending-summary` 彙整待審草稿（SOAP 提煉／LLM 預生成／其他，依疾病分組並顯示參考病歷筆數）。簽核指引刻意不產生批次 `approve` 指令，要求先逐筆 `show` 檢視。
-- **Systemd**：正式排程單元為專案根目錄 `clinicbrain-nightly.service`／`.timer`（凌晨 02:30，見 2.10 節）。`templates/systemd/` 為 Phase 16 重複產生的另一組範本（03:00、`WantedBy=multi-user.target`、無逾時與 Nice 設定），與根目錄單元重複且衝突，**請勿同時啟用**；專案依規範不代為啟用任何 systemd 服務。
+- **Systemd**：正式排程單元為專案根目錄 `clinicbrain-nightly.service`／`.timer`（凌晨 02:30，見 2.10 節）。Phase 16 曾重複產生 `templates/systemd/` 另一組範本（03:00，與根目錄單元衝突），已於複審後移除，排程單元以根目錄為唯一來源；專案依規範不代為啟用任何 systemd 服務。
 - **已知限制**：① 提煉為詞彙級關鍵字統計，草稿品質仰賴醫師審核；② 前置同步目前只支援單一遠端端點與 POST `{clinic_id, since_days}` 契約；③ 同一病患多筆病歷會重複計入 `record_count`（以病歷筆數而非病患數計）。
 - **測試**：`tests/test_phase16_hardening.py`（Fail-Closed 略過、URL 限制、rollback、旗標互斥、草稿隱蔽、前置同步失敗不中斷）、`tests/test_nightly_soap_batch.py`、`tests/test_soap_sync_runner.py`、`tests/test_nightly_full_schedule_e2e.py`。
 
