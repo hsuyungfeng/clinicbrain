@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 18 of 18（各診所資料上傳與管理 Web App）-- COMPLETED
-Plan: 18-01、18-02、18-03 均已實作、加固與全套回歸驗證通過
-Status: Milestone v1.4 Completed (全部 18 個 Phase 全數通過驗收)
-Last activity: 2026-10-08 -- 完成 Phase 18 Web 後端管理端點、單頁管理系統 (SPA)、CSP/防嵌入標頭、web_upload 審核閘門防護；通過 Claude 對抗性加固；全套回歸 1013 測試全數通過；正式庫 SHA-256 恆定未變
+Phase: 19（Web 管理介面臨床體驗升級與 AI 輔助生成）-- COMPLETED
+Plan: 19-01、19-02、19-03 均已實作、加固與 32/32 專屬測試通過
+Status: Milestone v1.5 In Progress (Phase 19 完成)
+Last activity: 2026-10-08 -- 依據臨床實機回饋完成 Phase 19 批量簽核 API、本地 LLM (Qwen3.8-27B) 衛教生成 API、內聯編輯 API、前端 UI 深度美化、全選/反選/浮動控制列
 
 Progress: [██████████] 100%
 
@@ -36,9 +36,9 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total tasks completed: 59+
-- Tests passing: 1013 passed, 1 skipped, 17 deselected (Phase 18 專屬與加固 15/15 passed)
-- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 40 FAQs, 15 種子主題 (32+ 題)，soap_records/soap_records_fts (trigram) 支援，clinic.db SHA-256 (5fb8328d...) 零污染
+- Total tasks completed: 62+
+- Tests passing: Phase 19 專屬與加固 32/32 passed, 全系統回歸 1013+ passed
+- SQLite records: 7,573 drugs, 2,669 services, 6 PageIndex trees, 41 approved FAQs (含 1 筆 Web 審核), 50 pending web_upload FAQs (Endolift 50問), 15 種子主題 (32+ 題)，soap_records/soap_records_fts (trigram) 支援
 
 ## Accumulated Context
 
