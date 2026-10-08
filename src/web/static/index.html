@@ -38,6 +38,9 @@
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-soap">
                 🩺 臨床 SOAP 紀錄瀏覽
             </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-ask">
+                💬 向 LLM 提問
+            </button>
         </div>
     </nav>
 
@@ -192,6 +195,26 @@
                     點擊查詢以載入臨床 SOAP 紀錄...
                 </div>
             </div>
+        </section>
+
+        <!-- 頁籤 5：向 LLM 提問（檢視它如何只根據系統資料作答） -->
+        <section id="tab-ask" class="tab-content hidden">
+            <h2 class="text-lg font-bold text-gray-800 mb-1">向 LLM 提問</h2>
+            <p class="text-sm text-gray-500 mb-4">對本機模型提問，觀察它如何「只根據系統內已核准的資料」作答。未核准的草稿不會被模型看到；資料不足時會直接說明而不作答；急重症問句會直接給就醫指示、不經模型。</p>
+            <div class="ask-panel">
+                <div class="ask-row">
+                    <label class="ask-label" for="askClinicId">機構代碼</label>
+                    <input type="text" id="askClinicId" value="3503190424" class="ask-clinic">
+                </div>
+                <textarea id="askQuestion" rows="3" maxlength="300" class="edit-input" placeholder="例如：海芙音波拉提術後要注意什麼？（最多 300 字）"></textarea>
+                <div id="askExamples" class="ask-examples"></div>
+                <div class="btn-row">
+                    <button id="btnAsk" class="btn btn-primary">💬 送出提問</button>
+                </div>
+            </div>
+            <div id="askResult" class="ask-result hidden"></div>
+            <h3 class="text-sm font-bold text-gray-600 mt-6 mb-2">本次瀏覽的提問紀錄</h3>
+            <div id="askHistory" class="ask-history"><div class="status-box">尚無提問紀錄。</div></div>
         </section>
     </main>
 

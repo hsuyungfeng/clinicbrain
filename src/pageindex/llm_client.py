@@ -50,11 +50,15 @@ def check_llm_health(timeout: int = 5) -> str:
         ) from e
 
 
-def local_llm_call(prompt: str, timeout: int = 420) -> str:
+def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = None) -> str:
     """呼叫本機 llama-server，回傳 message.content（忽略 reasoning_content）。
 
     函式簽章完全符合 generate_tree(procedure_name, llm_call) 的介面需求。
     連線失敗或逾時拋出清楚的 LocalLLMUnavailableError 例外。
+
+    sampling：單次請求的取樣參數覆寫（例如 {"dry_multiplier": 0.0, "repeat_penalty": 1.0}）。
+    伺服器啟動時常設重複懲罰以改善自由寫作，但「依據資料忠實引用」的任務（RAG）會因此被迫
+    改用近似字，造成錯字或掉字，這類任務應於單次請求關閉重複懲罰，而不必改動伺服器設定。
     """
     # 呼叫前先進行健康檢查確認服務運行
     check_llm_health(timeout=5)
@@ -65,6 +69,8 @@ def local_llm_call(prompt: str, timeout: int = 420) -> str:
         "max_tokens": 6144,
         "reasoning_effort": "low",
     }
+    if sampling:
+        payload.update(sampling)
     encoded_data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
     req = urllib.request.Request(

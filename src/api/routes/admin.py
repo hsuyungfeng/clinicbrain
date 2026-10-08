@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt
 from ...ingestion.convert_chinese import to_traditional
 from ...ingestion.extract_text import extract_docx_text, extract_xlsx_text
 from ...ingestion.generate_faq import validate_single_faq
+from ...pageindex.rag_ask import ask_with_data
 from ...pageindex.answer_generator import GenerationError, generate_answer_for_faq, is_answer_thin
 from ...pageindex.faq_review import (
     MAX_BATCH_SIZE,
@@ -52,6 +53,18 @@ def _local_llm_call(prompt: str) -> str:
     return local_llm_call(prompt, timeout=LLM_GENERATE_TIMEOUT_SECONDS)
 
 
+# 忠實引用資料的任務（RAG 提問）：單次請求關閉重複懲罰並降低溫度，避免模型為了「不重複」而改字、掉字
+FAITHFUL_SAMPLING = {"temperature": 0.1, "dry_multiplier": 0.0, "repeat_penalty": 1.0}
+LLM_ASK_TIMEOUT_SECONDS = 420
+
+
+def _local_llm_ask_call(prompt: str) -> str:
+    """向本機 llama-server 提問（忠實引用取樣設定；測試時以 monkeypatch 替換）。"""
+    from ...pageindex.llm_client import local_llm_call
+
+    return local_llm_call(prompt, timeout=LLM_ASK_TIMEOUT_SECONDS, sampling=FAITHFUL_SAMPLING)
+
+
 class BatchReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     action: Literal["approve", "reject"]
@@ -62,6 +75,12 @@ class UpdateFaqRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: Optional[str] = Field(None, max_length=200)
     answer: Optional[str] = Field(None, max_length=3000)
+
+
+class AskRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(..., min_length=1, max_length=300)
+    clinic_id: str = Field(..., min_length=1, max_length=40)
 
 
 class GenerateAnswerRequest(BaseModel):
@@ -494,6 +513,34 @@ def generate_admin_faq_answer(
             }
         except GenerationError as e:
             raise HTTPException(status_code=e.http_status, detail=str(e)) from e
+        except LocalLLMUnavailableError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="本機 LLM 服務目前無法使用，請確認 llama-server 已啟動後再試",
+            ) from e
+    finally:
+        _GENERATION_LOCK.release()
+
+
+@router.post("/ask", summary="向本機 LLM 提問（僅依系統內已核准資料作答，檢視回答與資料來源）")
+def admin_ask_llm(
+    req: AskRequest,
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    """唯讀：不寫入任何資料。紅旗問句與無資料問句不呼叫 LLM；其餘走本機 llama-server。"""
+    from ...pageindex.llm_client import LocalLLMUnavailableError
+
+    clinic_id = req.clinic_id.strip()
+    if conn.execute("SELECT 1 FROM clinic_info WHERE clinic_id = ?", (clinic_id,)).fetchone() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的診所代碼")
+    if not _GENERATION_LOCK.acquire(blocking=False):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="本機模型忙碌中，請稍後再試")
+    try:
+        try:
+            return {"status": "ok", "question": req.question.strip(),
+                    **ask_with_data(conn, req.question, clinic_id, _local_llm_ask_call)}
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
         except LocalLLMUnavailableError as e:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

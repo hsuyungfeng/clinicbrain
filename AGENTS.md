@@ -423,6 +423,22 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **已知限制**：① AI 生成內容的醫學正確性仍完全仰賴醫師逐筆確認，檢驗僅攔截格式／合規類風險；② 生成不會參考診所既有 FAQ 或推理樹，屬一般性衛教；③ 單次列表最多載入 200 筆，超過時提示處理後重新整理；④ 批量核准不會阻擋「答案待補齊」的列（醫師可能刻意核准純指示文字），僅在介面標示警示。
 - **測試**：`tests/test_admin_batch_and_ai.py`（批量／編輯／生成／認證）、`tests/test_phase19_hardening.py`（權威來源不可被批量改動、鎖釋放、think 區塊、prompt 注入、XSS 純文字、欄位白名單）、`tests/test_web_ui_v2.py`、`tests/test_clinical_ux_e2e.py`（問題清單上傳 → 生成 → 全選／反選 → 批量核准 → 公開查詢短路命中，未生成者仍隱蔽）。
 
+### 2.19 管理端「向 LLM 提問」檢驗頁籤（Phase 20 新增）
+讓醫師／管理者對本機模型實際提問，觀察它如何「只根據系統資料」作答，用來評估資料覆蓋度與回答品質：
+- **端點 `POST /api/v1/admin/ask`**（`verify_admin_key`，`{question<=300 字, clinic_id}`，`extra=forbid`；診所須存在否則 404）。使用 `get_read_db` 唯讀連線，**不寫入任何資料**；與 AI 生成共用 `_GENERATION_LOCK`（本機模型一次只服務一件事，忙碌回 429，離線回 503）。
+- **模組 `src/pageindex/rag_ask.py`**：
+  - 檢索走 `handle_query(..., cache_shortcut=False)`，因此只取得**對外可見**資料（已核准 FAQ、推理樹、診所備註、診所基本資料），與公開端點共用同一審核閘門——**未核准草稿絕不進入模型 context**（`tests/test_admin_ask.py` 以待審「答案」不得出現在 prompt 驗證）。
+  - 紅旗急重症問句（`detect_red_flag`）不呼叫模型，直接回固定就醫指示；檢索不到任何資料時**不呼叫模型、不憑空作答**，回報 `no_evidence`。
+  - Prompt 要求：僅依資料作答、資料不足須明說、句末標示來源編號（`[F1]`／`[T1]`／`[N1]`）、禁金額／藥名劑量／療效保證、涉及不適須給具體就醫警訊。
+  - 輸出經 `sanitize_faq_text`（去識別化＋價格屏蔽）與 `validate_single_faq(check_dosage=True)`；結果以 `compliance.ok/reason` 回報。**管理端為了評估模型品質，未通過合規時仍顯示答案但明確標示警告**——對外端點永遠不會輸出此類內容。
+  - 回傳 `mode`（`answered`／`no_evidence`／`red_flag`）、`used_llm`、`sources`（編號、類型、診所／通用層級、標題）。
+- **前端「💬 向 LLM 提問」頁籤**（位於 SOAP 紀錄頁籤之後）：機構代碼、問題輸入（Ctrl+Enter 送出）、範例問題按鈕、結果卡片（模式徽章、合規徽章、答案、模型可見的資料來源清單）、本次瀏覽的提問紀錄（記憶體內，不落地）。全程 `textContent` 渲染，有靜態掃描測試。
+- **取樣設定（重要踩雷）**：本機 llama-server 啟動時設有 `--dry-multiplier 0.8 --repeat-penalty 1.05`（重複懲罰，利於自由寫作）。實測 RAG 提問在此設定下，模型為避免「重複 context 內出現過的字」而改用近似字或掉字（如「清創」→「清、」、「包紮」→「包紝」、「[F2]」→「[3]」）。因此提問一律於**單次請求**以 `local_llm_call(..., sampling=FAITHFUL_SAMPLING)` 覆寫 `temperature=0.1, dry_multiplier=0, repeat_penalty=1.0`（逾時 420 秒），不改動伺服器設定；任何「忠實引用資料」的新功能都應比照。自由撰寫類（如 generate-answer）維持預設。
+- **資料品質觀察**：此頁籤會如實呈現資料瑕疵——例如診所 FAQ 原文本身含錯字「包紝」，模型會忠實照抄；發現後應由醫師於待審／既有資料修正，而不是在回答端掩蓋。
+- **隱私**：問題只經本機 llama-server，不外送；紀錄僅存在瀏覽器分頁記憶體。
+- **已知限制**：① 回答品質取決於已核准資料的覆蓋度——這正是此頁籤要讓醫師看見的；② 檢索為詞彙式（FTS5 trigram），措辭差異大的問法可能找不到資料；③ 單題約 1～3 分鐘，與 AI 生成互斥執行。
+- **測試**：`tests/test_admin_ask.py`（僅用可見資料、無資料／紅旗不呼叫模型、價格屏蔽與合規標示、認證與錯誤碼、唯讀、頁籤結構）。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -475,6 +491,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/migrate_soap_schema.py`：`soap_records` 與 FTS5 觸發器單一來源 DDL 遷移腳本
 * `scripts/migrate_faq_metadata.py`：`faq_cache.metadata` 欄位單一來源遷移腳本（`--confirm-prod-backup`、`--dry-run`）
 * `scripts/distill_soap_faqs.py`：SOAP 衛教提煉批次 CLI（dry-run 唯讀）
+* `src/pageindex/rag_ask.py`：管理端向 LLM 提問檢驗（僅用對外可見資料、紅旗／無資料不呼叫模型）
 * `src/pageindex/answer_generator.py`：待審草稿 AI 輔助答案生成（本機 LLM、輸出端四層檢驗、樂觀鎖寫入）
 * `src/soap/distiller.py`：SOAP 衛教提煉與草稿生成模組
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具

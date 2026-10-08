@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initReviewSection();
     initUploadSection();
     initSoapSection();
+    initAskSection();
 });
 
 // 1. 認證機制管理
@@ -618,5 +619,110 @@ async function loadSoapRecords() {
         });
     } catch (e) {
         container.innerHTML = '<div class="text-center py-8 text-red-500">連線失敗</div>';
+    }
+}
+
+
+// 7. 向 LLM 提問（Phase 20）— 所有文字一律 textContent，不拼接 HTML
+const askState = { history: [], busy: false };
+const ASK_EXAMPLES = [
+    "海芙音波拉提術後要注意什麼？",
+    "甲溝炎要怎麼照護？",
+    "Endolift與其他非手術治療眼袋有何不同？",
+    "診所的營業時間是什麼時候？",
+    "高血壓可以喝咖啡嗎？",
+];
+
+function initAskSection() {
+    const box = document.getElementById("askExamples");
+    ASK_EXAMPLES.forEach(q => {
+        const chip = el("button", "ask-chip", q);
+        chip.type = "button";
+        chip.addEventListener("click", () => { document.getElementById("askQuestion").value = q; });
+        box.appendChild(chip);
+    });
+    document.getElementById("btnAsk").addEventListener("click", submitAsk);
+    document.getElementById("askQuestion").addEventListener("keydown", (ev) => {
+        if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") submitAsk();
+    });
+}
+
+function renderAskResult(data, container) {
+    container.replaceChildren();
+    const head = el("div", "ask-head");
+    const modeText = { answered: "依據系統資料作答", no_evidence: "資料中沒有相關內容（未呼叫模型）", red_flag: "急重症紅旗（未呼叫模型）" }[data.mode] || data.mode;
+    head.appendChild(badge(modeText, data.mode === "answered" ? "badge-ai" : data.mode === "red_flag" ? "badge-warn" : "badge-id"));
+    if (data.used_llm) {
+        const c = data.compliance || {};
+        head.appendChild(badge(c.ok ? "✅ 通過合規檢視" : "⚠️ 合規檢視未通過", c.ok ? "badge-ai" : "badge-warn"));
+    }
+    container.appendChild(head);
+    container.appendChild(el("div", "ask-q", `【問】${data.question}`));
+    container.appendChild(el("div", "faq-answer", data.answer));
+    if (data.compliance && !data.compliance.ok) {
+        container.appendChild(el("div", "ask-warn", `合規檢視原因：${data.compliance.reason}（此為管理端檢視，對外端點不會輸出此內容）`));
+    }
+    const srcTitle = el("div", "ask-src-title", `模型可見的資料來源（${(data.sources || []).length} 筆）`);
+    container.appendChild(srcTitle);
+    if (!data.sources || data.sources.length === 0) {
+        container.appendChild(el("div", "ask-src-empty", "無（此問題在已核准資料中找不到相關內容）"));
+    } else {
+        const ul = el("ul", "ask-src-list");
+        data.sources.forEach(s => {
+            const li = el("li", "");
+            li.appendChild(badge(s.ref, "badge-id"));
+            li.appendChild(document.createTextNode(` ${({ faq: "常見問答", tree: "臨床推理樹", note: "診所備註", clinic_info: "診所資料" })[s.type] || s.type}・${s.level}：${s.title}`));
+            ul.appendChild(li);
+        });
+        container.appendChild(ul);
+    }
+    container.classList.remove("hidden");
+}
+
+function renderAskHistory() {
+    const box = document.getElementById("askHistory");
+    if (askState.history.length === 0) return;
+    box.replaceChildren();
+    askState.history.slice().reverse().forEach(item => {
+        const d = el("details", "ask-hist-item");
+        d.appendChild(el("summary", "", `${item.question}（${item.mode === "answered" ? "已作答" : item.mode === "red_flag" ? "紅旗" : "無資料"}）`));
+        const inner = el("div", "ask-hist-body");
+        renderAskResult(item, inner);
+        d.appendChild(inner);
+        box.appendChild(d);
+    });
+}
+
+async function submitAsk() {
+    if (askState.busy) return;
+    const question = document.getElementById("askQuestion").value.trim();
+    const clinicId = document.getElementById("askClinicId").value.trim();
+    const result = document.getElementById("askResult");
+    const btn = document.getElementById("btnAsk");
+    if (!question) { showToast("請先輸入問題", "error"); return; }
+    askState.busy = true;
+    btn.disabled = true;
+    btn.replaceChildren(el("span", "spinner"), document.createTextNode(" 本機模型思考中（約 1～3 分鐘）"));
+    result.classList.add("hidden");
+    try {
+        const resp = await fetch("/api/v1/admin/ask", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ question, clinic_id: clinicId }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+            showToast(`提問失敗：${typeof data.detail === "string" ? data.detail : "格式不正確"}`, "error");
+            return;
+        }
+        renderAskResult(data, result);
+        askState.history.push(data);
+        renderAskHistory();
+    } catch (e) {
+        showToast("網路請求失敗", "error");
+    } finally {
+        askState.busy = false;
+        btn.disabled = false;
+        btn.textContent = "💬 送出提問";
     }
 }
