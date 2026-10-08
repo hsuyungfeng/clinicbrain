@@ -1,91 +1,36 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-07T13:03:00+08:00",
-  "phase": "14",
-  "phase_name": "14-soap-remaining",
-  "phase_dir": ".planning/pipeline/phase14-remaining",
-  "plan": 1,
-  "task": 1,
-  "total_tasks": 4,
+  "timestamp": "2026-10-08T06:00:10.000Z",
+  "phase": "18",
+  "phase_name": "clinic-management-webapp",
+  "phase_dir": ".planning/phases/18-clinic-management-webapp",
+  "plan": 3,
+  "task": 3,
+  "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
-    {
-      "id": 1,
-      "name": "Phase 14 剩餘項目規劃與兩輪審查修訂（PLAN.md 實施核定修訂版）",
-      "status": "done",
-      "commit": "pending"
-    },
-    {
-      "id": 2,
-      "name": "項目一測試撰寫（tests/test_soap_hardening.py 增加 3 個測試）",
-      "status": "done",
-      "commit": "pending"
-    }
+    {"id": 1, "name": "18-01 Web 後端管理與文件上傳 API (admin.py)", "status": "done", "commit": "48d0bba"},
+    {"id": 2, "name": "18-02 /admin 單頁管理前端 (index.html/app.js/style.css) + CSP", "status": "done", "commit": "48d0bba"},
+    {"id": 3, "name": "18-03 端到端閉環測試 + Claude 對抗性審查加固", "status": "done", "commit": "48d0bba"},
+    {"id": 4, "name": "移除重複 templates/systemd", "status": "done", "commit": "907c9b2"}
   ],
   "remaining_tasks": [
-    {
-      "id": 3,
-      "name": "修改 scripts/migrate_soap_schema.py 第 106 行使項目一測試轉綠",
-      "status": "not_started"
-    },
-    {
-      "id": 4,
-      "name": "項目二：section_parser.py parse_soap_text 行內切分與標記嚴格化",
-      "status": "not_started"
-    },
-    {
-      "id": 5,
-      "name": "項目三：section_parser.py extract_general_medical_insights 否定語境防禦與特徵擷取",
-      "status": "not_started"
-    },
-    {
-      "id": 6,
-      "name": "全套回歸驗收（failed=0，正式庫 SHA-256 驗證）並撰寫 IMPL_REPORT.md",
-      "status": "not_started"
-    }
+    {"id": 5, "name": "更新 STATE.md / ROADMAP.md 標記 Phase 18 Complete（目前仍寫 Phase 17 為最新）", "status": "not_started"},
+    {"id": 6, "name": "終端驗收（Hermes）：全套回歸 + 正式庫 SHA 5fb8328d 確認 + 工作區乾淨度", "status": "not_started"}
   ],
   "blockers": [],
   "human_actions_pending": [
-    {
-      "action": "確認決策五：行內單字母標記（S/O/A/P）僅限行首與括號有效之保守規則",
-      "context": "防止客觀檢查中脈搏 P: 80 被誤切進 Plan，目前暫採保守規則實作",
-      "blocking": false
-    }
+    {"action": "決定 Web App 實際部署方式：config.db_path 指向正式庫、設定 CLINICBRAIN_ADMIN_API_KEY、手動啟動 API（clinicbrain-api.service 不開機自啟）", "context": "Web 管理介面已完成但尚未對正式庫實跑", "blocking": false},
+    {"action": "（選用）是否於夜間批次啟用 --soap-sync-url 前置同步，並設定 CLINICBRAIN_SOAP_SYNC_API_KEY / CLINICBRAIN_DEID_KEY", "context": "Phase 16 功能預設關閉", "blocking": false},
+    {"action": "醫師審核正式庫待審草稿前，確認 faq_cache.metadata 欄位已遷移（正式庫已於 2026-10-08 10:45 備份後遷移，SHA 5fb8328d）", "context": "web_upload / soap_distilled 需要 metadata 與審核欄位", "blocking": false}
   ],
   "decisions": [
-    {
-      "decision": "決策一：臨床疑似／R/O 語意採方案 A（保守排除）",
-      "rationale": "未確診疾病零污染，r/o、rule out、疑似、鑑別診斷納入排除片語",
-      "phase": "14"
-    },
-    {
-      "decision": "決策二：Assessment 為空降級採方案 A（保守留空）",
-      "rationale": "conditions 保持 []，不讀取 subjective，杜絕主訴病患擔憂污染",
-      "phase": "14"
-    },
-    {
-      "decision": "決策三：英文臨床縮寫對照採方案 A（不擅自映射）",
-      "rationale": "特徵擷取僅依繁體中文標準詞比對，避免未簽核之語意誤差",
-      "phase": "14"
-    },
-    {
-      "decision": "決策四：取消單字母空白分隔採方案 A（強制標點）",
-      "rationale": "英文標記一律強制要求冒號、句點、成對括號或連字號，徹底根除 A 35-year-old 衝突",
-      "phase": "14"
-    },
-    {
-      "decision": "決策五：行內單字母標記暫採保守（僅限行首與成對括號有效）",
-      "rationale": "徹底避免客觀檢查中脈搏 P: 80 縮寫被誤切入 Plan，待使用者確認",
-      "phase": "14"
-    }
+    {"decision": "Web 上傳使用獨立 source_type='web_upload' 並納入 REVIEW_GATED_SOURCES", "rationale": "clinic_upload 被定義為恆可見的院所權威來源，沿用會讓 pending 草稿對公開端點 Fail-Open", "phase": "18"},
+    {"decision": "faq_writer 不再自動 ALTER；metadata 欄位由 scripts/migrate_faq_metadata.py 顯式遷移", "rationale": "避免寫入路徑未經確認變更正式庫", "phase": "15"},
+    {"decision": "前置同步失敗採降級繼續，不中斷夜間批次", "rationale": "網路問題不應讓整晚批次落空；失敗時 rollback 並計入 errors", "phase": "16"},
+    {"decision": "刪除 templates/systemd 重複範本，排程單元以專案根目錄為唯一來源", "rationale": "與根目錄 02:30 排程衝突，同時啟用會重複執行", "phase": "16"}
   ],
-  "uncommitted_files": [
-    "tests/test_soap_hardening.py",
-    ".planning/pipeline/phase14-remaining/PLAN.md",
-    ".planning/pipeline/phase14-remaining/PLAN.v1.md",
-    ".planning/pipeline/phase14-remaining/PLAN.v2.md",
-    ".planning/pipeline/phase14-remaining/PLAN.v3.md"
-  ],
-  "next_action": "執行步驟 1-B：修訂 scripts/migrate_soap_schema.py 第 106 行條件為 if not args.dry_run and is_prod and not args.confirm_prod_backup:，並以 pytest tests/test_soap_hardening.py -k migrate_soap_schema 確認轉綠。",
-  "context_notes": "正式資料庫 clinic.db SHA-256 前綴 ad24426c... 恆定受保。白名單與 Git 唯讀禁令遵守中。"
+  "uncommitted_files": [],
+  "next_action": "更新 .planning/STATE.md 與 ROADMAP.md 標記 Phase 18 完成（進度 100%，Milestone v1.4 收尾），再執行全套回歸（逐檔跑以免 /tmp 配額爆滿）並確認 clinic.db SHA-256 前綴 5fb8328d",
+  "context_notes": "Phase 15–18 皆已實作、審查加固、提交並推送到 origin/main（最新 907c9b2）。測試環境注意：pytest 請用 uv run；整套一起跑會塞滿 /tmp 使用者配額（EDQUOT），請逐檔執行並於每檔後 rm -rf /tmp/pytest-of-hsu；環境缺 click（test_api_auth_enforcement 不可跑）；test_real_llm_batch 需本機 llama-server 且耗時數分鐘。"
 }
