@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** 在符合台灣醫療法規（絕對價格遮蔽、全繁體中文、無保證療效）的前提下，提供診所高精準度、低延遲、隱私優先（純本地推理）的臨床衛教與藥品檢索。
-**Current focus:** Milestone v1.3 已封裝歸檔；準備推進 Phase 15（臨床 SOAP 衛教提煉與審核流）
+**Current focus:** Milestone v1.4 推進中；已完成 Phase 15 及端到端業務閉環驗證，準備進入 Phase 16（定時自動化同步與批次提煉排程）
 
 ## Current Position
 
-Phase: 15 of 15（臨床 SOAP 衛教提煉與審核流）-- COMPLETED
-Plan: 15-01、15-02、15-03 均已執行完畢
-Status: Phase 15 Completed (Milestone v1.4 進行中)
-Last activity: 2026-10-07 -- Phase 15 完成臨床 SOAP 衛教提煉、faq_cache metadata 溯源支援、review_faq 審核工具擴充、安全遷移與全套驗收（10/10 PASS，正式庫 SHA-256 恆定）
+Phase: 15 of 18（臨床 SOAP 衛教提煉與審核流）-- COMPLETED
+Plan: 15-01、15-02、15-03 及業務閉環實機驗證（verify_e2e_closed_loop.py）均已執行完畢
+Status: Phase 15 Completed (Milestone v1.4 進行中，下一個為 Phase 16)
+Last activity: 2026-10-08 -- 完成 Phase 15 實機 5 步驟業務閉環驗證；排除語音轉錄複雜度（僅採 API 文字推播）；正式規劃 Phase 16（批次提煉排程）、Phase 17（一般醫學知識補充）與 Phase 18（診所管理 Web App）
 
-Progress: [██████████] 100%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 

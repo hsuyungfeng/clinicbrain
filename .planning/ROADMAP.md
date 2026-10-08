@@ -22,20 +22,41 @@
 | 13. 真實 LLM 批次實跑驗證 | 2/2 | Complete | 2026-10-06 |
 | 14. 臨床語音與 SOAP 紀錄擷取 | 3/3 | Complete | 2026-10-07 |
 | 15. 臨床 SOAP 衛教提煉與審核流 | 3/3 | Complete | 2026-10-07 |
+| 16. 定時自動化同步與批次提煉排程 | 0/3 | Planned | - |
+| 17. 定時一般醫學知識補充與批次擴充 | 0/2 | Planned | - |
+| 18. 各診所資料上傳與管理 Web App | 0/4 | Planned | - |
 
 ## Phase Details
 
-### Phase 14: 臨床語音與 SOAP 紀錄擷取 (已完成)
-
-見歸檔：[v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md)
-
-### Phase 15: 臨床 SOAP 衛教提煉與審核流
+### Phase 15: 臨床 SOAP 衛教提煉與審核流 (已完成)
 
 **Goal**: 在維持公開端點嚴格隔離的前提下，建立醫師審核工具，將去識別化之 SOAP Assessment/Plan 臨床照護摘要提煉轉化為衛教問答草稿（pending 狀態），經醫師簽核後方可發布至診所 FAQ 或推理樹供查詢引用。
-**Depends on**: Phase 14 (SOAP 去識別化與特徵擷取), Phase 12 (審核工具與驗證層)
-**Requirements**: SOAP-EDU-01, SOAP-EDU-02, SOAP-EDU-03
-**Success Criteria**:
-  1. 公開自然語言查詢端點（`/api/v1/query`、`/api/v1/general/query`）維持絕對隔離，零 SOAP 原始紀錄或直接查詢洩漏。
-  2. 提煉管線：支援由去識別化 `soap_records` 彙整常見處置與衛教指引，產出繁體中文 FAQ 衛教草稿，預設 `review_status = 'pending'`。
-  3. 審核整合：整合 `review_faq` 工具，醫師可檢視提煉來源（含去識別化前文摘要）並簽核核准。
-  4. 二次醫療法規防禦：提煉草稿經價格清洗、保證療效禁詞過濾與 DX 劑量攔截器檢驗。
+**Status**: Complete (10/10 單元測試、5/5 步驟業務閉環實機通過)
+
+### Phase 16: 定時自動化同步與批次提煉排程
+
+**Goal**: 建立夜間自動化排程機制，整合外部系統（doctor-toolbox.com / EHR）推播同步，於離峰時間自動對未提煉之 SOAP 紀錄執行分組提煉並生成 pending 草稿，支援醫師晨間一鍵簽核。
+**Depends on**: Phase 15 (SOAP 衛教提煉器與審核流), Phase 09 (夜間批次架構)
+**Scope**:
+  1. 擴充 `scripts/run_nightly_batch.py`，納入 SOAP 衛教提煉子任務。
+  2. 整合 Systemd Timer 與 Cron 排程範本，支援自動排程與離線重試。
+  3. 新增批次提煉審計日誌與摘要報表輸出。
+
+### Phase 17: 定時一般醫學知識補充與批次擴充
+
+**Goal**: 建立通用醫學知識庫之定時自動補充機制，透過本地 LLM 離峰批次生成常見疾病衛教與健保給付指引，經既有審核閘門安全擴增 general 知識庫。
+**Depends on**: Phase 12 (一般疾病種子與審核), Phase 16 (批次排程)
+**Scope**:
+  1. 擴充通用疾病與常見症狀種子清單。
+  2. 自動化離峰批次生成管線，支援斷點續跑與安全防禦。
+  3. 待審一般衛教問答批次簽核支援。
+
+### Phase 18: 各診所資料上傳與管理 Web App
+
+**Goal**: 提供直覺友善的輕量 Web 介面，供各診所人員上傳診所文件（DOCX/XLSX/PDF）、檢視 SOAP 紀錄與溯源、並提供視覺化醫師簽核與營運資訊管理介面。
+**Depends on**: Phase 05 (FastAPI 服務層), Phase 15 (審核工具)
+**Scope**:
+  1. 檔案上傳與自動處理介面（DOCX / XLSX / PDF）。
+  2. 視覺化醫師簽核儀表板（pending 草稿卡片、溯源病歷對照、一鍵核准/駁回）。
+  3. 診所營運資料管理（門診時間、自訂備註、診所資訊編輯）。
+  4. 多診所權限隔離與管理員認證。
