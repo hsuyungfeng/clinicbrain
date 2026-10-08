@@ -59,6 +59,15 @@ class BatchConfig:
     max_pending: int = 200
     time_budget_seconds: float = 3600.0
 
+    def __post_init__(self) -> None:
+        # 互斥旗標防護（CLI 之外的程式化呼叫同樣適用；矛盾組合直接拒絕，不靜默擇一）
+        if self.general_only and self.soap_only:
+            raise ValueError("general_only 與 soap_only 互斥")
+        if self.general_only and self.skip_general:
+            raise ValueError("general_only 與 skip_general 互斥")
+        if self.general_only and self.skip_faq:
+            raise ValueError("general_only 與 skip_faq 矛盾（general_only 僅執行 FAQ 預生成）")
+
 
 @dataclass
 class BatchSummary:
@@ -268,7 +277,7 @@ def run_batch(
                 for st in all_candidate_topics:
                     topic = st.topic
                     existing = existing_questions(conn, topic.clinic_id, topic.topic_key, exclude_regen_marked=True)
-                    pending_q = [q for q in topic.questions if q not in existing]
+                    pending_q = [q for q in topic.questions if q.strip() not in existing]
                     skipped_count = len(topic.questions) - len(pending_q)
                     if topic.category == "general":
                         summary.general_skipped_count += skipped_count
@@ -341,7 +350,7 @@ def run_batch(
                     summary.faq_skipped_existing += gen_res.skipped_existing
 
                     if topic.category == "general":
-                        summary.general_generated_count += ins
+                        summary.general_generated_count += ins + upd  # 含重生成後更新的題目
 
                     # 清算重生成旗標
                     settle_details: dict = {}

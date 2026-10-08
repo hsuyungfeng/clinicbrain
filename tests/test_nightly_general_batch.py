@@ -175,3 +175,36 @@ def test_resumable_breakpoint_skip(isolated_conn: sqlite3.Connection, tmp_path: 
     assert summary.status == "completed"
     # hypertension-basics 4 題均已存在且 needs_regeneration=0，必須計入 skipped_count
     assert summary.general_skipped_count >= 4
+
+
+def test_review_batch_config_rejects_contradictory_flags(tmp_path: Path):
+    """複審：矛盾旗標組合在程式化呼叫也必須被拒絕（不靜默擇一）。"""
+    base = dict(seed_path=tmp_path / "s.json", snapshot_dir=tmp_path / "snap")
+    for bad in (
+        dict(general_only=True, soap_only=True),
+        dict(general_only=True, skip_general=True),
+        dict(general_only=True, skip_faq=True),
+    ):
+        with pytest.raises(ValueError):
+            BatchConfig(**base, **bad)
+
+
+def test_review_cli_rejects_general_only_with_skip_faq(isolated_db_path: Path, capsys):
+    ret = nightly_cli.main(["--db", str(isolated_db_path), "--dry-run", "--general-only", "--skip-faq"])
+    assert ret == 2
+
+
+def test_review_pending_general_hidden_from_search_and_shortcut(isolated_conn):
+    """複審：未核准的 general LLM 草稿不得被 search_faq_cache 或 FAQ 查詢條件取得。"""
+    from src.pageindex.faq_writer import upsert_faqs
+    from src.pageindex.faq_review import visible_faq_sql
+
+    faq = {"clinic_id": None, "topic_key": "review-gen", "question": "什麼是複審測試病？",
+           "answer": "複審測試病為測試用。若出現高燒超過3天或呼吸困難，請儘速就醫。", "category": "general"}
+    upsert_faqs(isolated_conn, [faq], source_type="llm_generated")
+    row = isolated_conn.execute("SELECT review_status FROM faq_cache WHERE topic_key='review-gen'").fetchone()
+    assert row[0] == "pending"
+    n = isolated_conn.execute(
+        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key='review-gen' AND {visible_faq_sql(isolated_conn)}"
+    ).fetchone()[0]
+    assert n == 0

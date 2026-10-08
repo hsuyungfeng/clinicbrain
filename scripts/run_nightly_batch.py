@@ -209,6 +209,10 @@ def main(
         sys.stderr.write("錯誤：旗標 --general-only 與 --soap-only 互斥，不可同時指定。\n")
         return 2
 
+    if args.general_only and args.skip_faq:
+        sys.stderr.write("錯誤：旗標 --general-only 與 --skip-faq 矛盾（general-only 僅執行 FAQ 預生成）。\n")
+        return 2
+
     db_path = Path(args.db).resolve()
     if not db_path.exists():
         sys.stderr.write(f"錯誤：找不到指定的目標資料庫檔案：{db_path}\n")

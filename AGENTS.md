@@ -382,6 +382,20 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **已知限制**：① 提煉為詞彙級關鍵字統計，草稿品質仰賴醫師審核；② 前置同步目前只支援單一遠端端點與 POST `{clinic_id, since_days}` 契約；③ 同一病患多筆病歷會重複計入 `record_count`（以病歷筆數而非病患數計）。
 - **測試**：`tests/test_phase16_hardening.py`（Fail-Closed 略過、URL 限制、rollback、旗標互斥、草稿隱蔽、前置同步失敗不中斷）、`tests/test_nightly_soap_batch.py`、`tests/test_soap_sync_runner.py`、`tests/test_nightly_full_schedule_e2e.py`。
 
+### 2.16 定時一般醫學知識補充與批次擴充（Phase 17 新增）
+讓夜間批次能分批、可續跑地擴充「一般醫學（`category='general'`、`clinic_id IS NULL`）」衛教草稿，供醫師晨間簽核：
+- **種子擴充（`data/batch/faq_seeds.json`）**：除 Phase 12 的 4 個常見疾病外，新增 8 個一般醫學主題（高血壓、第二型糖尿病、蕁麻疹、氣喘、胃食道逆流、痛風、帶狀皰疹、偏頭痛，各 4 題，共 32 題，皆帶 `question_tags`）。題目全為人工撰寫的「什麼是／常見症狀／何時就醫／居家照護」四型，不含價格數字、不含藥名與劑量、不含療效保證字樣；載入時仍強制通過 `load_seed_file` 四層檢驗。**題目刻意不問用藥**，慢性病（高血壓、糖尿病、氣喘、痛風）的用藥細節屬處方範疇，不由批次預生成。
+- **Fail-Closed 保證**：批次生成之 general 草稿一律走 `faq_writer.upsert_faqs(source_type='llm_generated')`，`review_status` 恆為 `pending`；經 `visible_faq_sql` 對 `/api/v1/general/query`、`/api/v1/query` 快取短路與同步匯出完全隱蔽，直到醫師 `review_faq approve`（核准時重跑四層檢驗＋就醫警訊強制檢驗）。生成階段另強制 general 答案含具體症狀／數值條件的就醫警訊收尾句（見 2.12）。
+- **批次旗標（`scripts/run_nightly_batch.py`，`src/batch/runner.py`）**：
+  - `--general-only`：只做 general 主題 FAQ 預生成；不做 SOAP 前置同步與提煉，也不重建推理樹。
+  - `--skip-general`：略過 general 主題（保留診所專屬主題）。
+  - 互斥：`--general-only` 與 `--skip-general`（argparse 互斥群組）、`--general-only` 與 `--soap-only`（CLI 結束碼 2）、`--general-only` 與 `--skip-faq`（矛盾，結束碼 2）。`BatchConfig.__post_init__` 對程式化呼叫同樣拒絕這三種矛盾組合（`ValueError`），不靜默擇一。
+- **斷點續跑精確度**：規劃階段與生成階段共用 `existing_questions(..., exclude_regen_marked=True)` 並同樣以 `strip()` 比對——已存在（含 pending／rejected）的題目跳過；僅「`rejected` 且 `needs_regeneration=1` 的 `llm_generated`」題目會重新進入待生成清單。全部題目皆已存在的主題不佔 `--max-faq-topics` 名額，因此預設每晚 5 主題、約兩晚即可補齊 12 個 general 主題。`max_pending`（預設 200）仍保護醫師審核負擔。
+- **摘要與可觀測性**：`BatchSummary.general_generated_count`（新增＋重生成更新）與 `general_skipped_count`（已存在而略過）；日誌仍遵守不記錄問句／答案原文。
+- **審核工具**：`review_faq.py list --category general|special` 與 `pending-summary --category ...`；pending-summary 將 LLM 草稿分為「診所專屬」與「通用衛教」兩區，仍不提供批次核准指令。`faq_review.list_faqs` 新增 `category` 篩選。
+- **已知限制**：① 被駁回且未標記重生成的題目永不重新生成（見 2.10 已知限制 5）；② general 草稿的醫學正確性完全仰賴醫師審核，四層檢驗僅攔截格式／合規類風險；③ 慢性病主題的衛教不涵蓋用藥，若醫師需要用藥說明須人工撰寫（`manual` 來源）。
+- **測試**：`tests/test_general_faq_seeds.py`、`tests/test_nightly_general_batch.py`（含複審新增的矛盾旗標與 pending 隱蔽測試）、`tests/test_general_expansion_e2e.py`。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
