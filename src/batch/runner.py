@@ -48,6 +48,8 @@ class BatchConfig:
     soap_clinic_id: str = "3503190424"
     soap_min_occurrences: int = 2
     soap_only: bool = False
+    soap_sync_url: Optional[str] = None
+    soap_sync_api_key: Optional[str] = field(default=None, repr=False)
     max_faq_topics: int = 5
     max_trees: int = 3
     since_days: int = 14
@@ -63,6 +65,7 @@ class BatchSummary:
     status: str = "completed"
     soap_distilled_count: int = 0
     soap_conditions: list[str] = field(default_factory=list)
+    soap_sync_status: str = "skipped"
     faq_topics_planned: int = 0
     faq_topics_processed: int = 0
     faq_inserted: int = 0
@@ -113,7 +116,36 @@ def run_batch(
         # ---------------------------------------------------------------------
         # 0. SOAP 臨床居家照護衛教提煉階段
         # ---------------------------------------------------------------------
-        if cfg.enable_soap_distill or cfg.soap_only:
+        soap_stage = cfg.enable_soap_distill or cfg.soap_only
+
+        # 0a. 前置增量同步：失敗只降級（沿用本機既有病歷繼續提煉），不中斷批次、不影響後續階段
+        if soap_stage and cfg.soap_sync_url and not cfg.dry_run:
+            try:
+                from src.sync.soap_sync_runner import sync_soap_records_before_batch
+                sync_res = sync_soap_records_before_batch(
+                    conn,
+                    cfg.soap_clinic_id,
+                    remote_url=cfg.soap_sync_url,
+                    api_key=cfg.soap_sync_api_key,
+                )
+                summary.soap_sync_status = sync_res.status
+                if sync_res.status != "completed":
+                    summary.errors += 1
+                logger.info(
+                    "soap_presync_done",
+                    status=sync_res.status,
+                    inserted=sync_res.inserted,
+                    updated=sync_res.updated,
+                    unchanged=sync_res.unchanged,
+                    skipped_unsafe=sync_res.skipped_unsafe,
+                )
+            except Exception as e:
+                conn.rollback()
+                summary.soap_sync_status = "failed"
+                summary.errors += 1
+                logger.error("soap_presync_failed", error_type=type(e).__name__)
+
+        if soap_stage:
             try:
                 from src.soap.distiller import distill_soap_records
                 distill_res = distill_soap_records(
@@ -131,6 +163,7 @@ def run_batch(
                     dry_run=cfg.dry_run,
                 )
             except Exception as e:
+                conn.rollback()  # 提煉中途失敗不得留下未提交交易給後續階段一併提交
                 summary.errors += 1
                 logger.error("soap_distill_failed", error_type=type(e).__name__)
 

@@ -11,6 +11,7 @@ import fcntl
 from functools import partial
 from pathlib import Path
 import sqlite3
+import os
 import sys
 from typing import Callable, Optional
 
@@ -103,15 +104,22 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="略過臨床推理樹重建階段",
     )
-    parser.add_argument(
+    soap_mode = parser.add_mutually_exclusive_group()
+    soap_mode.add_argument(
         "--skip-soap",
         action="store_true",
         help="略過 SOAP 臨床居家照護提煉階段",
     )
-    parser.add_argument(
+    soap_mode.add_argument(
         "--soap-only",
         action="store_true",
         help="僅執行 SOAP 臨床居家照護提煉階段",
+    )
+    parser.add_argument(
+        "--soap-sync-url",
+        type=str,
+        default=None,
+        help="提煉前先從此遠端端點增量拉取 SOAP 病歷（僅 https；金鑰由環境變數 CLINICBRAIN_SOAP_SYNC_API_KEY 提供，不接受命令列傳入）",
     )
     parser.add_argument(
         "--soap-clinic-id",
@@ -257,6 +265,8 @@ def main(
             soap_clinic_id=args.soap_clinic_id,
             soap_min_occurrences=args.soap_min_occurrences,
             soap_only=args.soap_only,
+            soap_sync_url=args.soap_sync_url,
+            soap_sync_api_key=os.environ.get("CLINICBRAIN_SOAP_SYNC_API_KEY") or None,
             max_faq_topics=args.max_faq_topics,
             max_trees=args.max_trees,
             since_days=args.since_days,
@@ -275,6 +285,7 @@ def main(
 
         print("\n==================== 批次執行摘要 ====================")
         print(f"執行狀態：{summary.status}")
+        print(f"SOAP 前置同步：{summary.soap_sync_status}")
         print(f"SOAP 提煉：產出 {summary.soap_distilled_count} 筆衛教草稿 (標的疾病: {', '.join(summary.soap_conditions) or '無'})")
         print(f"FAQ 主題：規劃 {summary.faq_topics_planned} 個，處理 {summary.faq_topics_processed} 個")
         print(f"FAQ 筆數：新增 {summary.faq_inserted} 筆，剔除 {summary.faq_rejected} 筆，略過既有 {summary.faq_skipped_existing} 筆")

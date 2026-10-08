@@ -367,6 +367,21 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 實際寫入時若資料庫尚未遷移（缺 `metadata` 或審核欄位），印出中止訊息並以結束碼 2 退出，不會自動補欄位。
 - **測試慣例**：`tests/test_faq_review_soap.py` 含「寫入路徑不自動 ALTER」與「重跑不重設已核准」回歸測試；`tests/test_faq_review_gate.py::test_visible_faq_sql` 把關 `IS NULL` 分支。
 
+### 2.15 定時自動化同步與批次提煉排程（Phase 16 新增）
+將 Phase 14（SOAP 擷取）與 Phase 15（衛教提煉）接進夜間批次，形成「前置同步 → 提煉草稿 → 晨間醫師審核」閉環：
+- **批次階段順序（`src/batch/runner.py:run_batch`）**：0a 前置增量同步（選用）→ 0b SOAP 提煉（`distill_soap_records`）→ FAQ 預生成 → 推理樹重建。`--skip-soap` 與 `--soap-only` 互斥（argparse mutually exclusive）；預設啟用提煉、不啟用前置同步。
+- **Fail-Closed 保證**：提煉產物一律經 `faq_writer.upsert_faqs(source_type='soap_distilled')` 寫入 `review_status='pending'`；`visible_faq_sql` 使 pending／rejected 草稿對快取短路、`/api/v1/query`、`/api/v1/general/query` 與同步匯出絕對隱蔽，醫師 `approve` 前不可見。批次本身永不核准任何草稿。
+- **連線模式**：`--dry-run` 以 `mode=ro` 唯讀連線開庫且不執行前置同步（不連網、不寫入）；非 dry-run 才取得 `<db>.nightly.lock` 非阻塞檔案鎖並以可寫連線執行。正式庫非 dry-run 仍須 `--allow-prod-db`。`review_faq.py pending-summary` 為唯讀（`mode=ro`），且未遷移庫（缺審核欄位）回結束碼 2。
+- **前置同步（`src/sync/soap_sync_runner.py`，以 `--soap-sync-url` 啟用）**：
+  - 失敗策略＝**降級繼續**：拉取或寫入失敗時 `soap_sync_status` 為 `degraded`／`failed`、`errors` 加 1，並對連線 `rollback()`，批次仍以既有本機病歷繼續提煉；不因網路問題讓整晚批次落空。日誌與錯誤訊息只記例外類別，不記 URL 與回應內容（URL 可能夾帶憑證）。
+  - 遠端 URL 僅允許 `https`（或 `http://localhost|127.0.0.1|::1` 供本機測試），拒絕 `file://`、`ftp://` 與明文遠端；回應上限 10 MB；API 金鑰只從環境變數 `CLINICBRAIN_SOAP_SYNC_API_KEY` 讀取，**不接受命令列傳入**（避免出現在 `ps`／shell history），且 `BatchConfig.soap_sync_api_key` 設 `repr=False`。
+  - 提煉階段中途失敗同樣 `rollback()`，避免未提交交易被後續階段一併提交。
+- **去識別化與二次防護（`process_soap_records`，比照 `/api/v1/soap/records`）**：S/O/A/P 與 `raw_text` 一律經 `deidentify_text()`（內含身分證／電話／姓名標籤遮蔽與 `deep_mask_prices()`）；`tags` 逐項去識別化後以逗號串接。`external_id` 與外部 `patient_token` 必須通過 `is_safe_identifier`，否則略過該筆（計入 `skipped_unsafe`）。僅有 `patient_id`（或兩者皆無）時一律以 HMAC 衍生 token，**未設定 `CLINICBRAIN_DEID_KEY` 即略過該筆（Fail-Closed）**；嚴禁把原始病患識別碼當 token，也不得以 `PTK-{external_id}` 等可預測值備援。
+- **晨間審核通報**：`python3 scripts/review_faq.py pending-summary` 彙整待審草稿（SOAP 提煉／LLM 預生成／其他，依疾病分組並顯示參考病歷筆數）。簽核指引刻意不產生批次 `approve` 指令，要求先逐筆 `show` 檢視。
+- **Systemd**：正式排程單元為專案根目錄 `clinicbrain-nightly.service`／`.timer`（凌晨 02:30，見 2.10 節）。`templates/systemd/` 為 Phase 16 重複產生的另一組範本（03:00、`WantedBy=multi-user.target`、無逾時與 Nice 設定），與根目錄單元重複且衝突，**請勿同時啟用**；專案依規範不代為啟用任何 systemd 服務。
+- **已知限制**：① 提煉為詞彙級關鍵字統計，草稿品質仰賴醫師審核；② 前置同步目前只支援單一遠端端點與 POST `{clinic_id, since_days}` 契約；③ 同一病患多筆病歷會重複計入 `record_count`（以病歷筆數而非病患數計）。
+- **測試**：`tests/test_phase16_hardening.py`（Fail-Closed 略過、URL 限制、rollback、旗標互斥、草稿隱蔽、前置同步失敗不中斷）、`tests/test_nightly_soap_batch.py`、`tests/test_soap_sync_runner.py`、`tests/test_nightly_full_schedule_e2e.py`。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則

@@ -259,18 +259,12 @@ def main(argv: list[str] | None = None) -> int:
                         print(f"  - [ID {item['id']}] {item['question']} (來源: {item['source_type']})")
                     print()
 
-                pending_ids = [str(r[0]) for r in rows]
-                id_list_str = " ".join(pending_ids[:10])
-                if len(pending_ids) > 10:
-                    id_list_str += " ..."
-
-                print("【簽核指引】")
+                print("【簽核指引】（請逐筆檢視後再簽核，勿未經 show 直接批次核准）")
                 print("  • 檢視單筆詳細資訊與醫療驗證：")
                 print("    python3 scripts/review_faq.py show <ID>")
-                print("  • 審核核准指定項目：")
-                print(f"    python3 scripts/review_faq.py approve {id_list_str}")
-                print("  • 駁回指定項目：")
-                print(f"    python3 scripts/review_faq.py reject {id_list_str}")
+                print("  • 核准／駁回（經檢視後）：")
+                print("    python3 scripts/review_faq.py approve <ID>")
+                print("    python3 scripts/review_faq.py reject <ID>")
                 print("==============================================================")
                 return 0
 
