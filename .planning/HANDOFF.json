@@ -1,36 +1,91 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-08T06:00:10.000Z",
-  "phase": "18",
-  "phase_name": "clinic-management-webapp",
-  "phase_dir": ".planning/phases/18-clinic-management-webapp",
-  "plan": 3,
-  "task": 3,
+  "timestamp": "2026-10-12T10:24:00+08:00",
+  "phase": "20",
+  "phase_name": "llm-background-answer-filler",
+  "phase_dir": ".planning/phases/20-llm-background-answer-filler",
+  "plan": 1,
+  "task": 2,
   "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "18-01 Web 後端管理與文件上傳 API (admin.py)", "status": "done", "commit": "48d0bba"},
-    {"id": 2, "name": "18-02 /admin 單頁管理前端 (index.html/app.js/style.css) + CSP", "status": "done", "commit": "48d0bba"},
-    {"id": 3, "name": "18-03 端到端閉環測試 + Claude 對抗性審查加固", "status": "done", "commit": "48d0bba"},
-    {"id": 4, "name": "移除重複 templates/systemd", "status": "done", "commit": "907c9b2"}
+    {
+      "id": 1,
+      "name": "Phase 19 批次補齊答案（背景作業 batch_answer_job，單一作業、逐題 commit）",
+      "status": "done",
+      "commit": "a329f24"
+    },
+    {
+      "id": 2,
+      "name": "Phase 20 規劃文件（CONTEXT / RESEARCH / 20-01..03-PLAN）",
+      "status": "done",
+      "commit": "d5f1bf2"
+    }
   ],
   "remaining_tasks": [
-    {"id": 5, "name": "更新 STATE.md / ROADMAP.md 標記 Phase 18 Complete（目前仍寫 Phase 17 為最新）", "status": "not_started"},
-    {"id": 6, "name": "終端驗收（Hermes）：全套回歸 + 正式庫 SHA 5fb8328d 確認 + 工作區乾淨度", "status": "not_started"}
+    {
+      "id": 3,
+      "name": "20-01 後端：get_pending_unanswered_ids、batch runner 第 7 階段、POST /review/autofill/all（程式已寫、未提交，測試綠）",
+      "status": "in_progress"
+    },
+    {
+      "id": 4,
+      "name": "20-02 前端：一鍵背景自動補齊按鈕與進度（app.js / index.html / style.css 未提交，test_web_ui_v3 綠）",
+      "status": "in_progress"
+    },
+    {
+      "id": 5,
+      "name": "20-03 端到端閉環、Claude 對抗性審查加固、AGENTS.md 2.21 節、Hermes 終端驗收（尚未開始）",
+      "status": "not_started"
+    }
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "description": "正式庫 clinic.db 於 2026-10-12 10:17 被替換為 5fb8328d 備份內容（與 clinic.db.bak-20261008104541 位元組相同）；目前 faq_cache 只剩 40 筆 clinic_upload，Oct 8 之後的 web_upload 草稿（約 50+ 筆待審、3 筆駁回、1 筆核准）不在其中。非本次 session 所為，未自行還原。",
+      "type": "human_action",
+      "workaround": "等待使用者決定：以哪一份備份還原，或接受現況並重新上傳文件"
+    }
+  ],
   "human_actions_pending": [
-    {"action": "決定 Web App 實際部署方式：config.db_path 指向正式庫、設定 CLINICBRAIN_ADMIN_API_KEY、手動啟動 API（clinicbrain-api.service 不開機自啟）", "context": "Web 管理介面已完成但尚未對正式庫實跑", "blocking": false},
-    {"action": "（選用）是否於夜間批次啟用 --soap-sync-url 前置同步，並設定 CLINICBRAIN_SOAP_SYNC_API_KEY / CLINICBRAIN_DEID_KEY", "context": "Phase 16 功能預設關閉", "blocking": false},
-    {"action": "醫師審核正式庫待審草稿前，確認 faq_cache.metadata 欄位已遷移（正式庫已於 2026-10-08 10:45 備份後遷移，SHA 5fb8328d）", "context": "web_upload / soap_distilled 需要 metadata 與審核欄位", "blocking": false}
+    {
+      "action": "確認 clinic.db 的預期狀態並決定還原來源（候選：clinic.db.bak-20261008104541 或其他）；還原前先停止 api 服務並備份當前檔",
+      "context": "資料遺失疑慮；目前 api 服務（PID 172302，port 8000）仍在讀取該檔",
+      "blocking": true
+    },
+    {
+      "action": "決定是否對 Phase 20 進行中的未提交變更做審查後提交（不要在審查前提交）",
+      "context": "他人或另一 session 的實作，尚未經 Claude 對抗性審查",
+      "blocking": false
+    }
   ],
   "decisions": [
-    {"decision": "Web 上傳使用獨立 source_type='web_upload' 並納入 REVIEW_GATED_SOURCES", "rationale": "clinic_upload 被定義為恆可見的院所權威來源，沿用會讓 pending 草稿對公開端點 Fail-Open", "phase": "18"},
-    {"decision": "faq_writer 不再自動 ALTER；metadata 欄位由 scripts/migrate_faq_metadata.py 顯式遷移", "rationale": "避免寫入路徑未經確認變更正式庫", "phase": "15"},
-    {"decision": "前置同步失敗採降級繼續，不中斷夜間批次", "rationale": "網路問題不應讓整晚批次落空；失敗時 rollback 並計入 errors", "phase": "16"},
-    {"decision": "刪除 templates/systemd 重複範本，排程單元以專案根目錄為唯一來源", "rationale": "與根目錄 02:30 排程衝突，同時啟用會重複執行", "phase": "16"}
+    {
+      "decision": "Phase 20 採雙軌：Web 背景單佇列（一次一題）＋夜間 02:30 批次第 7 階段；生成結果恆為 pending",
+      "rationale": "單張 RTX 2080 Ti 保護 VRAM；Fail-Closed 審核不變",
+      "phase": "20"
+    },
+    {
+      "decision": "單題生成與提問共用 _GENERATION_LOCK；背景作業與之互斥",
+      "rationale": "本機模型一次只服務一件事",
+      "phase": "19-20"
+    },
+    {
+      "decision": "批次補齊不核准任何項目；前端完成後自動切到「AI 生成待確認」再一起審",
+      "rationale": "醫師保留最終核准權",
+      "phase": "19-20"
+    }
   ],
-  "uncommitted_files": [],
-  "next_action": "更新 .planning/STATE.md 與 ROADMAP.md 標記 Phase 18 完成（進度 100%，Milestone v1.4 收尾），再執行全套回歸（逐檔跑以免 /tmp 配額爆滿）並確認 clinic.db SHA-256 前綴 5fb8328d",
-  "context_notes": "Phase 15–18 皆已實作、審查加固、提交並推送到 origin/main（最新 907c9b2）。測試環境注意：pytest 請用 uv run；整套一起跑會塞滿 /tmp 使用者配額（EDQUOT），請逐檔執行並於每檔後 rm -rf /tmp/pytest-of-hsu；環境缺 click（test_api_auth_enforcement 不可跑）；test_real_llm_batch 需本機 llama-server 且耗時數分鐘。"
+  "uncommitted_files": [
+    "src/api/routes/admin.py",
+    "src/batch/runner.py",
+    "src/pageindex/batch_answer_job.py",
+    "src/web/static/app.js",
+    "src/web/static/index.html",
+    "src/web/static/style.css",
+    "tests/test_autofill_backend.py",
+    "tests/test_autofill_pipeline_e2e.py",
+    "tests/test_web_ui_v3.py"
+  ],
+  "next_action": "先處理 clinic.db 替換問題（等使用者指示）；之後對上列未提交檔案做 Claude 對抗性審查（Worker 單例鎖、例外復原、批次階段 rollback、Fail-Closed），再依 20-03 跑逐檔回歸與 SHA 檢核，最後分計畫提交",
+  "context_notes": "Phase 20 目前測試：test_autofill_backend 3 passed、test_autofill_pipeline_e2e 1 passed、test_web_ui_v3 3 passed（隔離複本）。回歸注意：整套 pytest 一次跑會塞滿 /tmp 配額，請逐檔跑並清 /tmp/pytest-of-hsu。LLM 單題實測約 200 秒（標題片段）。工作區有他人變更，提交時務必只 add 指定檔案。"
 }
