@@ -58,6 +58,7 @@ class BatchConfig:
     min_miss_count: int = 3
     max_pending: int = 200
     time_budget_seconds: float = 3600.0
+    enable_autofill_answers: bool = True
 
     def __post_init__(self) -> None:
         # 互斥旗標防護（CLI 之外的程式化呼叫同樣適用；矛盾組合直接拒絕，不靜默擇一）
@@ -79,6 +80,7 @@ class BatchSummary:
     soap_sync_status: str = "skipped"
     general_generated_count: int = 0
     general_skipped_count: int = 0
+    autofill_answers_count: int = 0
     faq_topics_planned: int = 0
     faq_topics_processed: int = 0
     faq_inserted: int = 0
@@ -480,6 +482,36 @@ def run_batch(
                         doc_id=doc_id,
                         error_type=type(e).__name__,
                     )
+
+        # ---------------------------------------------------------------------
+        # 7. 自動補齊待審答案階段 (Phase 20 Background Auto-Filler)
+        # ---------------------------------------------------------------------
+        # dry-run 不得呼叫 LLM 或寫入（連線為唯讀，且 llm_call 為占位函式）
+        if cfg.enable_autofill_answers and not cfg.soap_only and not cfg.dry_run:
+            from ..pageindex.batch_answer_job import get_pending_unanswered_ids
+            from ..pageindex.answer_generator import generate_answer_for_faq, GenerationError
+
+            unanswered_ids = get_pending_unanswered_ids(conn, limit=cfg.max_pending)
+            for u_id in unanswered_ids:
+                if clock() - start_time >= cfg.time_budget_seconds:
+                    logger.warning("budget_exhausted", stage="autofill", faq_id=u_id)
+                    summary.status = "budget_exhausted"
+                    logger.info("batch_summary", **summary.as_dict())
+                    return summary
+                try:
+                    generate_answer_for_faq(conn, u_id, llm_call)
+                    summary.autofill_answers_count += 1
+                    logger.info("autofill_faq_done", faq_id=u_id)
+                except LocalLLMUnavailableError as e:
+                    logger.warning("llm_unavailable", error_type=type(e).__name__, faq_id=u_id)
+                    summary.status = "llm_unavailable"
+                    logger.info("batch_summary", **summary.as_dict())
+                    return summary
+                except GenerationError as ge:
+                    logger.info("autofill_faq_skipped", faq_id=u_id, reason=str(ge))
+                except Exception as e:
+                    summary.errors += 1
+                    logger.warning("autofill_faq_failed", faq_id=u_id, error=str(e))
 
         summary.status = "completed"
         logger.info("batch_summary", **summary.as_dict())

@@ -69,11 +69,20 @@ def extract_question_text(question: str, answer: str) -> Optional[str]:
 
 
 def is_answer_thin(question: str, answer: str) -> bool:
-    """答案是否尚待補齊（空白、過短，或佔位題下僅為問題清單）。"""
+    """答案是否尚待補齊。唯一來源：Web 介面旗標與批次補齊選取共用此判斷。
+
+    - 空白：待補齊。
+    - 佔位題：僅 question／topic 型態為待補齊（可由模型補）；多段或實質內容（content）不算待補齊，
+      因為生成端會以「已有實質內容」拒絕覆蓋，顯示旗標只會造成誤會。
+    - 非佔位題：答案不足 THIN_ANSWER_CHARS 字即待補齊。
+    """
     a = (answer or "").strip()
-    if len(a) < THIN_ANSWER_CHARS:
+    if not a:
         return True
-    return (question or "").startswith(PLACEHOLDER_QUESTION_PREFIX) and classify_draft(question, answer)[0] in ("question", "topic")
+    q = question or ""
+    if q.startswith(PLACEHOLDER_QUESTION_PREFIX):
+        return classify_draft(q, a)[0] in ("question", "topic")
+    return len(a) < THIN_ANSWER_CHARS
 
 
 def build_answer_prompt(question: str, topic: str) -> str:

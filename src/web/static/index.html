@@ -107,9 +107,12 @@
 
         <!-- 頁籤 2：待審草稿簽核 -->
         <section id="tab-review" class="tab-content hidden">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <h2 class="text-lg font-bold text-gray-800">待簽核衛教草稿 (Pending Queue)</h2>
-                <div class="flex space-x-3">
+                <div class="flex space-x-3 items-center flex-wrap gap-2">
+                    <button id="btnAutoFillAll" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-1.5 rounded transition font-medium shadow-sm">
+                        🚀 一鍵背景自動補齊所有答案
+                    </button>
                     <select id="reviewFilterCategory" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
                         <option value="">全部分類 (Category)</option>
                         <option value="special">診所專屬 (special)</option>
@@ -125,6 +128,17 @@
                         重新整理
                     </button>
                 </div>
+            </div>
+
+            <!-- 動態進度橫幅 (Phase 20 Auto-Filler) -->
+            <div id="autofillProgressBanner" class="progress-banner hidden" role="status" aria-live="polite">
+                <div class="progress-banner-head">
+                    <span id="autofillStatusText" class="progress-banner-text">🚀 背景自動補齊進行中...</span>
+                    <span id="autofillCountText" class="progress-banner-count">0 / 0</span>
+                    <button id="btnCancelAutoFill" class="btn btn-danger-soft">⏹️ 中止作業</button>
+                </div>
+                <div class="progress"><div id="autofillProgressBar" class="progress-bar"></div></div>
+                <div id="autofillDetailText" class="progress-banner-detail text-xs text-gray-500 mt-1"></div>
             </div>
 
             <div class="selection-toolbar">
@@ -256,6 +270,7 @@
     <div id="actionBar" class="action-bar" role="region" aria-label="批量操作">
         <span id="actionBarCount" class="action-bar-count">已選取 0 筆草稿</span>
         <div class="btn-row">
+            <button id="btnBatchGenerateSelected" class="btn btn-soft">🤖 批量生成所選答案</button>
             <button id="btnBatchReject" class="btn btn-danger-soft">❌ 批量駁回 (0)</button>
             <button id="btnBatchApprove" class="btn btn-success">✅ 批量核准 (0)</button>
         </div>

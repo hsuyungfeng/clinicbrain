@@ -165,6 +165,12 @@ function initReviewSection() {
     document.getElementById("reviewView").addEventListener("change", applyViewFilter);
     document.getElementById("btnBatchGenerate").addEventListener("click", startBatchGenerate);
     document.getElementById("btnCancelBatchGen").addEventListener("click", cancelBatchGenerate);
+    const btnAutoFill = document.getElementById("btnAutoFillAll");
+    if (btnAutoFill) btnAutoFill.addEventListener("click", startAutoFillAll);
+    const btnCancelAuto = document.getElementById("btnCancelAutoFill");
+    if (btnCancelAuto) btnCancelAuto.addEventListener("click", cancelBatchGenerate);
+    const btnBatchSelected = document.getElementById("btnBatchGenerateSelected");
+    if (btnBatchSelected) btnBatchSelected.addEventListener("click", startBatchGenerateSelected);
     pollBatchGenerate(true);   // 重新整理頁面後，若伺服器仍有作業進行中，接續顯示進度
     document.getElementById("btnClearSelect").addEventListener("click", () => {
         reviewState.selected.clear();
@@ -188,6 +194,8 @@ function syncSelectionUi() {
     reviewState.cards.forEach(entry => { if (entry.state && entry.state.needsAnswer && isCardVisible(entry)) needs++; });
     document.getElementById("btnBatchGenerate").textContent = needs > 0 ? `🤖 批量補齊答案 (${needs})` : "🤖 批量補齊答案";
     document.getElementById("actionBarCount").textContent = `已選取 ${n} 筆草稿`;
+    const btnGenSel = document.getElementById("btnBatchGenerateSelected");
+    if (btnGenSel) btnGenSel.textContent = n > 0 ? `🤖 批量生成所選答案 (${n})` : "🤖 批量生成所選答案";
     document.getElementById("btnBatchApprove").textContent = `✅ 批量核准 (${n})`;
     document.getElementById("btnBatchReject").textContent = `❌ 批量駁回 (${n})`;
     document.getElementById("actionBar").classList.toggle("show", n > 0);
@@ -459,6 +467,56 @@ async function startBatchGenerate() {
     }
 }
 
+async function startBatchGenerateSelected() {
+    const selected = Array.from(reviewState.selected);
+    if (selected.length === 0) {
+        showToast("請先勾選欲補齊答案的草稿", "info");
+        return;
+    }
+    const ids = selected.slice(0, 100);
+    const mins = Math.round(ids.length * 3);
+    if (!window.confirm(`將由本機 LLM 逐題補齊所選 ${ids.length} 筆草稿的答案（約需 ${mins} 分鐘，可先離開此頁）。\n補齊後仍為待審，不會自動核准；完成後再一起審核。\n確定開始嗎？`)) return;
+    try {
+        const resp = await fetch("/api/v1/admin/review/batch-generate", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ faq_ids: ids }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) { showToast(`無法開始：${typeof data.detail === "string" ? data.detail : "格式不正確"}`, "error"); return; }
+        showToast(`已開始批量生成所選 ${ids.length} 筆答案，進度見上方面板`, "success");
+        batchGen.lastState = "running";
+        pollBatchGenerate(false);
+    } catch (e) {
+        showToast("網路請求失敗", "error");
+    }
+}
+
+async function startAutoFillAll() {
+    if (!window.confirm("將在背景自動掃描所有「答案待補齊」的待審草稿，並由本機 LLM 逐題補齊答案。\n此作業在伺服器背景進行，補齊後仍為待審（pending），需由醫師審核核准。\n確定開始背景自動補齊嗎？")) return;
+    try {
+        const resp = await fetch("/api/v1/admin/review/autofill/all", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+            showToast(`無法啟動背景補齊：${typeof data.detail === "string" ? data.detail : "伺服器錯誤"}`, "error");
+            return;
+        }
+        if (data.status === "noop") {
+            showToast(data.message || "目前無待補齊答案之草稿", "info");
+            return;
+        }
+        showToast(`已成功啟動背景自動補齊，共排入 ${data.scheduled_count || 0} 筆草稿！`, "success");
+        batchGen.lastState = "running";
+        pollBatchGenerate(false);
+    } catch (e) {
+        showToast("網路請求失敗", "error");
+    }
+}
+
 async function cancelBatchGenerate() {
     if (!window.confirm("確定取消？目前這一題完成後會停止，已補齊的答案會保留。")) return;
     try {
@@ -471,20 +529,63 @@ async function cancelBatchGenerate() {
 
 function renderBatchGenPanel(s) {
     const panel = document.getElementById("batchGenPanel");
-    if (!s || s.state === "idle") { panel.classList.add("hidden"); return; }
-    panel.classList.remove("hidden");
+    const banner = document.getElementById("autofillProgressBanner");
+
+    if (!s || s.state === "idle") {
+        if (panel) panel.classList.add("hidden");
+        if (banner) banner.classList.add("hidden");
+        return;
+    }
+
+    if (panel) panel.classList.remove("hidden");
+    if (banner) banner.classList.remove("hidden");
+
     const running = s.state === "running";
     const names = { running: "批量補齊進行中", done: "批量補齊完成", cancelled: "批量補齊已取消", aborted: "批量補齊已中止" };
-    document.getElementById("batchGenText").textContent =
-        `${names[s.state] || s.state}：${s.processed} / ${s.total}　成功 ${s.ok}・失敗 ${s.failed.length}・略過 ${s.skipped}` +
-        (running && s.current_id ? `（處理中：ID ${s.current_id}）` : "");
-    document.getElementById("batchGenBar").style.width = `${s.total ? Math.round((s.processed / s.total) * 100) : 0}%`;
-    document.getElementById("btnCancelBatchGen").classList.toggle("hidden", !running);
+    const progressPercent = s.total ? Math.round((s.processed / s.total) * 100) : 0;
+
+    // 更新舊 batchGenPanel
+    const batchGenText = document.getElementById("batchGenText");
+    if (batchGenText) {
+        batchGenText.textContent =
+            `${names[s.state] || s.state}：${s.processed} / ${s.total}　成功 ${s.ok}・失敗 ${s.failed.length}・略過 ${s.skipped}` +
+            (running && s.current_id ? `（處理中：ID ${s.current_id}）` : "");
+    }
+    const batchGenBar = document.getElementById("batchGenBar");
+    if (batchGenBar) batchGenBar.style.width = `${progressPercent}%`;
+
+    const btnCancel = document.getElementById("btnCancelBatchGen");
+    if (btnCancel) btnCancel.classList.toggle("hidden", !running);
+
     const detail = document.getElementById("batchGenDetail");
-    detail.replaceChildren();
-    if (s.message) detail.appendChild(el("div", "", s.message));
-    s.failed.slice(0, 8).forEach(f => detail.appendChild(el("div", "batchgen-fail", `ID ${f.id}：${f.reason}`)));
-    if (s.failed.length > 8) detail.appendChild(el("div", "", `…另有 ${s.failed.length - 8} 筆失敗`));
+    if (detail) {
+        detail.replaceChildren();
+        if (s.message) detail.appendChild(el("div", "", s.message));
+        s.failed.slice(0, 8).forEach(f => detail.appendChild(el("div", "batchgen-fail", `ID ${f.id}：${f.reason}`)));
+        if (s.failed.length > 8) detail.appendChild(el("div", "", `…另有 ${s.failed.length - 8} 筆失敗`));
+    }
+
+    // 更新新 autofillProgressBanner (Phase 20)
+    const autoStatus = document.getElementById("autofillStatusText");
+    if (autoStatus) {
+        autoStatus.textContent = running
+            ? `🚀 背景自動補齊進行中${s.current_id ? `（處理中：ID ${s.current_id}）` : "..."}`
+            : `🏁 ${names[s.state] || s.state}`;
+    }
+    const autoCount = document.getElementById("autofillCountText");
+    if (autoCount) {
+        autoCount.textContent = `${s.processed} / ${s.total} (成功 ${s.ok}・失敗 ${s.failed.length})`;
+    }
+    const autoBar = document.getElementById("autofillProgressBar");
+    if (autoBar) autoBar.style.width = `${progressPercent}%`;
+
+    const btnCancelAuto = document.getElementById("btnCancelAutoFill");
+    if (btnCancelAuto) btnCancelAuto.classList.toggle("hidden", !running);
+
+    const autoDetail = document.getElementById("autofillDetailText");
+    if (autoDetail) {
+        autoDetail.textContent = s.message || (s.failed.length > 0 ? `失敗 ${s.failed.length} 筆：${s.failed.map(f => `ID ${f.id} (${f.reason})`).slice(0, 3).join(", ")}` : "");
+    }
 }
 
 async function pollBatchGenerate(silent) {
@@ -498,14 +599,16 @@ async function pollBatchGenerate(silent) {
     renderBatchGenPanel(s);
     if (s.state === "running") {
         batchGen.lastState = "running";
-        batchGen.timer = setTimeout(() => pollBatchGenerate(false), 5000);
+        batchGen.timer = setTimeout(() => pollBatchGenerate(false), 3000);
         return;
     }
     if (batchGen.lastState === "running" && s.state !== "idle") {
-        // 剛結束：重載清單並切到「AI 生成待確認」，方便最後一起審
+        // 剛結束：重載清單與總覽統計，並切到「AI 生成待確認」，方便最後一起審
         batchGen.lastState = s.state;
-        document.getElementById("reviewView").value = "ai";
+        const reviewView = document.getElementById("reviewView");
+        if (reviewView) reviewView.value = "ai";
         await loadReviewFaqs();
+        loadDashboardSummary();
         showToast(`${s.state === "done" ? "批量補齊完成" : "批量補齊結束"}：成功 ${s.ok}、失敗 ${s.failed.length}。已切換到「AI 生成待確認」，請逐筆檢視後批量核准`, s.failed.length ? "info" : "success");
     }
 }

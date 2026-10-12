@@ -453,6 +453,30 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **已知限制**：① 作業進度不跨服務重啟；② 內文節錄上限 1500 字，超長文件只取前段；③ 標題片段生成的品質取決於同文件內文是否涵蓋該主題，涵蓋不足時模型應回「資料不足」而被捨棄；④ 仍需醫師逐筆檢視 AI 內容後才核准。
 - **測試**：`tests/test_batch_answer_job.py`（型態判定含使用者實例 ID 671、標題片段以內文為依據、無依據／資料不足被拒、撞題保底、批次完成／失敗隔離／略過／LLM 離線中止／單一作業與取消／驗證與認證）、`tests/test_web_ui_v2.py`（新控制項與端點接線）。
 
+### 2.21 背景衛教答案自動生成器與離峰排程（Phase 20 新增）
+把「待審草稿答案待補齊」的補齊工作交給本機 LLM 在背景完成，醫師最後一起審核。編號說明：規劃文件原訂為 2.19，但 2.19（向 LLM 提問）與 2.20（批次補齊）已存在，故本節為 2.21。
+
+- **待補齊判斷（唯一來源）**：`answer_generator.is_answer_thin`。Web 介面「⚠️ 答案待補齊」旗標與背景選取共用此函式——不得另立門檻。規則：空白為待補齊；佔位題（`【診所文件】…`）僅 question／topic 型態為待補齊，多段或實質內容（content）不算（生成端會以「已有實質內容」拒絕覆蓋，顯示旗標只會誤導）；非佔位題答案不足 30 字為待補齊。`batch_answer_job.get_pending_unanswered_ids` 另限定 `review_status='pending'` 且來源為審核閘門來源。
+  - 歷史踩雷：Phase 20 初版以「長度 < 15」選取，導致問題清單型草稿（如「4. Endolift…？」，約 20 字）全部漏選，正是使用者最主要的案例。已改為共用判斷並以 `test_phase20_hardening::test_selection_uses_same_rule_as_ui` 回歸鎖定。
+- **單一背景佇列（Serial Queue）**：`src/pageindex/batch_answer_job.py`。同時只允許一個作業（再啟動回 409）；逐題處理，**一次只推論一題**，符合單張 RTX 2080 Ti 的 VRAM 保護。每題取得 `_GENERATION_LOCK` 才推論，單題生成、向 LLM 提問與背景作業三者互斥（他者回 429）。
+- **跨行程互斥（與夜間批次）**：夜間批次在獨立行程執行，原本不共享模型鎖。背景作業開始時以非阻塞 `flock` 取得 `<db>.nightly.lock`（`src/batch/db_lock.py`，與 `scripts/run_nightly_batch.py:lock_path_for` 命名相同，測試比對）；作業結束時釋放。語意：
+  - 夜間批次持鎖 → 背景作業拒絕啟動（`POST /autofill/all` 與 `POST /batch-generate` 皆回 409）。
+  - 背景作業持鎖 → 夜間批次依既有規則「持鎖略過」（結束碼 0）。**代價**：若 02:30 時仍有背景作業，當晚夜間批次整晚略過（含 FAQ 預生成與推理樹重建）。這是刻意的保守選擇：寧可略過，也不讓兩個行程同時打 `llama-server`（它僅 `-np 1` 一個 slot，排隊會造成 420 秒逾時誤判離線）。
+  - 收尾競態：上一作業已寫入最終狀態但尚未釋放鎖時，新啟動回「上一批次補齊作業尚在收尾」，而非誤報資料庫占用。
+- **失敗與降級**（`_worker` → `_run_items`，`finally` 必定釋放鎖與 `_db_lock_fd`）：
+  - 本機 LLM 離線／逾時（`LocalLLMUnavailableError`）→ 整批 `aborted`，不空轉剩餘題目；**未核准、未改寫任何已完成題目**。
+  - 單題合規未通過或其他非預期例外 → 只記入 `failed`，不影響其他題（隔離）。
+  - 已完整／已核准／非待審來源 → `skipped`（`GenerationError.skippable`），不計為失敗。
+  - 取消：目前題完成後停止；等待模型鎖時亦可取消（每 2 秒檢查）。
+  - 執行緒啟動失敗 → 釋放鎖、清空狀態，不留殘鎖。
+- **輪詢端點輕量化**：`GET /review/batch-generate/status` 只回傳記憶體快照（`snapshot()` 為複本），**不接受任何資料庫依賴**（測試以 `sqlite3.connect` 攔截驗證），每 3 秒輪詢不會造成資料庫負載。認證由 router 層 `verify_admin_key` 套用。
+- **Fail-Closed 待審隔離**：背景產出一律 `pending`、`metadata.answer_source='local_llm'`；對 `visible_faq_sql` 不可見（測試 `test_background_output_stays_hidden_until_approved`）。背景作業**絕不核准**任何項目。
+- **夜間批次第 7 階段**（`src/batch/runner.py`，`enable_autofill_answers` 預設 True）：於 FAQ／推理樹之後，以 `max_pending` 為單次上限補齊待補齊草稿。**dry-run 不執行此階段**（`llm_call` 為占位函式、連線唯讀；測試 `test_dry_run_never_calls_llm_for_autofill`）。`--soap-only` 不執行。
+- **前端**：頂部「🚀 一鍵背景自動補齊所有答案」（`POST /review/autofill/all`，無待補齊時回 `noop`）、進度橫幅（每 3 秒輪詢，單一計時器）與取消；浮動列「🤖 批量生成所選答案」。全部動態文字以 `textContent` 寫入。**已知 UI 重複**：舊版批次面板與新橫幅並存，兩者由同一狀態驅動，後續應合併為一個。
+- **測試慣例（重要）**：`tests/test_phase20_hardening.py` 以 autouse fixture 將 `_local_llm_call`／`_local_llm_ask_call` 換成會拋錯的假函式，**測試一律不得呼叫真實 LLM**（否則會佔用 GPU 並讓測試卡住 200 秒以上，且因模型鎖殘留連帶拖垮後續測試——此為本次實測踩到的真實問題）。
+- **已知限制**：① 作業狀態只存記憶體，服務重啟後歸零（已完成的題目仍保留在資料庫）；② 夜間批次以 `max_pending` 作為單次補齊上限，語意上是借用積壓上限當配額，後續可獨立設定；③ 同一草稿若同時被手動生成與背景補齊，後到者會因答案已變而回 409 並計為略過；④ 跨行程鎖僅對同一台機器的 `flock` 有效，不跨主機。
+- **測試**：`tests/test_autofill_backend.py`、`tests/test_autofill_pipeline_e2e.py`、`tests/test_web_ui_v3.py`、`tests/test_phase20_hardening.py`（選取規則與 UI 一致、跨行程互斥雙向、模型鎖併發、取消於等鎖中、斷線與非預期錯誤隔離、收尾競態、執行緒啟動失敗、輪詢無 DB 依賴、dry-run 守門、隱蔽性）。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -506,7 +530,8 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/migrate_faq_metadata.py`：`faq_cache.metadata` 欄位單一來源遷移腳本（`--confirm-prod-backup`、`--dry-run`）
 * `scripts/distill_soap_faqs.py`：SOAP 衛教提煉批次 CLI（dry-run 唯讀）
 * `src/pageindex/rag_ask.py`：管理端向 LLM 提問檢驗（僅用對外可見資料、紅旗／無資料不呼叫模型）
-* `src/pageindex/batch_answer_job.py`：待審草稿背景批次補齊作業（單一作業、逐題 commit、LLM 離線中止）
+* `src/pageindex/batch_answer_job.py`：待審草稿背景批次補齊作業（單一作業、逐題 commit、LLM 離線中止、跨行程鎖）
+* `src/batch/db_lock.py`：與夜間批次共用的 `<db>.nightly.lock` 非阻塞 flock 輔助函式
 * `src/pageindex/answer_generator.py`：待審草稿 AI 輔助答案生成（本機 LLM、輸出端四層檢驗、樂觀鎖寫入）
 * `src/soap/distiller.py`：SOAP 衛教提煉與草稿生成模組
 * `scripts/run_nightly_batch.py`：夜間批次自動化排程 CLI 工具

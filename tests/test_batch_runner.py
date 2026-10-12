@@ -411,6 +411,8 @@ def test_backlog_protection_skips_faq(isolated_conn, tmp_path: Path):
         seed_path=seed_file,
         snapshot_dir=tmp_path / "snapshots",
         max_pending=5,  # 設定上限為 5
+        # 本測試只驗證「FAQ 生成」的積壓保護；自動補齊（Phase 20 第 7 階段）為獨立行為，另有專屬測試
+        enable_autofill_answers=False,
     )
 
     summary = run_batch(

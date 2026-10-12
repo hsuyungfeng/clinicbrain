@@ -95,6 +95,11 @@ class GenerateAnswerRequest(BaseModel):
     overwrite: bool = False
 
 
+class AutoFillAllRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    clinic_id: Optional[str] = None
+
+
 router = APIRouter(
     prefix="/api/v1/admin",
     tags=["診所管理端點 (Admin Only)"],
@@ -580,3 +585,42 @@ def batch_generate_status():
 @router.post("/review/batch-generate/cancel", summary="取消批次補齊作業（目前題目完成後停止）")
 def cancel_batch_generate():
     return {"status": "ok", "cancelling": batch_answer_job.cancel()}
+
+
+@router.post("/review/autofill/all", summary="一鍵背景自動補齊所有待審題目之答案")
+def autofill_all_unanswered(
+    req: Optional[AutoFillAllRequest] = None,
+    clinic_id: Optional[str] = Query(None),
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """
+    一鍵啟動背景作業，自動補齊所有待審題目之答案。
+    - 查詢 review_status='pending' 且 (answer IS NULL OR length(trim(answer)) < 15) 之項目。
+    - 若無任何待補齊項目，回傳 {"status": "noop", "message": "目前無待補齊答案之草稿", "scheduled_count": 0}。
+    - 若已有批次作業執行中，回傳 HTTP 409 Conflict。
+    - 排入背景逐題生成，回傳 {"status": "started", "scheduled_count": len(ids), "faq_ids": ids}。
+    """
+    target_clinic_id = req.clinic_id if req and req.clinic_id is not None else clinic_id
+    if target_clinic_id is not None:
+        target_clinic_id = target_clinic_id.strip() or None
+
+    if batch_answer_job.is_running():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="已有批次補齊作業進行中")
+
+    ids = batch_answer_job.get_pending_unanswered_ids(
+        conn, clinic_id=target_clinic_id, limit=batch_answer_job.MAX_JOB_IDS
+    )
+    if not ids:
+        return {"status": "noop", "message": "目前無待補齊答案之草稿", "scheduled_count": 0}
+
+    try:
+        batch_answer_job.start(
+            config.db_path, ids, _local_llm_call, _local_llm_ask_call, _GENERATION_LOCK
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+    return {"status": "started", "scheduled_count": len(ids), "faq_ids": ids}
+
