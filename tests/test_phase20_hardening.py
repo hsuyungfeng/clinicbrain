@@ -404,6 +404,8 @@ def test_dry_run_never_calls_llm_for_autofill(isolated_conn, tmp_path):
 
 
 def test_nightly_stage_fills_question_list_rows(isolated_conn, tmp_path):
+    isolated_conn.execute("DELETE FROM faq_cache WHERE review_status = 'pending'")
+    isolated_conn.commit()
     rid = _insert(isolated_conn, "【診所文件】p20night - 指示 1", "4. 術後多久可以洗臉？", topic="p20night")
     cfg = BatchConfig(seed_path=_seed_file(tmp_path), snapshot_dir=tmp_path / "snap", dry_run=False,
                       skip_faq=True, skip_trees=True, enable_soap_distill=False, enable_autofill_answers=True)

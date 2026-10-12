@@ -448,7 +448,7 @@ async function startBatchGenerate() {
     });
     const ids = (selectedNeeds.length > 0 ? selectedNeeds : allNeeds).slice(0, 100);
     if (ids.length === 0) { showToast("目前沒有「答案待補齊」的草稿", "info"); return; }
-    const mins = Math.round(ids.length * 3);
+    const mins = Math.round(ids.length * 5);
     const scope = selectedNeeds.length > 0 ? "所選" : "全部";
     if (!window.confirm(`將由本機 LLM 逐題補齊${scope} ${ids.length} 筆「答案待補齊」的草稿（約需 ${mins} 分鐘，可先離開此頁）。\n補齊後仍為待審，不會自動核准；完成後再一起審核。\n確定開始嗎？`)) return;
     try {
@@ -474,7 +474,7 @@ async function startBatchGenerateSelected() {
         return;
     }
     const ids = selected.slice(0, 100);
-    const mins = Math.round(ids.length * 3);
+    const mins = Math.round(ids.length * 5);
     if (!window.confirm(`將由本機 LLM 逐題補齊所選 ${ids.length} 筆草稿的答案（約需 ${mins} 分鐘，可先離開此頁）。\n補齊後仍為待審，不會自動核准；完成後再一起審核。\n確定開始嗎？`)) return;
     try {
         const resp = await fetch("/api/v1/admin/review/batch-generate", {
