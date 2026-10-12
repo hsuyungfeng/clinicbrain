@@ -475,7 +475,11 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **前端**：頂部「🚀 一鍵背景自動補齊所有答案」（`POST /review/autofill/all`，無待補齊時回 `noop`）、進度橫幅（每 3 秒輪詢，單一計時器）與取消；浮動列「🤖 批量生成所選答案」。全部動態文字以 `textContent` 寫入。**已知 UI 重複**：舊版批次面板與新橫幅並存，兩者由同一狀態驅動，後續應合併為一個。
 - **測試慣例（重要）**：`tests/test_phase20_hardening.py` 以 autouse fixture 將 `_local_llm_call`／`_local_llm_ask_call` 換成會拋錯的假函式，**測試一律不得呼叫真實 LLM**（否則會佔用 GPU 並讓測試卡住 200 秒以上，且因模型鎖殘留連帶拖垮後續測試——此為本次實測踩到的真實問題）。
 - **已知限制**：① 作業狀態只存記憶體，服務重啟後歸零（已完成的題目仍保留在資料庫）；② 夜間批次以 `max_pending` 作為單次補齊上限，語意上是借用積壓上限當配額，後續可獨立設定；③ 同一草稿若同時被手動生成與背景補齊，後到者會因答案已變而回 409 並計為略過；④ 跨行程鎖僅對同一台機器的 `flock` 有效，不跨主機。
-- **測試**：`tests/test_autofill_backend.py`、`tests/test_autofill_pipeline_e2e.py`、`tests/test_web_ui_v3.py`、`tests/test_phase20_hardening.py`（選取規則與 UI 一致、跨行程互斥雙向、模型鎖併發、取消於等鎖中、斷線與非預期錯誤隔離、收尾競態、執行緒啟動失敗、輪詢無 DB 依賴、dry-run 守門、隱蔽性）。
+- **本機推論逾時與思考長度優化**（2026-10-12 實機回饋補強）：
+  - **逾時放寬至 480 秒**：`src/api/routes/admin.py` 將 `LLM_GENERATE_TIMEOUT_SECONDS` 與 `LLM_ASK_TIMEOUT_SECONDS` 由 300 秒進一步放寬至 480 秒（8 分鐘），避免 Qwen 27B 處理長篇大綱/多段內文時因推論時間較長而誤判離線中斷。前端預估時間同步更新為每題約 5 分鐘。
+  - **Prompt 思考長度限制**：`src/pageindex/answer_generator.py`（`build_answer_prompt` 與 `build_topic_prompt`）第一條規則明確要求「思考過程請保持簡潔（不超過 100 字），直接輸出答案本文」，徹底杜絕模型在 `<think>` 中過度推演耗盡 6,144 Token 導致答案 `content` 被截斷為空的邊界問題。
+  - **錯誤訊息診斷精確化**：`src/pageindex/batch_answer_job.py` 捕獲 `LocalLLMUnavailableError` 時，將底層具體異常細節記錄於 `failed` 原因中，杜絕模糊的泛用失敗提示。
+- **測試**：`tests/test_autofill_backend.py`、`tests/test_autofill_pipeline_e2e.py`、`tests/test_web_ui_v3.py`、`tests/test_phase20_hardening.py`（選取規則與 UI 一致、跨行程互斥雙向、模型鎖併發、取消於等鎖中、斷線與非預期錯誤隔離、收尾競態、執行緒啟動失敗、輪詢無 DB 依賴、dry-run 守門、隱蔽性，共 25 項全部通過）。
 
 ---
 

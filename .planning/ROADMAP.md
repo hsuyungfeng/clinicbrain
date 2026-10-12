@@ -27,7 +27,7 @@
 | 17. 定時一般醫學知識補充與批次擴充 | 3/3 | Complete | 2026-10-08 |
 | 18. 各診所資料上傳與管理 Web App | 3/3 | Complete | 2026-10-08 |
 | 19. Web 管理介面臨床體驗升級與 AI 輔助生成 | 3/3 | Complete | 2026-10-08 |
-| 20. LLM 空閒時間衛教答案自動生成器 | 0/3 | Planned | - |
+| 20. LLM 空閒時間衛教答案自動生成器 | 3/3 | Complete | 2026-10-12 |
 
 ## Phase Details
 
@@ -74,12 +74,13 @@
   3. 簽核列表批量控制項（全選、反選、清除選取、浮動快捷操作列）。
   4. 待審卡片「🤖 AI 生成答案」與「內聯編輯 (Inline Edit)」支援。
 
-### Phase 20: LLM 空閒時間衛教答案自動生成器
+### Phase 20: LLM 空閒時間衛教答案自動生成器 (已完成)
 
 **Goal**: 建立雙軌答案自動補齊機制，利用本機 LLM 空閒時間（Web 非同步單佇列背景 Worker 與夜間批次離峰排程），自動將上傳文件或種子中「答案待補齊」之 pending 題目逐題生成合規繁體衛教解答，實現醫師晨間「零等待」直接審核閉環。
+**Status**: Complete (25/25 專屬測試通過、跨行程 flock 互斥、480s 逾時放寬、Prompt 思考長度優化、Fail-Closed 待審隔離)
 **Depends on**: Phase 19 (Web 批量簽核與單題生成 API), Phase 16 (夜間批次排程)
 **Scope**:
-  1. 後端背景非同步序列 Worker（`src/batch/answer_filler.py`）與狀態端點（`/autofill/start`, `/autofill/status`, `/autofill/stop`）。
-  2. Web App 介面「🚀 一鍵背景補齊所有答案」控制按鈕、即時進度條與狀態輪詢。
-  3. 夜間批次（`src/batch/runner.py`）整合：自動掃描未補齊解答之 pending 題目並離峰批次生成。
-  4. 多 Agent 流水線驗收（Agy 3.6 Flash 實作 ➔ Claude 5.5 對抗性審查加固 ➔ Hermes 終端驗收）。
+  1. 後端背景非同步序列 Worker（`src/pageindex/batch_answer_job.py`）與排程端點（`POST /review/autofill/all`）。
+  2. Web App 介面「🚀 一鍵背景自動補齊所有答案」控制按鈕、即時進度條橫幅與 3 秒狀態輪詢。
+  3. 夜間批次第 7 階段整合：自動掃描未補齊解答之 pending 題目並離峰批次生成。
+  4. 多 Agent 流水線驗收（Agy 3.6 Flash 實作 ➔ Claude 5.5 對抗性審查加固 ➔ 終端全套驗收）。
