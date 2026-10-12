@@ -28,6 +28,7 @@
 | 18. 各診所資料上傳與管理 Web App | 3/3 | Complete | 2026-10-08 |
 | 19. Web 管理介面臨床體驗升級與 AI 輔助生成 | 3/3 | Complete | 2026-10-08 |
 | 20. LLM 空閒時間衛教答案自動生成器 | 3/3 | Complete | 2026-10-12 |
+| 21. 臨床決策推理樹提煉、審核與檢索擴展 | 3/3 | Complete | 2026-10-12 |
 
 ## Phase Details
 
@@ -84,3 +85,14 @@
   2. Web App 介面「🚀 一鍵背景自動補齊所有答案」控制按鈕、即時進度條橫幅與 3 秒狀態輪詢。
   3. 夜間批次第 7 階段整合：自動掃描未補齊解答之 pending 題目並離峰批次生成。
   4. 多 Agent 流水線驗收（Agy 3.6 Flash 實作 ➔ Claude 5.5 對抗性審查加固 ➔ 終端全套驗收）。
+
+### Phase 21: 臨床決策推理樹提煉、審核與檢索擴展 (已完成)
+
+**Goal**: 擴展核心四段式臨床推理樹（`page_index_trees`），支援自診所上傳文件與醫療長文自動提煉四段式決策樹草稿（`pending`），在 Web 管理介面新增決策樹視覺化檢視與醫師權威醫囑（`*_physician_notes`）簽核流，並提供嚴格的 Fail-Closed 檢索隔離與 RAG 擴展。
+**Status**: Complete (31/31 專屬測試通過、全套回歸通過、Fail-Closed 通道、醫囑保護、正式庫零污染)
+**Depends on**: Phase 20 (LLM 答案生成與推論優化), Phase 18 (診所管理 Web App), Phase 01 (PageIndex 核心)
+**Scope**:
+  1. 資料庫結構擴充與審核核心（`scripts/migrate_page_index_review.py`、`src/pageindex/tree_review.py`、`tree_distiller.py`、後端 Admin API）。
+  2. Web App 介面「🌳 臨床推理樹簽核」分頁、四段式卡片視覺化、醫師專屬醫囑填寫與上傳提煉分流。
+  3. 多 Agent 流水線驗收（Agy 3.6 Flash 實作 ➔ Claude 5.5 對抗性審查加固 ➔ 終端全套驗收）。
+

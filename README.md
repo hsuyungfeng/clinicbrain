@@ -60,6 +60,11 @@
    - 針對上傳文件產生之「答案待補齊」題目，提供一鍵背景序列排程（Serial Queue）與夜間離峰自動批次補齊。
    - 跨行程鎖（`db_lock`）保護與嚴格 Fail-Closed 防線：生成內容恆為待審（pending），醫師審核前公開端點絕對不可見。
 
+10. **臨床決策推理樹自動提煉與視覺化簽核 (PageIndex Trees Distillation & Review)**
+   - 支援將長篇診所手術指引與複雜療程文件自動結構化提煉為四段式臨床推理樹（`pre_op`, `procedure`, `post_op_short`, `maintenance`）。
+   - 專屬 Web App「🌳 臨床推理樹簽核」卡片視圖，支援四段式預覽與金色醒目醫師權威醫囑（`*_physician_notes`）編輯輸入框。
+   - 嚴格 Fail-Closed 審核隔離：未審草稿在公開查詢、匿名一般諮詢、雲端同步匯出與 FAQ 參考上下文中全面隱蔽，經醫師簽核核准後即時同步 FTS5 trigram 索引並擴展 RAG 推理。
+
 ---
 
 ## 🏗️ 系統架構 (Architecture)

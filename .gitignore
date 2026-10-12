@@ -8,6 +8,7 @@ __pycache__/
 OriginalData/
 scripts/ingestion_output/
 clinic.db-*
+clinic.db.*
 clinic.db.bak-*
 
 # 夜間批次執行日誌與樹快照
