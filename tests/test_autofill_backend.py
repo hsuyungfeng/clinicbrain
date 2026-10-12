@@ -3,17 +3,59 @@ Taiwan Clinic Medical PageIndex RAG System - 背景自動補齊答案後端測�
 Phase 20 Plan 20-01: get_pending_unanswered_ids 與 POST /api/v1/admin/review/autofill/all
 """
 
+import pathlib
 import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
 from src.api.app import app
 from src.api.config import config
+from src.api.routes import admin as admin_mod
 from src.pageindex import batch_answer_job
 from src.pageindex.batch_answer_job import get_pending_unanswered_ids
 from src.pageindex.faq_writer import upsert_faqs
 
 CLINIC_ID = "3503190424"
+
+
+PROD_PATH = (pathlib.Path(__file__).resolve().parent.parent / "clinic.db").resolve()
+
+
+def _clear_pending_in_copy(path):
+    """僅清除『隔離複本』中的待審草稿，讓斷言不受正式庫的即時資料影響。
+    安全守門：拒絕對正式庫路徑操作。"""
+    assert pathlib.Path(path).resolve() != PROD_PATH, "測試禁止清理正式庫"
+    conn = sqlite3.connect(str(path))
+    try:
+        conn.execute("DELETE FROM faq_cache WHERE review_status = 'pending'")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _reset_batch_state():
+    from src.batch import db_lock
+    batch_answer_job._cancel.set()
+    batch_answer_job.wait(10)
+    if admin_mod._GENERATION_LOCK.locked():
+        admin_mod._GENERATION_LOCK.release()
+    db_lock.release(batch_answer_job._db_lock_fd)
+    batch_answer_job._db_lock_fd = None
+    batch_answer_job._thread = None
+    batch_answer_job._state = None
+    batch_answer_job._cancel.clear()
+
+
+@pytest.fixture(autouse=True)
+def _isolated_batch_state(monkeypatch):
+    """每個測試前後重置背景作業狀態；測試一律禁止呼叫真實 LLM。"""
+    def forbid(prompt):
+        raise AssertionError("測試禁止呼叫真實 LLM")
+    monkeypatch.setattr(admin_mod, "_local_llm_call", forbid)
+    monkeypatch.setattr(admin_mod, "_local_llm_ask_call", forbid)
+    _reset_batch_state()
+    yield
+    _reset_batch_state()
 
 
 @pytest.fixture
@@ -32,6 +74,7 @@ def test_get_pending_unanswered_ids_filtering(isolated_db_path):
     - 忽略 answer 長度 >= 15 的完整草稿
     - 支援 clinic_id 過濾與 id 升冪排序
     """
+    _clear_pending_in_copy(isolated_db_path)   # 排除複本內既有的待審資料（如正式庫的即時上傳）
     conn = sqlite3.connect(str(isolated_db_path))
     try:
         # 先清除或插入控制資料

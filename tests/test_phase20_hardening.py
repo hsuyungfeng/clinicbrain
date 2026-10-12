@@ -2,6 +2,7 @@
 全程使用 isolated_db_path 複本與假 LLM，不觸及正式庫。"""
 
 import json
+import pathlib
 import sqlite3
 import threading
 import time
@@ -27,6 +28,34 @@ GOOD = (
     "若傷口紅腫熱痛加劇、化膿或有異味，請勿自行處理，應回診由醫師評估。"
     "若出現高燒超過3天、持續劇烈疼痛或呼吸困難，請儘速就醫。"
 )
+
+
+PROD_PATH = (pathlib.Path(__file__).resolve().parent.parent / "clinic.db").resolve()
+
+
+def _clear_pending_in_copy(path):
+    """僅清除『隔離複本』中的待審草稿，讓斷言不受正式庫的即時資料影響。
+    安全守門：拒絕對正式庫路徑操作。"""
+    assert pathlib.Path(path).resolve() != PROD_PATH, "測試禁止清理正式庫"
+    conn = sqlite3.connect(str(path))
+    try:
+        conn.execute("DELETE FROM faq_cache WHERE review_status = 'pending'")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _reset_batch_state():
+    from src.batch import db_lock
+    batch_answer_job._cancel.set()
+    batch_answer_job.wait(10)
+    if admin_mod._GENERATION_LOCK.locked():
+        admin_mod._GENERATION_LOCK.release()
+    db_lock.release(batch_answer_job._db_lock_fd)
+    batch_answer_job._db_lock_fd = None
+    batch_answer_job._thread = None
+    batch_answer_job._state = None
+    batch_answer_job._cancel.clear()
 
 
 @pytest.fixture(autouse=True)
@@ -92,6 +121,7 @@ def _wait_done(timeout=30.0):
 
 # ---------------- 1. 選取規則與 Web 介面一致（回歸：問題清單型草稿曾被漏選）----------------
 def test_selection_uses_same_rule_as_ui(isolated_db_path):
+    _clear_pending_in_copy(isolated_db_path)
     conn = sqlite3.connect(str(isolated_db_path))
     try:
         qlist = _insert(conn, "【診所文件】p20h-a - 指示 1", "4. Endolift與其他非手術治療眼袋有何不同？", topic="p20h-a")
@@ -118,6 +148,7 @@ def test_selection_uses_same_rule_as_ui(isolated_db_path):
 
 
 def test_selection_limit_and_order(isolated_db_path):
+    _clear_pending_in_copy(isolated_db_path)
     conn = sqlite3.connect(str(isolated_db_path))
     try:
         ids = [_insert(conn, f"限制測試題目{i}？", "", topic=f"p20lim-{i}") for i in range(5)]
