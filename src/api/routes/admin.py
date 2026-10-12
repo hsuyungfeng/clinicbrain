@@ -526,7 +526,7 @@ def generate_admin_faq_answer(
     conn: sqlite3.Connection = Depends(get_write_db),
 ):
     """走本機 llama-server；生成內容須通過價格屏蔽、四層合規、劑量與就醫警訊檢驗才寫入，狀態維持 pending。"""
-    from ...pageindex.llm_client import LocalLLMUnavailableError
+    from ...pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     if not _GENERATION_LOCK.acquire(blocking=False):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="已有一筆答案正在生成，請稍後再試")
@@ -540,6 +540,8 @@ def generate_admin_faq_answer(
             }
         except GenerationError as e:
             raise HTTPException(status_code=e.http_status, detail=str(e)) from e
+        except LLMEmptyOutputError as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="模型回覆為空（可能因思考長度超限），請稍後重試") from e
         except LocalLLMUnavailableError as e:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -555,7 +557,7 @@ def admin_ask_llm(
     conn: sqlite3.Connection = Depends(get_read_db),
 ):
     """唯讀：不寫入任何資料。紅旗問句與無資料問句不呼叫 LLM；其餘走本機 llama-server。"""
-    from ...pageindex.llm_client import LocalLLMUnavailableError
+    from ...pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     clinic_id = req.clinic_id.strip()
     if conn.execute("SELECT 1 FROM clinic_info WHERE clinic_id = ?", (clinic_id,)).fetchone() is None:
@@ -568,6 +570,8 @@ def admin_ask_llm(
                     **ask_with_data(conn, req.question, clinic_id, _local_llm_ask_call)}
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        except LLMEmptyOutputError as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="模型回覆為空（可能因思考長度超限），請稍後重試") from e
         except LocalLLMUnavailableError as e:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -711,7 +715,7 @@ def distill_admin_tree(
     與單題生成共用 _GENERATION_LOCK（行程內）與夜間批次檔案鎖（跨行程）。"""
     import re
     from ...batch import db_lock
-    from ...pageindex.llm_client import LocalLLMUnavailableError
+    from ...pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
     from ...pageindex.prompt_template import TreeValidationError
     from ...pageindex.tree_distiller import MAX_SOURCE_CHARS, TreeConflictError, distill_tree_from_text
 
@@ -750,6 +754,8 @@ def distill_admin_tree(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except TreeValidationError as ve:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(ve)) from ve
+    except LLMEmptyOutputError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="模型回覆為空（可能因思考長度超限），請稍後重試") from e
     except LocalLLMUnavailableError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

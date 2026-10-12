@@ -34,7 +34,7 @@ from src.ingestion.generate_faq import (
     _SIMPLIFIED_CHAR_SAMPLE,
 )
 from src.pageindex.faq_writer import upsert_faqs
-from src.pageindex.llm_client import check_llm_health, local_llm_call, LocalLLMUnavailableError
+from src.pageindex.llm_client import check_llm_health, local_llm_call, LLMEmptyOutputError, LocalLLMUnavailableError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -209,6 +209,10 @@ def process_single_file(
             raw_llm_reply = local_llm_call(prompt, timeout=120)
             elapsed = time.time() - t0
             logger.info(f"區塊 {chunk_idx} 推理完成，耗時 {elapsed:.2f}s")
+        except LLMEmptyOutputError as e:
+            logger.error(f"區塊 {chunk_idx} 模型回覆為空（單題失敗，續跑其他區塊）: {e}")
+            all_rejected_faqs.append({"chunk_index": chunk_idx, "error": f"LLMEmptyOutputError: {e}"})
+            continue
         except LocalLLMUnavailableError as e:
             logger.error(f"區塊 {chunk_idx} LLM 呼叫失敗: {e}")
             all_rejected_faqs.append({

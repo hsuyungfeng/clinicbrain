@@ -221,3 +221,63 @@ def test_autofill_all_endpoint_noop_and_started(test_client, isolated_db_path, m
 
     finally:
         conn.close()
+
+
+def test_batch_answer_job_empty_output_non_fatal(isolated_db_path, monkeypatch):
+    """驗證單題 token 超限輸出為空 (LLMEmptyOutputError) 僅列為單題失敗，不會中止整批作業。"""
+    import threading
+    from src.pageindex.llm_client import LLMEmptyOutputError
+
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        cur = conn.cursor()
+        # 建立兩筆待補草稿
+        cur.execute(
+            """INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (CLINIC_ID, "test-non-fatal", "問題1：超限思考題目？", "", "special", "web_upload", "pending")
+        )
+        id1 = cur.lastrowid
+        cur.execute(
+            """INSERT INTO faq_cache (clinic_id, topic_key, question, answer, category, source_type, review_status)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (CLINIC_ID, "test-non-fatal", "問題2：正常題目？", "", "special", "web_upload", "pending")
+        )
+        id2 = cur.lastrowid
+        conn.commit()
+
+        call_count = 0
+        normal_answer = (
+            "這是一段正常的衛教解答內容，提供患者完整的照護建議與生活注意事項。"
+            "患者於日常生活中應保持規律作息與充足睡眠，並配合專業醫師醫囑進行日常照護與傷口清潔。"
+            "若出現紅腫發炎、化膿流膿、異常疼痛或持續變大，請儘速就醫回診。"
+        )
+
+        def mock_llm_call(prompt: str) -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # 第一題拋出 LLMEmptyOutputError (思考超限 content 為空)
+                raise LLMEmptyOutputError("本地 LLM 回應之 content 為空（finish_reason=length）")
+            # 第二題正常回覆
+            return normal_answer
+
+        lock = threading.Lock()
+        batch_answer_job._state = batch_answer_job._fresh([id1, id2])
+        batch_answer_job._cancel.clear()
+
+        # 同步呼叫 _run_items
+        batch_answer_job._run_items(str(isolated_db_path), [id1, id2], mock_llm_call, mock_llm_call, lock)
+
+        snap = batch_answer_job.snapshot()
+        # 第一題失敗，第二題成功，整批狀態為 done（非 aborted）
+        assert snap["state"] == "done"
+        assert snap["processed"] == 2
+        assert snap["ok"] == 1
+        assert id2 in snap["ok_ids"]
+        assert len(snap["failed"]) == 1
+        assert snap["failed"][0]["id"] == id1
+        assert "LLMEmptyOutputError" in snap["failed"][0]["reason"]
+    finally:
+        conn.close()
+

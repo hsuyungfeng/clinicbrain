@@ -99,7 +99,7 @@ def _record(**kw) -> None:
 
 
 def _worker(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: threading.Lock) -> None:
-    from .llm_client import LocalLLMUnavailableError
+    from .llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     global _db_lock_fd
     try:
@@ -111,7 +111,7 @@ def _worker(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: thr
 
 
 def _run_items(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: threading.Lock) -> None:
-    from .llm_client import LocalLLMUnavailableError
+    from .llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     final = "done"
     for fid in ids:
@@ -142,6 +142,10 @@ def _run_items(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: 
                 with _state_lock:
                     _state["failed"].append({"id": fid, "reason": f"本機 LLM 無法使用（{e}）"})
                 final = "aborted"
+            except LLMEmptyOutputError:
+                # 單題回覆為空（多為思考超限）：只列為此題失敗，不中止整批
+                with _state_lock:
+                    _state["failed"].append({"id": fid, "reason": "模型回覆為空（LLMEmptyOutputError，可能思考超限）"})
             except Exception as e:             # 單題的非預期錯誤不拖垮整批
                 with _state_lock:
                     _state["failed"].append({"id": fid, "reason": f"非預期錯誤（{type(e).__name__}）"})

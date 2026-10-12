@@ -27,6 +27,10 @@ class LocalLLMUnavailableError(Exception):
     """本地 LLM 服務未啟動、連線失敗或回應逾時。"""
 
 
+class LLMEmptyOutputError(RuntimeError):
+    """本地 LLM 回傳內容為空（例如思考長度耗盡 token、未完成生成等單題異常，非伺服器崩潰）。"""
+
+
 def check_llm_health(timeout: int = 5) -> str:
     """檢查本地 llama-server 是否正常存活。
     成功時回傳當前載入之模型 ID 或名稱；若服務未啟動則拋出 LocalLLMUnavailableError。
@@ -111,7 +115,7 @@ def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = N
         fr = choices[0].get("finish_reason")
         rc_len = len(message.get("reasoning_content") or "")
         usage = resp_json.get("usage", {})
-        raise LocalLLMUnavailableError(
+        raise LLMEmptyOutputError(
             f"本地 LLM 回應之 content 為空（可能未完成生成或僅輸出思考過程，finish_reason={fr}, rc_len={rc_len}, usage={usage}）"
         )
 

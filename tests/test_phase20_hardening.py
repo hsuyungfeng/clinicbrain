@@ -443,3 +443,74 @@ def test_background_output_stays_hidden_until_approved(client, isolated_db_path,
     finally:
         conn.close()
     assert st == "pending" and visible == 0
+
+
+# ---------------- 8. 警訊收尾句與空輸出（思考超限）邊界 ----------------
+CLOSING = "若出現紅腫發炎、化膿流膿、異常疼痛或持續變大，請儘速就醫回診。"
+
+
+def test_closing_sentence_passes_medical_safety_alone_and_in_body():
+    from src.ingestion.medical_safety import has_doctor_warning
+    assert has_doctor_warning(CLOSING) is True
+    assert has_doctor_warning("日常請保持傷口清潔乾燥。" + CLOSING) is True
+    # 被否定語境包住時必須失效（確認收尾句不是「什麼都會過」）
+    # 單一否定症狀且無其他具體條件的句子不得通過
+    assert has_doctor_warning("若沒有發燒，請儘速就醫回診。") is False
+
+
+@pytest.mark.parametrize("builder", ["answer", "topic"])
+def test_prompts_carry_unquoted_closing_sentence(builder):
+    """提示詞須含收尾句且不得以引號包夾（否則模型會把引號抄進答案）。"""
+    from src.pageindex import answer_generator as ag
+    p = ag.build_answer_prompt("術後多久可以洗臉？", "主題") if builder == "answer" \
+        else ag.build_topic_prompt("疑難傷口", "文件", ["大綱"], ["內文"])
+    assert CLOSING in p
+    assert "『" + CLOSING not in p
+
+
+def test_empty_output_is_not_unavailable():
+    """思考超限的空輸出是單題錯誤，不得與『伺服器離線』混為一談。"""
+    from src.pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
+    assert not issubclass(LLMEmptyOutputError, LocalLLMUnavailableError)
+    assert issubclass(LLMEmptyOutputError, RuntimeError)
+
+
+def test_admin_generate_maps_empty_output_to_422(client, isolated_db_path, monkeypatch):
+    from src.pageindex.llm_client import LLMEmptyOutputError
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        fid = _insert(conn, "空輸出測試題目？", "", topic="p20empty")
+    finally:
+        conn.close()
+
+    def empty(prompt):
+        raise LLMEmptyOutputError("content 為空（finish_reason=length）")
+
+    monkeypatch.setattr(admin_mod, "_local_llm_call", empty)
+    r = client.post(f"/api/v1/admin/review/faqs/{fid}/generate-answer", json={})
+    assert r.status_code == 422 and "思考" in r.json()["detail"]
+    assert admin_mod._GENERATION_LOCK.acquire(blocking=False)   # 鎖已釋放，可再次嘗試
+    admin_mod._GENERATION_LOCK.release()
+
+
+def test_batch_job_empty_output_fails_one_item_only(client, isolated_db_path, monkeypatch):
+    from src.pageindex.llm_client import LLMEmptyOutputError
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        a = _insert(conn, "批次空輸出甲？", "", topic="p20e-a")
+        b = _insert(conn, "批次空輸出乙？", "", topic="p20e-b")
+    finally:
+        conn.close()
+    n = {"c": 0}
+
+    def flaky(prompt):
+        n["c"] += 1
+        if n["c"] == 1:
+            raise LLMEmptyOutputError("content 為空")
+        return GOOD
+
+    monkeypatch.setattr(admin_mod, "_local_llm_call", flaky)
+    client.post("/api/v1/admin/review/batch-generate", json={"faq_ids": [a, b]})
+    s = _wait_done()
+    assert s["state"] == "done" and s["ok"] == 1 and len(s["failed"]) == 1
+    assert "LLMEmptyOutputError" in s["failed"][0]["reason"]
