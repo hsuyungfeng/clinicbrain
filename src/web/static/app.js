@@ -141,6 +141,14 @@ function el(tag, className, text) {
     return node;
 }
 
+// 將後端錯誤回應轉為可讀文字：detail 為字串直接顯示；FastAPI 驗證錯誤（陣列）取第一筆 msg
+function apiErrorText(data, fallback) {
+    const d = data && data.detail;
+    if (typeof d === "string" && d.trim()) return d;
+    if (Array.isArray(d) && d.length && d[0] && typeof d[0].msg === "string") return d[0].msg;
+    return fallback;
+}
+
 function showToast(message, kind) {
     const t = document.getElementById("toast");
     t.textContent = message;
@@ -1246,7 +1254,8 @@ function createTreeCard(tree) {
                     loadTrees();
                     loadDashboardSummary();
                 } else {
-                    showToast("簽核失敗", "error");
+                    const errData = await resp.json().catch(() => ({}));
+                    showToast(apiErrorText(errData, "簽核失敗"), "error");
                 }
             } catch (err) {
                 showToast("連線異常", "error");
@@ -1269,7 +1278,8 @@ function createTreeCard(tree) {
                     loadTrees();
                     loadDashboardSummary();
                 } else {
-                    showToast("操作失敗", "error");
+                    const errData = await resp.json().catch(() => ({}));
+                    showToast(apiErrorText(errData, "駁回失敗"), "error");
                 }
             } catch (err) {
                 showToast("連線異常", "error");
