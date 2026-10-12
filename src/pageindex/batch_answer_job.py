@@ -138,9 +138,9 @@ def _run_items(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: 
                         _state["skipped"] += 1
                     else:
                         _state["failed"].append({"id": fid, "reason": str(e)})
-            except LocalLLMUnavailableError:
+            except LocalLLMUnavailableError as e:
                 with _state_lock:
-                    _state["failed"].append({"id": fid, "reason": "本機 LLM 無法使用"})
+                    _state["failed"].append({"id": fid, "reason": f"本機 LLM 無法使用（{e}）"})
                 final = "aborted"
             except Exception as e:             # 單題的非預期錯誤不拖垮整批
                 with _state_lock:
