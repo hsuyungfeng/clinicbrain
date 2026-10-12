@@ -88,7 +88,7 @@ def _retrieve_general(
                 ),
                 like_columns=("summary_text",),
                 limit=limit,
-                extra_where="category = 'general' AND clinic_id IS NULL",
+                extra_where=f"category = 'general' AND clinic_id IS NULL AND {_tree_visible(conn)}",
             )
             for hit in tree_hits:
                 if hit.row_id not in seen_guide_ids:
@@ -113,6 +113,13 @@ def _retrieve_general(
             pass
 
     return faq_results[:limit], guide_results[:limit]
+
+
+def _tree_visible(conn: sqlite3.Connection) -> str:
+    """臨床樹審核可見性（Fail-Closed）：匿名端點絕不檢索未核准之樹。"""
+    from ..pageindex.tree_review import visible_tree_sql
+
+    return visible_tree_sql(conn)
 
 
 def consult_general(

@@ -32,6 +32,9 @@
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-review">
                 📝 待審衛教草稿簽核
             </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-trees">
+                🌳 臨床推理樹簽核
+            </button>
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-upload">
                 📁 文件拖曳上傳中心
             </button>
@@ -49,26 +52,36 @@
         <!-- 頁籤 1：總覽儀表板 -->
         <section id="tab-dashboard" class="tab-content block">
             <h2 class="text-lg font-bold text-gray-800 mb-4">系統狀態與統計摘要</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
-                    <div class="text-xs text-gray-500 font-medium">待簽核草稿總筆數</div>
-                    <div id="statPendingTotal" class="text-3xl font-bold text-amber-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-2">包含專屬、通用與 SOAP 提煉</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
+                    <div class="text-xs text-gray-500 font-medium">待簽核 FAQ 草稿</div>
+                    <div id="statPendingTotal" class="text-2xl font-bold text-amber-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">含專屬與 SOAP</div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
-                    <div class="text-xs text-gray-500 font-medium">已核准發布衛教問答</div>
-                    <div id="statApprovedTotal" class="text-3xl font-bold text-green-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-2">快取短路庫即時生效中</div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-emerald-500">
+                    <div class="text-xs text-gray-500 font-medium">待簽核推理樹</div>
+                    <div id="statTreesPendingTotal" class="text-2xl font-bold text-emerald-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">臨床決策樹草稿</div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-rose-500">
-                    <div class="text-xs text-gray-500 font-medium">已被駁回草稿數</div>
-                    <div id="statRejectedTotal" class="text-3xl font-bold text-rose-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-2">已被醫師判定不合規項目</div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
+                    <div class="text-xs text-gray-500 font-medium">已發布衛教問答</div>
+                    <div id="statApprovedTotal" class="text-2xl font-bold text-green-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">快取短路庫生效</div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
-                    <div class="text-xs text-gray-500 font-medium">臨床 SOAP 病歷筆數</div>
-                    <div id="statSoapTotal" class="text-3xl font-bold text-blue-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-2">全區去識別化病歷總計</div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-teal-500">
+                    <div class="text-xs text-gray-500 font-medium">已發布推理樹</div>
+                    <div id="statTreesApprovedTotal" class="text-2xl font-bold text-teal-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">已納入 RAG 索引</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-rose-500">
+                    <div class="text-xs text-gray-500 font-medium">已駁回項目</div>
+                    <div id="statRejectedTotal" class="text-2xl font-bold text-rose-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">未通過醫師審核</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+                    <div class="text-xs text-gray-500 font-medium">SOAP 病歷筆數</div>
+                    <div id="statSoapTotal" class="text-2xl font-bold text-blue-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">去識別化病歷</div>
                 </div>
             </div>
 
@@ -169,6 +182,34 @@
             </div>
         </section>
 
+        <!-- 頁籤：臨床決策推理樹簽核 (Phase 21) -->
+        <section id="tab-trees" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h2 class="text-lg font-bold text-gray-800">臨床決策推理樹簽核 (Clinical Reasoning Trees)</h2>
+                <div class="flex space-x-3 items-center flex-wrap gap-2">
+                    <select id="treesFilterStatus" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="pending">待簽核 (pending)</option>
+                        <option value="approved">已發布 (approved)</option>
+                        <option value="rejected">已駁回 (rejected)</option>
+                        <option value="all">全部狀態 (all)</option>
+                    </select>
+                    <select id="treesFilterCategory" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="">全部分類 (Category)</option>
+                        <option value="special">診所專屬 (special)</option>
+                        <option value="general">通用醫學 (general)</option>
+                    </select>
+                    <button id="btnRefreshTrees" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded transition">
+                        重新整理
+                    </button>
+                </div>
+            </div>
+
+            <div id="treesContainer" class="space-y-6">
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+            </div>
+        </section>
+
         <!-- 頁籤 3：文件上傳中心 -->
         <section id="tab-upload" class="tab-content hidden">
             <h2 class="text-lg font-bold text-gray-800 mb-4">診所衛教與項目文件上傳</h2>
@@ -177,6 +218,25 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">機構代碼 (Clinic ID)</label>
                         <input type="text" id="uploadClinicId" value="3503190424" required class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div class="p-3 bg-indigo-50 rounded-md border border-indigo-100">
+                        <label class="block text-xs font-bold text-indigo-900 mb-1.5">提煉與解析目標：</label>
+                        <div class="flex space-x-6">
+                            <label class="inline-flex items-center text-sm text-gray-700 cursor-pointer">
+                                <input type="radio" name="uploadTarget" value="faq" checked class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 font-medium">常見問答 (FAQ 草稿)</span>
+                            </label>
+                            <label class="inline-flex items-center text-sm text-gray-700 cursor-pointer">
+                                <input type="radio" name="uploadTarget" value="tree" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 font-medium">臨床決策推理樹 (PageIndex Tree)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="treeTitleField" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">療程標題 / 手術名稱 (提煉決策樹必填)</label>
+                        <input type="text" id="uploadTreeTitle" placeholder="例如：微創旋轉切除刀乳房腫瘤切除術" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
 
                     <div>
@@ -264,6 +324,74 @@
                 <button id="btnCloseAuthModal" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">取消</button>
                 <button id="btnSaveApiKey" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">儲存並刷新</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 臨床推理樹編輯與醫囑填寫 Modal (Phase 21) -->
+    <div id="treeEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-gray-800" id="treeModalTitle">編輯臨床決策推理樹</h3>
+                <span id="treeModalSlug" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded font-mono"></span>
+            </div>
+            <form id="treeEditForm" class="space-y-4">
+                <input type="hidden" id="treeEditId">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">療程中文標題</label>
+                    <input type="text" id="treeEditTitle" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+                </div>
+
+                <!-- 1. 術前評估 -->
+                <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">1. 術前評估、禁忌症與須知 (Pre-Op)</label>
+                    <textarea id="treeEditPreOp" rows="3" class="w-full border border-gray-300 rounded p-2 text-sm mb-2"></textarea>
+                    <div class="p-2.5 bg-amber-50 border border-amber-200 rounded">
+                        <label class="block text-xs font-bold text-amber-800 mb-1">👨‍⚕️ 醫師特約權威指令 (Pre-Op Physician Notes - 僅供醫師手動填寫)</label>
+                        <textarea id="treeEditPreOpNotes" rows="2" placeholder="例：有自體免疫疾病或服用抗凝血劑者需由主治醫師專案評估..." class="w-full border border-amber-300 rounded p-2 text-sm bg-white"></textarea>
+                    </div>
+                </div>
+
+                <!-- 2. 療程原理與步驟 -->
+                <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">2. 療程原理與技術步驟 (Procedure)</label>
+                    <textarea id="treeEditProcedure" rows="3" class="w-full border border-gray-300 rounded p-2 text-sm mb-2"></textarea>
+                    <div class="p-2.5 bg-amber-50 border border-amber-200 rounded">
+                        <label class="block text-xs font-bold text-amber-800 mb-1">👨‍⚕️ 醫師特約權威指令 (Procedure Physician Notes)</label>
+                        <textarea id="treeEditProcedureNotes" rows="2" placeholder="例：能量上限與深度探頭使用準則..." class="w-full border border-amber-300 rounded p-2 text-sm bg-white"></textarea>
+                    </div>
+                </div>
+
+                <!-- 3. 術後照護 -->
+                <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">3. 術後立即照護與警訊 (Post-Op Short)</label>
+                    <textarea id="treeEditPostOp" rows="3" class="w-full border border-gray-300 rounded p-2 text-sm mb-2"></textarea>
+                    <div class="p-2.5 bg-amber-50 border border-amber-200 rounded">
+                        <label class="block text-xs font-bold text-amber-800 mb-1">👨‍⚕️ 醫師特約權威指令 (Post-Op Physician Notes)</label>
+                        <textarea id="treeEditPostOpNotes" rows="2" placeholder="例：若紅腫熱痛超過 48 小時需立即回診由醫師親診..." class="w-full border border-amber-300 rounded p-2 text-sm bg-white"></textarea>
+                    </div>
+                </div>
+
+                <!-- 4. 長期維持 -->
+                <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">4. 長期維持與保養 (Maintenance)</label>
+                    <textarea id="treeEditMaintenance" rows="3" class="w-full border border-gray-300 rounded p-2 text-sm mb-2"></textarea>
+                    <div class="p-2.5 bg-amber-50 border border-amber-200 rounded">
+                        <label class="block text-xs font-bold text-amber-800 mb-1">👨‍⚕️ 醫師特約權威指令 (Maintenance Physician Notes)</label>
+                        <textarea id="treeEditMaintenanceNotes" rows="2" placeholder="例：建議每半年追蹤一次..." class="w-full border border-amber-300 rounded p-2 text-sm bg-white"></textarea>
+                    </div>
+                </div>
+
+                <!-- 全文檢索摘要 -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">全文檢索摘要 (Summary Text)</label>
+                    <textarea id="treeEditSummary" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t">
+                    <button type="button" id="btnCancelTreeModal" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium">儲存推理樹與醫囑</button>
+                </div>
+            </form>
         </div>
     </div>
 

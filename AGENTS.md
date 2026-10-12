@@ -481,6 +481,22 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - **錯誤訊息診斷精確化**：`src/pageindex/batch_answer_job.py` 捕獲 `LocalLLMUnavailableError` 時，將底層具體異常細節記錄於 `failed` 原因中，杜絕模糊的泛用失敗提示。
 - **測試**：`tests/test_autofill_backend.py`、`tests/test_autofill_pipeline_e2e.py`、`tests/test_web_ui_v3.py`、`tests/test_phase20_hardening.py`（選取規則與 UI 一致、跨行程互斥雙向、模型鎖併發、取消於等鎖中、斷線與非預期錯誤隔離、收尾競態、執行緒啟動失敗、輪詢無 DB 依賴、dry-run 守門、隱蔽性，共 25 項全部通過）。
 
+### 2.22 臨床決策推理樹審核與提煉擴展（Phase 21 新增）
+讓醫師把長篇療程文件提煉為四段式推理樹草稿（`page_index_trees`），經醫師審核後才對外。審查加固後的不變式如下（均由 `tests/test_phase21_hardening.py` 把關）：
+
+- **Fail-Closed 可見性（唯一來源 `tree_review.visible_tree_sql`）**：`llm_generated`、`web_upload` 之樹在 `review_status='approved'` 前對外不可見。所有讀取「對外」資料的路徑都必須套用此條件：`search_page_index_trees`（→ `handle_query`、`/api/v1/query`、`rag_ask`）、**`consult.py` 一般諮詢的樹檢索**（審查時發現直接用 `search_text` 繞過，屬 Fail-Open，已修）、**同步匯出 `sync/export`**（審查時發現無過濾，pending 樹會外送雲端，已修）、**FAQ 生成的樹參考上下文 `reference_from_tree`**（已修，避免未審內容經 FAQ 間接外洩）。
+- **夜間重建不得製造未審可見內容**：`db_writer.upsert_trees` 於 `source_type ∈ {llm_generated, web_upload}` 且內容實質變更時，未明確指定 `review_status` 一律回 `pending`。審查時發現原本更新路徑不動 `review_status`，已核准的手寫樹被重建後會以未審 LLM 內容維持 approved（Fail-Open，已修）。重建的「醫囑還原」路徑須一併還原重建前的 `review_status`，否則手寫樹還原後會被隱藏。
+- **醫囑保護（`*_physician_notes`）**：提煉器恆寫 `None`，且**忽略模型輸出中的醫囑欄位**（測試以模型刻意偽造醫囑驗證）。提煉**僅能建立新草稿**：`doc_id` 已存在回 409（`TreeConflictError`），絕不覆寫既有醫師手寫樹——審查時發現原本會以 `None` 覆寫醫師註記、並把來源改為 `web_upload`，屬嚴重風險，已修。
+- **合規規則單一來源（`tree_distiller.validate_tree_segment`）**：提煉、編輯（`PUT`）、簽核（`approve`）、標題、醫囑欄位全部共用同一份檢驗：價格遮蔽（`deep_mask_prices`）、簡體字、保證療效禁詞、政治立場。`_FORBIDDEN_PHRASES` 已補上 AGENTS 2.5 所列之「百分之百有效、保證根除、徹底根除、一定有效」（審查時發現原清單缺漏，簽核曾可放行）。
+- **編輯與簽核防護**：受控來源已核准（或駁回）之樹一經實質修改，自動回 `pending` 重新簽核（與 FAQ 的 Fail-Closed 規則一致）；手寫（`manual`／`clinic_upload`）之樹不受此限（醫師為權威來源）。簽核前必須四段齊全且逐段通過檢驗，否則 422 並保持 pending。
+- **併發與 GPU**：提煉路由同時持 `_GENERATION_LOCK`（行程內，與單題生成／提問／背景補齊互斥，忙碌回 409）與夜間批次檔案鎖 `db_lock`（跨行程，夜間批次持鎖回 409）。LLM 離線回 503；其他例外回 500 但**不回傳例外內容**（可能含 SQL 或模型原文），詳情僅入伺服器日誌。
+- **輸入防護**：`doc_id` 限定 `^[\w\-]{1,64}$`（422 於送入模型前攔下，不消耗推論）；來源文字超過 3500 字時仍截斷提煉，回應帶 `truncated=true` 明示未涵蓋之部分。
+- **遷移冪等與不自動核准（`scripts/migrate_page_index_review.py`）**：欄位定義取自 `clinic_schema.sql`（單一來源），交易性執行，重跑無變更。新增 `review_status` 時，既有手寫與診所上傳列以欄位預設 `approved` 保持零中斷；**既有 `llm_generated`／`web_upload` 列改為 `pending`**（無醫師核准紀錄，Fail-Closed）。手寫範本不受影響。
+- **正式庫現況**：正式 `clinic.db` 截至本節撰寫時**尚未套用此遷移**（無 `review_status` 欄位）；讀取端在未遷移時以 `visible_tree_sql` 的退化條件仍排除受控來源。正式套用須先備份並執行 `python3 scripts/migrate_page_index_review.py --confirm-prod-backup`，且須先釐清正式庫 `clinic.db` 近期被替換的來歷（見工作交接紀錄 `.planning/HANDOFF.json`）。
+- **測試慣例**：所有 Phase 21 測試以隔離複本套用遷移（`_migrate_copy`）；測試禁止遷移或寫入正式庫（守門斷言）；禁止呼叫真實 LLM。
+- **已知限制**：① `upsert_trees` 的更新路徑對醫囑欄位仍是「以傳入值覆寫」，此保護目前由呼叫端（提煉的 doc_id 守門、重建的還原機制）負責，寫入層本身不驗證醫囑來源；② 提煉以 3500 字為界，超出部分不會被提煉；③ 簡體字檢驗為取樣字集（`_SIMPLIFIED_CHAR_SAMPLE`），並非完整字表；④ doc_id 存在性檢查與寫入之間仍有極短的競態窗口（同一行程內已由 `_GENERATION_LOCK` 序列化，跨行程由 `db_lock` 序列化，實務上不會發生）。
+- **測試**：`tests/test_phase21_hardening.py`（21 項：Fail-Closed 通道、同步匯出、重建可見性、醫囑保護、編輯與簽核合規、提煉輸入與錯誤處理、FAQ 上下文、遷移冪等與不自動核准）、`tests/test_tree_review_backend.py`、`tests/test_web_ui_trees.py`、`tests/test_trees_e2e_pipeline.py`。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則

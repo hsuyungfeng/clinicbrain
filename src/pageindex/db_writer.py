@@ -26,12 +26,24 @@ CONTENT_FIELDS = (
 )
 
 
-def upsert_trees(conn, trees, source_type: str):
+# 受審核閘門控管之來源：內容實質變更時，若未明確指定 review_status，一律回到 pending。
+# 防止「已核准的手寫樹被夜間重建（LLM 內容）」後仍 approved 而直接對外可見（Fail-Open）。
+GATED_TREE_SOURCES = ("llm_generated", "web_upload")
+
+
+def _has_column(cursor, table: str, col: str) -> bool:
+    cursor.execute(f"PRAGMA table_info({table});")
+    return col in {row[1] for row in cursor.fetchall()}
+
+
+def upsert_trees(conn, trees, source_type: str, review_status: str | None = None):
     """增量寫入 PageIndex 樹。
 
-    trees: list of dict，每個 dict 必須含 'doc_id' 與 CONTENT_FIELDS 全部欄位。
-    source_type: 'manual' | 'llm_generated' | 'clinic_upload' —— 寫入
+    trees: list of dict，每個 dict 必須含 'doc_id' 與 CONTENT_FIELDS 全部欄位（可選含 'title'）。
+    source_type: 'manual' | 'llm_generated' | 'clinic_upload' | 'web_upload' —— 寫入
         source_type 欄位，供夜間批次/稽核分辨資料來源。
+    review_status: 可選指定審核狀態 ('pending' | 'approved' | 'rejected')。
+        若未指定：source_type 為 'manual' 或 'clinic_upload' 預設 'approved'，其餘預設 'pending'。
 
     邏輯：新資料 INSERT（content_version=1）；既有資料只有在內容真的
     變更時才 UPDATE 並遞增 content_version、更新 updated_at、清除
@@ -39,37 +51,46 @@ def upsert_trees(conn, trees, source_type: str):
     """
     cursor = conn.cursor()
     inserted, updated, unchanged = 0, 0, 0
+    has_title = _has_column(cursor, "page_index_trees", "title")
+    has_status = _has_column(cursor, "page_index_trees", "review_status")
+
+    default_status = review_status
+    if default_status is None:
+        default_status = "approved" if source_type in ("manual", "clinic_upload") else "pending"
 
     for tree in trees:
         if "clinic_id" not in tree or not tree["clinic_id"]:
             raise ValueError(f"tree dict (doc_id='{tree.get('doc_id')}') 缺少必要之 'clinic_id' 鍵")
 
+        tree_title = tree.get("title")
+        fields_to_check = list(CONTENT_FIELDS)
+        if has_title:
+            fields_to_check.append("title")
+
         cursor.execute(
-            f"SELECT id, {', '.join(CONTENT_FIELDS)}, content_version "
+            f"SELECT id, {', '.join(fields_to_check)}, content_version "
             "FROM page_index_trees WHERE doc_id = ?",
             (tree["doc_id"],),
         )
         existing = cursor.fetchone()
 
         if existing is None:
+            insert_cols = ["doc_id", "clinic_id", *CONTENT_FIELDS, "version", "source_type", "content_version", "needs_regeneration", "indexed_at"]
+            insert_vals = [tree["doc_id"], tree["clinic_id"], *(tree[field] for field in CONTENT_FIELDS), "2.0", source_type, 1, 0, datetime.now().isoformat()]
+
+            if has_title:
+                insert_cols.append("title")
+                insert_vals.append(tree_title)
+            if has_status:
+                insert_cols.append("review_status")
+                insert_vals.append(tree.get("review_status") or default_status)
+
             cursor.execute(
                 f"""
-                INSERT INTO page_index_trees (
-                    doc_id, clinic_id, {', '.join(CONTENT_FIELDS)},
-                    version, source_type, content_version,
-                    needs_regeneration, indexed_at
-                ) VALUES (?, ?, {', '.join('?' for _ in CONTENT_FIELDS)}, ?, ?, ?, ?, ?)
+                INSERT INTO page_index_trees ({', '.join(insert_cols)})
+                VALUES ({', '.join('?' for _ in insert_cols)})
                 """,
-                (
-                    tree["doc_id"],
-                    tree["clinic_id"],
-                    *(tree[field] for field in CONTENT_FIELDS),
-                    "2.0",
-                    source_type,
-                    1,
-                    0,
-                    datetime.now().isoformat(),
-                ),
+                tuple(insert_vals),
             )
             inserted += 1
             continue
@@ -77,30 +98,51 @@ def upsert_trees(conn, trees, source_type: str):
         existing_id = existing[0]
         existing_values = existing[1:-1]
         existing_content_version = existing[-1]
-        new_values = tuple(tree[field] for field in CONTENT_FIELDS)
+
+        new_vals_list = [tree[field] for field in CONTENT_FIELDS]
+        if has_title:
+            new_vals_list.append(tree_title)
+        new_values = tuple(new_vals_list)
 
         if existing_values == new_values:
             unchanged += 1
             continue
 
+        update_set = [f"{field} = ?" for field in CONTENT_FIELDS]
+        update_params = [tree[field] for field in CONTENT_FIELDS]
+
+        if has_title:
+            update_set.append("title = ?")
+            update_params.append(tree_title)
+
+        if has_status and "review_status" in tree:
+            update_set.append("review_status = ?")
+            update_params.append(tree["review_status"])
+        elif has_status and source_type in GATED_TREE_SOURCES:
+            update_set.append("review_status = 'pending'")
+            update_set.append("reviewed_at = NULL")
+
+        update_set.extend([
+            "source_type = ?",
+            "content_version = ?",
+            "needs_regeneration = 0",
+            "indexed_at = ?",
+            "updated_at = CURRENT_TIMESTAMP",
+        ])
+        update_params.extend([
+            source_type,
+            existing_content_version + 1,
+            datetime.now().isoformat(),
+            existing_id,
+        ])
+
         cursor.execute(
             f"""
             UPDATE page_index_trees
-            SET {', '.join(f'{field} = ?' for field in CONTENT_FIELDS)},
-                source_type = ?,
-                content_version = ?,
-                needs_regeneration = 0,
-                indexed_at = ?,
-                updated_at = CURRENT_TIMESTAMP
+            SET {', '.join(update_set)}
             WHERE id = ?
             """,
-            (
-                *new_values,
-                source_type,
-                existing_content_version + 1,
-                datetime.now().isoformat(),
-                existing_id,
-            ),
+            tuple(update_params),
         )
         updated += 1
 

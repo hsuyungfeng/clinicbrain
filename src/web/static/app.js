@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabNavigation();
     initDashboard();
     initReviewSection();
+    initTreesSection();
     initUploadSection();
     initSoapSection();
     initAskSection();
@@ -56,6 +57,7 @@ function initAuth() {
         // 重新整理各區塊
         loadDashboardSummary();
         loadReviewFaqs();
+        loadTrees();
     });
 }
 
@@ -88,6 +90,7 @@ function initTabNavigation() {
 
             if (targetId === "tab-dashboard") loadDashboardSummary();
             if (targetId === "tab-review") loadReviewFaqs();
+            if (targetId === "tab-trees") loadTrees();
             if (targetId === "tab-soap") loadSoapRecords();
         });
     });
@@ -107,7 +110,11 @@ async function loadDashboardSummary() {
         const data = await resp.json();
 
         document.getElementById("statPendingTotal").textContent = data.pending_total ?? 0;
+        const elTreePend = document.getElementById("statTreesPendingTotal");
+        if (elTreePend) elTreePend.textContent = data.trees_pending_total ?? 0;
         document.getElementById("statApprovedTotal").textContent = data.approved_total ?? 0;
+        const elTreeApp = document.getElementById("statTreesApprovedTotal");
+        if (elTreeApp) elTreeApp.textContent = data.trees_approved_total ?? 0;
         document.getElementById("statRejectedTotal").textContent = data.rejected_total ?? 0;
         document.getElementById("statSoapTotal").textContent = data.soap_records_total ?? 0;
 
@@ -1062,3 +1069,234 @@ async function submitAsk() {
         btn.textContent = "💬 送出提問";
     }
 }
+
+// =============================================================================
+// Phase 21: 臨床決策推理樹簽核與管理前端邏輯
+// =============================================================================
+
+function initTreesSection() {
+    const btnRefresh = document.getElementById("btnRefreshTrees");
+    if (btnRefresh) btnRefresh.addEventListener("click", loadTrees);
+
+    const selStatus = document.getElementById("treesFilterStatus");
+    if (selStatus) selStatus.addEventListener("change", loadTrees);
+
+    const selCat = document.getElementById("treesFilterCategory");
+    if (selCat) selCat.addEventListener("change", loadTrees);
+
+    const btnCancelModal = document.getElementById("btnCancelTreeModal");
+    if (btnCancelModal) {
+        btnCancelModal.addEventListener("click", () => {
+            document.getElementById("treeEditModal").classList.add("hidden");
+        });
+    }
+
+    const editForm = document.getElementById("treeEditForm");
+    if (editForm) {
+        editForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const treeId = document.getElementById("treeEditId").value;
+            const payload = {
+                title: document.getElementById("treeEditTitle").value.trim(),
+                pre_op: document.getElementById("treeEditPreOp").value.trim(),
+                pre_op_physician_notes: document.getElementById("treeEditPreOpNotes").value.trim() || null,
+                procedure: document.getElementById("treeEditProcedure").value.trim(),
+                procedure_physician_notes: document.getElementById("treeEditProcedureNotes").value.trim() || null,
+                post_op_short: document.getElementById("treeEditPostOp").value.trim(),
+                post_op_short_physician_notes: document.getElementById("treeEditPostOpNotes").value.trim() || null,
+                maintenance: document.getElementById("treeEditMaintenance").value.trim(),
+                maintenance_physician_notes: document.getElementById("treeEditMaintenanceNotes").value.trim() || null,
+                summary_text: document.getElementById("treeEditSummary").value.trim(),
+            };
+
+            try {
+                const resp = await fetch(`/api/v1/admin/trees/${treeId}`, {
+                    method: "PUT",
+                    headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    showToast(`更新失敗：${data.detail || "格式錯誤"}`, "error");
+                    return;
+                }
+                document.getElementById("treeEditModal").classList.add("hidden");
+                showToast("推理樹內容與醫師醫囑已成功更新", "success");
+                loadTrees();
+            } catch (err) {
+                showToast("網路連線失敗", "error");
+            }
+        });
+    }
+
+    // 上傳目標單選切換
+    const targetRadios = document.querySelectorAll('input[name="uploadTarget"]');
+    targetRadios.forEach(r => {
+        r.addEventListener("change", (e) => {
+            const isTree = e.target.value === "tree";
+            const field = document.getElementById("treeTitleField");
+            if (field) field.classList.toggle("hidden", !isTree);
+        });
+    });
+}
+
+async function loadTrees() {
+    const container = document.getElementById("treesContainer");
+    if (!container) return;
+    container.replaceChildren(el("div", "skeleton"), el("div", "skeleton"));
+
+    const status = document.getElementById("treesFilterStatus").value;
+    const category = document.getElementById("treesFilterCategory").value;
+
+    let url = `/api/v1/admin/trees?status=${encodeURIComponent(status)}&limit=100`;
+    if (category) url += `&category=${encodeURIComponent(category)}`;
+
+    try {
+        const resp = await fetch(url, { headers: getAuthHeaders() });
+        if (!resp.ok) {
+            setStatusBox(container, `無法載入推理樹列表 (HTTP ${resp.status})，請確認 API Key`, "error");
+            return;
+        }
+        const data = await resp.json();
+        const trees = data.trees || [];
+        if (trees.length === 0) {
+            setStatusBox(container, "🌱 目前無相符之臨床決策推理樹草稿。", "empty");
+            return;
+        }
+        container.replaceChildren();
+        trees.forEach(tree => {
+            container.appendChild(createTreeCard(tree));
+        });
+    } catch (e) {
+        setStatusBox(container, "連線失敗，請檢查網路或服務狀態", "error");
+    }
+}
+
+function createTreeCard(tree) {
+    const card = el("div", "tree-card");
+
+    // Header
+    const head = el("div", "tree-card-header");
+    const titleBox = el("div", "tree-card-title");
+    titleBox.appendChild(document.createTextNode(tree.title || tree.doc_id));
+    titleBox.appendChild(el("span", "tree-card-slug", tree.doc_id));
+
+    const statusMap = {
+        pending: { text: "⏳ 待審核", cls: "bg-amber-100 text-amber-800" },
+        approved: { text: "✅ 已發布", cls: "bg-green-100 text-green-800" },
+        rejected: { text: "❌ 已駁回", cls: "bg-rose-100 text-rose-800" },
+    };
+    const st = statusMap[tree.review_status] || { text: tree.review_status, cls: "bg-gray-100 text-gray-800" };
+    const badge = el("span", `text-xs px-2.5 py-1 rounded-full font-bold ${st.cls}`, st.text);
+
+    head.appendChild(titleBox);
+    head.appendChild(badge);
+    card.appendChild(head);
+
+    // 4 Sections Grid
+    const grid = el("div", "tree-sections-grid");
+
+    const sections = [
+        { name: "1. 術前評估 (Pre-Op)", content: tree.pre_op, notes: tree.pre_op_physician_notes },
+        { name: "2. 療程原理 (Procedure)", content: tree.procedure, notes: tree.procedure_physician_notes },
+        { name: "3. 術後照護 (Post-Op Short)", content: tree.post_op_short, notes: tree.post_op_short_physician_notes },
+        { name: "4. 長期維持 (Maintenance)", content: tree.maintenance, notes: tree.maintenance_physician_notes },
+    ];
+
+    sections.forEach(s => {
+        const box = el("div", "tree-section-box");
+        box.appendChild(el("div", "tree-section-name", s.name));
+        box.appendChild(el("div", "tree-section-content", s.content || "（無內容）"));
+        if (s.notes) {
+            const noteEl = el("div", "tree-physician-note");
+            noteEl.appendChild(el("div", "tree-physician-badge", "👨‍⚕️ 醫師特約指令"));
+            noteEl.appendChild(document.createTextNode(s.notes));
+            box.appendChild(noteEl);
+        }
+        grid.appendChild(box);
+    });
+    card.appendChild(grid);
+
+    // Summary Box
+    if (tree.summary_text) {
+        const sumBox = el("div", "tree-summary-box");
+        sumBox.appendChild(el("span", "font-bold text-gray-600 mr-2", "檢索摘要:"));
+        sumBox.appendChild(document.createTextNode(tree.summary_text));
+        card.appendChild(sumBox);
+    }
+
+    // Actions
+    const actions = el("div", "tree-card-actions");
+
+    const btnEdit = el("button", "btn btn-soft", "✏️ 編輯 / 填寫醫囑");
+    btnEdit.addEventListener("click", () => openTreeEditModal(tree));
+    actions.appendChild(btnEdit);
+
+    if (tree.review_status !== "approved") {
+        const btnApprove = el("button", "btn btn-success", "✅ 簽核發布");
+        btnApprove.addEventListener("click", async () => {
+            if (!confirm(`確定簽核並發布「${tree.title || tree.doc_id}」臨床決策樹嗎？發布後將立即納入 RAG 檢索。`)) return;
+            try {
+                const resp = await fetch(`/api/v1/admin/trees/${tree.id}/approve`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                });
+                if (resp.ok) {
+                    showToast("簽核發布成功！", "success");
+                    loadTrees();
+                    loadDashboardSummary();
+                } else {
+                    showToast("簽核失敗", "error");
+                }
+            } catch (err) {
+                showToast("連線異常", "error");
+            }
+        });
+        actions.appendChild(btnApprove);
+    }
+
+    if (tree.review_status !== "rejected") {
+        const btnReject = el("button", "btn btn-danger-soft", "❌ 駁回");
+        btnReject.addEventListener("click", async () => {
+            if (!confirm(`確定駁回「${tree.title || tree.doc_id}」草稿嗎？`)) return;
+            try {
+                const resp = await fetch(`/api/v1/admin/trees/${tree.id}/reject`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                });
+                if (resp.ok) {
+                    showToast("已駁回該草稿", "info");
+                    loadTrees();
+                    loadDashboardSummary();
+                } else {
+                    showToast("操作失敗", "error");
+                }
+            } catch (err) {
+                showToast("連線異常", "error");
+            }
+        });
+        actions.appendChild(btnReject);
+    }
+
+    card.appendChild(actions);
+    return card;
+}
+
+function openTreeEditModal(tree) {
+    document.getElementById("treeEditId").value = tree.id;
+    document.getElementById("treeModalTitle").textContent = `編輯：${tree.title || tree.doc_id}`;
+    document.getElementById("treeModalSlug").textContent = tree.doc_id;
+    document.getElementById("treeEditTitle").value = tree.title || "";
+    document.getElementById("treeEditPreOp").value = tree.pre_op || "";
+    document.getElementById("treeEditPreOpNotes").value = tree.pre_op_physician_notes || "";
+    document.getElementById("treeEditProcedure").value = tree.procedure || "";
+    document.getElementById("treeEditProcedureNotes").value = tree.procedure_physician_notes || "";
+    document.getElementById("treeEditPostOp").value = tree.post_op_short || "";
+    document.getElementById("treeEditPostOpNotes").value = tree.post_op_short_physician_notes || "";
+    document.getElementById("treeEditMaintenance").value = tree.maintenance || "";
+    document.getElementById("treeEditMaintenanceNotes").value = tree.maintenance_physician_notes || "";
+    document.getElementById("treeEditSummary").value = tree.summary_text || "";
+
+    document.getElementById("treeEditModal").classList.remove("hidden");
+}
+

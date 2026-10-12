@@ -169,6 +169,13 @@ def sanitize_and_validate_import_data(data: Any, auto_convert_simplified: bool =
     return data
 
 
+def _visible_tree_sql(conn) -> str:
+    """Phase 21：匯出僅含已核准或非受控來源之樹（pending／rejected 不得外送）。"""
+    from ...pageindex.tree_review import visible_tree_sql
+
+    return visible_tree_sql(conn)
+
+
 @router.post(
     "/export",
     response_model=SyncExportResponse,
@@ -191,7 +198,7 @@ def export_sync_data(
     # 1. 臨床推理樹 (page_index_trees)
     if "trees" in request.entities:
         cursor.execute(
-            """
+            f"""
             SELECT id, doc_id, clinic_id, category, pre_op, pre_op_physician_notes,
                    procedure, procedure_physician_notes, post_op_short,
                    post_op_short_physician_notes, maintenance,
@@ -199,7 +206,7 @@ def export_sync_data(
                    source_type, content_version, needs_regeneration, indexed_at,
                    created_at, updated_at
             FROM page_index_trees
-            WHERE clinic_id = ? AND content_version >= ?
+            WHERE clinic_id = ? AND content_version >= ? AND {_visible_tree_sql(conn)}
             ORDER BY id ASC
             """,
             (request.clinic_id, request.since_version),

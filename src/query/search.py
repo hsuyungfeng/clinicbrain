@@ -165,9 +165,25 @@ def search_page_index_trees(
 
     支援依 clinic_id 進行診所過濾（TASK-00 新增）。當 clinic_id 為 None 時，
     回傳所有診所資料（向後相容）。
+    
+    審核隔離（Phase 21 Plan 21-01）：
+    未核准之 llm_generated 或 web_upload 草稿絕對不可見（AND visible_tree_sql）。
     """
-    extra_where = "clinic_id = ?" if clinic_id else None
-    extra_params = (clinic_id,) if clinic_id else ()
+    from ..pageindex.tree_review import visible_tree_sql
+
+    conditions = []
+    params = []
+
+    if clinic_id:
+        conditions.append("clinic_id = ?")
+        params.append(clinic_id)
+
+    # 審核可見性過濾（Fail-Closed 隔離）
+    conditions.append(visible_tree_sql(conn))
+
+    extra_where = " AND ".join(conditions) if conditions else None
+    extra_params = tuple(params)
+
     return search_text(
         conn,
         table="page_index_trees",

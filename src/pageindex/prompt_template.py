@@ -108,7 +108,8 @@ class TreeValidationError(Exception):
 _PRICE_PATTERN = re.compile(r"\d+\s*[元塊]|NT\$\s*\d+|\$\d+")
 # 常見簡體字樣本（僅作快速篩檢，非完整簡繁對照表）
 _SIMPLIFIED_CHAR_SAMPLE = set("这个国实现们来对进为产时问题号线还没会说")
-_FORBIDDEN_PHRASES = ("physician_notes", "保證有效", "一定能消除", "保證消除", "保證")
+_FORBIDDEN_PHRASES = ("physician_notes", "保證有效", "一定能消除", "保證消除", "保證",
+    "百分之百有效", "保證根除", "徹底根除", "一定有效")  # AGENTS 2.5 所列療效保證用語
 _POLITICAL_STANCE_PHRASES = (
     "不可分割的一部分",
     "一個中國",

@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS clinic_custom_notes (
 CREATE TABLE IF NOT EXISTS page_index_trees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     doc_id TEXT UNIQUE,              -- Document identifier (e.g., procedure name slug)
+    title TEXT,                      -- 療程標題/中文全名（Phase 21 新增，供管理介面與檢索呈現）
     clinic_id TEXT REFERENCES clinic_info(clinic_id),  -- 所屬診所（2026-09-22 Phase 04 新增；原本診所身份只靠 doc_id 字串前綴表達，是技術債）
     category TEXT NOT NULL,          -- 'special' or 'general'
     pre_op TEXT,                     -- 術前須知與禁忌 (Pre-op instructions)
@@ -123,6 +124,9 @@ CREATE TABLE IF NOT EXISTS page_index_trees (
     source_type TEXT DEFAULT 'manual', -- 'manual'（人工手寫）| 'llm_generated'（LLM 生成）| 'clinic_upload'（診所上傳擷取）
     content_version INTEGER NOT NULL DEFAULT 1, -- 內容修訂版本號，每次實質內容變更遞增
     needs_regeneration BOOLEAN NOT NULL DEFAULT 0, -- 標記為過時/待夜間批次重新生成
+    review_status TEXT NOT NULL DEFAULT 'approved' CHECK (review_status IN ('pending', 'approved', 'rejected')), -- 審核狀態（預設 approved，自動提煉指定 pending）
+    reviewed_at TIMESTAMP,           -- 審核時間
+    reviewed_by TEXT,                -- 審核人/醫師識別碼
     indexed_at TIMESTAMP,            -- When indexed
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

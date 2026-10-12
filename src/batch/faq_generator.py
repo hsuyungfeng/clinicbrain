@@ -170,8 +170,10 @@ def reference_from_tree(
     if not tree_doc_id:
         return None
     cur = conn.cursor()
+    from src.pageindex.tree_review import visible_tree_sql
+
     cur.execute(
-        "SELECT summary_text FROM page_index_trees WHERE doc_id = ?",
+        f"SELECT summary_text FROM page_index_trees WHERE doc_id = ? AND {visible_tree_sql(conn)}",
         (tree_doc_id,),
     )
     row = cur.fetchone()

@@ -228,6 +228,15 @@ def rebuild_tree(
             previous_source_type=prev_source_type,
         )
 
+    # 記錄重建前的審核狀態：若需還原，須一併還原（否則 manual 樹還原後會因 pending 而被隱藏）
+    cur.execute("PRAGMA table_info(page_index_trees);")
+    if "review_status" in {r[1] for r in cur.fetchall()}:
+        cur.execute("SELECT review_status FROM page_index_trees WHERE doc_id = ?", (doc_id,))
+        _prev = cur.fetchone()
+        prev_review_status = _prev[0] if _prev else None
+    else:
+        prev_review_status = None
+
     # 5. 寫入資料庫
     upsert_trees(conn, [upsert_row], source_type="llm_generated")
 
@@ -246,6 +255,8 @@ def rebuild_tree(
             "clinic_id": existing_clinic_id,
             **{f: existing_row[f] for f in CONTENT_FIELDS},
         }
+        if prev_review_status is not None:
+            restore_row["review_status"] = prev_review_status
         upsert_trees(conn, [restore_row], source_type=prev_source_type)
 
         cur.execute(

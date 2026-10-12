@@ -9,6 +9,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import threading
+import time
 from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -460,6 +461,16 @@ def get_admin_review_summary(
     except Exception:
         pass
 
+    trees_pending_total = 0
+    trees_approved_total = 0
+    try:
+        cur.execute("SELECT COUNT(*) FROM page_index_trees WHERE review_status = 'pending'")
+        trees_pending_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM page_index_trees WHERE review_status = 'approved'")
+        trees_approved_total = cur.fetchone()[0]
+    except Exception:
+        pass
+
     return {
         "pending_total": pending_total,
         "pending_special": pending_special,
@@ -468,6 +479,8 @@ def get_admin_review_summary(
         "approved_total": approved_total,
         "rejected_total": rejected_total,
         "soap_records_total": soap_records_total,
+        "trees_pending_total": trees_pending_total,
+        "trees_approved_total": trees_approved_total,
     }
 
 
@@ -623,4 +636,227 @@ def autofill_all_unanswered(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     return {"status": "started", "scheduled_count": len(ids), "faq_ids": ids}
+
+
+# =============================================================================
+# Phase 21: 臨床決策推理樹 (PageIndex Trees) 審核與提煉端點
+# =============================================================================
+
+class DistillTreeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: str = Field(..., min_length=2, max_length=100)
+    text: str = Field(..., min_length=20, max_length=10000)
+    clinic_id: str = Field(..., min_length=1, max_length=32)
+    doc_id: Optional[str] = Field(None, max_length=64, pattern=r"^[\w\-]{1,64}$")
+    category: Literal["special", "general"] = "special"
+
+
+class UpdateTreeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: Optional[str] = Field(None, max_length=100)
+    pre_op: Optional[str] = Field(None, max_length=2000)
+    pre_op_physician_notes: Optional[str] = Field(None, max_length=2000)
+    procedure: Optional[str] = Field(None, max_length=2000)
+    procedure_physician_notes: Optional[str] = Field(None, max_length=2000)
+    post_op_short: Optional[str] = Field(None, max_length=2000)
+    post_op_short_physician_notes: Optional[str] = Field(None, max_length=2000)
+    maintenance: Optional[str] = Field(None, max_length=2000)
+    maintenance_physician_notes: Optional[str] = Field(None, max_length=2000)
+    summary_text: Optional[str] = Field(None, max_length=2000)
+    category: Optional[Literal["special", "general"]] = None
+
+
+@router.get("/trees", summary="查詢臨床決策推理樹列表")
+def list_admin_trees(
+    status: Optional[str] = Query("pending"),
+    clinic_id: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    from ...pageindex.tree_review import list_trees
+
+    status_filter = status if status and status != "all" else None
+    trees, total = list_trees(
+        conn,
+        status=status_filter,
+        limit=limit,
+        offset=offset,
+        clinic_id=clinic_id,
+        category=category,
+    )
+    return {"trees": trees, "total": total, "limit": limit, "offset": offset}
+
+
+@router.get("/trees/{tree_id}", summary="取得單一臨床決策推理樹詳情")
+def get_admin_tree(
+    tree_id: int,
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    from ...pageindex.tree_review import get_tree
+
+    tree = get_tree(conn, tree_id)
+    if not tree:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的推理樹")
+    return tree
+
+
+@router.post("/trees/distill", summary="自文字提煉臨床決策推理樹草稿")
+def distill_admin_tree(
+    req: DistillTreeRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """提煉僅能建立「新」草稿（pending）；doc_id 已存在一律 409，絕不覆寫既有醫師樹。
+    與單題生成共用 _GENERATION_LOCK（行程內）與夜間批次檔案鎖（跨行程）。"""
+    import re
+    from ...batch import db_lock
+    from ...pageindex.llm_client import LocalLLMUnavailableError
+    from ...pageindex.prompt_template import TreeValidationError
+    from ...pageindex.tree_distiller import MAX_SOURCE_CHARS, TreeConflictError, distill_tree_from_text
+
+    doc_id = req.doc_id
+    if not doc_id:
+        slug = re.sub(r"[^\w\-]+", "-", req.title.lower()).strip("-")
+        doc_id = slug or f"tree-{int(time.time())}"
+
+    if conn.execute("SELECT 1 FROM page_index_trees WHERE doc_id = ?", (doc_id,)).fetchone():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="此識別碼已存在，請改用其他 doc_id（提煉不會覆寫既有樹）")
+
+    if not _GENERATION_LOCK.acquire(blocking=False):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="系統目前正在執行另一個 AI 作業，請稍候重試")
+    lock_fd = db_lock.try_acquire(config.db_path)
+    if lock_fd is None:
+        _GENERATION_LOCK.release()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="夜間批次或其他作業正在使用資料庫，請稍後再試")
+    try:
+        tree = distill_tree_from_text(
+            conn,
+            title=req.title,
+            text=req.text,
+            clinic_id=req.clinic_id,
+            doc_id=doc_id,
+            llm_call=_local_llm_call,
+            category=req.category,
+            source_type="web_upload",
+        )
+        return {
+            "status": "ok",
+            "message": "成功提煉臨床決策推理樹草稿（待醫師簽核）",
+            "truncated": len(req.text) > MAX_SOURCE_CHARS,
+            "tree": tree,
+        }
+    except TreeConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except TreeValidationError as ve:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(ve)) from ve
+    except LocalLLMUnavailableError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="本機 LLM 服務目前無法使用，請確認 llama-server 已啟動後再試",
+        ) from e
+    except Exception as e:
+        # 不回傳例外內容（可能含 SQL 或模型原文片段）；詳情僅記入伺服器日誌
+        import logging
+        logging.getLogger(__name__).exception("tree distill failed: %s", type(e).__name__)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="提煉失敗，請稍後再試") from e
+    finally:
+        db_lock.release(lock_fd)
+        _GENERATION_LOCK.release()
+
+
+
+@router.put("/trees/{tree_id}", summary="編輯臨床決策推理樹或填寫醫師權威醫囑")
+def update_admin_tree(
+    tree_id: int,
+    req: UpdateTreeRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """每個文字欄位都經與提煉／簽核相同的合規檢驗（價格遮蔽、簡體、禁詞、政治立場）。
+    受控來源已核准之樹被修改後，自動回到 pending 重新簽核。"""
+    from ...pageindex.prompt_template import TreeValidationError
+    from ...pageindex.tree_distiller import TREE_TEXT_FIELDS, validate_tree_segment
+    from ...pageindex.tree_review import get_tree, update_tree
+
+    existing = get_tree(conn, tree_id)
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的推理樹")
+
+    update_data = req.model_dump(exclude_unset=True)
+    text_fields = set(TREE_TEXT_FIELDS) | {
+        "pre_op_physician_notes", "procedure_physician_notes",
+        "post_op_short_physician_notes", "maintenance_physician_notes", "title",
+    }
+    try:
+        for k, v in list(update_data.items()):
+            if k in text_fields and v is not None:
+                update_data[k] = validate_tree_segment(k, v)
+    except TreeValidationError as ve:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(ve)) from ve
+
+    updated = update_tree(conn, tree_id, update_data)
+    return {"status": "ok", "message": "推理樹已更新", "tree": updated}
+
+
+
+@router.post("/trees/{tree_id}/approve", summary="醫師簽核核准臨床決策推理樹")
+def approve_admin_tree(
+    tree_id: int,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """核准前重跑完整合規檢驗（與 FAQ 核准一致）：四段必須齊全且通過檢驗；醫囑欄位若有內容亦須通過。"""
+    from ...pageindex.prompt_template import TreeValidationError
+    from ...pageindex.tree_distiller import TREE_TEXT_FIELDS, validate_tree_segment
+    from ...pageindex.tree_review import approve_tree, get_tree
+
+    tree = get_tree(conn, tree_id)
+    if tree is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的推理樹")
+    if tree.get("review_status") == "approved":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="該推理樹已為核准狀態")
+
+    try:
+        for f in TREE_TEXT_FIELDS:
+            if not str(tree.get(f) or "").strip():
+                raise TreeValidationError(f"核准前段落 {f} 不可為空")
+            validate_tree_segment(f, tree[f])
+        for f in ("pre_op_physician_notes", "procedure_physician_notes",
+                  "post_op_short_physician_notes", "maintenance_physician_notes"):
+            if tree.get(f):
+                validate_tree_segment(f, tree[f])
+    except TreeValidationError as ve:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"無法核准：{ve}") from ve
+
+    ok = approve_tree(conn, tree_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無法核准該推理樹（狀態已變更）")
+    return {"status": "ok", "message": f"推理樹 {tree_id} 已核准發布", "id": tree_id}
+
+
+
+@router.post("/trees/{tree_id}/reject", summary="醫師駁回臨床決策推理樹")
+def reject_admin_tree(
+    tree_id: int,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...pageindex.tree_review import reject_tree
+
+    ok = reject_tree(conn, tree_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無法駁回該推理樹（不存在或已為駁回狀態）")
+    return {"status": "ok", "message": f"推理樹 {tree_id} 已駁回", "id": tree_id}
+
+
+@router.delete("/trees/{tree_id}", summary="刪除待審或駁回之臨床決策推理樹草稿")
+def delete_admin_tree(
+    tree_id: int,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...pageindex.tree_review import delete_tree
+
+    ok = delete_tree(conn, tree_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無法刪除該推理樹（僅限非核准狀態之草稿）")
+    return {"status": "ok", "message": f"推理樹 {tree_id} 草稿已刪除", "id": tree_id}
+
 
