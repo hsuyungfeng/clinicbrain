@@ -479,6 +479,7 @@ def test_runner_prioritizes_marked_topic(isolated_conn: sqlite3.Connection, tmp_
         ], ensure_ascii=False)
 
     cfg = BatchConfig(
+        enable_autofill_answers=False,  # 本測試驗證 FAQ 重生成優先級；自動補齊為獨立階段（Phase 20）
         seed_path=str(seed_file),
         snapshot_dir=tmp_path / "snapshots",
         max_faq_topics=5,

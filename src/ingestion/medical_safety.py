@@ -153,23 +153,33 @@ def _merge_bullets(text: str) -> str:
 _SYMPTOM = re.compile(
     "胸痛|呼吸急促|呼吸困難|喘鳴|血便|黑便|嘔血|意識不清|意識改變|昏迷|抽搐|痙攣|頸部僵硬|脫水|尿量(?:明顯)?減少|"
     "口乾|嘴唇乾裂|嘴唇發紫|無法進食|嘔吐不止|持續嘔吐|反覆嘔吐|高燒|高熱|發燒不退|劇烈頭痛|劇烈腹痛|嚴重腹痛|"
-    "腹痛加劇|精神萎靡|嗜睡|臉色蒼白|喉嚨腫脹|臉部腫脹|嘴唇腫脹|血尿|耳痛|胸悶|心悸|無法吞嚥|吞嚥困難"
+    "腹痛加劇|精神萎靡|嗜睡|臉色蒼白|喉嚨腫脹|臉部腫脹|嘴唇腫脹|血尿|耳痛|胸悶|心悸|無法吞嚥|吞嚥困難|"
+    "紅腫熱痛|持續紅腫|紅腫|化膿|流膿|傷口感染|傷口裂開|滲血不止|滲血|持續出血|異常出血|發炎|"
+    "劇烈疼痛|異常疼痛|疼痛加劇|發黑|組織壞死|黃綠色分泌物|分泌物異常"
 )
-_SYM_NEG_PREFIX = re.compile(r"(?:沒有|無|未|不會|並無)$")
+# 否定語境：否定詞與症狀／門檻之間僅允許 ≤4 個非標點字元（有界量詞，無災難性回溯）。
+# 例：「不紅腫」「沒有明顯紅腫」「未見化膿」「沒有任何紅腫」皆視為否定，不得充當具體警訊。
+_NEG_PRE = re.compile(r"(?:沒有|沒|無|未|不|非|並無|並未|未見|未有|不見|不會|排除)[^，,、。；;！!？?\n]{0,4}$")
+_CLAUSE_SPLIT = re.compile(r"[，,、：:]")
 _THRESH_NUM = re.compile(
     rf"(?:超過|逾|達到?|大於|多於|至少|連續|持續|滿|>|≥)\s*{_RANGE}\s*(?:度|°c|℃|天|日|小時|次|週|周|個月|mmhg|%)"
     rf"|{_RANGE}\s*(?:度|°c|℃|天|日|小時|次|週|周|個月)\s*(?:以上|以內仍|仍未|未退|不退)"
 )
 
 
+def _negated_at(sent: str, pos: int) -> bool:
+    """位置 pos 之症狀或門檻，是否位於同一分句內的否定語境。"""
+    clause = _CLAUSE_SPLIT.split(sent[:pos])[-1]
+    return _NEG_PRE.search(clause) is not None
+
+
 def _has_concrete_condition(sent: str) -> bool:
-    """檢查單句內是否具備具體條件（危險症狀或數值門檻）。"""
-    if _THRESH_NUM.search(sent):
-        return True
+    """檢查單句內是否具備具體條件（未被否定之危險症狀或數值門檻）。"""
+    for m in _THRESH_NUM.finditer(sent):
+        if not _negated_at(sent, m.start()):
+            return True
     for m in _SYMPTOM.finditer(sent):
-        # 排除被否定前綴修飾之症狀（如「沒有胸痛」）
-        prefix = sent[max(0, m.start() - 3):m.start()]
-        if not _SYM_NEG_PREFIX.search(prefix):
+        if not _negated_at(sent, m.start()):
             return True
     return False
 

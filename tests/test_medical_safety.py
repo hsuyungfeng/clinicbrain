@@ -115,6 +115,26 @@ def test_doctor_warning_negative_cases(text):
     assert has_doctor_warning(text) is False, f"警訊負例被誤放行: '{text}'"
 
 
+SURGICAL_WARN_POS = [
+    "若傷口出現紅腫化膿、持續滲血或發燒，請儘速就醫回診。",
+    "術後若傷口紅腫熱痛加劇，應立即回診由醫師診治。",
+    "若傷口滲血不止或出現黃綠色分泌物，請儘速就醫檢查。",
+    "若術後傷口發黑或疑似組織壞死，應立即前往醫院就診。",
+    "傷口若有發炎、分泌物異常或傷口裂開，請盡速就診。",
+    "若出現持續紅腫或流膿現象，請至診所掛號回診。",
+    "術後若局部劇烈疼痛或異常疼痛且疼痛加劇，請諮詢醫師或就醫。",
+    "若傷口持續出血或異常出血，請立即就醫處置。",
+    "粉瘤術後若傷口感染並伴隨流膿，應儘速就醫診治。",
+]
+
+
+@pytest.mark.parametrize("text", SURGICAL_WARN_POS)
+def test_surgical_doctor_warning_positive_cases(text):
+    """驗證外科微創手術危險徵兆（紅腫化膿、滲血、發炎、流膿等）能被 has_doctor_warning 成功識別。"""
+    from src.ingestion.medical_safety import has_doctor_warning
+    assert has_doctor_warning(text) is True, f"外科警訊正例未被識別: '{text}'"
+
+
 @pytest.mark.parametrize("text", INTEGRATION)
 def test_medical_safety_integration_cases(text):
     """雙層整合測試：4 句合規衛教同時通過無劑量處方與含具體警訊。"""
@@ -370,3 +390,42 @@ def test_warning_extra_negative(s):
 def test_warning_extra_positive(s):
     from src.ingestion.medical_safety import has_doctor_warning
     assert has_doctor_warning(s) is True, s
+
+
+# 複審：否定語境不得充當具體警訊（假陽性防護）
+SURGICAL_WARN_NEG = [
+    "傷口不紅腫，應回診。",
+    "沒有明顯紅腫化膿，請就醫。",
+    "若無紅腫或化膿，不需就醫。",
+    "沒有紅腫化膿也無需就醫。",
+    "無紅腫無化膿，請就醫追蹤。",
+    "並未發炎，應回診觀察。",
+    "紅腫化膿時無需就醫。",
+    "若沒有發燒，應該回診。",
+    "傷口未滲血，請回診。",
+    "傷口沒有任何紅腫，請回診。",
+    "未見化膿，請回診。",
+    "非紅腫，應回診。",
+]
+
+
+@pytest.mark.parametrize("text", SURGICAL_WARN_NEG)
+def test_surgical_negated_symptom_is_not_warning(text):
+    """否定詞修飾之症狀（不紅腫、沒有明顯紅腫、未見化膿…）不得判為具體警訊。"""
+    from src.ingestion.medical_safety import has_doctor_warning
+    assert has_doctor_warning(text) is False, f"否定語境被誤判為警訊: '{text}'"
+
+
+SURGICAL_WARN_STILL_POS = [
+    "若傷口紅腫化膿，請儘速就醫。",
+    "傷口出現化膿，應立即回診。",
+    "若傷口紅腫化膿，請勿自行處理，應回診。",
+    "若沒有好轉，但持續發燒超過3天，請就醫。",
+    "若傷口滲血不止，請就醫。",
+]
+
+
+@pytest.mark.parametrize("text", SURGICAL_WARN_STILL_POS)
+def test_surgical_real_warning_still_accepted(text):
+    from src.ingestion.medical_safety import has_doctor_warning
+    assert has_doctor_warning(text) is True, f"真實警訊被誤拒: '{text}'"
