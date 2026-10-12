@@ -266,10 +266,13 @@ Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
 
 ---
 
-## 附錄：SOAP 問答萃取構想（Phase 14 僅實現「接收／去識別化／檢索」，FAQ 萃取尚未做）
+## 附錄：SOAP 問答萃取構想（已於 Phase 15 與 Phase 16 完整實現並上線）
 
-> Phase 14 已交付 SOAP 紀錄的接收、去識別化與醫師專屬檢索（見 AGENTS.md 2.13），**並未**把 SOAP
-> 轉成 `faq_cache` 問答。下方是原始構想分析，列為後續里程碑；落地前必須沿用上述安全紅線。
+> **進度說明**：本附錄之原始構想已於 **Phase 15（臨床 SOAP 衛教提煉與審核流，commit `ab19c05`）** 與 **Phase 16（定時自動化同步與批次提煉排程，commit `a8ef157`）** 全數落地實現！
+> - 核心模組：`src/soap/distiller.py:distill_soap_records` 已實作 SOAP Assessment/Plan 依疾病分組聚合、門檻過濾與問答對提煉。
+> - 批次排程：`src/batch/runner.py` 已將前置推播同步與 SOAP 提煉整合至夜間批次（階段 0a 與 0b）。
+> - 審核閉環：提煉問答以 `source_type='soap_distilled'` 存入 `faq_cache`（狀態恆為 `pending`），支援 CLI（`review_faq.py`）與 Web App 視覺化簽核。
+> - 下方保留當時設計之原始架構分析與安全紅線規劃供參考查閱。
 
  從真實醫病語音對話與 SOAP 病歷中萃取問答，相比純粹讓 LLM 憑空生成（Synthetic Generation），能直接取得：
 
