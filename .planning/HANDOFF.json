@@ -1,91 +1,34 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-12T10:24:00+08:00",
-  "phase": "20",
-  "phase_name": "llm-background-answer-filler",
-  "phase_dir": ".planning/phases/20-llm-background-answer-filler",
-  "plan": 1,
-  "task": 2,
+  "timestamp": "2026-10-12T19:25:02+08:00",
+  "phase": "21",
+  "phase_name": "pageindex-trees-expansion",
+  "phase_dir": ".planning/phases/21-pageindex-trees-expansion",
+  "plan": 3,
+  "task": 3,
   "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
-    {
-      "id": 1,
-      "name": "Phase 19 批次補齊答案（背景作業 batch_answer_job，單一作業、逐題 commit）",
-      "status": "done",
-      "commit": "a329f24"
-    },
-    {
-      "id": 2,
-      "name": "Phase 20 規劃文件（CONTEXT / RESEARCH / 20-01..03-PLAN）",
-      "status": "done",
-      "commit": "d5f1bf2"
-    }
+    {"id": 1, "name": "Plan 21-01 臨床決策樹資料庫遷移與審核狀態管理 (tree_review)", "status": "done", "commit": "7e83001"},
+    {"id": 2, "name": "Plan 21-02 決策樹文字提煉引擎 (tree_distiller) 與雙重安全檢驗", "status": "done", "commit": "7e83001"},
+    {"id": 3, "name": "Plan 21-03 管理端決策樹 API 與 Web UI 審核介面", "status": "done", "commit": "5ea7e23"},
+    {"id": 4, "name": "外科技術詞庫擴充與否定詞有界量詞加固 (_negated_at)", "status": "done", "commit": "5c00a78"},
+    {"id": 5, "name": "LLM 思考超限分離 (LLMEmptyOutputError) 與 Prompt 警訊範本收斂", "status": "done", "commit": "1394b36"},
+    {"id": 6, "name": "Web UI 簽核/駁回錯誤提示結構化解析 (apiErrorText)", "status": "done", "commit": "d45ab44"}
   ],
   "remaining_tasks": [
-    {
-      "id": 3,
-      "name": "20-01 後端：get_pending_unanswered_ids、batch runner 第 7 階段、POST /review/autofill/all（程式已寫、未提交，測試綠）",
-      "status": "in_progress"
-    },
-    {
-      "id": 4,
-      "name": "20-02 前端：一鍵背景自動補齊按鈕與進度（app.js / index.html / style.css 未提交，test_web_ui_v3 綠）",
-      "status": "in_progress"
-    },
-    {
-      "id": 5,
-      "name": "20-03 端到端閉環、Claude 對抗性審查加固、AGENTS.md 2.21 節、Hermes 終端驗收（尚未開始）",
-      "status": "not_started"
-    }
+    {"id": 7, "name": "使用者於 Web UI (http://127.0.0.1:8000/admin/) 點擊一鍵背景自動補齊 9 筆 Lipoma 草稿 (ID 41-49)", "status": "pending_human_action"}
   ],
-  "blockers": [
-    {
-      "description": "正式庫 clinic.db 於 2026-10-12 10:17 被替換為 5fb8328d 備份內容（與 clinic.db.bak-20261008104541 位元組相同）；目前 faq_cache 只剩 40 筆 clinic_upload，Oct 8 之後的 web_upload 草稿（約 50+ 筆待審、3 筆駁回、1 筆核准）不在其中。非本次 session 所為，未自行還原。",
-      "type": "human_action",
-      "workaround": "等待使用者決定：以哪一份備份還原，或接受現況並重新上傳文件"
-    }
-  ],
+  "blockers": [],
   "human_actions_pending": [
-    {
-      "action": "確認 clinic.db 的預期狀態並決定還原來源（候選：clinic.db.bak-20261008104541 或其他）；還原前先停止 api 服務並備份當前檔",
-      "context": "資料遺失疑慮；目前 api 服務（PID 172302，port 8000）仍在讀取該檔",
-      "blocking": true
-    },
-    {
-      "action": "決定是否對 Phase 20 進行中的未提交變更做審查後提交（不要在審查前提交）",
-      "context": "他人或另一 session 的實作，尚未經 Claude 對抗性審查",
-      "blocking": false
-    }
+    {"action": "至 Web 管理介面執行 Lipoma 9 筆草稿自動補齊並審核驗收", "context": "正式庫 9 筆 Lipoma 草稿 (ID 41-49) 已掛載為 pending，待使用者觸發背景補齊", "blocking": false}
   ],
   "decisions": [
-    {
-      "decision": "Phase 20 採雙軌：Web 背景單佇列（一次一題）＋夜間 02:30 批次第 7 階段；生成結果恆為 pending",
-      "rationale": "單張 RTX 2080 Ti 保護 VRAM；Fail-Closed 審核不變",
-      "phase": "20"
-    },
-    {
-      "decision": "單題生成與提問共用 _GENERATION_LOCK；背景作業與之互斥",
-      "rationale": "本機模型一次只服務一件事",
-      "phase": "19-20"
-    },
-    {
-      "decision": "批次補齊不核准任何項目；前端完成後自動切到「AI 生成待確認」再一起審",
-      "rationale": "醫師保留最終核准權",
-      "phase": "19-20"
-    }
+    {"decision": "LLMEmptyOutputError 與 LocalLLMUnavailableError 解耦", "rationale": "單題因 reasoning_content 耗盡 token 僅屬單題生成失敗，不應誤判為伺服器離線而中止整個批次", "phase": "21"},
+    {"decision": "Prompt 就醫警訊收尾句指定固定標準句型", "rationale": "避免 LLM 自擬空泛警訊遭醫療安全審核淘汰，100% 穩定通過 has_doctor_warning 檢驗", "phase": "21"},
+    {"decision": "既有 6 筆臨床決策樹遷移預設為 approved", "rationale": "維持向後相容與 RAG 檢索即時生效，若重複核准則回傳明確防呆訊息", "phase": "21"}
   ],
-  "uncommitted_files": [
-    "src/api/routes/admin.py",
-    "src/batch/runner.py",
-    "src/pageindex/batch_answer_job.py",
-    "src/web/static/app.js",
-    "src/web/static/index.html",
-    "src/web/static/style.css",
-    "tests/test_autofill_backend.py",
-    "tests/test_autofill_pipeline_e2e.py",
-    "tests/test_web_ui_v3.py"
-  ],
-  "next_action": "先處理 clinic.db 替換問題（等使用者指示）；之後對上列未提交檔案做 Claude 對抗性審查（Worker 單例鎖、例外復原、批次階段 rollback、Fail-Closed），再依 20-03 跑逐檔回歸與 SHA 檢核，最後分計畫提交",
-  "context_notes": "Phase 20 目前測試：test_autofill_backend 3 passed、test_autofill_pipeline_e2e 1 passed、test_web_ui_v3 3 passed（隔離複本）。回歸注意：整套 pytest 一次跑會塞滿 /tmp 配額，請逐檔跑並清 /tmp/pytest-of-hsu。LLM 單題實測約 200 秒（標題片段）。工作區有他人變更，提交時務必只 add 指定檔案。"
+  "uncommitted_files": [],
+  "next_action": "開啟 Web 管理介面 http://127.0.0.1:8000/admin/，確認 9 筆待簽核問答並執行補齊",
+  "context_notes": "Phase 21 臨床決策推理樹擴展與審核加固已完全收尾，代碼全部通過全套 82 個測試檔，並已推送至 GitHub main。正式 clinic.db 目前有 40 筆 approved FAQ、9 筆 pending Lipoma 草稿、6 筆 approved 臨床決策樹。"
 }
