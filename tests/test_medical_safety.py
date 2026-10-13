@@ -429,3 +429,39 @@ SURGICAL_WARN_STILL_POS = [
 def test_surgical_real_warning_still_accepted(text):
     from src.ingestion.medical_safety import has_doctor_warning
     assert has_doctor_warning(text) is True, f"真實警訊被誤拒: '{text}'"
+
+
+def test_academic_and_doctor_exemption_cases():
+    """驗證學術用語（非類固醇消炎藥物、區域性/口服藥物治療）與醫師開立職權敘述得以豁免 DX-4/DX-5。"""
+    from src.ingestion.medical_safety import check_dosage_prescription
+
+    # FAQ 452
+    faq_452 = "炎症反應可能導致皮膚色素沈著。通過嚴格控制炎症反應，例如使用非類固醇消炎藥物或冰敷，可以減少術後PIH的風險。"
+    assert check_dosage_prescription(faq_452) is None, f"FAQ 452 被誤攔: {check_dosage_prescription(faq_452)}"
+
+    # FAQ 110
+    faq_110 = "醫生可能會開止痛藥或建議非處方藥，以説明控制任何不適。"
+    assert check_dosage_prescription(faq_110) is None, f"FAQ 110 被誤攔: {check_dosage_prescription(faq_110)}"
+
+    # FAQ 502
+    faq_502 = "區域性藥物治療和口服藥物治療是治療反覆甲溝炎的有效方式。"
+    assert check_dosage_prescription(faq_502) is None, f"FAQ 502 被誤攔: {check_dosage_prescription(faq_502)}"
+
+
+
+# 審查回歸：學術用語／醫師職權豁免不得放行「具名藥物或推薦式給藥」的處方式建議
+DX4_MUST_BLOCK = [
+    "非類固醇消炎藥可以服用。",
+    "NSAIDs 可以服用布洛芬來退燒。",
+    "醫師建議服用布洛芬止痛。",
+    "醫生開立布洛芬，請服用。",
+    "口服藥物治療可以服用布洛芬。",
+    "非類固醇消炎藥可以服用布洛芬。",
+    "醫師建議服用止痛藥。",
+]
+
+
+@pytest.mark.parametrize("text", DX4_MUST_BLOCK)
+def test_academic_or_doctor_exemption_never_releases_recommendation(text):
+    from src.ingestion.medical_safety import check_dosage_prescription
+    assert check_dosage_prescription(text) is not None, f"處方式建議被豁免放行: {text}"

@@ -67,14 +67,29 @@ _DX4_FWD = re.compile(rf"(?:{_V_FWD})[^,，。；;、：:！!？?\n]{{0,4}}?(?:{
 _DX4_REV = re.compile(rf"(?:{_DW_SPECIFIC})[^,，。；;、：:！!？?\n]{{0,4}}?(?:{_V_REV})")
 _DX5 = re.compile(r"(?:服用|服藥|吞服|吃藥|口服藥)|吃[^,，。；;、：:！!？?\n]{0,3}藥")
 
-# 豁免模式（否定、現況、遵醫囑）
+# 豁免模式（否定、現況、遵醫囑、學術分類與大類用藥）
 # 否定詞須緊鄰給藥動詞才可豁免（「請勿擔心可吃止痛藥」不得因同子句有否定詞而放行）
 _NEG = re.compile(
     r"(?:請勿|切勿|勿|不要|不可|不宜|不建議|避免|禁止|不得|不應|不能|別)"
     r"(?:自行|擅自|隨意|任意|隨便|亂|貿然)*(?:服用|服藥|吃|使用|購買|買|塗抹|施打|注射|口服|吞服)"
 )
 _STATE = re.compile(r"(?:正在|目前|曾經|曾|長期|已經|有在|在)(?:服用|服藥|使用|吃)")
-_DOCTOR = re.compile(r"(?:依|遵|按|照)(?:照|從)?(?:醫囑|(?:醫師|藥師)(?:的)?(?:指示|處方|囑咐|建議|評估|診斷)?)")
+_DOCTOR = re.compile(
+    r"(?:依|遵|按|照)(?:照|從)?(?:醫囑|(?:醫師|藥師|醫生|外科醫生)(?:的)?(?:指示|處方|囑咐|建議|評估|診斷)?)"
+)
+# 醫師開立職權敘述（「醫師建議／醫生會開」）與學術用語：僅在子句內無「具名藥物」且無「推薦式給藥」時才豁免。
+# 審查發現：原本整子句豁免，使「醫師建議服用布洛芬」「非類固醇消炎藥可以服用布洛芬」等處方式建議被放行。
+_DOCTOR_EXT = re.compile(
+    r"(?:醫師|醫生|外科醫生|醫療團隊)(?:可能|會|可能會)?(?:開立?|處方|建議|評估|選擇)"
+)
+_RECOMMEND_DOSE = re.compile(r"(?:可以|可|建議|宜|應|需|請)(?:服用|服藥|吃|口服|使用)")
+_TAKE_VERB = re.compile(r"服用|服藥|口服|吃|使用")
+_ACADEMIC_GENERAL = re.compile(
+    r"(?:非類固醇(?:消炎|抗發炎)(?:藥|藥物|劑)?|nsaids?|"
+    r"非處方(?:止痛)?藥(?:物)?|非處方藥|"
+    r"口服藥物治療|(?<!可)口服藥物(?:治療)?|外用藥物(?:治療)?|區域性藥物(?:治療)?|局部藥物(?:治療)?|"
+    r"抗寄生蟲藥物|外用藥膏)"
+)
 
 _CLAUSE = re.compile(r"[,，。；;、：:！!？?\n]")
 _SENT = re.compile(r"[。；;！!？?\n]")
@@ -118,6 +133,14 @@ def check_dosage_prescription(answer: str) -> Optional[str]:
     for clause in _CLAUSE.split(t):
         if _NEG.search(clause) or _STATE.search(clause) or _DOCTOR.search(clause):
             continue
+        if _DOCTOR_EXT.search(clause) or _ACADEMIC_GENERAL.search(clause):
+            # 先移除學術用語本身（避免「非類固醇」中的「類固醇」被當成具名藥物）
+            stripped = _ACADEMIC_GENERAL.sub("", clause)
+            recommends = _RECOMMEND_DOSE.search(stripped) or (
+                _RE_DW_SPECIFIC.search(stripped) and _TAKE_VERB.search(stripped)
+            )
+            if not recommends:
+                continue
         if _DX4_FWD.search(clause) or _DX4_REV.search(clause):
             return "DX-4"
         if _DX5.search(clause):
