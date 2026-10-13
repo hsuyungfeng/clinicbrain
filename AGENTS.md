@@ -19,7 +19,7 @@
 ## 2. 資料架構 (Data Architecture)
 
 ### 2.1 資料庫
-單一 SQLite 資料庫 `clinic.db`（**gitignored，不進版控**，由腳本重建）：
+單一 SQLite 資料庫 `clinic.db`（納入版控，包含實機文件上傳解析、LLM 生成與醫師審核簽核之最新臨床知識庫；亦可由腳本重建基礎種子）：
 - `drugs`：377K+ 藥品項目來源 CSV，實際匯入 7,573 筆（CSV 換行數 ≠ 記錄數，勿用 `wc -l` 估算）
 - `service_items`：2,669 筆醫療服務給付項目
 - `page_index_trees` + `page_index_fts`：PageIndex 臨床推理樹（見 2.2）
