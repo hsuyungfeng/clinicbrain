@@ -649,10 +649,11 @@ async function processReview(faqId, action) {
             syncSelectionUi();
             loadDashboardSummary();
         } else {
-            showToast(`操作失敗：${typeof data.detail === "string" ? data.detail : "未知錯誤"}`, "error");
+            showToast(apiErrorText(data, "操作失敗"), "error");
         }
     } catch (e) {
-        showToast("網路請求失敗", "error");
+        console.error("審核操作網路異常:", e);
+        showToast("審核操作網路異常", "error");
     }
 }
 
@@ -677,7 +678,7 @@ async function runBatch(action) {
             });
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
-                showToast(`批量${label}失敗：${typeof data.detail === "string" ? data.detail : "格式不正確"}`, "error");
+                showToast(`批量${label}失敗：${apiErrorText(data, "格式不正確")}`, "error");
                 failed += chunk.length;
                 continue;
             }
@@ -687,7 +688,8 @@ async function runBatch(action) {
             Object.values(data.failed_reasons || {}).forEach(r => reasons.add(String(r).split(":")[0]));
         }
     } catch (e) {
-        showToast("網路請求失敗", "error");
+        console.error("審核操作網路異常:", e);
+        showToast("審核操作網路異常", "error");
     } finally {
         reviewState.busy = false;
         document.getElementById("btnBatchApprove").disabled = false;
