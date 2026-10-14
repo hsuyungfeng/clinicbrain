@@ -6,11 +6,13 @@ Phase 18 Plan 18-01: 提供文件上傳解析、待審衛教草稿檢索與簽�
 
 import json
 from pathlib import Path
+import re
 import sqlite3
 import tempfile
 import threading
 import time
 from typing import Any, Literal, Optional
+import unicodedata
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
@@ -107,12 +109,134 @@ router = APIRouter(
     dependencies=[Depends(verify_admin_key)],
 )
 
+_ALLOWED_NAME_PATTERN = re.compile(r"^[\u4e00-\u9fffA-Za-z0-9 \-_·（）\(\)\[\]]+$")
+_NAME_VALIDATION_ERROR_MSG = "名稱格式不符：僅允許中英文、數字與基本符號，長度 1–80 字，且不得含個資或金額"
+
+
+def validate_display_name(raw: Optional[str]) -> Optional[str]:
+    """驗證與清理使用者自訂名稱（D-01、D-02）。
+
+    - raw 為 None 或 strip 後為空字串時回傳 None。
+    - 先以 NFKC 正規化再去除頭尾空白。
+    - 長度限制 1–80 字元。
+    - 允許字元：中英文（\u4e00-\u9fff）、英數、空白、以及 -_·（）()[]。
+    - 不得包含個資或電話（deidentify_text 不變）。
+    - 不得包含金額或價格（deep_mask_prices 不變）。
+    - 違規時統一拋出 HTTP 400，錯誤訊息為固定字串，絕不包含輸入值。
+    """
+    if raw is None:
+        return None
+    trimmed = raw.strip()
+    if not trimmed:
+        return None
+
+    normalized = unicodedata.normalize("NFKC", trimmed).strip()
+    if not normalized:
+        return None
+
+    if len(normalized) > 80:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_NAME_VALIDATION_ERROR_MSG,
+        )
+
+    if not _ALLOWED_NAME_PATTERN.match(normalized):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_NAME_VALIDATION_ERROR_MSG,
+        )
+
+    if deidentify_text(normalized) != normalized:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_NAME_VALIDATION_ERROR_MSG,
+        )
+
+    masked = deep_mask_prices(normalized)
+    if isinstance(masked, dict):
+        masked = str(masked)
+    if masked != normalized:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_NAME_VALIDATION_ERROR_MSG,
+        )
+
+    return normalized
+
+
+def _text_to_faq_drafts(
+    raw_text: str,
+    topic: str,
+    clinic_id: str,
+) -> tuple[list[dict[str, Any]], int, int]:
+    """將純文字/Markdown/萃取內文清洗、切分並轉換為 FAQ 草稿清單（D-11）。
+
+    回傳: (faqs_to_insert, extracted_paragraphs_count, rejected_paragraphs)
+    """
+    # 4. 簡轉繁、去識別化與價格數字遮蔽
+    trad_text = to_traditional(raw_text)
+    deid_text = deidentify_text(trad_text)
+    clean_text = deep_mask_prices(deid_text)
+    if isinstance(clean_text, dict):
+        clean_text = str(clean_text)
+
+    # 5. 段落切分與 Q&A 轉換
+    paragraphs = [p.strip() for p in clean_text.split("\n\n") if p.strip()]
+    if len(paragraphs) > MAX_PARAGRAPHS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"文件段落過多（{len(paragraphs)} > {MAX_PARAGRAPHS}），請拆分為較小的檔案後再上傳",
+        )
+    faqs_to_insert = []
+    rejected_paragraphs = 0
+
+    for idx, p in enumerate(paragraphs):
+        lines = p.splitlines()
+        first = lines[0].strip() if lines else ""
+        if len(lines) >= 2 and (first.startswith(_Q_PREFIXES) or first.endswith(("？", "?"))):
+            q_part = first
+            for pre in _Q_PREFIXES:
+                if q_part.startswith(pre):
+                    q_part = q_part[len(pre):]
+                    break
+            q_part = q_part.strip()
+            a_part = "\n".join(lines[1:]).strip()
+            for pre in ("答：", "答:", "A:", "A：", "a:", "a："):
+                if a_part.startswith(pre):
+                    a_part = a_part[len(pre):].strip()
+                    break
+        else:
+            q_part = f"【診所文件】{topic} - 指示 {idx + 1}"
+            a_part = p
+
+        a_part = a_part[:MAX_ANSWER_CHARS]
+        if not q_part or not a_part:
+            rejected_paragraphs += 1
+            continue
+
+        # 四層驗證（簡體字／政治立場／保證療效／價格洩漏）：違規段落單筆剔除，不影響其他段落
+        ok, _reason = validate_single_faq({"question": q_part, "answer": a_part})
+        if not ok:
+            rejected_paragraphs += 1
+            continue
+
+        faqs_to_insert.append({
+            "question": q_part,
+            "answer": a_part,
+            "category": "special",
+            "clinic_id": clinic_id,
+            "topic_key": f"doc-{topic}",
+        })
+
+    return faqs_to_insert, len(paragraphs), rejected_paragraphs
+
 
 @router.post("/upload", summary="診所衛教與項目文件上傳解析")
 async def upload_admin_file(
     file: UploadFile = File(...),
     clinic_id: str = Form(...),
     preview_only: bool = Form(False),
+    name: Optional[str] = Form(None),
     conn: sqlite3.Connection = Depends(get_write_db),
 ):
     """
@@ -217,61 +341,14 @@ async def upload_admin_file(
                 detail=f"未能在檔案 {filename} 中萃取到有效文字內容",
             )
 
-        # 4. 簡轉繁、去識別化與價格數字遮蔽
-        trad_text = to_traditional(raw_text)
-        deid_text = deidentify_text(trad_text)
-        clean_text = deep_mask_prices(deid_text)
-        if isinstance(clean_text, dict):
-            clean_text = str(clean_text)
+        name_clean = validate_display_name(name)
+        doc_topic = name_clean if name_clean else Path(filename).stem[:80]
 
-        # 5. 段落切分與 Q&A 轉換
-        paragraphs = [p.strip() for p in clean_text.split("\n\n") if p.strip()]
-        if len(paragraphs) > MAX_PARAGRAPHS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"文件段落過多（{len(paragraphs)} > {MAX_PARAGRAPHS}），請拆分為較小的檔案後再上傳",
-            )
-        faqs_to_insert = []
-        rejected_paragraphs = 0
-        doc_topic = Path(filename).stem[:80]
-
-        for idx, p in enumerate(paragraphs):
-            lines = p.splitlines()
-            first = lines[0].strip() if lines else ""
-            if len(lines) >= 2 and (first.startswith(_Q_PREFIXES) or first.endswith(("？", "?"))):
-                q_part = first
-                for pre in _Q_PREFIXES:
-                    if q_part.startswith(pre):
-                        q_part = q_part[len(pre):]
-                        break
-                q_part = q_part.strip()
-                a_part = "\n".join(lines[1:]).strip()
-                for pre in ("答：", "答:", "A:", "A：", "a:", "a："):
-                    if a_part.startswith(pre):
-                        a_part = a_part[len(pre):].strip()
-                        break
-            else:
-                q_part = f"【診所文件】{doc_topic} - 指示 {idx + 1}"
-                a_part = p
-
-            a_part = a_part[:MAX_ANSWER_CHARS]
-            if not q_part or not a_part:
-                rejected_paragraphs += 1
-                continue
-
-            # 四層驗證（簡體字／政治立場／保證療效／價格洩漏）：違規段落單筆剔除，不影響其他段落
-            ok, _reason = validate_single_faq({"question": q_part, "answer": a_part})
-            if not ok:
-                rejected_paragraphs += 1
-                continue
-
-            faqs_to_insert.append({
-                "question": q_part,
-                "answer": a_part,
-                "category": "special",
-                "clinic_id": clinic_id,
-                "topic_key": f"doc-{doc_topic}",
-            })
+        faqs_to_insert, extracted_paragraphs_count, rejected_paragraphs = _text_to_faq_drafts(
+            raw_text=raw_text,
+            topic=doc_topic,
+            clinic_id=clinic_id,
+        )
 
         if preview_only:
             return {
@@ -279,7 +356,7 @@ async def upload_admin_file(
                 "preview_only": True,
                 "filename": filename,
                 "clinic_id": clinic_id,
-                "extracted_paragraphs_count": len(paragraphs),
+                "extracted_paragraphs_count": extracted_paragraphs_count,
                 "rejected_paragraphs": rejected_paragraphs,
                 "faqs_preview": faqs_to_insert,
             }
