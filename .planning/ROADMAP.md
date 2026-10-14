@@ -29,7 +29,7 @@
 | 19. Web 管理介面臨床體驗升級與 AI 輔助生成 | 3/3 | Complete | 2026-10-08 |
 | 20. LLM 空閒時間衛教答案自動生成器 | 3/3 | Complete | 2026-10-12 |
 | 21. 臨床決策推理樹提煉、審核與檢索擴展 | 3/3 | Complete | 2026-10-12 |
-| 22. RAG 提問檢索優化、BM25 排序與結構化衛教生成 | 0/3 | Pending | - |
+| 22. RAG 提問檢索優化、BM25 排序與結構化衛教生成 | 3/3 | Complete | 2026-10-14 |
 
 ## Phase Details
 
@@ -100,7 +100,7 @@
 ### Phase 22: RAG 提問檢索優化、BM25 排序與結構化衛教生成
 
 **Goal**: 優化臨床衛教提問檢索與本機 LLM 生成品質。在 `search_text` 與 `search_faq_cache` 引入 FTS5 BM25 相關度評分排序（`ORDER BY rank`），擴大 `retrieve_evidence` 檢索召回筆數（4 ➔ 8 筆），並調校 `rag_ask` 衛教 Prompt，使本機模型在嚴守台灣醫療法規（零處方、零價格）前提下，能針對門診處置、日常照護與預防注意事項生成分段結構化且詳盡之回答。
-**Status**: Pending
+**Status**: Complete (16/16 專屬測試通過、BM25 subquery JOIN 升級、多詞交集加權、MAX_FAQ=8、結構化衛教生成、正式庫零污染)
 **Depends on**: Phase 20 (LLM 答案生成與推論優化), Phase 21 (臨床推理樹擴展), Phase 01 (全文檢索核心)
 **Scope**:
   1. 全文檢索排序升級：`search_text` 支援 FTS5 BM25 `ORDER BY rank`，改善目前僅依 rowid 順序回傳導致舊資料遮蔽高相關資料之缺陷。

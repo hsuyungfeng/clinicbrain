@@ -68,6 +68,7 @@ def search_text(
 
     cursor = conn.cursor()
 
+    rows = None
     if _use_fts(query):
         where_clause = f"WHERE {extra_where}" if extra_where else ""
         params = [query]
@@ -75,20 +76,26 @@ def search_text(
             params.extend(extra_params)
         params.append(limit)
         col_list = ", ".join(f"{table}.{col}" for col in select_columns)
-        cursor.execute(
-            f"""
-            SELECT {col_list}
-            FROM {table}
-            JOIN (
-                SELECT rowid, rank FROM {fts_table} WHERE {fts_table} MATCH ?
-            ) AS _fts ON {table}.rowid = _fts.rowid
-            {where_clause}
-            ORDER BY _fts.rank ASC
-            LIMIT ?
-            """,
-            params,
-        )
-    else:
+        try:
+            cursor.execute(
+                f"""
+                SELECT {col_list}
+                FROM {table}
+                JOIN (
+                    SELECT rowid AS _fts_rowid, rank FROM {fts_table} WHERE {fts_table} MATCH ?
+                ) AS _fts ON {table}.rowid = _fts._fts_rowid
+                {where_clause}
+                ORDER BY _fts.rank ASC
+                LIMIT ?
+                """,
+                params,
+            )
+            rows = cursor.fetchall()
+        except sqlite3.OperationalError:
+            # 特殊字元或未閉合引號造成 FTS MATCH 語法錯誤時，優雅降級走 LIKE fallback
+            rows = None
+
+    if rows is None:
         where_clause = "(" + " OR ".join(f"{col} LIKE ?" for col in like_columns) + ")"
         params = [f"%{query}%" for _ in like_columns]
         if extra_where:
@@ -104,8 +111,7 @@ def search_text(
             """,
             params,
         )
-
-    rows = cursor.fetchall()
+        rows = cursor.fetchall()
     return [
         SearchHit(table=table, row_id=row[0], fields=dict(zip(select_columns, row)))
         for row in rows

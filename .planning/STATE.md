@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 19（Web 管理介面臨床體驗升級與 AI 輔助生成）-- COMPLETED
-Plan: 19-01、19-02、19-03 均已實作、加固與 32/32 專屬測試通過
-Status: Milestone v1.5 In Progress (Phase 19 完成)
-Last activity: 2026-10-08 -- 依據臨床實機回饋完成 Phase 19 批量簽核 API、本地 LLM (Qwen3.8-27B) 衛教生成 API、內聯編輯 API、前端 UI 深度美化、全選/反選/浮動控制列
+Phase: 22（RAG 提問檢索優化、BM25 排序與結構化衛教生成）-- COMPLETED
+Plan: 22-01、22-02、22-03 均已實作、加固與 16/16 專屬測試通過
+Status: Milestone v1.5 In Progress (Phase 22 完成)
+Last activity: 2026-10-14 -- 完成 FTS5 BM25 相關度評分排序（subquery JOIN）、多詞交集加權、MAX_FAQ 放寬至 8 筆、結構化衛教 Prompt 優化（250~400字、條列分段）、前端晶片化網格排版與全套對抗性安全加固
 
 Progress: [██████████] 100%
 
@@ -44,6 +44,7 @@ Progress: [██████████] 100%
 
 ### Decisions
 
+- [Phase 22 2026-10-14]: 完成 RAG 提問檢索優化、BM25 排序與結構化衛教生成。在 `search_text` 實作 FTS5 BM25 相關度評分（subquery JOIN `_fts.rank ASC`，並以 `_fts_rowid` 別名消除欄位歧義，加掛 FTS 語法錯誤優雅降級 LIKE fallback）；在 `_search_terms_merged` 實作多詞命中交集加權（Multi-Term Intersection Boost），解決修飾詞遭截斷問題；將 `rag_ask.py` 的 `MAX_FAQ` 由 4 放寬至 8 筆；優化 `build_ask_prompt` 引導 250~400 字結構化條列（【門診處置】、【日常照護】、【就醫提醒】）；前端 Web App `app.js` 與 `style.css` 支援自適應段落與資料來源晶片網格展示；真實資料庫「甲溝炎要怎麼照護？」端到端驗收成功召回 ID 497（居家自我護理與家庭治療：溫水浸泡、拍乾、透氣鞋襪、直邊修剪防長入肉）；專屬測試 16/16 PASS，系統廣域回歸 327/327 PASS，正式庫 `clinic.db` SHA-256 恆定未變（`0089ca28795fd0f0f2a41e9fa6b16f840ae794bfaf4e5597576410e9f0cf23db`）。
 - [Phase 15 2026-10-07]: 完成臨床 SOAP 衛教提煉與審核流（Herdr 多 Agent 流程：Agy 實作、Claude 對抗性審查加固、Hermes 驗收）。實作 `src/soap/distiller.py` 居家照護特徵聚合與價格/劑量二次清洗；擴充 `faq_writer.py` 支援 `source_type='soap_distilled'` 與 `metadata` 欄位；確立法規防禦「正式庫寫入路徑絕不自動 ALTER」，透過 `scripts/migrate_faq_metadata.py` 採 DDL 單一來源遷移；修復重複提煉重設審核狀態 Bug（內容未變僅更新 metadata 不重設 status）；修復 SQLite NULL 三值邏輯隔離漏洞；擴充 `review_faq.py` 與 `faq_review.py` 支援 `--source soap_distilled` 篩選與臨床病歷溯源顯示；新增 `distill_soap_faqs.py` 支援 `--dry-run` 唯讀連線模式；全套單元與端到端測試 10/10 PASS，正式庫 `clinic.db` SHA-256 維持 `ad24426cadd84db7`。
 - [Phase 14 2026-10-07]: 使用者五項醫療語意決策全數採納：疑似/R/O 排除（方案 A）、Assessment 為空 conditions 留空（方案 A）、英文縮寫不擅自映射（方案 A）、取消單字母空白分隔並強制標點（方案 A）、行內單字母標記不承認（保守規則，僅行首與成對括號承認，排除脈搏 P: 80 衝突）；粗括號放寬前導切分；後置否定容許最多 4 個非標點字元；migrate_soap_schema 支援 --dry-run 純記憶體預覽。
 - [Phase 14 2026-10-06]: 支援外部推播（doctor-toolbox.com）與語音聽寫紀錄入庫；section_parser 自動切分 S/O/A/P 並安全退化至 subjective；extract_general_medical_insights 自動萃取一般醫學特徵、症狀與居家照護摘要；deid 模組遮蔽台灣身分證、電話、姓名，並套用 deep_mask_prices 洗清金額；patient_token 採 HMAC-SHA256 偽名化衍生；soap_writer 提供唯一權威 upsert；FastAPI /api/v1/soap/records、/search、/records/{external_id} 強制 verify_admin_key 認證與診所隔離；公開端點嚴格隔離；單一來源遷移腳本維護 trigram FTS5 虛擬表與 3 觸發器。

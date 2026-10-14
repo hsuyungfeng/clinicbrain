@@ -152,6 +152,15 @@ header.bg-indigo-900 { background: linear-gradient(90deg, var(--navy), #1e293b);
 .ask-hist-item summary { cursor: pointer; font-weight: 600; color: #334155; }
 .ask-hist-body { box-shadow: none; }
 
+/* 結構化衛教排版與來源晶片網格 (Phase 22) */
+.ask-answer-structured { font-size: 0.9rem; }
+.ask-para { margin: 0 0 0.65rem 0; line-height: 1.65; color: #1e293b; }
+.ask-para:last-child { margin-bottom: 0; }
+.ask-section-tag { font-weight: 700; color: #0f766e; background: #ccfbf1; padding: 0.15rem 0.5rem; border-radius: 0.35rem; display: inline-block; margin-right: 0.35rem; }
+.ask-src-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.45rem; }
+.ask-src-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.45rem; padding: 0.35rem 0.55rem; display: flex; align-items: center; gap: 0.45rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ask-src-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; color: #475569; }
+
 /* ---- 多檔／資料夾上傳佇列 ---- */
 .upload-tools { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.7rem; }
 .upload-queue { margin-top: 0.7rem; max-height: 18rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }

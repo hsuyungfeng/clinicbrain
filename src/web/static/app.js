@@ -1011,7 +1011,29 @@ function renderAskResult(data, container) {
     }
     container.appendChild(head);
     container.appendChild(el("div", "ask-q", `【問】${data.question}`));
-    container.appendChild(el("div", "faq-answer", data.answer));
+
+    // 結構化段落呈現：依段落分拆，針對【標題】加上專屬樣式標籤
+    const ansWrap = el("div", "faq-answer ask-answer-structured");
+    const paragraphs = (data.answer || "").split(/\n+/).map(p => p.trim()).filter(Boolean);
+    if (paragraphs.length === 0) {
+        ansWrap.textContent = data.answer || "";
+    } else {
+        paragraphs.forEach(pText => {
+            const pEl = el("p", "ask-para");
+            const match = pText.match(/^(【[^】]+】)(.*)$/s);
+            if (match) {
+                pEl.appendChild(el("span", "ask-section-tag", match[1]));
+                if (match[2].trim()) {
+                    pEl.appendChild(document.createTextNode(" " + match[2].trim()));
+                }
+            } else {
+                pEl.textContent = pText;
+            }
+            ansWrap.appendChild(pEl);
+        });
+    }
+    container.appendChild(ansWrap);
+
     if (data.compliance && !data.compliance.ok) {
         container.appendChild(el("div", "ask-warn", `合規檢視原因：${data.compliance.reason}（此為管理端檢視，對外端點不會輸出此內容）`));
     }
@@ -1020,11 +1042,13 @@ function renderAskResult(data, container) {
     if (!data.sources || data.sources.length === 0) {
         container.appendChild(el("div", "ask-src-empty", "無（此問題在已核准資料中找不到相關內容）"));
     } else {
-        const ul = el("ul", "ask-src-list");
+        const ul = el("ul", "ask-src-list ask-src-grid");
         data.sources.forEach(s => {
-            const li = el("li", "");
+            const li = el("li", "ask-src-item");
             li.appendChild(badge(s.ref, "badge-id"));
-            li.appendChild(document.createTextNode(` ${({ faq: "常見問答", tree: "臨床推理樹", note: "診所備註", clinic_info: "診所資料" })[s.type] || s.type}・${s.level}：${s.title}`));
+            const typeLabel = ({ faq: "常見問答", tree: "臨床推理樹", note: "診所備註", clinic_info: "診所資料" })[s.type] || s.type;
+            const desc = el("span", "ask-src-desc", ` ${typeLabel}・${s.level}：${s.title}`);
+            li.appendChild(desc);
             ul.appendChild(li);
         });
         container.appendChild(ul);
