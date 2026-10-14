@@ -29,7 +29,7 @@ _ID_LETTER_MAP = {
 # 「身分證A123456789」「電話0912345678」中英數交界沒有 \b，會整段漏遮蔽。
 _ID_PATTERN = re.compile(r"(?<![A-Za-z0-9])([A-Z][1289A-D]\d{8})(?!\d)", re.IGNORECASE)
 _MOBILE_PATTERN = re.compile(r"(?<!\d)(09\d{2}[-\s]?\d{3}[-\s]?\d{3}|09\d{8})(?!\d)")
-_LANDLINE_PATTERN = re.compile(r"(?<!\d)(0\d{1,2}[-\s]?\d{7,8})(?!\d)")
+_LANDLINE_PATTERN = re.compile(r"(?<!\d)(0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}|0\d{1,2}[-\s]?\d{7,8})(?!\d)")
 # 「姓名」標籤後可直接接姓名；「病患／患者」因常接症狀描述（患者持續發燒），必須帶分隔符才遮蔽
 _NAME_LABEL_PATTERN = re.compile(
     r"((?:病患姓名|患者姓名|姓名)[：:\s]*|(?:病患|患者)[：:\s]+)([\u4e00-\u9fa5]{2,4})"

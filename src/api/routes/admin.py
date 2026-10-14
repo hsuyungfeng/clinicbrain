@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt
 from ...ingestion.convert_chinese import to_traditional
 from ...ingestion.extract_text import extract_docx_text, extract_xlsx_text
 from ...ingestion.generate_faq import validate_single_faq
+from ...ingestion.url_guard import UnsafeUrlError, validate_public_url
 from ...pageindex import batch_answer_job
 from ...pageindex.rag_ask import ask_with_data
 from ...pageindex.answer_generator import GenerationError, generate_answer_for_faq, is_answer_thin
@@ -33,6 +34,17 @@ from ...pageindex.faq_review import (
     update_faq_content,
 )
 from ...pageindex.faq_writer import upsert_faqs
+from ...pageindex.web_source_adapter import (
+    UrlFetchDeps,
+    UrlFetchError,
+    build_service_text,
+    fetch_clinic_page,
+    get_shared_robots,
+    get_shared_throttle,
+    optional_missing_fields,
+)
+from ...scraper.fetch import build_user_agent
+from ...scraper.policy import PolicyError, load_allowlist
 from ...soap.deid import deidentify_text
 from ..config import config
 from ..dependencies import get_read_db, get_write_db, verify_admin_key
@@ -389,6 +401,261 @@ async def upload_admin_file(
                 tmp_path.unlink()
             except Exception:
                 pass
+
+DEFAULT_SOURCES_PATH = Path(__file__).resolve().parents[3] / "data" / "scraper" / "sources.json"
+_URL_FETCH_LOCK = threading.Lock()
+
+
+def get_url_fetch_deps() -> UrlFetchDeps:
+    """取得網址擷取依賴項（唯一的依賴注入點，D-23）。"""
+    try:
+        allowlist = load_allowlist(DEFAULT_SOURCES_PATH)
+    except PolicyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="網站擷取器白名單設定無法讀取",
+        ) from e
+
+    return UrlFetchDeps(
+        allowlist=allowlist,
+        throttle=get_shared_throttle(),
+        robots=get_shared_robots(),
+        user_agent=build_user_agent(),
+        resolver=socket.getaddrinfo,
+        http_get=None,
+    )
+
+
+@router.post("/upload-url", summary="網站解析（網址）上傳草稿")
+def upload_admin_url(
+    url: str = Form(""),
+    clinic_id: str = Form(...),
+    name: str = Form(""),
+    target: str = Form("faq"),
+    preview_only: bool = Form(False),
+    conn: sqlite3.Connection = Depends(get_write_db),
+    deps: UrlFetchDeps = Depends(get_url_fetch_deps),
+):
+    """
+    接收公開已授權之 HTTPS 網址，經由 Phase 23 擷取器與結構化抽取，轉換為待審核之 FAQ 草稿。
+    """
+    # a. clinic_id 去空白；clinic_info 不存在 → 404
+    clean_clinic_id = (clinic_id or "").strip()
+    clinic_row = conn.execute(
+        "SELECT clinic_id FROM clinic_info WHERE clinic_id = ?",
+        (clean_clinic_id,),
+    ).fetchone()
+    if not clinic_row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"找不到指定的診所代碼: {clean_clinic_id}",
+        )
+
+    # b. target 非 "faq" → 400
+    if (target or "").strip() != "faq":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="網址解析目前僅支援常見問答 FAQ 草稿",
+        )
+
+    # c. name_clean = validate_display_name(name)；None → 400（網址模式名稱必填）
+    name_clean = validate_display_name(name)
+    if not name_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_NAME_VALIDATION_ERROR_MSG,
+        )
+
+    # d. 若 not preview_only：has_metadata_column(conn) 為假 → 503（早於擷取中止）
+    if not preview_only and not has_metadata_column(conn):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="資料庫尚未完成 metadata 欄位遷移，暫無法寫入網址來源草稿",
+        )
+
+    # e. validated = validate_public_url(url, resolver=deps.resolver)；UnsafeUrlError → 400
+    try:
+        validated = validate_public_url(url, resolver=deps.resolver)
+    except UnsafeUrlError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+    # f. 取得 _URL_FETCH_LOCK（非阻塞）；失敗 → 429
+    acquired = _URL_FETCH_LOCK.acquire(blocking=False)
+    if not acquired:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="網站擷取進行中，請稍後再試",
+        )
+
+    try:
+        # g. page_result = fetch_clinic_page(...)
+        try:
+            page_result = fetch_clinic_page(
+                validated.url,
+                deps=deps,
+                pinned_addresses=validated.addresses,
+            )
+        except UrlFetchError as e:
+            if e.reason in {
+                "not_allowlisted",
+                "scheme",
+                "port",
+                "credentials",
+                "private_address",
+                "bad_url",
+                "too_many_redirects",
+            }:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="網址不允許解析（僅接受已授權之公開 https 網址）",
+                ) from e
+            elif e.reason == "robots_denied":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="該網站之 robots.txt 不允許擷取",
+                ) from e
+            elif e.reason == "bad_allowlist":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="網站擷取器白名單設定無法讀取",
+                ) from e
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="網站擷取失敗，請稍後再試",
+                ) from e
+        except (NotImplementedError, ImportError) as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="網站擷取器尚未就緒",
+            ) from e
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="網站擷取失敗，請稍後再試",
+            ) from e
+
+        # h. page = page_result.page；若 not page.is_usable() → 422
+        page = page_result.page
+        if not page.is_usable():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="網站內容無法解析（必要欄位缺失，疑似網站改版），未產生草稿",
+            )
+
+        # i. raw_text = build_service_text(page)；若為空字串 → 400
+        raw_text = build_service_text(page)
+        if not raw_text or not raw_text.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="網站未解析出可用內容",
+            )
+
+        # j. faqs, paragraphs_count, rejected = _text_to_faq_drafts(raw_text, name_clean, clean_clinic_id)
+        faqs, paragraphs_count, rejected = _text_to_faq_drafts(
+            raw_text=raw_text,
+            topic=name_clean,
+            clinic_id=clean_clinic_id,
+        )
+
+        # k. 身分洩漏檢查（縱深防禦）：
+        # 對 institution_name、address、phone 之原始值與其 to_traditional 版本，
+        # 若出現於任一 faq 的 question 或 answer → 該 faq 剔除，rejected += 1
+        identity_terms: set[str] = set()
+        for raw_val in (page.institution_name, page.address, page.phone):
+            if raw_val and isinstance(raw_val, str) and len(raw_val.strip()) >= 2:
+                v = raw_val.strip()
+                identity_terms.add(v)
+                identity_terms.add(to_traditional(v).strip())
+
+        filtered_faqs = []
+        for faq in faqs:
+            q_text = faq.get("question", "")
+            a_text = faq.get("answer", "")
+            leaked = any(term in q_text or term in a_text for term in identity_terms if term)
+            if leaked:
+                rejected += 1
+            else:
+                filtered_faqs.append(faq)
+        faqs = filtered_faqs
+
+        # l. 溯源 metadata（僅寫入 faq["metadata"]，JSON 字串）
+        def _clean_s(x: Optional[str]) -> str:
+            if not x:
+                return ""
+            trad = to_traditional(x)
+            deid = deidentify_text(trad)
+            masked = deep_mask_prices(deid)
+            return str(masked) if isinstance(masked, dict) else str(masked)
+
+        metadata_dict = {
+            "origin": "web_scrape",
+            "source_url": page_result.source_url,
+            "fetched_at": page_result.fetched_at,
+            "schema_version": page.schema_version,
+            "extracted": {
+                "institution_name": _clean_s(page.institution_name),
+                "address": _clean_s(page.address),
+                "phone": _clean_s(page.phone),
+                "business_hours": _clean_s(page.business_hours),
+            },
+        }
+        metadata_str = json.dumps(metadata_dict, ensure_ascii=False)
+        for faq in faqs:
+            faq["metadata"] = metadata_str
+
+        missing_fields = optional_missing_fields(page)
+
+        # m. 預覽或寫入回應
+        if preview_only:
+            return {
+                "status": "ok",
+                "preview_only": True,
+                "clinic_id": clean_clinic_id,
+                "name": name_clean,
+                "source_url": page_result.source_url,
+                "missing_fields": missing_fields,
+                "extracted_paragraphs_count": paragraphs_count,
+                "rejected_paragraphs": rejected,
+                "faqs_preview": [
+                    {
+                        "question": f["question"],
+                        "answer": f["answer"],
+                        "topic_key": f["topic_key"],
+                    }
+                    for f in faqs
+                ],
+            }
+
+        try:
+            inserted, updated, unchanged = upsert_faqs(conn, faqs, source_type="web_upload")
+            conn.commit()
+        except RuntimeError as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="資料庫尚未完成審核欄位遷移，暫無法接收上傳",
+            ) from e
+
+        return {
+            "status": "ok",
+            "preview_only": False,
+            "source_url": page_result.source_url,
+            "missing_fields": missing_fields,
+            "inserted": inserted,
+            "updated": updated,
+            "unchanged": unchanged,
+            "total_faqs": len(faqs),
+            "rejected_paragraphs": rejected,
+            "review_status": "pending",
+        }
+    finally:
+        _URL_FETCH_LOCK.release()
 
 
 @router.get("/review/faqs", summary="檢索待審或已審衛教問答列表")
