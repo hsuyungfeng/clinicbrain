@@ -1,34 +1,31 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-12T19:25:02+08:00",
-  "phase": "21",
-  "phase_name": "pageindex-trees-expansion",
-  "phase_dir": ".planning/phases/21-pageindex-trees-expansion",
+  "timestamp": "2026-10-14T13:27:30+08:00",
+  "phase": "22",
+  "phase_name": "RAG 提問檢索優化、BM25 排序與結構化衛教生成",
+  "phase_dir": ".planning/phases/22-rag-bm25",
   "plan": 3,
-  "task": 3,
+  "task": 2,
   "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Plan 21-01 臨床決策樹資料庫遷移與審核狀態管理 (tree_review)", "status": "done", "commit": "7e83001"},
-    {"id": 2, "name": "Plan 21-02 決策樹文字提煉引擎 (tree_distiller) 與雙重安全檢驗", "status": "done", "commit": "7e83001"},
-    {"id": 3, "name": "Plan 21-03 管理端決策樹 API 與 Web UI 審核介面", "status": "done", "commit": "5ea7e23"},
-    {"id": 4, "name": "外科技術詞庫擴充與否定詞有界量詞加固 (_negated_at)", "status": "done", "commit": "5c00a78"},
-    {"id": 5, "name": "LLM 思考超限分離 (LLMEmptyOutputError) 與 Prompt 警訊範本收斂", "status": "done", "commit": "1394b36"},
-    {"id": 6, "name": "Web UI 簽核/駁回錯誤提示結構化解析 (apiErrorText)", "status": "done", "commit": "d45ab44"}
+    {"id": 1, "name": "Plan 22-01: FTS5 BM25 排序與多詞交集評分", "status": "done", "commit": "8a7150b"},
+    {"id": 2, "name": "Plan 22-02: 提問檢索 Context 召回擴充與結構化 Prompt 優化", "status": "done", "commit": "f87d6b1"},
+    {"id": 3, "name": "Plan 22-03: 前端顯示優化、端到端實機驗收與全套回歸防護", "status": "done", "commit": "b613dd0"}
   ],
   "remaining_tasks": [
-    {"id": 7, "name": "使用者於 Web UI (http://127.0.0.1:8000/admin/) 點擊一鍵背景自動補齊 9 筆 Lipoma 草稿 (ID 41-49)", "status": "pending_human_action"}
+    {"id": 2, "name": "UAT 測試項目 2：FTS5 BM25 相關度排序與多詞交集加權檢驗", "status": "in_progress"},
+    {"id": 3, "name": "UAT 測試項目 3：對抗性特殊符號與 SQL 邊界輸入防護", "status": "not_started"}
   ],
   "blockers": [],
   "human_actions_pending": [
-    {"action": "至 Web 管理介面執行 Lipoma 9 筆草稿自動補齊並審核驗收", "context": "正式庫 9 筆 Lipoma 草稿 (ID 41-49) 已掛載為 pending，待使用者觸發背景補齊", "blocking": false}
+    {"action": "在 Web 管理介面執行 UAT 測試項目 2 與 3", "context": "Phase 22 驗收測試進行中（1/3 完成）", "blocking": false}
   ],
   "decisions": [
-    {"decision": "LLMEmptyOutputError 與 LocalLLMUnavailableError 解耦", "rationale": "單題因 reasoning_content 耗盡 token 僅屬單題生成失敗，不應誤判為伺服器離線而中止整個批次", "phase": "21"},
-    {"decision": "Prompt 就醫警訊收尾句指定固定標準句型", "rationale": "避免 LLM 自擬空泛警訊遭醫療安全審核淘汰，100% 穩定通過 has_doctor_warning 檢驗", "phase": "21"},
-    {"decision": "既有 6 筆臨床決策樹遷移預設為 approved", "rationale": "維持向後相容與 RAG 檢索即時生效，若重複核准則回傳明確防呆訊息", "phase": "21"}
+    {"decision": "FTS5 BM25 subquery JOIN 語法與 rowid 別名化", "rationale": "ORDER BY _fts.rank ASC 相關度排序，消除 extra_where 欄位歧義，FTS 語法例外降級 LIKE fallback", "phase": "22"},
+    {"decision": "MAX_FAQ 擴充至 8 筆且 Prompt 字數放寬為 250~400 字", "rationale": "兼具門診處置與生活照護完整 Context，結構化標籤排版提升可讀性", "phase": "22"}
   ],
-  "uncommitted_files": [],
-  "next_action": "開啟 Web 管理介面 http://127.0.0.1:8000/admin/，確認 9 筆待簽核問答並執行補齊",
-  "context_notes": "Phase 21 臨床決策推理樹擴展與審核加固已完全收尾，代碼全部通過全套 82 個測試檔，並已推送至 GitHub main。正式 clinic.db 目前有 40 筆 approved FAQ、9 筆 pending Lipoma 草稿、6 筆 approved 臨床決策樹。"
+  "uncommitted_files": [".planning/phases/22-rag-bm25/22-UAT.md"],
+  "next_action": "繼續執行 /gsd-verify-work 22 完成 UAT 測試項目 2 與 3，完成後結案 Phase 22",
+  "context_notes": "Phase 22 核心代碼已實作完成並推播至 GitHub，UAT 進行至第 2 題"
 }
