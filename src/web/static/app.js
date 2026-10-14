@@ -1072,6 +1072,7 @@ async function submitAsk() {
         askState.history.push(data);
         renderAskHistory();
     } catch (e) {
+        console.error("submitAsk 網路請求異常:", e);
         showToast("網路請求失敗", "error");
     } finally {
         askState.busy = false;

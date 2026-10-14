@@ -19,7 +19,7 @@ Environment=CLINICBRAIN_ENABLE_DOCS=true
 # 權限 600 的 EnvironmentFile 將由後續 AUTH-03 處理。
 # 本機開發可暫以 CLINICBRAIN_ALLOW_NO_AUTH=1 關閉認證，切勿用於對外服務。
 # 組態修改後需由使用者手動重啟服務（systemctl --user restart clinicbrain-api），本範本不代為啟用或重啟。
-ExecStart=/usr/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_api_server.py --host 127.0.0.1 --port 8000
+ExecStart=/home/hsu/.local/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_api_server.py --host 127.0.0.1 --port 8000
 Restart=on-failure
 RestartSec=5
 
