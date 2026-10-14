@@ -30,7 +30,7 @@
 | 20. LLM 空閒時間衛教答案自動生成器 | 3/3 | Complete | 2026-10-12 |
 | 21. 臨床決策推理樹提煉、審核與檢索擴展 | 3/3 | Complete | 2026-10-12 |
 | 22. RAG 提問檢索優化、BM25 排序與結構化衛教生成 | 3/3 | Complete | 2026-10-14 |
-| 23. 競品／合作機構網站擷取器 | 0/3 | Planned | - |
+| 23. 競品／合作機構網站擷取器 | 3/3 | Complete | 2026-10-14 |
 | 24. 上傳中心增強（名稱欄位與網址解析） | 0/3 | Planned | - |
 
 ## Phase Details
@@ -115,7 +115,7 @@
 ### Phase 23: 競品／合作機構網站擷取器（PageIndex 素材自動化）
 
 **Goal**: 建立可設定的網站擷取器，從指定診所網頁（範例：`https://www.nu-vendome.com/location-detail/Taichung/`）擷取結構化資訊（名稱、地址、服務項目、醫師、營業時間等），轉為 PageIndex／FAQ 草稿素材，減少人工逐頁抄錄的人力。
-**Status**: Planned (3 plans: 23-01, 23-02, 23-03)
+**Status**: Complete (85/85 專屬測試通過、安全網址政策、釘住 IP、節流與 robots、HTML 結構抽取、合規檢驗、唯一寫入路徑、批次編排與抓取前探測鎖、CLI 守門、正式庫零污染)
 **Depends on**: Phase 18 (文件上傳與草稿審核), Phase 21 (推理樹審核閘門)
 **Scope**:
   1. 擷取器只讀取公開頁面，遵守 `robots.txt`、請求節流與 User-Agent 標示；失敗降級，不影響既有流程。
