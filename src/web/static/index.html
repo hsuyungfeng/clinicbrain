@@ -234,12 +234,37 @@
                         </div>
                     </div>
 
+                    <div class="p-3 bg-gray-50 rounded-md border border-gray-200">
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">文件來源：</label>
+                        <div class="flex space-x-6">
+                            <label class="inline-flex items-center text-sm text-gray-700 cursor-pointer">
+                                <input type="radio" name="uploadSource" value="file" checked class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 font-medium">檔案上傳</span>
+                            </label>
+                            <label class="inline-flex items-center text-sm text-gray-700 cursor-pointer">
+                                <input type="radio" name="uploadSource" value="url" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 font-medium">網站解析（貼入網址）</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">名稱（作為主題與來源顯示名稱；檔案模式單檔預設為檔名，可清空以採用檔名；網址模式必填）</label>
+                        <input type="text" id="uploadName" maxlength="80" placeholder="例如：2026 最新皮秒雷射衛教須知" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <p id="uploadNameHint" class="text-xs text-gray-500 mt-1"></p>
+                    </div>
+
+                    <div id="urlSourceField" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">網站網址 (URL)</label>
+                        <input type="url" id="uploadUrl" placeholder="https://…（僅接受已授權之公開 https 網址）" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
                     <div id="treeTitleField" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-1">療程標題 / 手術名稱 (提煉決策樹必填)</label>
                         <input type="text" id="uploadTreeTitle" placeholder="例如：微創旋轉切除刀乳房腫瘤切除術" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
 
-                    <div>
+                    <div id="fileSourceArea">
                         <label class="block text-sm font-medium text-gray-700 mb-1">選擇或拖曳檔案／整個資料夾 (.docx, .xlsx, .pdf，單檔最大 15MB，一次最多 200 個)</label>
                         <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition bg-gray-50">
                             <span class="text-3xl block mb-2">📄</span>

@@ -714,6 +714,81 @@ function fileStem(name) {
     return (dot > 0 ? base.slice(0, dot) : base).toLowerCase();
 }
 
+// Plan 24-03 純輔助函式（純資料轉換，不在載入時存取 DOM）
+function uploadNameFieldState(queueLength, fileStem) {
+    if (queueLength === 1) {
+        return { readOnly: false, prefill: fileStem || null, hint: "" };
+    }
+    if (queueLength > 1) {
+        return { readOnly: true, prefill: null, hint: "多檔將自動以檔名命名" };
+    }
+    return { readOnly: false, prefill: null, hint: "" };
+}
+
+function uploadNameForSubmit(queueLength, nameValue) {
+    if (queueLength === 1) {
+        const trimmed = (nameValue || "").trim();
+        return trimmed ? trimmed : null;
+    }
+    return null;
+}
+
+function pickUniqueStemEntries(existingStems, incomingStems) {
+    const existingSet = new Set((existingStems || []).map(s => (s || "").toLowerCase()));
+    const seen = new Set();
+    const result = [];
+    for (const stem of (incomingStems || [])) {
+        const lower = (stem || "").toLowerCase();
+        if (existingSet.has(lower)) {
+            continue;
+        }
+        if (!seen.has(lower)) {
+            seen.add(lower);
+            result.push(stem);
+        }
+    }
+    return result;
+}
+
+function missingFieldsLabels(keys) {
+    const mapping = {
+        address: "地址",
+        phone: "電話",
+        business_hours: "營業時間",
+        doctors: "醫師",
+    };
+    const labels = [];
+    for (const k of (keys || [])) {
+        if (mapping[k]) {
+            labels.push(mapping[k]);
+        }
+    }
+    return labels;
+}
+
+function uploadDetailText(data, fallback) {
+    if (data && typeof data === "object" && typeof data.detail === "string") {
+        return data.detail;
+    }
+    return fallback;
+}
+
+function updateUploadNameOnQueueChange() {
+    const nameInput = document.getElementById("uploadName");
+    const nameHint = document.getElementById("uploadNameHint");
+    if (!nameInput || !nameHint) return;
+    const sourceMode = document.querySelector("input[name=uploadSource]:checked")?.value || "file";
+    if (sourceMode === "url") return;
+    const valid = uploadState.queue.filter(q => q.status !== "skip");
+    const firstStem = valid.length > 0 ? fileStem(valid[0].path) : null;
+    const st = uploadNameFieldState(valid.length, firstStem);
+    nameInput.readOnly = st.readOnly;
+    if (st.prefill && !nameInput.value.trim()) {
+        nameInput.value = st.prefill;
+    }
+    nameHint.textContent = st.hint;
+}
+
 function addUploadFiles(entries) {
     // entries: [{file, path}]
     let skippedType = 0;
@@ -736,6 +811,7 @@ function addUploadFiles(entries) {
     if (skippedType > 0) showToast(`已略過 ${skippedType} 個非 .docx／.xlsx／.pdf 的檔案`, "info");
     if (uploadState.queue.length >= UPLOAD_MAX_FILES) showToast(`清單上限 ${UPLOAD_MAX_FILES} 個檔案，其餘未加入`, "info");
     renderUploadQueue();
+    updateUploadNameOnQueueChange();
 }
 
 function renderUploadQueue() {
@@ -792,6 +868,62 @@ function initUploadSection() {
     const fileInput = document.getElementById("fileInput");
     const folderInput = document.getElementById("folderInput");
     const form = document.getElementById("uploadForm");
+    const sourceRadios = document.querySelectorAll("input[name=uploadSource]");
+    const fileArea = document.getElementById("fileSourceArea");
+    const urlArea = document.getElementById("urlSourceField");
+    const uploadNameInput = document.getElementById("uploadName");
+    const uploadUrlInput = document.getElementById("uploadUrl");
+    const uploadNameHint = document.getElementById("uploadNameHint");
+
+    function updateSourceMode() {
+        const mode = document.querySelector("input[name=uploadSource]:checked")?.value || "file";
+        if (mode === "url") {
+            if (fileArea) fileArea.classList.add("hidden");
+            if (urlArea) urlArea.classList.remove("hidden");
+            if (uploadNameInput) {
+                uploadNameInput.required = true;
+                uploadNameInput.readOnly = false;
+            }
+            if (uploadNameHint) uploadNameHint.textContent = "";
+        } else {
+            if (urlArea) urlArea.classList.add("hidden");
+            if (fileArea) fileArea.classList.remove("hidden");
+            if (uploadNameInput) {
+                uploadNameInput.required = false;
+            }
+            updateUploadNameOnQueueChange();
+        }
+    }
+
+    sourceRadios.forEach(radio => radio.addEventListener("change", updateSourceMode));
+
+    const targetRadios = document.querySelectorAll("input[name=uploadTarget]");
+    const urlRadio = document.querySelector("input[name=uploadSource][value=url]");
+    const urlRadioLabel = urlRadio?.parentElement?.querySelector("span");
+
+    function updateTargetMode() {
+        const target = document.querySelector("input[name=uploadTarget]:checked")?.value;
+        const treeField = document.getElementById("treeTitleField");
+        if (target === "tree") {
+            if (treeField) treeField.classList.remove("hidden");
+            if (urlRadio) urlRadio.disabled = true;
+            if (urlRadioLabel) urlRadioLabel.textContent = "網站解析（僅支援 FAQ 草稿）";
+            const currentSource = document.querySelector("input[name=uploadSource]:checked")?.value;
+            if (currentSource === "url") {
+                const fileRadio = document.querySelector("input[name=uploadSource][value=file]");
+                if (fileRadio) {
+                    fileRadio.checked = true;
+                    updateSourceMode();
+                }
+            }
+        } else {
+            if (treeField) treeField.classList.add("hidden");
+            if (urlRadio) urlRadio.disabled = false;
+            if (urlRadioLabel) urlRadioLabel.textContent = "網站解析（貼入網址）";
+        }
+    }
+
+    targetRadios.forEach(radio => radio.addEventListener("change", updateTargetMode));
 
     dropZone.addEventListener("click", () => fileInput.click());
     document.getElementById("btnPickFolder").addEventListener("click", () => folderInput.click());
@@ -800,6 +932,11 @@ function initUploadSection() {
         uploadState.queue = [];
         document.getElementById("uploadResultArea").classList.add("hidden");
         renderUploadQueue();
+        if (uploadNameInput && uploadNameHint) {
+            const st = uploadNameFieldState(0, null);
+            uploadNameInput.readOnly = st.readOnly;
+            uploadNameHint.textContent = st.hint;
+        }
     });
 
     fileInput.addEventListener("change", () => {
@@ -841,6 +978,87 @@ function initUploadSection() {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         if (uploadState.busy) return;
+
+        const sourceMode = document.querySelector("input[name=uploadSource]:checked")?.value || "file";
+        if (sourceMode === "url") {
+            const urlVal = uploadUrlInput ? uploadUrlInput.value.trim() : "";
+            const nameVal = uploadNameInput ? uploadNameInput.value.trim() : "";
+            if (!urlVal) {
+                showToast("請輸入要解析的網站網址", "error");
+                return;
+            }
+            if (!nameVal) {
+                showToast("網站解析模式必須填寫名稱", "error");
+                return;
+            }
+            const clinicId = document.getElementById("uploadClinicId").value.trim();
+            const preview = document.getElementById("chkPreviewOnly").checked;
+            const btn = document.getElementById("btnSubmitUpload");
+            const resultArea = document.getElementById("uploadResultArea");
+            const resultContent = document.getElementById("uploadResultContent");
+
+            uploadState.busy = true;
+            btn.disabled = true;
+            btn.textContent = "網址解析與萃取中…";
+            resultArea.classList.remove("hidden");
+            resultContent.textContent = "正在連線網站並解析內容，請稍候…";
+
+            const formData = new FormData();
+            formData.append("url", urlVal);
+            formData.append("clinic_id", clinicId);
+            formData.append("name", nameVal);
+            formData.append("target", "faq");
+            formData.append("preview_only", preview ? "true" : "false");
+
+            try {
+                const resp = await fetch("/api/v1/admin/upload-url", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: formData,
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (resp.ok) {
+                    const lines = [];
+                    lines.push(`✅ 網站解析成功：${nameVal}`);
+                    if (data.source_url) {
+                        lines.push(`來源網址：${data.source_url}`);
+                    }
+                    if (Array.isArray(data.missing_fields) && data.missing_fields.length > 0) {
+                        const labels = missingFieldsLabels(data.missing_fields);
+                        if (labels.length > 0) {
+                            lines.push(`⚠️ 解析不完整：缺少 ${labels.join("、")}`);
+                        }
+                    }
+                    if (preview) {
+                        const count = Array.isArray(data.faqs_preview) ? data.faqs_preview.length : 0;
+                        lines.push(`\n預覽生成 ${count} 筆 FAQ 草稿` + (data.rejected_paragraphs ? `，剔除 ${data.rejected_paragraphs} 段` : ""));
+                        lines.push("（僅預覽模式，未寫入資料庫）");
+                    } else {
+                        lines.push(`\n已成功建立 ${data.total_faqs || 0} 筆 FAQ 草稿（新增 ${data.inserted || 0}、更新 ${data.updated || 0}）`);
+                        if (data.rejected_paragraphs) {
+                            lines.push(`剔除不合規段落 ${data.rejected_paragraphs} 段`);
+                        }
+                        lines.push("狀態：待醫師審核（pending）；請至「待審衛教草稿簽核」檢視");
+                        loadDashboardSummary();
+                    }
+                    resultContent.textContent = lines.join("\n");
+                    showToast(preview ? "網址預覽解析完成" : "網址草稿上傳成功，待審核", "success");
+                } else {
+                    const errDetail = uploadDetailText(data, "網站解析失敗，請稍後再試");
+                    resultContent.textContent = `❌ 解析失敗：${errDetail} (HTTP ${resp.status})`;
+                    showToast(`網站解析失敗：${errDetail}`, "error");
+                }
+            } catch (err) {
+                resultContent.textContent = "❌ 連線失敗，無法連接伺服器";
+                showToast("連線失敗，請檢查網路狀態", "error");
+            } finally {
+                uploadState.busy = false;
+                btn.disabled = false;
+                btn.textContent = "開始上傳與解析";
+            }
+            return;
+        }
+
         const todo = uploadState.queue.filter(q => q.status === "wait" || q.status === "err");
         if (todo.length === 0) {
             showToast("清單中沒有可上傳的檔案，請先選擇或拖曳檔案／資料夾", "error");
@@ -866,6 +1084,10 @@ function initUploadSection() {
             formData.append("file", item.file);
             formData.append("clinic_id", clinicId);
             formData.append("preview_only", preview ? "true" : "false");
+            const nameToSubmit = uploadNameForSubmit(todo.length, uploadNameInput ? uploadNameInput.value : "");
+            if (nameToSubmit) {
+                formData.append("name", nameToSubmit);
+            }
             try {
                 const resp = await fetch("/api/v1/admin/upload", { method: "POST", headers: getAuthHeaders(), body: formData });
                 const data = await resp.json().catch(() => ({}));
