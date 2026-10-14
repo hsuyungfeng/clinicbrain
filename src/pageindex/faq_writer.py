@@ -38,6 +38,7 @@ def upsert_faqs(
     conn: sqlite3.Connection,
     faqs: Iterable[dict[str, Any]],
     source_type: str,
+    commit: bool = True,
 ) -> tuple[int, int, int]:
     """增量寫入或更新 faq_cache 資料表記錄。
 
@@ -262,5 +263,6 @@ def upsert_faqs(
                 )
             updated += 1
 
-    conn.commit()
+    if commit:
+        conn.commit()
     return inserted, updated, unchanged
