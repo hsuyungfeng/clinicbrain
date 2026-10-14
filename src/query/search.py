@@ -69,17 +69,21 @@ def search_text(
     cursor = conn.cursor()
 
     if _use_fts(query):
-        where_clause = f"rowid IN (SELECT rowid FROM {fts_table} WHERE {fts_table} MATCH ?)"
+        where_clause = f"WHERE {extra_where}" if extra_where else ""
         params = [query]
         if extra_where:
-            where_clause += f" AND {extra_where}"
             params.extend(extra_params)
         params.append(limit)
+        col_list = ", ".join(f"{table}.{col}" for col in select_columns)
         cursor.execute(
             f"""
-            SELECT {', '.join(select_columns)}
+            SELECT {col_list}
             FROM {table}
-            WHERE {where_clause}
+            JOIN (
+                SELECT rowid, rank FROM {fts_table} WHERE {fts_table} MATCH ?
+            ) AS _fts ON {table}.rowid = _fts.rowid
+            {where_clause}
+            ORDER BY _fts.rank ASC
             LIMIT ?
             """,
             params,

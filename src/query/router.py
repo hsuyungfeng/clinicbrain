@@ -250,17 +250,66 @@ def get_clinic_custom_notes(conn: sqlite3.Connection, clinic_id: str) -> dict[st
 def _search_terms_merged(
     search_fn, conn: sqlite3.Connection, terms: list[str], limit: int, **kwargs
 ) -> list:
-    """對多個候選詞彙分別呼叫 search_fn，合併結果並依 row_id 去重（保留
-    第一次出現的順序——關鍵字命中詞優先於 CJK fallback 片段，因為
-    extract_search_terms() 已經照這個優先順序排列 terms）。"""
-    seen_ids = set()
-    merged = []
-    for term in terms:
-        for hit in search_fn(conn, term, limit=limit, **kwargs):
-            if hit.row_id not in seen_ids:
-                seen_ids.add(hit.row_id)
-                merged.append(hit)
-    return merged[:limit]
+    """對多個候選詞彙分別呼叫 search_fn，收集各詞候選（上限 cand_limit = max(limit, 20)）。
+    採用多詞命中加權排序（Multi-Term Intersection Boost）：
+    1. 同時命中越多搜尋詞的結果優先權最高。
+    2. 次之按各檢索器之原始相關度（依詞序及檢索排名）排序。
+    3. 最後截斷至請求之 limit 筆數回傳。
+    """
+    if not terms or limit <= 0:
+        return []
+
+    unique_terms = []
+    seen_terms = set()
+    for t in terms:
+        t_clean = t.strip()
+        if t_clean and t_clean not in seen_terms:
+            seen_terms.add(t_clean)
+            unique_terms.append(t_clean)
+
+    if not unique_terms:
+        return []
+
+    cand_limit = max(limit, 20)
+    seen_hits = {}       # row_id -> hit
+    term_ranks = {}      # row_id -> {term: (term_idx, rank_idx)}
+    first_seen_seq = {}  # row_id -> seq
+    seq = 0
+
+    for term_idx, term in enumerate(unique_terms):
+        term_hits = search_fn(conn, term, limit=cand_limit, **kwargs)
+        for rank_idx, hit in enumerate(term_hits):
+            if hit.row_id not in seen_hits:
+                seen_hits[hit.row_id] = hit
+                first_seen_seq[hit.row_id] = seq
+                seq += 1
+            if hit.row_id not in term_ranks:
+                term_ranks[hit.row_id] = {}
+            if term not in term_ranks[hit.row_id]:
+                term_ranks[hit.row_id][term] = (term_idx, rank_idx)
+
+    def _get_matched_terms(hit) -> set[str]:
+        matched = set()
+        if hit.row_id in term_ranks:
+            matched.update(term_ranks[hit.row_id].keys())
+        for t in unique_terms:
+            if t in matched:
+                continue
+            for val in hit.fields.values():
+                if isinstance(val, str) and t in val:
+                    matched.add(t)
+                    break
+        return matched
+
+    sorted_hits = sorted(
+        seen_hits.values(),
+        key=lambda h: (
+            -len(_get_matched_terms(h)),
+            min(term_ranks[h.row_id].values()) if h.row_id in term_ranks else (999, 999),
+            first_seen_seq[h.row_id],
+        ),
+    )
+    return sorted_hits[:limit]
 
 
 @dataclass
