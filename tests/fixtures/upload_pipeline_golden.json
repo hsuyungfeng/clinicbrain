@@ -1,0 +1,45 @@
+{
+  "status": "ok",
+  "preview_only": true,
+  "filename": "golden.docx",
+  "clinic_id": "3503190424",
+  "extracted_paragraphs_count": 5,
+  "rejected_paragraphs": 0,
+  "faqs_preview": [
+    {
+      "question": "什麼是微創手術？",
+      "answer": "微創手術是以小切口進行的治療方式，恢復期通常較短，術後請依醫師指示回診。",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "topic_key": "doc-golden"
+    },
+    {
+      "question": "【診所文件】golden - 指示 2",
+      "answer": "術後照護非常重要，請依照醫師指示清潔傷口並保持乾燥，避免感染並定期回診追蹤復原進度。",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "topic_key": "doc-golden"
+    },
+    {
+      "question": "【診所文件】golden - 指示 3",
+      "answer": "本微創手術療程單次費用為 NT[請致電診所確認]整，費用包含術後傷口護理材料與首次回診檢查。",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "topic_key": "doc-golden"
+    },
+    {
+      "question": "【診所文件】golden - 指示 4",
+      "answer": "這是簡體字的說明文字，請依照醫囑執行。",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "topic_key": "doc-golden"
+    },
+    {
+      "question": "【診所文件】golden - 指示 5",
+      "answer": "短",
+      "category": "special",
+      "clinic_id": "3503190424",
+      "topic_key": "doc-golden"
+    }
+  ]
+}
