@@ -131,3 +131,47 @@ def _disable_cache_stats_by_default(monkeypatch):
     """預設關閉統計寫入，避免測試意外寫入任何資料庫；驗證統計行為的測試須自行改回 True 並指向複本資料庫。"""
     from src.api.config import config
     monkeypatch.setattr(config, "cache_stats_enabled", False)
+
+
+@pytest.fixture(autouse=True)
+def _block_outbound_network_for_scraper(monkeypatch):
+    """防止測試發出任何真實對外網路請求，僅允許本機 loopback (127.0.0.0/8, ::1, localhost)。"""
+    import socket
+    import ipaddress
+
+    orig_create_connection = socket.create_connection
+    orig_connect = socket.socket.connect
+    orig_getaddrinfo = socket.getaddrinfo
+
+    def is_loopback(host_or_ip):
+        if not host_or_ip:
+            return True
+        host_str = str(host_or_ip).strip().lower()
+        if host_str in ("localhost", "127.0.0.1", "::1"):
+            return True
+        try:
+            ip = ipaddress.ip_address(host_str)
+            return ip.is_loopback
+        except ValueError:
+            return False
+
+    def guarded_create_connection(address, *args, **kwargs):
+        host = address[0]
+        if not is_loopback(host):
+            raise RuntimeError("測試禁止真實網路連線")
+        return orig_create_connection(address, *args, **kwargs)
+
+    def guarded_connect(self, address):
+        host = address[0] if isinstance(address, (tuple, list)) else address
+        if not is_loopback(host):
+            raise RuntimeError("測試禁止真實網路連線")
+        return orig_connect(self, address)
+
+    def guarded_getaddrinfo(host, port, *args, **kwargs):
+        if not is_loopback(host):
+            raise RuntimeError("測試禁止真實網路連線")
+        return orig_getaddrinfo(host, port, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(socket, "getaddrinfo", guarded_getaddrinfo)
