@@ -2,7 +2,7 @@
   "allowed_domains": [
     {
       "host": "www.nu-vendome.com",
-      "path_prefixes": ["/location-detail/"]
+      "path_prefixes": ["/location-detail/", "/service/"]
     }
   ]
 }
