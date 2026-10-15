@@ -45,8 +45,8 @@ SAMPLE_A_PATH = Path("tests/fixtures/scraper/clinic_sample_a.html")
 
 
 @pytest.fixture
-def isolated_db_path(tmp_path: Path) -> Path:
-    """提供乾淨且已套用 review_status 與 metadata 欄位的 SQLite 測試庫。"""
+def isolated_db_path(tmp_path: Path):
+    """提供乾淨且已套用 review_status 與 metadata 欄位的 SQLite 測試庫（測試後刪除副本）。"""
     src_db = Path("clinic.db")
     isolated = tmp_path / "clinic_isolated.db"
 
@@ -65,7 +65,9 @@ def isolated_db_path(tmp_path: Path) -> Path:
     conn_iso.commit()
     conn_iso.close()
 
-    return isolated
+    yield isolated
+    # 測試結束即刪除副本（每份約 45 MB；不清理會耗盡 /tmp 配額）
+    isolated.unlink(missing_ok=True)
 
 
 @pytest.fixture

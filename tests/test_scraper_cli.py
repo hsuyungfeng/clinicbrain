@@ -94,16 +94,19 @@ def test_cli_prod_db_guard_hardlink(tmp_path, isolated_db_path, monkeypatch, cap
     monkeypatch.setattr(config, "db_path", isolated_db_path)
     hardlink_db = tmp_path / "hardlink_clinic.db"
     os.link(isolated_db_path, hardlink_db)
-
-    code = cli_main([
-        "--clinic-id", "3503190424",
-        "--db-path", str(hardlink_db),
-        "--write",
-        "--fixture-dir", str(FIXTURES_DIR),
-    ])
-    assert code == 2
-    captured = capsys.readouterr()
-    assert "--allow-prod-db" in captured.err
+    try:
+        code = cli_main([
+            "--clinic-id", "3503190424",
+            "--db-path", str(hardlink_db),
+            "--write",
+            "--fixture-dir", str(FIXTURES_DIR),
+        ])
+        assert code == 2
+        captured = capsys.readouterr()
+        assert "--allow-prod-db" in captured.err
+    finally:
+        # 硬連結會讓 isolated_db_path 的資料區塊在 fixture 刪檔後仍被佔用，必須一併移除
+        hardlink_db.unlink(missing_ok=True)
 
 
 def test_cli_prod_db_guard_missing_confirm_backup(isolated_db_path, monkeypatch, capsys):
@@ -151,15 +154,19 @@ def test_cli_dry_run_special_characters_in_db_path(tmp_path, isolated_db_path, c
     target_db = special_dir / "target.db"
     shutil.copy2(isolated_db_path, target_db)
 
-    code = cli_main([
-        "--clinic-id", "3503190424",
-        "--db-path", str(target_db),
-        "--dry-run",
-        "--fixture-dir", str(FIXTURES_DIR),
-    ])
-    assert code == 0
-    captured = capsys.readouterr()
-    assert '"status": "ok"' in captured.out
+    try:
+        code = cli_main([
+            "--clinic-id", "3503190424",
+            "--db-path", str(target_db),
+            "--dry-run",
+            "--fixture-dir", str(FIXTURES_DIR),
+        ])
+        assert code == 0
+        captured = capsys.readouterr()
+        assert '"status": "ok"' in captured.out
+    finally:
+        # 複製的資料庫約 45 MB，測試結束即整個目錄移除
+        shutil.rmtree(special_dir, ignore_errors=True)
 
 
 def test_cli_fixture_dir_offline_mode(isolated_db_path, capsys):

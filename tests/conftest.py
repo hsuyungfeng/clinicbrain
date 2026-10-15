@@ -108,7 +108,9 @@ def isolated_db_path(tmp_path: Path) -> Path:
     _reset_cache_stats(target_path)
     _ensure_soap_records(target_path)
     _ensure_faq_metadata(target_path)
-    return target_path
+    yield target_path
+    # 測試結束即刪除副本（每份約 45 MB；不清理會耗盡 /tmp 配額）
+    target_path.unlink(missing_ok=True)
 
 
 @pytest.fixture
