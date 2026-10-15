@@ -39,3 +39,15 @@ def test_later_headings_become_sections():
 def test_returns_none_without_heading_or_text():
     assert extract_service_detail("<html><body><p>沒有標題</p></body></html>") is None
     assert extract_service_detail('<div class="contentBuilder"><h2 class="h2Title">只有標題</h2></div>') is None
+
+
+def test_name_prefers_title_over_section_heading():
+    html = """<html><head><title>雙眼皮手術-凡登診所</title></head><body>
+    <div class="contentBuilder"><div class="mt-3 mb-3">
+    <h2 class="h2Title"><span>術前注意事項</span></h2>
+    <p>術前請避免服用抗凝血藥物，並依醫師指示停藥。</p>
+    </div></div></body></html>"""
+    d = extract_service_detail(html)
+    assert d is not None
+    assert d.name == "雙眼皮手術"
+    assert d.sections == []

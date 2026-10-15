@@ -28,6 +28,8 @@ class _ServiceDetailParser(HTMLParser):
         self._div_stack: list[bool] = []  # 每層 div 是否為 contentBuilder
         self._h2: list[str] | None = None
         self._p: list[str] | None = None
+        self._title: list[str] | None = None
+        self.title = ""
         self.headings: list[str] = []
         self.paragraphs: list[str] = []
 
@@ -39,6 +41,8 @@ class _ServiceDetailParser(HTMLParser):
             self._div_stack.append(is_content)
             if is_content:
                 self._in_content += 1
+        elif tag == "title" and not self.title:
+            self._title = []
         elif tag == "h2" and self._in_content and "h2title" in classes:
             self._h2 = []
         elif tag == "p" and self._in_content:
@@ -48,6 +52,9 @@ class _ServiceDetailParser(HTMLParser):
         if tag == "div" and self._div_stack:
             if self._div_stack.pop():
                 self._in_content -= 1
+        elif tag == "title" and self._title is not None:
+            self.title = _clean("".join(self._title))
+            self._title = None
         elif tag == "h2" and self._h2 is not None:
             text = _clean("".join(self._h2))
             if text:
@@ -60,6 +67,8 @@ class _ServiceDetailParser(HTMLParser):
             self._p = None
 
     def handle_data(self, data):
+        if self._title is not None:
+            self._title.append(data)
         if self._h2 is not None:
             self._h2.append(data)
         if self._p is not None:
@@ -76,6 +85,25 @@ def extract_service_detail(html: str) -> ServiceDetail | None:
     parser.feed(html)
     if not parser.headings or not parser.paragraphs:
         return None
-    name = parser.headings[0]
+    name = _name_from_title(parser.title) or parser.headings[0]
     description = "\n".join(parser.paragraphs)
     return ServiceDetail(name=name, description=description, sections=parser.headings[1:])
+
+
+_MAX_NAME_CHARS = 80
+_TITLE_SEPARATOR = re.compile(r"\s*[｜|]\s*|\s+-\s+|\s*-\s*凡登")
+
+
+def _name_from_title(title: str) -> str:
+    """從 <title> 取服務名稱：取第一個分隔符（｜、|、 - 、-凡登）之前的部分，去除問號。
+
+    SEO 標題如「削骨手術首選｜顴骨…｜凡登整形診所」取「削骨手術首選」。
+    段落標題不會出現在 <title>。
+    """
+    head = _TITLE_SEPARATOR.split(title, maxsplit=1)[0]
+    head = head.replace("？", "").replace("?", "").replace("、", "·").replace("，", "·")
+    head = re.sub(r"\s+", " ", head).strip()
+    if len(head) > _MAX_NAME_CHARS:
+        cut = head.rfind("·", 0, _MAX_NAME_CHARS)
+        head = head[:cut] if cut > 0 else head[:_MAX_NAME_CHARS]
+    return head
