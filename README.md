@@ -24,6 +24,16 @@
    - 每段落保留醫師權威指令（`physician_notes`），未經醫師審定前 LLM 不得擅自生成。
    - 採增量 UPSERT 機制與實質修訂版號（`content_version`）。
 
+5. **多診所管理與機構代碼選擇（Web App）**
+   - 上傳中心、臨床 SOAP、向 LLM 提問三處的機構代碼為下拉選單，可直接「＋ 新增診所」建立 `clinic_info`（僅新增，不覆寫既有診所）。
+   - 待審衛教草稿與臨床推理樹簽核頁籤皆可依診所篩選。
+   - 目前已建檔：緻妍外科診所（3503190424）、凡登整形外科診所（3503264627）。
+
+6. **網站素材擷取（網址解析）**
+   - 白名單：`data/scraper/sources.json` 允許 `www.nu-vendome.com` 的 `/location-detail/`、`/service/`、`/service-detail/`。
+   - 服務詳細頁（`/service-detail/`）抽取服務名稱（取頁面 `<title>`）與說明段落，產生待審草稿；擷取結果一律為 `pending`，醫師核准後才對外可見。
+   - 門診表解析器（`src/scraper/timetable.py`）可將週次 × 星期的開診狀態解析為結構化資料，不含醫師姓名；寫入資料庫的規格尚未確認。
+
 2. **台灣健保局開放資料整合 (NHI Open Data)**
    - 完整收錄 7,573 筆藥品（含健保支付價、給付規定、成分規格）與 2,669 筆醫療服務給付項目點數。
    - **OTC 常用學名在地化對照**：收錄 68 種常見成分（如將 ACETAMINOPHEN 本地化顯示為俗稱普拿疼的乙醯胺酚），大幅提升醫病衛教溝通理解度。
@@ -110,7 +120,7 @@ python3 src/pageindex/seed_trees.py
 本專案堅持測試資料庫 **100% 隔離原則**（測試過程使用記憶體/暫存複本，保證正式 `clinic.db` SHA-256 零污染）：
 ```bash
 pytest -k "not test_check_llm_health_live"
-# 155 passed
+# 307 passed（2026-10-15，含網址解析、診所管理、審核頁籤篩選與門診表解析相關測試）
 ```
 
 ### 4. 啟動 API 伺服器
@@ -148,6 +158,28 @@ systemctl --user enable clinicbrain-api
 ---
 
 ## 📡 API 介面範例
+
+### 0. 診所清單與新增（管理端，需 `X-API-Key`）
+
+```bash
+# 列出已建檔診所
+curl http://127.0.0.1:8000/api/v1/admin/clinics -H "X-API-Key: your-admin-token"
+
+# 新增診所（代碼重複回 409；格式錯誤回 422；官網須為 https）
+curl -X POST http://127.0.0.1:8000/api/v1/admin/clinics \
+  -H "Content-Type: application/json" -H "X-API-Key: your-admin-token" \
+  -d '{"clinic_id": "3503264627", "name": "凡登整形外科診所", "clinic_type": "醫美診所"}'
+```
+
+### 0-1. 網址解析草稿（管理端，需 `X-API-Key`）
+
+```bash
+# 預覽（不寫入）；服務詳細頁請使用 /service-detail/ 網址
+curl -X POST http://127.0.0.1:8000/api/v1/admin/upload-url \
+  -H "X-API-Key: your-admin-token" \
+  -F "url=https://www.nu-vendome.com/service-detail/HydraFacial-Treatment/" \
+  -F "clinic_id=3503264627" -F "name=海菲秀(水飛梭)" -F "target=faq" -F "preview_only=true"
+```
 
 ### 1. 統一自然語言查詢 (`POST /api/v1/query`)
 

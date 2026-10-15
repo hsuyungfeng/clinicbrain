@@ -27,7 +27,7 @@
 - `cache_stats`：快取優先查詢之匿名聚合命中統計（見 2.8）
 - `sync_logs`：雙向資料同步契約審計紀錄（見 2.5）
 - `soap_records` + `soap_records_fts`：臨床語音與 SOAP 紀錄及全文檢索（見 2.13）
-- `clinic_info` / `clinic_hours` / `clinic_custom_notes`：診所專屬層
+- `clinic_info` / `clinic_hours` / `clinic_custom_notes`：診所專屬層（目前 2 家：緻妍 `3503190424`、凡登整形外科診所 `3503264627`，凡登基本資料來源為 `https://www.nu-vendome.com/location-detail/Taichung/`；`clinic_hours` 目前無凡登資料，門診表寫入規格待確認）
 
 重建指令：
 ```bash
@@ -500,6 +500,21 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 
 ---
 
+### 2.23 多診所管理、網站素材擷取與審核篩選（2026-10-15 新增）
+- **診所清單與新增**：`GET /api/v1/admin/clinics`、`POST /api/v1/admin/clinics`（`src/api/routes/admin.py`，`ClinicCreateRequest` 以 `extra=forbid`、代碼須為 10 碼數字、官網須為 https）。新增僅 `INSERT`，代碼重複回 409，**不覆寫既有診所列**。
+- **種子來源**：凡登的 `clinic_info` 資料由 `src/pageindex/seed_clinic_info.py:FANDEN_CLINIC_INFO` 與 `seed_clinic_row()`（僅新增）提供；緻妍仍以 `ZHIYAN_CLINIC_INFO` 為唯一來源。
+- **Web 前端**：上傳中心、臨床 SOAP、向 LLM 提問的機構代碼為 `<select>`（同 id 沿用原讀值程式），切換時同步三處；「＋ 新增診所…」開啟共用對話框。待審衛教草稿與推理樹頁籤另有 `reviewFilterClinic`、`treesFilterClinic`（「全部診所」或單一診所），請求帶 `clinic_id`。所有動態文字以 `textContent` 寫入。
+- **白名單**：`data/scraper/sources.json` 的 `www.nu-vendome.com` 路徑前綴為 `/location-detail/`、`/service/`、`/service-detail/`（後兩者經使用者於 2026-10-15 明確核准）。
+- **服務詳細頁擷取**：`src/scraper/service_detail.py:extract_service_detail()` 讀取 `div.contentBuilder` 內的 `<p>` 說明段落；**服務名稱取 `<title>`**（第一個分隔符 `｜`、`|`、` - `、`-凡登` 之前的部分，「？」去除，「、」「，」換為 `·`，超過 80 字於分隔點截斷），原因是段落標題（如「術前注意事項」）不可當作服務名稱。詳細頁說明為 SSR 直接輸出，**不需要無頭瀏覽器**。
+- **網址解析分支**：`src/pageindex/web_source_adapter.py:fetch_clinic_page()` 遇 `/service-detail/` 路徑改用上述解析器，機構名稱由端點自 `clinic_info` 傳入（詳細頁不含機構資訊）。`upload-url` 在 `preview_only=false` 且沒有任何可寫入草稿時回 **422**（先前曾回 OK 卻寫入 0 筆，屬隱藏失敗）。
+- **身分洩漏剔除（已知行為）**：說明文字若含機構名稱、地址或電話，會整段被身分檢查剔除。目前唯一受影響者為縮鼻翼（`alar-reduction`），依使用者決定維持剔除，未修改原文。
+- **服務草稿寫入狀態**：凡登服務草稿共 27 筆（來源 `web_upload`、`metadata.source_url` 含 `service-detail`），原為 `pending`，**2026-10-15 10:27–10:29 經使用者確認核准**（批次核准與單筆核准，皆由管理端發出），目前為 `approved`、對外可見。寫入前後備份為 `clinic.db.bak-20261015b`、`clinic.db.bak-20261015c`、`clinic.db.bak-20261015d`。
+- **門診表解析器**：`src/scraper/timetable.py:parse_timetables()` 將「週次 × 星期」表格解析為 `(月, 週, 星期, 開診)`，**不含醫師姓名**（醫師資訊不得進入文字管線）。使用者已指示門診表**不寫入 `clinic_hours`**，改為 pageindex 用途；寫入規格仍待確認，目前未寫入任何資料庫。
+- **已知限制**：① 服務名稱仍偏長（如「縮鼻翼是什麼鼻翼過寬…」），僅部分已簡化；② 17 頁無「標題＋說明」結構而略過，3 頁抓取失敗；③ 網站 SEO 標題的品質直接影響草稿題目。
+- **測試**：`tests/test_service_detail.py`、`tests/test_timetable.py`、`tests/test_clinic_selector.py`（含靜態檢查）、`tests/test_url_deps_resolver.py`、`tests/test_upload_url_endpoint.py`、`tests/test_scraper_policy.py`。以上範圍 2026-10-15 為 307 passed。
+
+---
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：
@@ -582,6 +597,10 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `tests/test_regen_observability.py`：DEBT-03 重生成可觀測性測試（`mark-regen --seed`、`list` 重生欄、settle 回報列 id）
 * `tests/test_markdown_convert.py`：markitdown 轉換前處理器測試（選用依賴，未安裝時略過）
 * `tests/test_ocr_draft.py`：手動 OCR 草稿工具測試（含「不得 import 資料庫模組」AST 把關）
+* `src/scraper/service_detail.py`：服務詳細頁說明擷取與標題取名規則（純函式，不寫入資料庫）
+* `src/scraper/timetable.py`：門診表（週次 × 星期）HTML 表格解析（純函式，僅輸出開診狀態，不含醫師）
+* `data/scraper/sources.json`：網址擷取白名單（`www.nu-vendome.com` 的 `/location-detail/`、`/service/`、`/service-detail/`）
+* `tests/test_service_detail.py`、`tests/test_timetable.py`、`tests/test_clinic_selector.py`、`tests/test_url_deps_resolver.py`：上述模組與診所管理相關測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
