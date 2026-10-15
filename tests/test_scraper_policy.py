@@ -19,7 +19,7 @@ from src.scraper.policy import (
 
 
 def test_sources_json_valid_and_matches_user_confirmation():
-    """Test 9: sources.json 內容為有效 JSON，且僅含使用者確認之 www.nu-vendome.com 條目（2026-10-15 確認擴充至 /service/）。"""
+    """Test 9: sources.json 內容為有效 JSON，且僅含使用者確認之 www.nu-vendome.com 條目（2026-10-15 確認擴充至 /service/ 與 /service-detail/）。"""
     sources_path = Path(__file__).resolve().parent.parent / "data" / "scraper" / "sources.json"
     assert sources_path.is_file()
     data = json.loads(sources_path.read_text(encoding="utf-8"))
@@ -27,7 +27,7 @@ def test_sources_json_valid_and_matches_user_confirmation():
     assert len(data["allowed_domains"]) == 1
     entry = data["allowed_domains"][0]
     assert entry["host"] == "www.nu-vendome.com"
-    assert entry["path_prefixes"] == ["/location-detail/", "/service/"]
+    assert entry["path_prefixes"] == ["/location-detail/", "/service/", "/service-detail/"]
 
 
 def test_load_allowlist(tmp_path):
