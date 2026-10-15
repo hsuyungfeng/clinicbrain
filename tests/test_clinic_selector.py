@@ -82,3 +82,11 @@ def test_static_clinic_section_has_no_innerhtml():
     assert "innerHTML" not in section
     assert "insertAdjacentHTML" not in section
     assert "document.write" not in section
+
+
+def test_review_and_trees_tabs_have_clinic_filter():
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    assert re.search(r'<select[^>]*id="reviewFilterClinic"', html)
+    assert re.search(r'<select[^>]*id="treesFilterClinic"', html)
+    js = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    assert "&clinic_id=" in js and "reviewFilterClinic" in js and "treesFilterClinic" in js

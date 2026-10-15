@@ -227,7 +227,10 @@ async function loadReviewFaqs() {
     const category = document.getElementById("reviewFilterCategory").value;
     const source = document.getElementById("reviewFilterSource").value;
 
+    const clinic = document.getElementById("reviewFilterClinic").value;
+
     let url = "/api/v1/admin/review/faqs?status=pending&limit=200";
+    if (clinic) url += `&clinic_id=${encodeURIComponent(clinic)}`;
     if (category) url += `&category=${encodeURIComponent(category)}`;
     if (source) url += `&source_type=${encodeURIComponent(source)}`;
 
@@ -1406,7 +1409,10 @@ async function loadTrees() {
     const status = document.getElementById("treesFilterStatus").value;
     const category = document.getElementById("treesFilterCategory").value;
 
+    const clinic = document.getElementById("treesFilterClinic").value;
+
     let url = `/api/v1/admin/trees?status=${encodeURIComponent(status)}&limit=100`;
+    if (clinic) url += `&clinic_id=${encodeURIComponent(clinic)}`;
     if (category) url += `&category=${encodeURIComponent(category)}`;
 
     try {
@@ -1571,6 +1577,10 @@ function initClinicSelectors() {
         const sel = document.getElementById(id);
         if (sel) sel.addEventListener("change", () => onClinicSelectChange(sel));
     });
+    const reviewClinic = document.getElementById("reviewFilterClinic");
+    if (reviewClinic) reviewClinic.addEventListener("change", () => loadReviewFaqs());
+    const treesClinic = document.getElementById("treesFilterClinic");
+    if (treesClinic) treesClinic.addEventListener("change", () => loadTrees());
     document.getElementById("btnClinicCreateCancel").addEventListener("click", closeClinicCreateModal);
     document.getElementById("clinicCreateForm").addEventListener("submit", submitClinicCreate);
     document.getElementById("clinicCreateModal").addEventListener("click", (e) => {
@@ -1599,6 +1609,22 @@ async function loadClinicOptions(preferredId) {
     if (failedMessage) showToast(failedMessage, "error");
     clinicState.list = list;
     renderClinicSelects(list, preferredId);
+    populateClinicFilters(list);
+}
+
+// 審核頁籤的診所篩選：選項為「全部診所」加上已建檔診所，切換時重新載入列表
+const CLINIC_FILTER_IDS = ["reviewFilterClinic", "treesFilterClinic"];
+
+function populateClinicFilters(list) {
+    CLINIC_FILTER_IDS.forEach((id) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const previous = sel.value;
+        sel.textContent = "";
+        sel.appendChild(new Option("全部診所", ""));
+        list.forEach((c) => sel.appendChild(new Option(`${c.name}（${c.clinic_id}）`, c.clinic_id)));
+        sel.value = list.some((c) => c.clinic_id === previous) ? previous : "";
+    });
 }
 
 function renderClinicSelects(list, preferredId) {
