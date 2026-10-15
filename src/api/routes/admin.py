@@ -452,7 +452,7 @@ def upload_admin_url(
     # a. clinic_id 去空白；clinic_info 不存在 → 404
     clean_clinic_id = (clinic_id or "").strip()
     clinic_row = conn.execute(
-        "SELECT clinic_id FROM clinic_info WHERE clinic_id = ?",
+        "SELECT clinic_id, name FROM clinic_info WHERE clinic_id = ?",
         (clean_clinic_id,),
     ).fetchone()
     if not clinic_row:
@@ -507,6 +507,7 @@ def upload_admin_url(
                 validated.url,
                 deps=deps,
                 pinned_addresses=validated.addresses,
+                institution_name=clinic_row["name"],
             )
         except UrlFetchError as e:
             if e.reason in {

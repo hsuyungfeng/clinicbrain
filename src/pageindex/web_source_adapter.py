@@ -11,7 +11,10 @@ from dataclasses import dataclass
 import socket
 from typing import Any, Callable, Optional, Sequence
 
+from urllib.parse import urlsplit
+
 from ..scraper.extract import ExtractedClinicPage, extract_clinic_page
+from ..scraper.service_detail import extract_service_detail
 from ..scraper.fetch import FetchResult, fetch_page
 from ..scraper.policy import (
     DomainThrottle,
@@ -79,8 +82,13 @@ def fetch_clinic_page(
     *,
     deps: UrlFetchDeps,
     pinned_addresses: Optional[Sequence[str]] = None,
+    institution_name: str = "",
 ) -> UrlPageResult:
-    """呼叫 Phase 23 擷取器並解析診所頁面內容（CR-23-1 相容）。"""
+    """呼叫 Phase 23 擷取器並解析診所頁面內容（CR-23-1 相容）。
+
+    /service-detail/ 路徑改用服務詳細頁解析器；機構名稱由呼叫端（clinic_info）提供，
+    因為詳細頁本身不含機構資訊。
+    """
     # 原始請求 URL 去除 query / fragment，作為固定溯源 URL
     clean_source_url = strip_url_for_storage(url)
 
@@ -98,7 +106,21 @@ def fetch_clinic_page(
     if not result.ok:
         raise UrlFetchError(result.reason or "unexpected")
 
-    page = extract_clinic_page(result.html)
+    if urlsplit(url).path.startswith("/service-detail/"):
+        detail = extract_service_detail(result.html)
+        if detail is None:
+            page = ExtractedClinicPage(
+                institution_name=institution_name,
+                schema_drift=True,
+                drift_fields=["service_detail"],
+            )
+        else:
+            page = ExtractedClinicPage(
+                institution_name=institution_name,
+                services=[{"name": detail.name, "description": detail.description}],
+            )
+    else:
+        page = extract_clinic_page(result.html)
     return UrlPageResult(
         page=page,
         source_url=clean_source_url,
