@@ -643,6 +643,13 @@ def upload_admin_url(
                 ],
             }
 
+        if not faqs:
+            # 全部段落已被合規或身分檢查剔除：明確回報，不得回傳 OK 卻未寫入任何草稿
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="網站內容經合規與身分檢查後無可寫入之草稿（未寫入任何資料）",
+            )
+
         try:
             inserted, updated, unchanged = upsert_faqs(conn, faqs, source_type="web_upload")
             conn.commit()
