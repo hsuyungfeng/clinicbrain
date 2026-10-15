@@ -27,6 +27,36 @@ ZHIYAN_CLINIC_INFO = {
 }
 
 
+FANDEN_CLINIC_INFO = {
+    "clinic_id": "3503264627",
+    "name": "凡登整形外科診所",
+    "phone": "04-2323-8858",  # 來源：https://www.nu-vendome.com/location-detail/Taichung/ 地點區塊
+    "address": "臺中市西區忠明里臺灣大道二段403號2樓",
+    "website": "https://www.nu-vendome.com",
+    "opening_date": None,
+    "clinic_type": "醫美診所",
+}
+
+
+def seed_clinic_row(conn: sqlite3.Connection, info: dict) -> int:
+    """新增單一診所基本資料（僅新增，不覆寫既有列）。回傳新增筆數（已存在回傳 0）。"""
+    cursor = conn.execute(
+        "INSERT OR IGNORE INTO clinic_info (clinic_id, name, phone, address, website, opening_date, clinic_type, "
+        "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        (
+            info["clinic_id"],
+            info["name"],
+            info["phone"],
+            info["address"],
+            info["website"],
+            info["opening_date"],
+            info["clinic_type"],
+        ),
+    )
+    conn.commit()
+    return cursor.rowcount
+
+
 def seed_clinic_info(conn: sqlite3.Connection) -> int:
     """寫入或更新 clinic_info 基本資料。回傳寫入/更新之筆數（若已存在且內容一致則跳過，回傳 0）。"""
     cursor = conn.cursor()

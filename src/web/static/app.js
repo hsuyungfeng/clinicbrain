@@ -2,6 +2,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     initAuth();
+    initClinicSelectors();
     initTabNavigation();
     initDashboard();
     initReviewSection();
@@ -1559,3 +1560,138 @@ function openTreeEditModal(tree) {
     document.getElementById("treeEditModal").classList.remove("hidden");
 }
 
+
+// ── 機構代碼下拉選單（上傳／SOAP／提問共用）與新增診所 ──
+const CLINIC_SELECT_IDS = ["uploadClinicId", "soapClinicId", "askClinicId"];
+const CLINIC_NEW_VALUE = "__new__";
+const clinicState = { list: [] };
+
+function initClinicSelectors() {
+    CLINIC_SELECT_IDS.forEach((id) => {
+        const sel = document.getElementById(id);
+        if (sel) sel.addEventListener("change", () => onClinicSelectChange(sel));
+    });
+    document.getElementById("btnClinicCreateCancel").addEventListener("click", closeClinicCreateModal);
+    document.getElementById("clinicCreateForm").addEventListener("submit", submitClinicCreate);
+    document.getElementById("clinicCreateModal").addEventListener("click", (e) => {
+        if (e.target.id === "clinicCreateModal") closeClinicCreateModal();
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeClinicCreateModal();
+    });
+    loadClinicOptions();
+}
+
+async function loadClinicOptions(preferredId) {
+    let list = [];
+    let failedMessage = "";
+    try {
+        const res = await fetch("/api/v1/admin/clinics", { headers: getAuthHeaders() });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            list = Array.isArray(data.clinics) ? data.clinics : [];
+        } else {
+            failedMessage = apiErrorText(data, `無法載入診所清單 (HTTP ${res.status})`);
+        }
+    } catch (err) {
+        failedMessage = "無法連線至伺服器，無法載入診所清單";
+    }
+    if (failedMessage) showToast(failedMessage, "error");
+    clinicState.list = list;
+    renderClinicSelects(list, preferredId);
+}
+
+function renderClinicSelects(list, preferredId) {
+    CLINIC_SELECT_IDS.forEach((id) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const previous = sel.dataset.prev || sel.value;
+        sel.textContent = "";
+        sel.appendChild(new Option("請選擇診所", ""));
+        list.forEach((c) => sel.appendChild(new Option(`${c.name}（${c.clinic_id}）`, c.clinic_id)));
+        sel.appendChild(new Option("＋ 新增診所…", CLINIC_NEW_VALUE));
+        const wanted = [preferredId, previous].find((v) => v && list.some((c) => c.clinic_id === v));
+        sel.value = wanted || (list[0] ? list[0].clinic_id : "");
+        sel.dataset.prev = sel.value;
+    });
+}
+
+function onClinicSelectChange(sel) {
+    if (sel.value === CLINIC_NEW_VALUE) {
+        sel.value = sel.dataset.prev || "";
+        openClinicCreateModal();
+        return;
+    }
+    if (!sel.value) return;
+    // 三個頁籤共用同一個機構代碼，切換時同步其餘下拉選單
+    CLINIC_SELECT_IDS.forEach((id) => {
+        const other = document.getElementById(id);
+        if (other) {
+            other.value = sel.value;
+            other.dataset.prev = sel.value;
+        }
+    });
+}
+
+function openClinicCreateModal() {
+    const form = document.getElementById("clinicCreateForm");
+    form.reset();
+    setClinicCreateError("");
+    document.getElementById("clinicCreateModal").classList.remove("hidden");
+    document.getElementById("newClinicId").focus();
+}
+
+function closeClinicCreateModal() {
+    document.getElementById("clinicCreateModal").classList.add("hidden");
+}
+
+function setClinicCreateError(text) {
+    const p = document.getElementById("clinicCreateError");
+    p.textContent = text;
+    p.classList.toggle("hidden", !text);
+}
+
+async function submitClinicCreate(e) {
+    e.preventDefault();
+    const form = document.getElementById("clinicCreateForm");
+    if (!form.reportValidity()) return;
+
+    const optional = (id) => document.getElementById(id).value.trim() || null;
+    const body = {
+        clinic_id: document.getElementById("newClinicId").value.trim(),
+        name: document.getElementById("newClinicName").value.trim(),
+        clinic_type: optional("newClinicType"),
+        phone: optional("newClinicPhone"),
+        address: optional("newClinicAddress"),
+        website: optional("newClinicWebsite"),
+    };
+    if (!/^\d{10}$/.test(body.clinic_id)) {
+        setClinicCreateError("醫事機構代碼須為 10 碼數字");
+        return;
+    }
+
+    const btn = document.getElementById("btnClinicCreateSubmit");
+    btn.disabled = true;
+    setClinicCreateError("");
+    try {
+        const res = await fetch("/api/v1/admin/clinics", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 201) {
+            closeClinicCreateModal();
+            showToast(`已建立診所：${data.name}`, "success");
+            await loadClinicOptions(data.clinic_id);
+        } else if (res.status === 422) {
+            setClinicCreateError("欄位格式有誤：代碼須為 10 碼數字、官網須為 https 網址，名稱不可空白");
+        } else {
+            setClinicCreateError(apiErrorText(data, `建立失敗 (HTTP ${res.status})`));
+        }
+    } catch (err) {
+        setClinicCreateError("無法連線至伺服器，請稍後再試");
+    } finally {
+        btn.disabled = false;
+    }
+}

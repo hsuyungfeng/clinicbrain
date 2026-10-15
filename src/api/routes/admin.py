@@ -88,6 +88,16 @@ class BatchReviewRequest(BaseModel):
     faq_ids: list[StrictInt] = Field(..., min_length=1, max_length=MAX_BATCH_SIZE)
 
 
+class ClinicCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    clinic_id: str = Field(..., pattern=r"^\d{10}$")  # 台灣健保特約醫事機構代碼（10 碼數字）
+    name: str = Field(..., min_length=1, max_length=60)
+    clinic_type: Optional[str] = Field(None, max_length=30)
+    phone: Optional[str] = Field(None, max_length=30)
+    address: Optional[str] = Field(None, max_length=120)
+    website: Optional[str] = Field(None, max_length=200, pattern=r"^https://\S+$")
+
+
 class UpdateFaqRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: Optional[str] = Field(None, max_length=200)
@@ -421,7 +431,7 @@ def get_url_fetch_deps() -> UrlFetchDeps:
         throttle=get_shared_throttle(),
         robots=get_shared_robots(),
         user_agent=build_user_agent(),
-        resolver=socket.getaddrinfo,
+        resolver=None,  # None → policy 內建解析（回傳 IP 字串）；勿傳 socket.getaddrinfo（回傳 5-tuple）
         http_get=None,
     )
 
@@ -1210,3 +1220,49 @@ def delete_admin_tree(
     return {"status": "ok", "message": f"推理樹 {tree_id} 草稿已刪除", "id": tree_id}
 
 
+
+
+@router.get("/clinics", summary="列出已建檔診所（上傳中心下拉選單用）")
+def list_admin_clinics(conn: sqlite3.Connection = Depends(get_read_db)):
+    """回傳 clinic_info 全部診所的代碼、名稱與類型。"""
+    rows = conn.execute(
+        "SELECT clinic_id, name, clinic_type FROM clinic_info ORDER BY clinic_id"
+    ).fetchall()
+    return {
+        "clinics": [
+            {"clinic_id": r["clinic_id"], "name": r["name"], "clinic_type": r["clinic_type"]}
+            for r in rows
+        ]
+    }
+
+
+@router.post("/clinics", status_code=status.HTTP_201_CREATED, summary="新增已建檔診所")
+def create_admin_clinic(
+    req: ClinicCreateRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """新增一筆 clinic_info（僅新增，不覆寫既有診所）。代碼重複回 409。"""
+    name = req.name.strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="診所名稱不可為空白")
+    try:
+        conn.execute(
+            "INSERT INTO clinic_info (clinic_id, name, phone, address, website, clinic_type, "
+            "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            (
+                req.clinic_id,
+                name,
+                (req.phone or "").strip() or None,
+                (req.address or "").strip() or None,
+                (req.website or "").strip() or None,
+                (req.clinic_type or "").strip() or None,
+            ),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"診所代碼 {req.clinic_id} 已存在",
+        ) from e
+    return {"clinic_id": req.clinic_id, "name": name}
