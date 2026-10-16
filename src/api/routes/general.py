@@ -15,10 +15,11 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 
 from ..access_log_filter import install_access_log_filter
-from ..dependencies import get_read_db
+from ..dependencies import get_read_db, get_write_db
 from ..models.general import GeneralConsultResponse, GeneralQueryRequest
 from .query import deep_mask_prices
 from ...general.consult import consult_general
+from ...general.patient_consult import BOOKING_URL, default_patient_llm, patient_consult
 
 # 模組載入時自動安裝日誌過濾器（具冪等性）
 install_access_log_filter()
@@ -69,3 +70,26 @@ def post_general_query(
     raw_dict = dataclasses.asdict(result)
     clean_dict = deep_mask_prices(raw_dict)
     return GeneralConsultResponse(**clean_dict)
+
+
+@router.post(
+    "/consult",
+    summary="病人諮詢（先答後導；沒有資料時一般醫學說明並提供預約方式）",
+    description=(
+        "匿名病人諮詢：紅旗優先；已核准資料直接回答；沒有資料時由本機模型生成一般醫學說明（標示未經醫師審核），"
+        "並將問題存入一般草稿佇列供醫師審核。每則回覆附預約方式連結。不收集姓名、電話或身分證。"
+    ),
+)
+def post_general_consult(
+    request: GeneralQueryRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+) -> dict:
+    """寫入端點（僅在無資料時寫入一般草稿，狀態 pending）。"""
+    result = patient_consult(conn, request.query, default_patient_llm)
+    return {
+        "status": result.status,
+        "message": deep_mask_prices(result.message),
+        "label": result.label,
+        "disclaimer": result.disclaimer,
+        "booking_url": BOOKING_URL,
+    }

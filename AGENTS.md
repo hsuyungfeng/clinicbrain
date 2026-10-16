@@ -513,6 +513,16 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **已知限制**：① 服務名稱仍偏長（如「縮鼻翼是什麼鼻翼過寬…」），僅部分已簡化；② 17 頁無「標題＋說明」結構而略過，3 頁抓取失敗；③ 網站 SEO 標題的品質直接影響草稿題目。
 - **測試**：`tests/test_service_detail.py`、`tests/test_timetable.py`、`tests/test_clinic_selector.py`（含靜態檢查）、`tests/test_url_deps_resolver.py`、`tests/test_upload_url_endpoint.py`、`tests/test_scraper_policy.py`。以上範圍 2026-10-15 為 307 passed。
 
+### 2.24 病人「先答後導」諮詢與 LLM 一般知識例外（Phase 26 階段一，2026-10-16 核准）
+- **例外（明確覆寫 2.9／2.10 之審核閘門，僅限此處）**：`/api/v1/general/consult` 在沒有已核准資料時，**可即時回覆**本機 LLM 生成的一般醫學說明，但必須同時：標示「一般醫學知識說明，並非本診所醫師意見，尚未經醫師審核」、附免責聲明與就醫警訊、通過價格／禁詞／劑量／問題不得改寫（沿用 `generate_general_draft` 的驗證）。
+- 同一問題**同時**存入一般草稿佇列（`category=general`、`clinic_id` 為空、`source_type=llm_generated`、`review_status=pending`），醫師核准後才進入公開快取與一般諮詢的已核准來源。
+- 路由順序固定：紅旗 → 已核准資料（`consult_general`）→ LLM 一般說明＋草稿 → 固定文字（`no_match`）。紅旗與已核准資料路徑不呼叫模型。
+- 病人端 LLM 以 `_PATIENT_LLM_LOCK` 非阻塞保護（忙碌回 `busy`，不排隊），本機模型單一 slot 不被公開流量拖垮。仍建議於反向代理層加 `limit_req`。
+- 預約方式固定為 `https://doctor-toolbox.com/`（HIS 廠商）；留資表單由該平台承接，**本系統不接收、不儲存表單個資**。將來合併該平台程式前，須另行決定資料流與保存期限。
+- 隱私：不要求姓名、電話、身分證、照片；不記錄問句原文或對話（`/api/v1/general` 前綴受存取日誌過濾）；草稿佇列僅存去識別化後的問題文字。
+- **待辦**：端點的完整實機測試（含真實 LLM 生成耗時）尚未執行；診所專屬 FAQ（`special`）路徑未納入匿名端點，仍由 `/api/v1/query` 處理。
+- 測試：`tests/test_patient_consult.py`（紅旗不呼叫模型、生成並標示待審、LLM 失敗不寫入、忙碌不呼叫模型）。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
