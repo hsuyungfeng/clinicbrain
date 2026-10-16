@@ -14,6 +14,7 @@ import sqlite3
 from typing import Callable
 
 from ..batch.faq_generator import build_seed_faq_prompt
+from .llm_client import LLMEmptyOutputError
 from ..ingestion.generate_faq import parse_and_validate_faq
 from ..soap.deid import deidentify_text
 from .answer_generator import _clean_llm_output
@@ -33,6 +34,20 @@ class GeneralDraftError(Exception):
 def _topic_key(question: str) -> str:
     slug = re.sub(r"[^\w]+", "-", question.lower()).strip("-")
     return f"general-{slug}"[:64] or "general-misc"
+
+
+_NO_THINK_SUFFIX = "\n/no_think\n請跳過思考過程，直接輸出 JSON 陣列，不要任何說明文字。"
+
+
+def _call_no_think_first(llm_call: Callable[[str], str], prompt: str) -> str:
+    """JSON 生成任務預設關閉思考（思考過長會耗盡 token 或逾時，實測多次回傳空白）。
+
+    仍保留一次空白重試作為保險；僅限本一般草稿路徑，RAG 與其他任務不受影響。
+    """
+    try:
+        return llm_call(prompt + _NO_THINK_SUFFIX)
+    except LLMEmptyOutputError:
+        return llm_call(prompt + _NO_THINK_SUFFIX)
 
 
 def generate_general_draft(
@@ -59,7 +74,7 @@ def generate_general_draft(
         reference_context=None,
         require_doctor_warning=True,
     )
-    raw = _clean_llm_output(llm_call(prompt))
+    raw = _clean_llm_output(_call_no_think_first(llm_call, prompt))
     valid, rejected = parse_and_validate_faq(
         raw, return_rejected=True, check_dosage=True, require_doctor_warning=True,
     )

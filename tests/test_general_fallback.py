@@ -60,3 +60,22 @@ def test_model_rewritten_question_is_rejected(isolated_conn):
 def test_empty_question_rejected(isolated_conn):
     with pytest.raises(GeneralDraftError):
         generate_general_draft(isolated_conn, "   ", _llm("x", "x"))
+
+
+def test_empty_output_retries_once_with_no_think(isolated_conn):
+    from src.pageindex.llm_client import LLMEmptyOutputError
+
+    q = "測試用一般醫學題目戊"
+    answer = "這是一段用於測試的衛教說明文字，內容為一般醫學常識的簡要說明。" + WARNING
+    calls = []
+
+    def flaky(prompt):
+        calls.append(prompt)
+        if len(calls) == 1:
+            raise LLMEmptyOutputError("empty")
+        return _llm(q, answer)(prompt)
+
+    result = generate_general_draft(isolated_conn, q, flaky)
+    assert result["review_status"] == "pending"
+    assert len(calls) == 2
+    assert all("/no_think" in c for c in calls)  # 預設即關閉思考，空白時仍重試一次

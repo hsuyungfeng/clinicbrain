@@ -1319,7 +1319,7 @@ async function submitAsk() {
             return;
         }
         renderAskResult(data, result);
-        if (data.mode === "no_evidence") appendGeneralDraftAction(result, data.question);
+        if (data.mode === "no_evidence") autoGeneralDraft(data.question, result);
         askState.history.push(data);
         renderAskHistory();
     } catch (e) {
@@ -1578,6 +1578,8 @@ function initClinicSelectors() {
         const sel = document.getElementById(id);
         if (sel) sel.addEventListener("change", () => onClinicSelectChange(sel));
     });
+    const headerClinic = document.getElementById("headerClinicSelect");
+    if (headerClinic) headerClinic.addEventListener("change", () => setGlobalClinic(headerClinic.value));
     const reviewClinic = document.getElementById("reviewFilterClinic");
     if (reviewClinic) reviewClinic.addEventListener("change", () => loadReviewFaqs());
     const treesClinic = document.getElementById("treesFilterClinic");
@@ -1617,6 +1619,16 @@ async function loadClinicOptions(preferredId) {
 const CLINIC_FILTER_IDS = ["reviewFilterClinic", "treesFilterClinic"];
 
 function populateClinicFilters(list) {
+    const header = document.getElementById("headerClinicSelect");
+    if (header) {
+        const current = header.value;
+        header.textContent = "";
+        list.forEach((c) => header.appendChild(new Option(`${c.name}（${c.clinic_id}）`, c.clinic_id)));
+        const fallback = CLINIC_SELECT_IDS.map((id) => document.getElementById(id)?.value).find((v) => v);
+        const wanted = [current, fallback].find((v) => v && list.some((c) => c.clinic_id === v));
+        header.value = wanted || (list[0] ? list[0].clinic_id : "");
+        header.dataset.prev = header.value;
+    }
     CLINIC_FILTER_IDS.forEach((id) => {
         const sel = document.getElementById(id);
         if (!sel) return;
@@ -1650,14 +1662,23 @@ function onClinicSelectChange(sel) {
         return;
     }
     if (!sel.value) return;
-    // 三個頁籤共用同一個機構代碼，切換時同步其餘下拉選單
-    CLINIC_SELECT_IDS.forEach((id) => {
-        const other = document.getElementById(id);
-        if (other) {
-            other.value = sel.value;
-            other.dataset.prev = sel.value;
-        }
+    setGlobalClinic(sel.value);
+}
+
+// 全站目前診所：頂部選單、三個頁籤的機構代碼、兩個審核篩選同步為同一個值，並重新載入目前開著的審核列表
+function setGlobalClinic(clinicId) {
+    const targets = [...CLINIC_SELECT_IDS, ...CLINIC_FILTER_IDS, "headerClinicSelect"];
+    targets.forEach((id) => {
+        const node = document.getElementById(id);
+        if (!node) return;
+        if (!Array.from(node.options).some((o) => o.value === clinicId)) return;
+        node.value = clinicId;
+        node.dataset.prev = clinicId;
     });
+    const reviewVisible = !document.getElementById("tab-review").classList.contains("hidden");
+    const treesVisible = !document.getElementById("tab-trees").classList.contains("hidden");
+    if (reviewVisible) loadReviewFaqs();
+    if (treesVisible) loadTrees();
 }
 
 function openClinicCreateModal() {
@@ -1724,44 +1745,26 @@ async function submitClinicCreate(e) {
 }
 
 
-// 無診所資料時：改由本機 LLM 生成一般醫學草稿並存入一般草稿（待醫師審核，核准前不對外可見）
-function appendGeneralDraftAction(container, question) {
-    const wrap = el("div", "ask-general-action");
-    const note = el("p", "text-sm text-gray-600", "可改由一般醫學 LLM 作答，並存為一般草稿（需醫師審核，核准前不對外可見）。");
-    const btn = el("button", "btn btn-secondary", "🧠 改由一般醫學 LLM 作答並存草稿");
-    btn.type = "button";
-    const status = el("p", "text-sm", "");
-    status.classList.add("hidden");
-    btn.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "本機模型生成中（約 1～3 分鐘）…";
-        try {
-            const resp = await fetch("/api/v1/admin/ask/general-draft", {
-                method: "POST",
-                headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-                body: JSON.stringify({ question }),
-            });
-            const data = await resp.json().catch(() => ({}));
-            if (resp.ok) {
-                status.textContent = `已存為一般草稿（待醫師審核）：${data.question}`;
-                status.className = "text-sm text-emerald-700";
-                btn.remove();
-                note.remove();
-            } else {
-                status.textContent = apiErrorText(data, `失敗 (HTTP ${resp.status})`);
-                status.className = "text-sm text-red-600";
-                btn.disabled = false;
-                btn.textContent = "🧠 改由一般醫學 LLM 作答並存草稿";
-            }
-        } catch (err) {
-            status.textContent = "網路請求失敗，請稍後再試";
-            status.className = "text-sm text-red-600";
-            btn.disabled = false;
-            btn.textContent = "🧠 改由一般醫學 LLM 作答並存草稿";
+// 無診所資料時：自動由本機 LLM 生成一般醫學草稿，存入「待簽核衛教草稿」的一般分類（待醫師審核，核准前不對外可見）
+async function autoGeneralDraft(question, container) {
+    const status = el("p", "text-sm text-gray-600 mt-2", "已自動交由本機 LLM 生成一般醫學草稿（約 1～3 分鐘），完成後會列於「待簽核衛教草稿」→ 一般分類。");
+    container.appendChild(status);
+    try {
+        const resp = await fetch("/api/v1/admin/ask/general-draft", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+            status.textContent = `已存入待簽核衛教草稿（一般）：${data.question}，請至「待簽核衛教草稿」核准。`;
+            status.className = "text-sm text-emerald-700 mt-2";
+        } else {
+            status.textContent = `一般草稿未存入：${apiErrorText(data, `失敗 (HTTP ${resp.status})`)}`;
+            status.className = "text-sm text-red-600 mt-2";
         }
-    });
-    wrap.appendChild(note);
-    wrap.appendChild(btn);
-    wrap.appendChild(status);
-    container.appendChild(wrap);
+    } catch (err) {
+        status.textContent = "一般草稿未存入：網路請求失敗，請稍後再試";
+        status.className = "text-sm text-red-600 mt-2";
+    }
 }

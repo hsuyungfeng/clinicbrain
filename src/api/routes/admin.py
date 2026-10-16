@@ -918,6 +918,16 @@ def generate_admin_faq_answer(
         _GENERATION_LOCK.release()
 
 
+GENERAL_DRAFT_TIMEOUT_SECONDS = 900  # 一般草稿提示長、思考可能超過 480 秒（實測逾時）
+
+
+def _general_draft_llm_call(prompt: str) -> str:
+    """一般草稿專用：提示較長，思考可能耗盡預設 6144 token，故放寬上限（呼叫端仍有空白重試）。"""
+    from ...pageindex.llm_client import local_llm_call
+
+    return local_llm_call(prompt, timeout=GENERAL_DRAFT_TIMEOUT_SECONDS, sampling={"max_tokens": 12288})
+
+
 @router.post("/ask/general-draft", summary="無診所資料時改由本機 LLM 生成一般醫學草稿（待醫師審核）")
 def admin_ask_general_draft(
     req: GeneralDraftRequest,
@@ -934,7 +944,7 @@ def admin_ask_general_draft(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="本機模型忙碌中，請稍後再試")
     try:
         try:
-            return {"status": "ok", **generate_general_draft(conn, req.question, _local_llm_call)}
+            return {"status": "ok", **generate_general_draft(conn, req.question, _general_draft_llm_call)}
         except GeneralDraftError as e:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.reason) from e
         except LLMEmptyOutputError as e:
