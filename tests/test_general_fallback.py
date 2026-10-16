@@ -49,12 +49,12 @@ def test_missing_doctor_warning_is_rejected(isolated_conn):
     assert _general_rows(isolated_conn, q) == []
 
 
-def test_model_rewritten_question_is_rejected(isolated_conn):
+def test_model_rewritten_question_is_stored_under_original(isolated_conn):
     q = "測試用一般醫學題目丁"
     answer = "這是一段用於測試的衛教說明文字，內容為一般醫學常識的簡要說明。" + WARNING
-    with pytest.raises(GeneralDraftError):
-        generate_general_draft(isolated_conn, q, _llm("別的問題", answer))
-    assert _general_rows(isolated_conn, q) == []
+    generate_general_draft(isolated_conn, q, _llm("模型改寫的題目", answer))
+    assert _general_rows(isolated_conn, q) == [(q, "general", None, "llm_generated", "pending")]
+    assert _general_rows(isolated_conn, "模型改寫的題目") == []
 
 
 def test_empty_question_rejected(isolated_conn):

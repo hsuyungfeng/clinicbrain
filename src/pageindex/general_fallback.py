@@ -82,9 +82,9 @@ def generate_general_draft(
         reasons = [str(r.get("reason", r.get("code", ""))) for r in rejected] or ["模型輸出無法解析"]
         raise GeneralDraftError("生成內容未通過合規檢驗：" + "；".join(reasons))
 
+    # 模型可能改寫題目字詞（如「髮際線」→「髮際Line」）；答案是針對我們的題目生成，
+    # 一律以原題目存檔，不因模型改寫字句而丟棄已通過合規檢驗的答案
     item = valid[0]
-    if item.get("question", "").strip() != q_store:
-        raise GeneralDraftError("模型改寫了問題，未寫入")
 
     answer = item["answer"].strip()
     metadata = json.dumps(
