@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫療衛教諮詢</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f7fafc;
+            color: #2d3748;
+            line-height: 1.6;
+            padding: 16px;
+            max-width: 640px;
+            margin: 0 auto;
+            overflow-x: hidden;
+            word-break: break-word;
+        }
+        header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 1.4rem;
+            color: #1a202c;
+            margin-bottom: 6px;
+        }
+        header p {
+            font-size: 0.9rem;
+            color: #718096;
+        }
+        .input-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .textarea-wrapper {
+            position: relative;
+            margin-bottom: 8px;
+        }
+        textarea {
+            width: 100%;
+            height: 110px;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        textarea:focus {
+            border-color: #3182ce;
+        }
+        .char-counter {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #a0aec0;
+            margin-bottom: 12px;
+        }
+        .btn-submit {
+            display: block;
+            width: 100%;
+            background-color: #3182ce;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-submit:hover:not(:disabled) {
+            background-color: #2b6cb0;
+        }
+        .btn-submit:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+        .status-loading {
+            display: none;
+            text-align: center;
+            padding: 16px;
+            color: #4a5568;
+            font-size: 0.95rem;
+            background: #edf2f7;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .network-error {
+            display: none;
+            background-color: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .result-card {
+            display: none;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #718096;
+        }
+        .result-badge {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #edf2f7;
+            color: #4a5568;
+        }
+        .result-label {
+            display: none;
+            font-size: 0.85rem;
+            color: #975a16;
+            background-color: #fffff0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            border: 1px solid #ecc94b;
+        }
+        .result-message {
+            font-size: 1rem;
+            color: #2d3748;
+            white-space: pre-line;
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+        .result-disclaimer {
+            display: none;
+            font-size: 0.85rem;
+            color: #718096;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 10px;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        .booking-container {
+            display: none;
+            margin-top: 16px;
+            text-align: center;
+        }
+        .btn-booking {
+            display: inline-block;
+            background-color: #38a169;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+        .btn-booking:hover {
+            background-color: #2f855a;
+        }
+        /* red_flag 風格 */
+        .status-red-flag {
+            border-left-color: #e53e3e;
+            background-color: #fff5f5;
+        }
+        .status-red-flag .result-badge {
+            background-color: #fed7d7;
+            color: #9b2c2c;
+        }
+        .status-red-flag .result-message {
+            color: #c53030;
+            font-weight: 600;
+        }
+        /* answered 風格 */
+        .status-answered {
+            border-left-color: #38a169;
+        }
+        .status-answered .result-badge {
+            background-color: #c6f6d5;
+            color: #22543d;
+        }
+        /* llm_general 風格 */
+        .status-llm-general {
+            border-left-color: #d69e2e;
+        }
+        .status-llm-general .result-badge {
+            background-color: #feebc8;
+            color: #744210;
+        }
+        /* no_match 風格 */
+        .status-no-match {
+            border-left-color: #718096;
+        }
+        /* busy 風格 */
+        .status-busy {
+            border-left-color: #dd6b20;
+        }
+        .status-busy .result-badge {
+            background-color: #feebc8;
+            color: #7b341e;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>醫療衛教諮詢</h1>
+        <p>提供常見衛教指引與一般醫學說明，本服務不取代專業醫療診察</p>
+    </header>
+
+    <main>
+        <section class="input-card">
+            <div class="textarea-wrapper">
+                <textarea id="consultInput" maxlength="300" placeholder="請在此輸入您的健康或衛教問題（最多 300 字）..." aria-label="問題輸入框"></textarea>
+            </div>
+            <div id="charCounter" class="char-counter">0/300</div>
+            <button id="btnSubmit" type="button" class="btn-submit">送出諮詢</button>
+        </section>
+
+        <div id="loadingMessage" class="status-loading">整理中，約 1～3 分鐘</div>
+        <div id="errorMessage" class="network-error"></div>
+
+        <section id="resultArea" class="result-card">
+            <span id="statusBadge" class="result-badge"></span>
+            <div id="resultLabel" class="result-label"></div>
+            <div id="resultMessage" class="result-message"></div>
+            <div id="resultDisclaimer" class="result-disclaimer"></div>
+            <div id="bookingContainer" class="booking-container">
+                <a id="bookingLink" class="btn-booking" href="https://doctor-toolbox.com/" target="_blank" rel="noopener noreferrer">預約諮詢</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        (function() {
+            var consultInput = document.getElementById("consultInput");
+            var charCounter = document.getElementById("charCounter");
+            var btnSubmit = document.getElementById("btnSubmit");
+            var loadingMessage = document.getElementById("loadingMessage");
+            var errorMessage = document.getElementById("errorMessage");
+            var resultArea = document.getElementById("resultArea");
+            var statusBadge = document.getElementById("statusBadge");
+            var resultLabel = document.getElementById("resultLabel");
+            var resultMessage = document.getElementById("resultMessage");
+            var resultDisclaimer = document.getElementById("resultDisclaimer");
+            var bookingContainer = document.getElementById("bookingContainer");
+            var bookingLink = document.getElementById("bookingLink");
+
+            consultInput.addEventListener("input", function() {
+                var len = consultInput.value ? consultInput.value.length : 0;
+                charCounter.textContent = len + "/300";
+            });
+
+            consultInput.addEventListener("keydown", function(e) {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleConsultSubmit();
+                }
+            });
+
+            btnSubmit.addEventListener("click", function() {
+                handleConsultSubmit();
+            });
+
+            function handleConsultSubmit() {
+                var q = consultInput.value ? consultInput.value.trim() : "";
+                if (!q) {
+                    return;
+                }
+
+                consultInput.value = "";
+                charCounter.textContent = "0/300";
+                consultInput.disabled = true;
+                btnSubmit.disabled = true;
+
+                resultArea.style.display = "none";
+                errorMessage.style.display = "none";
+                loadingMessage.style.display = "block";
+                loadingMessage.textContent = "整理中，約 1～3 分鐘";
+
+                fetch("/api/v1/general/consult", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ query: q })
+                })
+                .then(function(res) {
+                    if (!res.ok) {
+                        throw new Error("HTTP " + res.status);
+                    }
+                    return res.json();
+                })
+                .then(function(data) {
+                    loadingMessage.style.display = "none";
+                    consultInput.disabled = false;
+                    btnSubmit.disabled = false;
+                    renderResult(data);
+                })
+                .catch(function() {
+                    loadingMessage.style.display = "none";
+                    consultInput.disabled = false;
+                    btnSubmit.disabled = false;
+                    errorMessage.textContent = "連線失敗或網路異常，請稍後再試。";
+                    errorMessage.style.display = "block";
+                });
+            }
+
+            function renderResult(data) {
+                resultArea.className = "result-card";
+                var status = data.status || "";
+
+                if (status === "red_flag") {
+                    resultArea.classList.add("status-red-flag");
+                    statusBadge.textContent = "緊急就醫指示";
+                } else if (status === "answered") {
+                    resultArea.classList.add("status-answered");
+                    statusBadge.textContent = "衛教諮詢說明";
+                } else if (status === "llm_general") {
+                    resultArea.classList.add("status-llm-general");
+                    statusBadge.textContent = "一般醫學說明";
+                } else if (status === "busy") {
+                    resultArea.classList.add("status-busy");
+                    statusBadge.textContent = "系統忙碌";
+                } else {
+                    resultArea.classList.add("status-no-match");
+                    statusBadge.textContent = "諮詢回覆";
+                }
+
+                resultMessage.textContent = data.message || "";
+
+                if (data.label) {
+                    resultLabel.textContent = data.label;
+                    resultLabel.style.display = "block";
+                } else {
+                    resultLabel.textContent = "";
+                    resultLabel.style.display = "none";
+                }
+
+                if (data.disclaimer) {
+                    resultDisclaimer.textContent = data.disclaimer;
+                    resultDisclaimer.style.display = "block";
+                } else {
+                    resultDisclaimer.textContent = "";
+                    resultDisclaimer.style.display = "none";
+                }
+
+                var url = data.booking_url || "https://doctor-toolbox.com/";
+                bookingLink.setAttribute("href", url);
+                bookingContainer.style.display = "block";
+
+                resultArea.style.display = "block";
+            }
+        })();
+    </script>
+</body>
+</html>
