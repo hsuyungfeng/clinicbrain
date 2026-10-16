@@ -18,7 +18,7 @@ import threading
 from dataclasses import dataclass
 from typing import Callable
 
-from ..pageindex.general_fallback import GeneralDraftError, generate_general_draft
+from ..pageindex.general_fallback import GeneralDraftError, generate_general_draft, find_existing_general_draft
 from ..pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 from .consult import consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
@@ -67,6 +67,20 @@ def patient_consult(
             disclaimer=found.disclaimer,
             label=None,
             booking_url=BOOKING_URL,
+        )
+
+    # 同一題已有一般草稿：直接沿用，不再呼叫模型（待審重用答案，駁回則回固定文字）
+    existing = find_existing_general_draft(conn, query)
+    if existing is not None:
+        status, answer = existing
+        if status == "pending" and answer:
+            return PatientConsultResult(
+                status="llm_general", message=answer, disclaimer=LLM_DISCLAIMER,
+                label=LLM_LABEL, booking_url=BOOKING_URL,
+            )
+        return PatientConsultResult(
+            status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
+            label=None, booking_url=BOOKING_URL,
         )
 
     if not _PATIENT_LLM_LOCK.acquire(blocking=False):

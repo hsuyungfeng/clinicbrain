@@ -54,3 +54,28 @@ def test_busy_returns_busy_without_llm(isolated_conn):
     finally:
         pc._PATIENT_LLM_LOCK.release()
     assert r.status == "busy"
+
+
+def test_same_question_reuses_pending_draft_without_llm(isolated_conn):
+    first = pc.patient_consult(isolated_conn, Q, _llm_ok)
+    assert first.status == "llm_general"
+
+    def boom(prompt):
+        raise AssertionError("同題已有草稿，不得再呼叫模型")
+    second = pc.patient_consult(isolated_conn, Q, boom)
+    assert second.status == "llm_general"
+    assert second.message == first.message
+    assert _pending_general(isolated_conn) == [("pending",)]
+
+
+def test_rejected_draft_is_not_regenerated(isolated_conn):
+    pc.patient_consult(isolated_conn, Q, _llm_ok)
+    isolated_conn.execute(
+        "UPDATE faq_cache SET review_status='rejected' WHERE category='general' AND question=?", (Q,)
+    )
+    isolated_conn.commit()
+
+    def boom(prompt):
+        raise AssertionError("已駁回的題目不得再生成")
+    r = pc.patient_consult(isolated_conn, Q, boom)
+    assert r.status == "no_match"

@@ -50,6 +50,25 @@ def _call_no_think_first(llm_call: Callable[[str], str], prompt: str) -> str:
         return llm_call(prompt + _NO_THINK_SUFFIX)
 
 
+def find_existing_general_draft(conn: sqlite3.Connection, question: str) -> tuple[str, str] | None:
+    """查詢同題一般草稿（以去識別化後的問題比對）。回傳 (review_status, answer)，無則 None。
+
+    同一題只保留一筆（upsert 以題目為鍵），重用時不需再呼叫模型。
+    """
+    q_store = deidentify_text((question or "").strip()).strip()
+    if not q_store:
+        return None
+    row = conn.execute(
+        "SELECT review_status, answer FROM faq_cache "
+        "WHERE category='general' AND clinic_id IS NULL AND source_type='llm_generated' AND question=? "
+        "ORDER BY id DESC LIMIT 1",
+        (q_store,),
+    ).fetchone()
+    if row is None:
+        return None
+    return (row[0] or "", row[1] or "")
+
+
 def generate_general_draft(
     conn: sqlite3.Connection,
     question: str,
