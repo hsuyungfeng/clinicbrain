@@ -170,3 +170,17 @@
 **Status**: Planned（`27-01-PLAN.md`；由 agy 執行、Claude 檢查）
 **Depends on**: Phase 26 (`ae55510`)
 **Scope**: 病人頁（不存問句、不收個資）、靜態與行為測試、副本實測、速率限制文件。不含留資表單與 doctor-toolbox 整合。
+
+---
+### Phase 28: 病人端對話式諮詢與預生成 QA
+
+**Goal**: 讓病人端諮詢「先提供價值、後獲取資訊」：以已核准診所專屬資料＋一般醫學資料組稿，簡短、人性化、結尾單一追問與預約邀請；常見問題由夜間批次預生成（待審），即時生成僅處理未命中；查明並修復約 960 秒的生成耗時；修復答案被截斷導致就醫警訊遺失的 bug。
+**Status**: Planning
+**Depends on**: Phase 26 (`/api/v1/general/consult`), Phase 27 (病人諮詢頁), Phase 20 (背景補齊), Phase 9 (夜間批次)
+**Scope**:
+  1. 耗時根因調查（reasoning／max_tokens／重試）與修復；必要時背景生成＋前端輪詢。
+  2. RAG／consult 答案截斷 bug 修復（就醫警訊不得被截斷）。
+  3. 組稿結構：價值回答（2～4 句）＋單一追問＋預約／留資邀請；FAITHFUL_SAMPLING 與長度上限。
+  4. 夜間批次預生成相似 QA（pending，醫師核准後才公開）。
+  5. 不收集個資；留資表單與 doctor-toolbox.com 整合為階段二，不在本期。
+**Constraints**: 不得直接寫正式庫；不得啟用 systemd；不得重啟 llama-server；價格屏蔽與繁體中文規則照舊；未審 LLM 內容不得進公開快取（AGENTS 2.24 例外僅限即時標示未審的一般說明）。
