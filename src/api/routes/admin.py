@@ -110,6 +110,11 @@ class AskRequest(BaseModel):
     clinic_id: str = Field(..., min_length=1, max_length=40)
 
 
+class GeneralDraftRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(..., min_length=1, max_length=300)
+
+
 class BatchGenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     faq_ids: list[StrictInt] = Field(..., min_length=1, max_length=batch_answer_job.MAX_JOB_IDS)
@@ -908,6 +913,42 @@ def generate_admin_faq_answer(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="本機 LLM 服務目前無法使用，請確認 llama-server 已啟動後再試",
+            ) from e
+    finally:
+        _GENERATION_LOCK.release()
+
+
+@router.post("/ask/general-draft", summary="無診所資料時改由本機 LLM 生成一般醫學草稿（待醫師審核）")
+def admin_ask_general_draft(
+    req: GeneralDraftRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """寫入：將一般醫學草稿存為 general / llm_generated / pending，醫師核准前不對外可見。
+
+    驗證未通過時不寫入任何資料（422）；與其他本機模型作業共用 _GENERATION_LOCK。
+    """
+    from ...pageindex.general_fallback import GeneralDraftError, generate_general_draft
+    from ...pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
+
+    if not _GENERATION_LOCK.acquire(blocking=False):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="本機模型忙碌中，請稍後再試")
+    try:
+        try:
+            return {"status": "ok", **generate_general_draft(conn, req.question, _local_llm_call)}
+        except GeneralDraftError as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.reason) from e
+        except LLMEmptyOutputError as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="模型回覆為空（可能因思考長度超限），請稍後重試") from e
+        except LocalLLMUnavailableError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="本機 LLM 服務目前無法使用，請確認 llama-server 已啟動後再試",
+            ) from e
+        except RuntimeError as e:
+            # 資料庫尚未完成審核欄位遷移：Fail-Closed，拒絕寫入（不回顯內部訊息）
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="資料庫尚未完成審核欄位遷移，暫無法寫入一般草稿",
             ) from e
     finally:
         _GENERATION_LOCK.release()

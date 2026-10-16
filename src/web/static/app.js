@@ -1319,6 +1319,7 @@ async function submitAsk() {
             return;
         }
         renderAskResult(data, result);
+        if (data.mode === "no_evidence") appendGeneralDraftAction(result, data.question);
         askState.history.push(data);
         renderAskHistory();
     } catch (e) {
@@ -1720,4 +1721,47 @@ async function submitClinicCreate(e) {
     } finally {
         btn.disabled = false;
     }
+}
+
+
+// 無診所資料時：改由本機 LLM 生成一般醫學草稿並存入一般草稿（待醫師審核，核准前不對外可見）
+function appendGeneralDraftAction(container, question) {
+    const wrap = el("div", "ask-general-action");
+    const note = el("p", "text-sm text-gray-600", "可改由一般醫學 LLM 作答，並存為一般草稿（需醫師審核，核准前不對外可見）。");
+    const btn = el("button", "btn btn-secondary", "🧠 改由一般醫學 LLM 作答並存草稿");
+    btn.type = "button";
+    const status = el("p", "text-sm", "");
+    status.classList.add("hidden");
+    btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "本機模型生成中（約 1～3 分鐘）…";
+        try {
+            const resp = await fetch("/api/v1/admin/ask/general-draft", {
+                method: "POST",
+                headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify({ question }),
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (resp.ok) {
+                status.textContent = `已存為一般草稿（待醫師審核）：${data.question}`;
+                status.className = "text-sm text-emerald-700";
+                btn.remove();
+                note.remove();
+            } else {
+                status.textContent = apiErrorText(data, `失敗 (HTTP ${resp.status})`);
+                status.className = "text-sm text-red-600";
+                btn.disabled = false;
+                btn.textContent = "🧠 改由一般醫學 LLM 作答並存草稿";
+            }
+        } catch (err) {
+            status.textContent = "網路請求失敗，請稍後再試";
+            status.className = "text-sm text-red-600";
+            btn.disabled = false;
+            btn.textContent = "🧠 改由一般醫學 LLM 作答並存草稿";
+        }
+    });
+    wrap.appendChild(note);
+    wrap.appendChild(btn);
+    wrap.appendChild(status);
+    container.appendChild(wrap);
 }
