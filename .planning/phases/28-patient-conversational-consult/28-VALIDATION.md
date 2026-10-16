@@ -8,7 +8,8 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 |------|------|
 | 1 | 28-01（延遲與截斷偵測、共用鎖）、28-02（組稿純函式、句界截斷） |
 | 2 | 28-03（組稿接入病人路由）、28-05（24 小時新鮮度規劃）、28-07（實機探測，非自主） |
-| 3 | 28-04（job 加輪詢加 UI）、28-06（階段 8 預生成、CLI、文件） |
+| 3 | 28-04（job 加輪詢加 UI）、28-06（階段 8 預生成、CLI） |
+| 4 | 28-08（AGENTS.md 2.25 文件,最後撰寫） |
 
 ## Nyquist 對照
 | 需求 | 行為 | 自動化驗證 | 計畫 |
@@ -19,7 +20,7 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 | P28-TRUNC | 句界截斷、警訊保留 | tests/test_answer_compose.py、tests/test_rag_ask_enhancement.py | 02 |
 | P28-TPL | 價值＋單一追問＋邀請、驗證 | tests/test_answer_compose.py、tests/test_patient_compose.py、tests/test_patient_consult.py | 02、03 |
 | P28-ASYNC | job、TTL、隱私、輪詢 | tests/test_consult_jobs.py、tests/test_patient_consult_ui.py | 04 |
-| P28-PRE | 預生成 pending、隔離、預算 | tests/test_patient_prefill_plan.py、tests/test_patient_prefill_batch.py | 05、06 |
+| P28-PRE | 預生成 pending、隔離、預算、skipped_budget | tests/test_patient_prefill_plan.py、tests/test_patient_prefill_batch.py | 05、06 |
 | P28-FRESH | 24 小時、簽章、積壓（假時鐘） | tests/test_patient_prefill_plan.py、tests/test_patient_prefill_e2e.py | 05、06 |
 
 ## 來源稽核
@@ -39,6 +40,7 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 | RESEARCH | job_id token_urlsafe、TTL、無問句保留 | 04 |
 | RESEARCH | 共用生成鎖與夜間鎖 | 01 |
 | RESEARCH | 速率文件修正 | 07 |
+| CONTEXT | 病人問答主題 → 相似 QA | 由 Phase 9 熱門未命中關鍵字(`miss_keyword`)種子機制承接(夜間批次既有 FAQ 階段);28-05 刻意不讀 `miss_keyword` 作額外題目來源,理由:該表只有白名單路由關鍵字、沒有主題內容或參考資料,階段 8 的題目必須有已核准 PageIndex／FAQ 作依據才可生成,不憑空擬題 |
 | 延後 | 留資表單、limit_req、18 失敗測試 | 不納入 |
 
 ## 待使用者確認的假設
@@ -47,6 +49,21 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 3. 實機探測為 28-07 獨立任務，僅副本庫、不重啟、不改設定，需使用者核准。
 4. 病人、管理端、背景補齊共用一把鎖；病人端有已核准資料時忙碌降級為確定性回答，無資料時回 busy。
 5. 速率文字修正（/home/hsu/AGENTS.md 的約 90 tok/s）於探測確認後進行。
-6. 預生成 approved 列：僅參考內容簽章改變時覆寫（回 pending）；僅時間過期而內容有變時不覆寫並計數，交醫師處理（避免公開內容每日消失）。
+6. 預生成受保護列（approved／rejected／人工編修）：僅參考內容簽章改變時才重新生成（回 pending）；時間過期但簽章未變不排入、不佔名額。pending 列每 24 小時會被重新生成（GPU 成本，醫師未審期間會持續更新）。
 7. 新鮮度判定採 24 小時減 2 小時寬限，避免每晚 02:30 批次因 23.9 小時而跳過導致實際 48 小時一輪。
 8. 每晚處理的主題數受 --max-faq-topics 限制；主題多時積壓跨晚，24 小時為目標而非硬保證，摘要回報 prefill_backlog。
+
+## 待決事項(阻斷性)
+- **BLOCKER-1(等使用者決定,計畫暫不更動)**:匿名 /consult 是否檢索診所專屬資料,以及診所識別方式。在決定前,28-03 維持僅用一般類已核准資料;special 預生成只能經 /api/v1/query 命中。
+
+## 第 1 輪修訂摘要(依規劃檢查員回報)
+- B2:受保護列(approved/rejected/人工編修)簽章未變時不排入(28-05/06)。
+- B3:`now_fn` 與 `clock` 分離(28-06)。
+- B4:28-01 先用保守 3000 token,收緊只在 28-07 探測通過後(28-07 Task 3)。
+- B5:文件拆為 28-08(Wave 4);P28 需求條目提前到 28-01 Task 3。
+- W6:/home/hsu/AGENTS.md 修改獨立 blocking checkpoint(28-07 Task 4、5)。
+- W7:28-03 直答套用 AGENTS 2.8 雙門檻、風險對稱、歧義邊界。
+- W8:人工編修列受保護(28-05)。
+- W9:見上方來源稽核。
+- W10:ROADMAP 補 Requirements 行。
+- W11:urlopen 層測試防護(28-01)、consult_jobs 測試 db 守門與並行限制調整(28-04)、`prefill_skipped_budget`(28-06)。

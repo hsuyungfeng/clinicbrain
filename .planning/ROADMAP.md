@@ -184,12 +184,14 @@
   4. 夜間批次預生成相似 QA（pending，醫師核准後才公開）。
   5. 不收集個資；留資表單與 doctor-toolbox.com 整合為階段二，不在本期。
 **Constraints**: 不得直接寫正式庫；不得啟用 systemd；不得重啟 llama-server；價格屏蔽與繁體中文規則照舊；未審 LLM 內容不得進公開快取（AGENTS 2.24 例外僅限即時標示未審的一般說明）。
-**Plans**: 7 plans
+**Requirements**: P28-LAT, P28-TRUNC, P28-TPL, P28-PRE, P28-FRESH, P28-ASYNC
+**Plans**: 8 plans
 Plans:
-- [ ] 28-01-PLAN.md — 耗時修復：截斷偵測、病人端不重試、共用生成鎖（Wave 1）
+- [ ] 28-01-PLAN.md — 耗時修復：截斷偵測、病人端不重試、共用生成鎖、P28 需求條目（Wave 1）
 - [ ] 28-02-PLAN.md — 組稿純函式與句界截斷、rag_ask 修復（Wave 1）
 - [ ] 28-03-PLAN.md — 已核准資料組稿接入病人路由（Wave 2）
 - [ ] 28-05-PLAN.md — 24 小時新鮮度預生成規劃層（Wave 2）
 - [ ] 28-07-PLAN.md — 關思考實機探測（非自主，需核准）（Wave 2）
 - [ ] 28-04-PLAN.md — job 加輪詢與 consult.html（Wave 3）
-- [ ] 28-06-PLAN.md — 夜間批次階段 8 預生成、CLI、AGENTS 2.25（Wave 3）
+- [ ] 28-06-PLAN.md — 夜間批次階段 8 預生成、CLI（Wave 3）
+- [ ] 28-08-PLAN.md — AGENTS.md 2.25 文件（Wave 4）
