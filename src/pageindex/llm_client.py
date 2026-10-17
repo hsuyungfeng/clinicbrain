@@ -43,23 +43,23 @@ FAITHFUL_SAMPLING = {
 }
 
 # 病人端即時組稿取樣常數：
-# max_tokens 採保守上限 3000（於實測 21 tok/s 約 143 秒），在 28-07 實機探測證實關閉思考有效之前不得縮小
-# （縮小而思考未關閉會讓 content 為空）；提示依 AGENTS 2.21 要求「思考不超過 100 字」
-# （28-02 的 build_compose_prompt 第一條規則）；關閉思考兩個欄位是否對此 Qwen3.8 GGUF 模板生效尚待 28-07 驗證，
-# 收緊由 28-07 Task 3 負責。使用端應以 dict(...) 複製後使用，避免就地修改污染常數。
+# 依據 Phase 28 Plan 07 實機探測（28-PROBE.md）：
+# 1. chat_template_kwargs.enable_thinking=False 經實測證實能完全關閉思考（reasoning_chars=0），
+#    而 reasoning_effort: "none" 無效故予以移除。
+# 2. 實測正常衛教組稿僅需約 78 tokens（耗時 4.6 秒，解碼速率約 22.5 tok/s）；
+#    依據 28-07 規則（最大 tokens * 1.5，下限 600）收緊為 max_tokens=600，
+#    最壞情況延遲由原本 133 秒大幅縮減至約 26.6 秒。使用端應以 dict(...) 複製後使用。
 PATIENT_COMPOSE_SAMPLING = {
     **FAITHFUL_SAMPLING,
-    "max_tokens": 3000,
-    "reasoning_effort": "none",
+    "max_tokens": 600,
     "chat_template_kwargs": {"enable_thinking": False},
 }
 
 # 病人端一般醫學說明（AGENTS 2.24 未審草稿 JSON 路徑）取樣常數：
-# 限制上限 3000 tokens 並嘗試關閉思考，避免模型無限推演消耗數千 tokens
+# 限制上限 600 tokens 並以 chat_template_kwargs 關閉思考，避免模型產生思考推演消耗延遲
 PATIENT_GENERAL_SAMPLING = {
     **FAITHFUL_SAMPLING,
-    "max_tokens": 3000,
-    "reasoning_effort": "none",
+    "max_tokens": 600,
     "chat_template_kwargs": {"enable_thinking": False},
 }
 
@@ -108,6 +108,9 @@ def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = N
     }
     if sampling:
         payload.update(sampling)
+        # 依據 28-07 實機探測：關閉思考時 reasoning_effort 無效且矛盾，自 payload 移除
+        if payload.get("chat_template_kwargs", {}).get("enable_thinking") is False:
+            payload.pop("reasoning_effort", None)
     encoded_data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
     req = urllib.request.Request(
