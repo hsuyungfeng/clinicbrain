@@ -20,6 +20,7 @@ from typing import Any, Callable, Optional
 
 from src.api.routes.query import deep_mask_prices
 from src.general.disclaimer import RED_FLAG_DISCLAIMER_TEXT, message_for_red_flag
+from src.general.patient_clinic import resolve_patient_clinic
 from src.general.patient_consult import (
     BOOKING_URL,
     BUSY_TEXT,
@@ -70,6 +71,7 @@ def submit_job(
     query: str,
     patient_llm: Optional[Callable[[str], str]] = None,
     compose_llm: Optional[Callable[[str], str]] = None,
+    configured_clinic_id: Optional[str] = None,
 ) -> dict[str, Any]:
     """提交諮詢問句至背景作業佇列。
 
@@ -114,7 +116,7 @@ def submit_job(
     # 3. 啟動背景執行緒（問句僅作參數傳遞，絕不進入 registry）
     worker_thread = threading.Thread(
         target=_worker,
-        args=(job_id, db_path, query, patient_llm, compose_llm),
+        args=(job_id, db_path, query, patient_llm, compose_llm, configured_clinic_id),
         daemon=True,
     )
     worker_thread.start()
@@ -128,6 +130,7 @@ def _worker(
     query: str,
     patient_llm: Optional[Callable[[str], str]],
     compose_llm: Optional[Callable[[str], str]],
+    configured_clinic_id: Optional[str] = None,
 ) -> None:
     """背景執行緒：連線資料庫並呼叫 patient_consult，結果寫入 registry。"""
     global _running_count
@@ -139,7 +142,14 @@ def _worker(
         try:
             act_patient_llm = patient_llm or default_patient_llm
             act_compose_llm = compose_llm or default_patient_compose_llm
-            res = patient_consult(conn, query, act_patient_llm, compose_llm_call=act_compose_llm)
+            resolved_clinic = resolve_patient_clinic(conn, configured_clinic_id)
+            res = patient_consult(
+                conn,
+                query,
+                act_patient_llm,
+                compose_llm_call=act_compose_llm,
+                clinic_id=resolved_clinic,
+            )
             raw_res = {
                 "status": res.status,
                 "message": res.message,

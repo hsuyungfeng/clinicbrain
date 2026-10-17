@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import sqlite3
 from typing import Callable, Optional
 
@@ -26,7 +27,13 @@ from ..query.faq_shortcut import (
     risk_mismatch,
     score_hit,
 )
-from ..query.router import STOPWORD_SPLIT_PATTERN
+from ..query.router import (
+    _CLINIC_OPS_KEYWORDS,
+    STOPWORD_SPLIT_PATTERN,
+    extract_search_terms,
+    mask_prices,
+)
+from ..query.search import search_faq_cache, search_page_index_trees
 from .answer_compose import (
     assemble_answer,
     build_compose_prompt,
@@ -38,6 +45,106 @@ from .answer_compose import (
     validate_composed,
 )
 from .consult import GeneralConsultResult
+
+
+@dataclass
+class ClinicEvidence:
+    """診所已核准證據資料（含常見問答與衛教指引樹）。"""
+    faq_hits: list[dict] = field(default_factory=list)
+    guide_hits: list[dict] = field(default_factory=list)
+
+
+def retrieve_clinic_evidence(
+    conn: sqlite3.Connection,
+    query: str,
+    clinic_id: Optional[str],
+    limit: int = 5,
+) -> ClinicEvidence:
+    """檢索指定診所已核准之 special FAQ 與推理指引樹。
+
+    安全與邊界規範：
+    1. clinic_id 為空時立即回傳空結構。
+    2. 問句含營運關鍵字（如營業時間、地址、電話）時回傳空結構（不由此匿名端點提供營運資訊）。
+    3. 僅經 search_faq_cache 與 search_page_index_trees 內建之可見性閘門檢索。
+    4. Python 層雙重保險防禦性檢查：排除任何非指定 clinic_id 之資料，絕不跨診所。
+    5. 內容經由 mask_prices 清洗。
+    """
+    if not clinic_id:
+        return ClinicEvidence()
+
+    q = (query or "").strip()
+    if not q:
+        return ClinicEvidence()
+
+    # 問句含診所營運關鍵字時不提供診所證據（回歸一般路徑）
+    if any(kw in q for kw in _CLINIC_OPS_KEYWORDS):
+        return ClinicEvidence()
+
+    terms = extract_search_terms(q) or [q]
+
+    seen_faq_ids: set[int] = set()
+    clinic_faqs: list[dict] = []
+
+    seen_tree_ids: set[int] = set()
+    clinic_trees: list[dict] = []
+
+    for term in terms:
+        # 1. 檢索該診所 special FAQ
+        try:
+            hits = search_faq_cache(
+                conn,
+                query=term,
+                limit=limit,
+                clinic_id=clinic_id,
+                category="special",
+            )
+            for h in hits:
+                # 雙重防禦檢查：確保 row.clinic_id 與 clinic_id 完全一致
+                row_clinic_id = h.fields.get("clinic_id")
+                if not (row_clinic_id == clinic_id):
+                    continue
+                if h.row_id not in seen_faq_ids:
+                    seen_faq_ids.add(h.row_id)
+                    clinic_faqs.append({
+                        "topic_key": h.fields.get("topic_key"),
+                        "question": mask_prices(h.fields.get("question") or ""),
+                        "answer": mask_prices(h.fields.get("answer") or ""),
+                        "clinic_id": clinic_id,
+                        "level": "診所",
+                    })
+        except sqlite3.OperationalError:
+            pass
+
+        # 2. 檢索該診所已核准之推理指引樹
+        try:
+            tree_hits = search_page_index_trees(
+                conn,
+                query=term,
+                limit=limit,
+                clinic_id=clinic_id,
+            )
+            for th in tree_hits:
+                # 雙重防禦檢查：確保 row.clinic_id 與 clinic_id 完全一致
+                row_clinic_id = th.fields.get("clinic_id")
+                if not (row_clinic_id == clinic_id):
+                    continue
+                if th.row_id not in seen_tree_ids:
+                    seen_tree_ids.add(th.row_id)
+                    clinic_trees.append({
+                        "doc_id": th.fields.get("doc_id"),
+                        "category": th.fields.get("category"),
+                        "clinic_id": clinic_id,
+                        "pre_op": mask_prices(th.fields.get("pre_op") or ""),
+                        "procedure": mask_prices(th.fields.get("procedure") or ""),
+                        "post_op_short": mask_prices(th.fields.get("post_op_short") or ""),
+                        "maintenance": mask_prices(th.fields.get("maintenance") or ""),
+                        "summary_text": mask_prices(th.fields.get("summary_text") or ""),
+                        "level": "診所",
+                    })
+        except sqlite3.OperationalError:
+            pass
+
+    return ClinicEvidence(faq_hits=clinic_faqs, guide_hits=clinic_trees)
 
 
 def _get_db_path(conn: sqlite3.Connection) -> str:
@@ -113,10 +220,18 @@ def _evaluate_direct_shortcut(
     return best["item"]
 
 
-def _deterministic_fallback(found: GeneralConsultResult, intent: str) -> Optional[str]:
+def _deterministic_fallback(
+    found: GeneralConsultResult,
+    intent: str,
+    extra_faqs: Optional[list[dict]] = None,
+    extra_guides: Optional[list[dict]] = None,
+) -> Optional[str]:
     """從已核准資料萃取確定性回答，確保結構為 2～4 句並附加追問與 CTA。"""
+    faqs = (extra_faqs or []) + found.faq_hits
+    guides = (extra_guides or []) + found.guide_hits
+
     # 優先從 FAQ 答案萃取
-    for h in found.faq_hits:
+    for h in faqs:
         ans = (h.get("answer") or "").strip()
         if not ans:
             continue
@@ -145,7 +260,7 @@ def _deterministic_fallback(found: GeneralConsultResult, intent: str) -> Optiona
                 return sanitize_faq_text(assembled)
 
     # 次選從推理樹 guide_hits 萃取
-    for g in found.guide_hits:
+    for g in guides:
         summary = (g.get("summary_text") or "").strip()
         post_op = (g.get("post_op_short") or "").strip()
         combined = f"{summary}。{post_op}" if summary and post_op else (summary or post_op)
@@ -163,6 +278,7 @@ def compose_from_approved(
     query: str,
     found: GeneralConsultResult,
     llm_call: Callable[[str], str],
+    clinic_evidence: Optional[ClinicEvidence] = None,
 ) -> Optional[str]:
     """依已核准資料進行組稿，包含命中直答、LLM 組稿與確定性降級。
 
@@ -174,8 +290,13 @@ def compose_from_approved(
 
     intent = classify_intent(q)
 
-    # 1. 嘗試高信心直答（預生成核准後或既有 FAQ 命中即回，不呼叫 LLM）
-    best_faq = _evaluate_direct_shortcut(q, found.faq_hits)
+    clinic_faqs = clinic_evidence.faq_hits if clinic_evidence else []
+    clinic_guides = clinic_evidence.guide_hits if clinic_evidence else []
+    all_faqs = clinic_faqs + found.faq_hits
+    all_guides = clinic_guides + found.guide_hits
+
+    # 1. 嘗試高信心直答（預生成核准後或既有 FAQ 命中即回，診所優先，不呼叫 LLM）
+    best_faq = _evaluate_direct_shortcut(q, all_faqs)
     if best_faq is not None:
         best_ans = best_faq.get("answer") or ""
         clipped_val = clip_at_sentence(best_ans, 400)
@@ -183,14 +304,15 @@ def compose_from_approved(
         if assembled:
             return sanitize_faq_text(assembled)
 
-    # 2. 否則建立 evidence blocks 嘗試 LLM 組稿
+    # 2. 否則建立 evidence blocks 嘗試 LLM 組稿（診所證據在前、通用證據在後）
     blocks: list[str] = []
-    for i, h in enumerate(found.faq_hits[:5], 1):
+    for i, h in enumerate(all_faqs[:5], 1):
         faq_q = clip_at_sentence(h.get("question") or "", 200)
         faq_a = clip_at_sentence(h.get("answer") or "", 400)
-        blocks.append(f"[F{i}]（常見問答）問：{faq_q}\n答：{faq_a}")
+        lvl = f"（{h.get('level')}常見問答）" if h.get("level") else "（常見問答）"
+        blocks.append(f"[F{i}]{lvl}問：{faq_q}\n答：{faq_a}")
 
-    for i, g in enumerate(found.guide_hits[:2], 1):
+    for i, g in enumerate(all_guides[:2], 1):
         doc_id = g.get("doc_id") or ""
         summary_raw = (g.get("summary_text") or "").strip()
         summary = clip_at_sentence(summary_raw, 200) if summary_raw else ""
@@ -201,10 +323,11 @@ def compose_from_approved(
                 parts.append(f"{label}：{clip_at_sentence(val, 250)}")
         body = (f"摘要：{summary}\n" if summary else "") + "\n".join(parts)
         if body.strip():
-            blocks.append(f"[T{i}]（衛教指引：{doc_id}）\n{body}")
+            lvl = f"（{g.get('level')}衛教指引：{doc_id}）" if g.get("level") else f"（衛教指引：{doc_id}）"
+            blocks.append(f"[T{i}]{lvl}\n{body}")
 
     if not blocks:
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
 
     # 總長限制 2000 字
     total_len = 0
@@ -218,32 +341,32 @@ def compose_from_approved(
     # 鎖探測：非阻塞取得 GENERATION_LOCK 且 nightly_batch_running 為 False
     db_path = _get_db_path(conn)
     if nightly_batch_running(db_path):
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
 
     if not GENERATION_LOCK.acquire(blocking=False):
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
 
     try:
         prompt = build_compose_prompt(q, filtered_blocks, intent)
         raw_output = llm_call(prompt)
     except Exception:
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
     finally:
         GENERATION_LOCK.release()
 
     value, followup = parse_model_output(raw_output)
     if not is_complete_ending(value):
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
     if followup and not is_complete_ending(followup):
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
 
     ok, _ = validate_composed(value, followup)
     if not ok:
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
 
     assembled = assemble_answer(value, followup, intent)
     if not assembled:
-        return _deterministic_fallback(found, intent)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
 
     return sanitize_faq_text(assembled)
 

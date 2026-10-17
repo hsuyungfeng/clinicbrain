@@ -21,6 +21,7 @@ from ..models.general import GeneralConsultResponse, GeneralQueryRequest
 from .query import deep_mask_prices
 from ...general.consult import consult_general
 from ...general.consult_jobs import get_job_result, submit_job
+from ...general.patient_clinic import resolve_patient_clinic
 from ...general.patient_consult import (
     BOOKING_URL,
     default_patient_compose_llm,
@@ -84,7 +85,8 @@ def post_general_query(
     summary="病人諮詢（先答後導；沒有資料時一般醫學說明並提供預約方式）",
     description=(
         "匿名病人諮詢：紅旗優先；已核准資料直接回答；沒有資料時由本機模型生成一般醫學說明（標示未經醫師審核），"
-        "並將問題存入一般草稿佇列供醫師審核。每則回覆附預約方式連結。不收集姓名、電話或身分證。"
+        "並將問題存入一般草稿佇列供醫師審核。每則回覆附預約方式連結。不收集姓名、電話或身分證。\n"
+        "診所範圍由伺服器設定決定，請求中的診所欄位一律忽略。"
     ),
 )
 def post_general_consult(
@@ -92,11 +94,13 @@ def post_general_consult(
     conn: sqlite3.Connection = Depends(get_write_db),
 ) -> dict:
     """寫入端點（僅在無資料時寫入一般草稿，狀態 pending）。"""
+    resolved_clinic = resolve_patient_clinic(conn, config.patient_clinic_id)
     result = patient_consult(
         conn,
         request.query,
         default_patient_llm,
         compose_llm_call=default_patient_compose_llm,
+        clinic_id=resolved_clinic,
     )
     return {
         "status": result.status,
@@ -115,7 +119,8 @@ def post_general_consult(
         "- 隱私保證：問句置於請求主體，不落地儲存、不進入 URL 與存取日誌。\n"
         "- 紅旗優先：急重症徵候立即同步回傳緊急指示，不建立背景作業、不呼叫模型。\n"
         "- 快速回覆：正常問句送出後立即取得不可預測之安全票券，由前端輪詢。\n"
-        "- 容量保護：worker 達到 4 或作業總數達 20 時直接回傳 busy，不無限排隊。"
+        "- 容量保護：worker 達到 4 或作業總數達 20 時直接回傳 busy，不無限排隊。\n"
+        "診所範圍由伺服器設定決定，請求中的診所欄位一律忽略。"
     ),
 )
 def post_general_consult_jobs(
@@ -123,7 +128,11 @@ def post_general_consult_jobs(
 ) -> dict:
     """非同步諮詢作業提交端點（不依賴資料庫 Depends，由作業層自行開啟連線）。"""
     db_path = str(config.db_path)
-    return submit_job(db_path, request.query)
+    return submit_job(
+        db_path,
+        request.query,
+        configured_clinic_id=config.patient_clinic_id,
+    )
 
 
 @router.get(

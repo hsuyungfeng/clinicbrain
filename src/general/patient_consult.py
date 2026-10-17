@@ -29,7 +29,11 @@ from ..pageindex.llm_client import (
 from ..pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
 from .consult import consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
-from .patient_compose import compose_from_approved, decorate_general_answer
+from .patient_compose import (
+    compose_from_approved,
+    decorate_general_answer,
+    retrieve_clinic_evidence,
+)
 from .red_flags import detect_red_flag
 
 BOOKING_URL = "https://doctor-toolbox.com/"
@@ -92,12 +96,18 @@ def patient_consult(
     query: str,
     llm_call: Callable[[str], str] = default_patient_llm,
     compose_llm_call: Callable[[str], str] | None = None,
+    clinic_id: str | None = None,
 ) -> PatientConsultResult:
     """依固定順序回覆病人問句。
 
+    診所範圍規範：
+    - clinic_id 僅由呼叫端傳入伺服器固定解析之代碼（由伺服器決定，不讀請求主體或標頭）。
+    - clinic_id 為 None 時維持純一般醫療衛教行為。
+    - clinic_id 有效時，可檢索該診所已核准之 special FAQ 與指引樹，絕不跨診所。
+
     路由順序：
     1. 急重症紅旗：固定就醫指示，不查資料、不呼叫模型。
-    2. 已核准資料直答／組稿（consult_general + compose_from_approved）：有命中則回答並附免責聲明。
+    2. 已核准資料直答／組稿（診所證據 + 通用證據 + compose_from_approved）：有命中則回答並附免責聲明。
     3. 同題草稿重用（find_existing_general_draft）：待審重用裝飾答案，駁回則回固定文字。
     4. 2.24 未審一般說明（generate_general_draft）：本機 LLM 生成、存入草稿佇列（pending），裝飾回傳並標示未審。
     5. 固定文字（no_match）。
@@ -112,17 +122,33 @@ def patient_consult(
             booking_url=BOOKING_URL,
         )
 
+    clinic_ev = retrieve_clinic_evidence(conn, query, clinic_id) if clinic_id else None
     found = consult_general(conn, query)
-    if found.status == "answered":
+
+    has_clinic_evidence = bool(clinic_ev and (clinic_ev.faq_hits or clinic_ev.guide_hits))
+    has_general_evidence = found.status == "answered"
+
+    if has_clinic_evidence or has_general_evidence:
         actual_compose_llm = compose_llm_call or llm_call
-        composed_msg = compose_from_approved(conn, query, found, actual_compose_llm)
-        return PatientConsultResult(
-            status="answered",
-            message=composed_msg if composed_msg else found.message,
-            disclaimer=found.disclaimer,
-            label=None,
-            booking_url=BOOKING_URL,
+        composed_msg = compose_from_approved(
+            conn, query, found, actual_compose_llm, clinic_evidence=clinic_ev
         )
+        if composed_msg:
+            return PatientConsultResult(
+                status="answered",
+                message=composed_msg,
+                disclaimer=found.disclaimer,
+                label=None,
+                booking_url=BOOKING_URL,
+            )
+        elif has_general_evidence and found.message:
+            return PatientConsultResult(
+                status="answered",
+                message=found.message,
+                disclaimer=found.disclaimer,
+                label=None,
+                booking_url=BOOKING_URL,
+            )
 
     # 同一題已有一般草稿：直接沿用，不再呼叫模型（待審重用答案，駁回則回固定文字）
     existing = find_existing_general_draft(conn, query)

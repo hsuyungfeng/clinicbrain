@@ -214,3 +214,10 @@ def _forbid_real_patient_llm(monkeypatch):
         monkeypatch.setattr(rg, "default_patient_llm", _raise_error, raising=False)
     except ImportError:
         pass
+
+
+@pytest.fixture(autouse=True)
+def _reset_patient_clinic_id(monkeypatch):
+    """於每個測試前將全域 config.patient_clinic_id 設為 None，避免環境變數污染其他測試。"""
+    from src.api.config import config
+    monkeypatch.setattr(config, "patient_clinic_id", None)
