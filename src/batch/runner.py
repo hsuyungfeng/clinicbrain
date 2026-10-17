@@ -8,6 +8,7 @@
 
 from collections import Counter
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 import time
@@ -29,6 +30,11 @@ from src.pageindex.faq_review import (
     regen_marked_rows,
 )
 from src.pageindex.llm_client import LocalLLMUnavailableError
+
+
+def _utc_now() -> datetime:
+    """提供標準 UTC 時間，為全專案階段 8 唯一呼叫 datetime.now 之處。"""
+    return datetime.now(timezone.utc)
 
 
 class BatchPreflightError(Exception):
@@ -59,6 +65,10 @@ class BatchConfig:
     max_pending: int = 200
     time_budget_seconds: float = 3600.0
     enable_autofill_answers: bool = True
+    enable_patient_prefill: bool = True
+    prefill_seed_path: Optional[Path] = None
+    now_fn: Optional[Callable[[], datetime]] = None
+    prefill_llm_call: Optional[Callable[[str], str]] = None
 
     def __post_init__(self) -> None:
         # 互斥旗標防護（CLI 之外的程式化呼叫同樣適用；矛盾組合直接拒絕，不靜默擇一）
@@ -95,6 +105,14 @@ class BatchSummary:
     trees_rejected: int = 0
     trees_skipped: int = 0
     trees_overwrote_handwritten: int = 0
+    prefill_topics_planned: int = 0
+    prefill_generated: int = 0
+    prefill_refreshed: int = 0
+    prefill_rejected: int = 0
+    prefill_protected_skipped: int = 0
+    prefill_skipped_budget: int = 0
+    prefill_skipped_no_title: int = 0
+    prefill_backlog: int = 0
     errors: int = 0
 
     def as_dict(self) -> dict:
@@ -315,6 +333,26 @@ def run_batch(
         # 3. Dry-Run 判定
         # ---------------------------------------------------------------------
         if cfg.dry_run:
+            if cfg.enable_patient_prefill and not cfg.soap_only and not cfg.general_only:
+                from src.batch.patient_prefill import run_prefill_stage
+
+                effective_now = (cfg.now_fn or _utc_now)()
+                prefill_seed = cfg.prefill_seed_path or cfg.seed_path
+                prefill_res = run_prefill_stage(
+                    conn,
+                    cfg,
+                    llm_call,
+                    now=effective_now,
+                    clock=clock,
+                    logger=logger,
+                    seed_path=prefill_seed,
+                    start_time=start_time,
+                )
+                summary.prefill_topics_planned = prefill_res.topics_planned
+                summary.prefill_backlog = prefill_res.backlog
+                summary.prefill_skipped_no_title = prefill_res.skipped_no_title
+                summary.prefill_protected_skipped = prefill_res.protected_skipped
+
             logger.info("dry_run_done", llm_status="dry-run 未檢查")
             summary.status = "dry_run"
             logger.info("batch_summary", **summary.as_dict())
@@ -512,6 +550,46 @@ def run_batch(
                 except Exception as e:
                     summary.errors += 1
                     logger.warning("autofill_faq_failed", faq_id=u_id, error=str(e))
+
+        # ---------------------------------------------------------------------
+        # 8. 24 小時預先生成主體醫學資訊階段 (Phase 28 P28-PRE / P28-FRESH)
+        # ---------------------------------------------------------------------
+        if cfg.enable_patient_prefill and not cfg.soap_only and not cfg.general_only:
+            from src.batch.patient_prefill import run_prefill_stage
+
+            effective_now = (cfg.now_fn or _utc_now)()
+            effective_prefill_llm = cfg.prefill_llm_call or llm_call
+            prefill_seed = cfg.prefill_seed_path or cfg.seed_path
+
+            prefill_res = run_prefill_stage(
+                conn,
+                cfg,
+                effective_prefill_llm,
+                now=effective_now,
+                clock=clock,
+                logger=logger,
+                seed_path=prefill_seed,
+                start_time=start_time,
+            )
+
+            summary.prefill_topics_planned = prefill_res.topics_planned
+            summary.prefill_generated = prefill_res.generated
+            summary.prefill_refreshed = prefill_res.refreshed_unchanged
+            summary.prefill_rejected = prefill_res.rejected
+            summary.prefill_protected_skipped = prefill_res.protected_skipped
+            summary.prefill_skipped_budget = prefill_res.skipped_budget
+            summary.prefill_skipped_no_title = prefill_res.skipped_no_title
+            summary.prefill_backlog = prefill_res.backlog
+            summary.errors += prefill_res.errors
+
+            if prefill_res.status == "llm_unavailable":
+                summary.status = "llm_unavailable"
+                logger.info("batch_summary", **summary.as_dict())
+                return summary
+            elif prefill_res.status == "budget_exhausted":
+                summary.status = "budget_exhausted"
+                logger.info("batch_summary", **summary.as_dict())
+                return summary
 
         summary.status = "completed"
         logger.info("batch_summary", **summary.as_dict())

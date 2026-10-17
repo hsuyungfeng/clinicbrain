@@ -104,6 +104,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="略過臨床推理樹重建階段",
     )
+    parser.add_argument(
+        "--skip-patient-prefill",
+        action="store_true",
+        help="略過 24 小時預先生成主體醫學資訊階段",
+    )
     soap_mode = parser.add_mutually_exclusive_group()
     soap_mode.add_argument(
         "--skip-soap",
@@ -261,13 +266,23 @@ def main(
             conn = sqlite3.connect(str(db_path), timeout=30)
             conn.execute("PRAGMA foreign_keys = ON;")
 
+        prefill_llm = None
         if not args.dry_run:
             if llm_call is None or health_check is None:
-                from src.pageindex.llm_client import check_llm_health, local_llm_call
+                from src.pageindex.llm_client import (
+                    PATIENT_COMPOSE_SAMPLING,
+                    check_llm_health,
+                    local_llm_call,
+                )
                 if llm_call is None:
                     llm_call = partial(local_llm_call, timeout=args.llm_timeout)
                 if health_check is None:
                     health_check = check_llm_health
+                prefill_llm = partial(
+                    local_llm_call,
+                    timeout=240,
+                    sampling=dict(PATIENT_COMPOSE_SAMPLING),
+                )
         else:
             if llm_call is None:
                 llm_call = lambda p: ""
@@ -294,6 +309,8 @@ def main(
             min_miss_count=args.min_miss_count,
             max_pending=args.max_pending,
             time_budget_seconds=args.time_budget_seconds,
+            enable_patient_prefill=not args.skip_patient_prefill,
+            prefill_llm_call=prefill_llm,
         )
 
         summary: BatchSummary = run_batch(
@@ -312,6 +329,7 @@ def main(
         print(f"FAQ 主題：規劃 {summary.faq_topics_planned} 個，處理 {summary.faq_topics_processed} 個")
         print(f"FAQ 筆數：新增 {summary.faq_inserted} 筆，剔除 {summary.faq_rejected} 筆，略過既有 {summary.faq_skipped_existing} 筆")
         print(f"推理樹：規劃 {summary.trees_planned} 棵，重建 {summary.trees_rebuilt} 棵，未變 {summary.trees_unchanged} 棵，略過 {summary.trees_skipped} 棵")
+        print(f"主體預生成：新增 {summary.prefill_generated} 筆，未變刷新 {summary.prefill_refreshed} 筆，略過受保護 {summary.prefill_protected_skipped} 筆，積壓 {summary.prefill_backlog} 個")
         if summary.trees_overwrote_handwritten > 0:
             print(f"⚠️ 注意：共有 {summary.trees_overwrote_handwritten} 棵手寫或上傳之推理樹被重建覆蓋")
         print(f"錯誤數：{summary.errors}")
