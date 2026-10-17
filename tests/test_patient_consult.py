@@ -79,3 +79,78 @@ def test_rejected_draft_is_not_regenerated(isolated_conn):
         raise AssertionError("已駁回的題目不得再生成")
     r = pc.patient_consult(isolated_conn, Q, boom)
     assert r.status == "no_match"
+
+
+def test_approved_data_composes_with_cta_and_single_question(isolated_conn, monkeypatch):
+    """Test 1: 已核准資料命中時 status 為 answered，含 CTA_TEXT 且恰一個「？」；compose 回 None 時退回既有 found.message。"""
+    from src.pageindex.faq_writer import upsert_faqs
+    from src.general.answer_compose import CTA_TEXT
+
+    app_q = "測試專用已核准一般衛教問題甲乙丙？"
+    app_ans = f"這是已核准的日常照護說明，請依指示清潔患部保持通風乾燥。{WARNING}"
+    upsert_faqs(
+        isolated_conn,
+        [{
+            "clinic_id": None,
+            "topic_key": "p28-app-cons",
+            "category": "general",
+            "question": app_q,
+            "answer": app_ans,
+        }],
+        source_type="manual",
+    )
+
+    r = pc.patient_consult(isolated_conn, app_q)
+    assert r.status == "answered"
+    assert CTA_TEXT in r.message
+    assert r.message.count("？") == 1
+    assert r.label is None
+
+    # 當 compose 回 None 時，退回 found.message
+    monkeypatch.setattr(pc, "compose_from_approved", lambda *args, **kwargs: None)
+    r2 = pc.patient_consult(isolated_conn, app_q)
+    assert r2.status == "answered"
+    assert "資料庫中與您問題相關" in r2.message
+
+
+def test_pending_draft_decorated_message_does_not_mutate_db_record(isolated_conn):
+    """Test 3: message 含草稿答案與追問與 CTA，而 faq_cache 該草稿列的 answer 不含 CTA。"""
+    from src.general.answer_compose import CTA_TEXT
+
+    q_draft = "測試一般新題目草稿分離檢驗"
+    r = pc.patient_consult(isolated_conn, q_draft, _llm_ok)
+    assert r.status == "llm_general"
+    assert CTA_TEXT in r.message
+    assert r.label == pc.LLM_LABEL
+
+    # 檢查資料庫列中存的 answer 不含 CTA_TEXT
+    cur = isolated_conn.execute(
+        "SELECT answer FROM faq_cache WHERE category='general' AND question=?", (q_draft,)
+    )
+    db_answer = cur.fetchone()[0]
+    assert CTA_TEXT not in db_answer
+    assert WARNING in db_answer
+
+
+def test_max_llm_calls_is_at_most_one(isolated_conn):
+    """Test 6: 整個流程呼叫 llm_call 的總次數對任何路徑皆小於等於 1。"""
+    calls = []
+    def counting_llm(prompt):
+        calls.append(prompt)
+        return _llm_ok(prompt)
+
+    # 1. 新草稿生成路徑
+    q_new = "測試呼叫次數限制題目甲"
+    pc.patient_consult(isolated_conn, q_new, counting_llm)
+    assert len(calls) == 1
+
+    # 2. 同題重用路徑
+    calls.clear()
+    pc.patient_consult(isolated_conn, q_new, counting_llm)
+    assert len(calls) == 0
+
+    # 3. 紅旗路徑
+    calls.clear()
+    pc.patient_consult(isolated_conn, "胸痛無法呼吸", counting_llm)
+    assert len(calls) == 0
+

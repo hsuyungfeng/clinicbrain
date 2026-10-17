@@ -29,6 +29,7 @@ from ..pageindex.llm_client import (
 from ..pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
 from .consult import consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
+from .patient_compose import compose_from_approved, decorate_general_answer
 from .red_flags import detect_red_flag
 
 BOOKING_URL = "https://doctor-toolbox.com/"
@@ -61,78 +62,6 @@ class PatientConsultResult:
     booking_url: str
 
 
-def patient_consult(
-    conn: sqlite3.Connection,
-    query: str,
-    llm_call: Callable[[str], str],
-) -> PatientConsultResult:
-    """依固定順序回覆病人問句。llm_call 僅在沒有已核准資料時使用。"""
-    rf = detect_red_flag(query)
-    if rf is not None:
-        return PatientConsultResult(
-            status="red_flag",
-            message=message_for_red_flag(rf.level, rf.rule_id),
-            disclaimer=RED_FLAG_DISCLAIMER_TEXT,
-            label=None,
-            booking_url=BOOKING_URL,
-        )
-
-    found = consult_general(conn, query)
-    if found.status == "answered":
-        return PatientConsultResult(
-            status="answered",
-            message=found.message,
-            disclaimer=found.disclaimer,
-            label=None,
-            booking_url=BOOKING_URL,
-        )
-
-    # 同一題已有一般草稿：直接沿用，不再呼叫模型（待審重用答案，駁回則回固定文字）
-    existing = find_existing_general_draft(conn, query)
-    if existing is not None:
-        status, answer = existing
-        if status == "pending" and answer:
-            return PatientConsultResult(
-                status="llm_general", message=answer, disclaimer=LLM_DISCLAIMER,
-                label=LLM_LABEL, booking_url=BOOKING_URL,
-            )
-        return PatientConsultResult(
-            status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
-            label=None, booking_url=BOOKING_URL,
-        )
-
-    # 檢查夜間批次是否正在執行（跨行程檔案鎖探測）
-    db_path = _get_db_path(conn)
-    if nightly_batch_running(db_path):
-        return PatientConsultResult(
-            status="busy", message=BUSY_TEXT, disclaimer=LLM_DISCLAIMER,
-            label=None, booking_url=BOOKING_URL,
-        )
-
-    if not GENERATION_LOCK.acquire(blocking=False):
-        return PatientConsultResult(
-            status="busy", message=BUSY_TEXT, disclaimer=LLM_DISCLAIMER,
-            label=None, booking_url=BOOKING_URL,
-        )
-    try:
-        draft = generate_general_draft(conn, query, llm_call, retry_on_empty=False)
-        return PatientConsultResult(
-            status="llm_general",
-            message=draft["answer"],
-            disclaimer=LLM_DISCLAIMER,
-            label=LLM_LABEL,
-            booking_url=BOOKING_URL,
-        )
-    except (GeneralDraftError, LLMEmptyOutputError, LLMTruncatedError, LocalLLMUnavailableError, RuntimeError):
-        # 驗證未通過、輸出截斷、LLM 離線或資料庫未遷移：回固定文字，不外露內部細節
-        return PatientConsultResult(
-            status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
-            label=None, booking_url=BOOKING_URL,
-        )
-    finally:
-        GENERATION_LOCK.release()
-
-
 PATIENT_LLM_TIMEOUT_SECONDS = 240  # 限制單題上限 4 分鐘內，避免公開端點無限懸掛
 
 
@@ -156,3 +85,89 @@ def default_patient_compose_llm(prompt: str) -> str:
         timeout=PATIENT_LLM_TIMEOUT_SECONDS,
         sampling=dict(PATIENT_COMPOSE_SAMPLING),
     )
+
+
+def patient_consult(
+    conn: sqlite3.Connection,
+    query: str,
+    llm_call: Callable[[str], str] = default_patient_llm,
+    compose_llm_call: Callable[[str], str] | None = None,
+) -> PatientConsultResult:
+    """依固定順序回覆病人問句。
+
+    路由順序：
+    1. 急重症紅旗：固定就醫指示，不查資料、不呼叫模型。
+    2. 已核准資料直答／組稿（consult_general + compose_from_approved）：有命中則回答並附免責聲明。
+    3. 同題草稿重用（find_existing_general_draft）：待審重用裝飾答案，駁回則回固定文字。
+    4. 2.24 未審一般說明（generate_general_draft）：本機 LLM 生成、存入草稿佇列（pending），裝飾回傳並標示未審。
+    5. 固定文字（no_match）。
+    """
+    rf = detect_red_flag(query)
+    if rf is not None:
+        return PatientConsultResult(
+            status="red_flag",
+            message=message_for_red_flag(rf.level, rf.rule_id),
+            disclaimer=RED_FLAG_DISCLAIMER_TEXT,
+            label=None,
+            booking_url=BOOKING_URL,
+        )
+
+    found = consult_general(conn, query)
+    if found.status == "answered":
+        actual_compose_llm = compose_llm_call or llm_call
+        composed_msg = compose_from_approved(conn, query, found, actual_compose_llm)
+        return PatientConsultResult(
+            status="answered",
+            message=composed_msg if composed_msg else found.message,
+            disclaimer=found.disclaimer,
+            label=None,
+            booking_url=BOOKING_URL,
+        )
+
+    # 同一題已有一般草稿：直接沿用，不再呼叫模型（待審重用答案，駁回則回固定文字）
+    existing = find_existing_general_draft(conn, query)
+    if existing is not None:
+        status, answer = existing
+        if status == "pending" and answer:
+            return PatientConsultResult(
+                status="llm_general",
+                message=decorate_general_answer(answer, query),
+                disclaimer=LLM_DISCLAIMER,
+                label=LLM_LABEL,
+                booking_url=BOOKING_URL,
+            )
+        return PatientConsultResult(
+            status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
+            label=None, booking_url=BOOKING_URL,
+        )
+
+    # 檢查夜間批次是否正在執行（跨行程檔案鎖探測）
+    db_path = _get_db_path(conn)
+    if nightly_batch_running(db_path):
+        return PatientConsultResult(
+            status="busy", message=BUSY_TEXT, disclaimer=LLM_DISCLAIMER,
+            label=None, booking_url=BOOKING_URL,
+        )
+
+    if not GENERATION_LOCK.acquire(blocking=False):
+        return PatientConsultResult(
+            status="busy", message=BUSY_TEXT, disclaimer=LLM_DISCLAIMER,
+            label=None, booking_url=BOOKING_URL,
+        )
+    try:
+        draft = generate_general_draft(conn, query, llm_call, retry_on_empty=False)
+        return PatientConsultResult(
+            status="llm_general",
+            message=decorate_general_answer(draft["answer"], query),
+            disclaimer=LLM_DISCLAIMER,
+            label=LLM_LABEL,
+            booking_url=BOOKING_URL,
+        )
+    except (GeneralDraftError, LLMEmptyOutputError, LLMTruncatedError, LocalLLMUnavailableError, RuntimeError):
+        # 驗證未通過、輸出截斷、LLM 離線或資料庫未遷移：回固定文字，不外露內部細節
+        return PatientConsultResult(
+            status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
+            label=None, booking_url=BOOKING_URL,
+        )
+    finally:
+        GENERATION_LOCK.release()

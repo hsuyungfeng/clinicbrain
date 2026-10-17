@@ -106,8 +106,11 @@ def test_offline_backend_consult_mock_general_structure(client, monkeypatch):
     )
     assert res.status_code == 200
     data = res.json()
-    assert data["status"] == "llm_general"
-    assert data["message"] == mock_body
+    from src.general.answer_compose import CTA_TEXT
+
+    assert mock_body in data["message"]
+    assert data["message"].endswith(CTA_TEXT)
+    assert data["message"].count("？") == 1
     assert data["label"] == pc.LLM_LABEL
     assert data["disclaimer"] == pc.LLM_DISCLAIMER
     assert data["booking_url"] == "https://doctor-toolbox.com/"
