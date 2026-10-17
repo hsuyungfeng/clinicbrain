@@ -111,3 +111,80 @@ def test_no_evidence_fallback(isolated_conn):
     assert res["used_llm"] is False
     assert res["answer"] == NO_EVIDENCE_MESSAGE
     assert len(called) == 0
+
+
+def test_retrieve_evidence_preserves_warning_in_long_faq(isolated_conn):
+    """驗證當 FAQ 答案有 700 字且結尾包含「若出現胸痛喘不過氣請儘速就醫」就醫警訊句時，經 retrieve_evidence 後，該警訊句完整進入 context，且結尾不出現 …。"""
+    warning_sentence = "若出現胸痛喘不過氣請儘速就醫。"
+    sents = [f"這是第{i}個詳細的日常居家照護注意事項說明句子，請務必按照醫師指示清潔患部避免感染。" for i in range(1, 20)]
+    long_answer = "。".join(sents) + "。" + warning_sentence
+    assert len(long_answer) >= 700
+
+    upsert_faqs(
+        isolated_conn,
+        [
+            {
+                "clinic_id": CLINIC,
+                "topic_key": "p28-long-warning",
+                "category": "special",
+                "question": f"{UNIQUE_TOKEN}術後特殊警訊注意事項？",
+                "answer": long_answer,
+            }
+        ],
+        source_type="clinic_upload",
+    )
+
+    context, sources = retrieve_evidence(isolated_conn, f"{UNIQUE_TOKEN}注意事項", clinic_id=CLINIC)
+    assert len(sources) >= 1
+    assert warning_sentence in context
+    assert "…" not in context
+    assert "..." not in context
+
+
+def test_retrieve_evidence_budget_cap_and_no_ellipsis(isolated_conn):
+    """多筆 FAQ + 推理樹時，總 context 長度不超過 CONTEXT_TOTAL_CHARS + 200，且無任何省略號結尾。"""
+    from src.pageindex.db_writer import upsert_trees
+    from src.pageindex.rag_ask import CONTEXT_TOTAL_CHARS
+
+    # 寫入 8 筆長 FAQ（每筆約 400 字）
+    faqs = [
+        {
+            "clinic_id": CLINIC,
+            "topic_key": f"p28-cap-{i}",
+            "category": "special",
+            "question": f"{UNIQUE_TOKEN}複合療程重點第 {i} 條：詳細操作流程與風險評估說明？",
+            "answer": "。".join([f"這是第{i}筆常見問答的第{j}個詳細說明句子，內容包含完整的評估原則與操作注意事項" for j in range(1, 12)]) + "。",
+        }
+        for i in range(1, 9)
+    ]
+    upsert_faqs(isolated_conn, faqs, source_type="clinic_upload")
+
+    # 寫入 2 棵推理樹（每棵四段式皆填寫 300+ 字）
+    trees = [
+        {
+            "doc_id": f"p28-tree-{i}",
+            "clinic_id": CLINIC,
+            "category": "special",
+            "title": f"{UNIQUE_TOKEN}臨床決策樹 {i}",
+            "summary_text": f"{UNIQUE_TOKEN}臨床決策樹摘要說明，涵蓋術前評估、操作步驟、術後短期與長期維持各項重點。",
+            "pre_op": "術前需詳細詢問病史，評估局部組織狀態與過敏史，排除絕對禁忌症與相對禁忌症，確認病患充分理解可能風險。",
+            "pre_op_physician_notes": "",
+            "procedure": "標準操作流程採用分層漸進技術，嚴格遵守無菌操作規範，依組織厚度與反應調整參數，避免單點過度停留與損傷。",
+            "procedure_physician_notes": "",
+            "post_op_short": "術後一週內局部可能有輕微水腫或紅斑反應，屬正常生理反應，每日以生理食鹽水輕柔清潔並保持通風乾燥。",
+            "post_op_short_physician_notes": "",
+            "maintenance": "長期維持應落實防曬保護，避免高溫場所與劇烈摩擦，依建議時程定期回診追蹤組織重塑進展與修復狀況。",
+            "maintenance_physician_notes": "",
+            "version": 1,
+            "status": "approved",
+        }
+        for i in range(1, 3)
+    ]
+    upsert_trees(isolated_conn, trees, source_type="manual")
+
+    context, sources = retrieve_evidence(isolated_conn, f"{UNIQUE_TOKEN}", clinic_id=CLINIC)
+    assert len(sources) >= 1
+    assert len(context) <= CONTEXT_TOTAL_CHARS + 200
+    assert "…" not in context
+    assert "..." not in context
+

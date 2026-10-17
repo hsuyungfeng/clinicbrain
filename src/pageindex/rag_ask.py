@@ -13,6 +13,7 @@ Phase 20: 讓醫師／管理者實際對本機 LLM 提問，觀察它如何「�
 import sqlite3
 from typing import Callable, Optional
 
+from ..general.answer_compose import clip_at_sentence
 from ..general.disclaimer import message_for_red_flag
 from ..general.red_flags import detect_red_flag
 from ..query.router import handle_query
@@ -21,53 +22,116 @@ from .faq_review import sanitize_faq_text
 MAX_QUESTION_CHARS = 300
 MAX_FAQ = 8
 MAX_TREES = 2
-SNIPPET_CHARS = 500
+CONTEXT_TOTAL_CHARS = 2400
+MIN_ITEM_CHARS = 120
+DEFAULT_FAQ_ANSWER_BUDGET = 500
+DEFAULT_TREE_BUDGET = 300
+DEFAULT_SUMMARY_BUDGET = 200
+DEFAULT_NOTE_BUDGET = 300
 NO_EVIDENCE_MESSAGE = "目前系統資料中沒有與此問題相關的已核准內容，因此不作答（避免憑空編造）。建議洽詢診所醫師。"
 
 _TREE_FIELDS = (("pre_op", "術前"), ("procedure", "療程"), ("post_op_short", "術後短期"), ("maintenance", "長期維持"))
 
 
-def _clip(text: Optional[str], n: int = SNIPPET_CHARS) -> str:
-    t = (text or "").strip()
-    return t if len(t) <= n else t[:n] + "…"
+def _render_evidence(
+    faq_hits: list,
+    tree_hits: list,
+    notes: list[tuple[str, str]],
+    clinic_info: Optional[dict],
+    budget_ratio: float = 1.0,
+) -> tuple[str, list[dict]]:
+    faq_ans_budget = max(MIN_ITEM_CHARS, int(DEFAULT_FAQ_ANSWER_BUDGET * budget_ratio))
+    tree_budget = max(MIN_ITEM_CHARS, int(DEFAULT_TREE_BUDGET * budget_ratio))
+    summary_budget = max(MIN_ITEM_CHARS, int(DEFAULT_SUMMARY_BUDGET * budget_ratio))
+    note_budget = max(MIN_ITEM_CHARS, int(DEFAULT_NOTE_BUDGET * budget_ratio))
 
-
-def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str) -> tuple[str, list[dict]]:
-    """回傳 (給 LLM 的資料文字, 來源清單)。僅含對外可見（已核准）資料。"""
-    resp = handle_query(conn, question, clinic_id, limit=MAX_FAQ, cache_shortcut=False)
     blocks: list[str] = []
     sources: list[dict] = []
 
-    for i, h in enumerate(resp.faq_hits[:MAX_FAQ], 1):
+    for i, h in enumerate(faq_hits, 1):
         f = h.fields
         ref = f"F{i}"
         level = "診所" if f.get("clinic_id") else "通用"
-        blocks.append(f"[{ref}]（{level}常見問答）問：{_clip(f.get('question'), 200)}\n答：{_clip(f.get('answer'))}")
-        sources.append({"ref": ref, "type": "faq", "id": h.row_id, "level": level, "title": _clip(f.get("question"), 80)})
+        q_text = clip_at_sentence(f.get("question") or "", 200)
+        a_text = clip_at_sentence(f.get("answer") or "", faq_ans_budget)
+        blocks.append(f"[{ref}]（{level}常見問答）問：{q_text}\n答：{a_text}")
+        sources.append({
+            "ref": ref,
+            "type": "faq",
+            "id": h.row_id,
+            "level": level,
+            "title": clip_at_sentence(f.get("question") or "", 80),
+        })
 
-    for i, h in enumerate(resp.page_index_hits[:MAX_TREES], 1):
+    for i, h in enumerate(tree_hits, 1):
         f = h.fields
         ref = f"T{i}"
-        parts = [f"{label}：{_clip(f.get(key), 300)}" for key, label in _TREE_FIELDS if (f.get(key) or "").strip()]
-        summary = _clip(f.get("summary_text"), 200)
+        parts = [
+            f"{label}：{clip_at_sentence(f.get(key) or '', tree_budget)}"
+            for key, label in _TREE_FIELDS
+            if (f.get(key) or "").strip()
+        ]
+        summary_raw = (f.get("summary_text") or "").strip()
+        summary = clip_at_sentence(summary_raw, summary_budget) if summary_raw else ""
         body = (f"摘要：{summary}\n" if summary else "") + "\n".join(parts)
         if body.strip():
             blocks.append(f"[{ref}]（臨床推理樹：{f.get('doc_id')}）\n{body}")
-            sources.append({"ref": ref, "type": "tree", "id": h.row_id, "level": "診所", "title": str(f.get("doc_id"))})
+            sources.append({
+                "ref": ref,
+                "type": "tree",
+                "id": h.row_id,
+                "level": "診所",
+                "title": str(f.get("doc_id")),
+            })
 
-    for i, (section, note) in enumerate(list(resp.clinic_custom_notes.items())[:3], 1):
+    for i, (section, note) in enumerate(notes, 1):
         ref = f"N{i}"
-        blocks.append(f"[{ref}]（診所備註：{section}）{_clip(note, 300)}")
+        blocks.append(f"[{ref}]（診所備註：{section}）{clip_at_sentence(note or '', note_budget)}")
         sources.append({"ref": ref, "type": "note", "id": None, "level": "診所", "title": section})
 
-    if resp.clinic_info:
-        info = resp.clinic_info
-        line = "、".join(f"{k}：{v}" for k, v in info.items() if v and k in ("name", "address", "phone"))
+    if clinic_info:
+        line = "、".join(f"{k}：{v}" for k, v in clinic_info.items() if v and k in ("name", "address", "phone"))
         if line:
             blocks.append(f"[C1]（診所基本資料）{line}")
             sources.append({"ref": "C1", "type": "clinic_info", "id": None, "level": "診所", "title": "診所基本資料"})
 
     return "\n\n".join(blocks), sources
+
+
+def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str) -> tuple[str, list[dict]]:
+    """回傳 (給 LLM 的資料文字, 來源清單)。僅含對外可見（已核准）資料。"""
+    resp = handle_query(conn, question, clinic_id, limit=MAX_FAQ, cache_shortcut=False)
+
+    faq_candidates = list(resp.faq_hits[:MAX_FAQ])
+    tree_candidates = list(resp.page_index_hits[:MAX_TREES])
+    note_candidates = list(resp.clinic_custom_notes.items())[:3]
+    clinic_info = resp.clinic_info
+
+    # 1. 嘗試以標準預算渲染 (budget_ratio = 1.0)
+    context, sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=1.0)
+    if len(context) <= CONTEXT_TOTAL_CHARS:
+        return context, sources
+
+    # 2. 若超出預算，嘗試縮減每項預算至 MIN_ITEM_CHARS；若在 MIN_ITEM_CHARS 下仍超標，逐一從後方剔除 FAQ
+    while len(faq_candidates) > 1:
+        min_ctx, _ = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0)
+        if len(min_ctx) <= CONTEXT_TOTAL_CHARS:
+            break
+        faq_candidates.pop()
+
+    # 3. 在當前候選集下，在 [0.0, 1.0] 間二分搜尋最佳預算比率，盡可能充分利用 CONTEXT_TOTAL_CHARS
+    low, high = 0.0, 1.0
+    best_context, best_sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0)
+    for _ in range(8):
+        mid = (low + high) / 2
+        ctx, srcs = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=mid)
+        if len(ctx) <= CONTEXT_TOTAL_CHARS:
+            best_context, best_sources = ctx, srcs
+            low = mid
+        else:
+            high = mid
+
+    return best_context, best_sources
 
 
 def build_ask_prompt(question: str, context: str) -> str:
