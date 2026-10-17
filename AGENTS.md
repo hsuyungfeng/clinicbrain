@@ -148,6 +148,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **多診所動態路由查詢**：
   - 統一入口：`POST /api/v1/query`、`POST /api/v1/clinics/{clinic_id}/query` 與 `GET /api/v1/query`。
   - 診所識別解析順序：Path/Body `clinic_id` > Header `X-Clinic-ID`，**無預設值**（`config` 已不含預設診所代碼設定，Phase 10 移除）。special 路由兩者皆未提供時 `handle_query` 拋 `ValueError`，API 回 HTTP 400，不會靜默查到任何診所。單診所部署的呼叫端須帶 `X-Clinic-ID` 或 body `clinic_id`。
+  - 匿名端點例外（Phase 28 / P28-CLINIC）：匿名病人諮詢端點（`/api/v1/general/consult*`）一律忽略請求中的 `clinic_id` 與標頭 `X-Clinic-ID`，其診所範圍僅由伺服器環境變數 `CLINICBRAIN_PATIENT_CLINIC_ID`（對應 `config.patient_clinic_id`）固定單一診所（無預設值，無效則 Fail-Closed 視為未設定），詳見 2.25 節。
   - 二次價格防禦：序列化回傳前一律經由 `deep_mask_prices()` 遞迴清洗。
 - **服務啟動與守護常駐**：
   - 啟動腳本：`scripts/run_api_server.py`（支援 `--host`, `--port`, `--reload`, `--workers`, `--log-level`）。
@@ -207,6 +208,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 為提供民眾安全、匿名且合規之一般醫療衛教諮詢管道，自 Phase 08 起建立專屬一般諮詢架構：
 - **獨立匿名端點 (`POST /api/v1/general/query`)**：
   - 匿名無綁定：不要求 `X-API-Key`，不接受亦不需 `clinic_id`；若客戶端夾帶 `clinic_id` 或 `X-Clinic-ID` 標頭一律靜默忽略。
+  - 伺服器固定診所例外（Phase 28 / P28-CLINIC）：`/api/v1/general/consult` 與 `/consult/jobs` 依伺服器設定 `patient_clinic_id` 可檢索該診所已核准之 special 內容（請求夾帶仍一律忽略），詳見 2.25 節。
   - 資料庫隔離（GENERAL-04）：僅檢索 `category='general' AND clinic_id IS NULL` 之 `faq_cache` 與 `page_index_trees`；嚴格隔離診所私有資訊，絕不查詢藥品、健保服務給付項目與診所營運資料表；完全不呼叫外部 LLM 模型。
   - 目前資料現況：正式資料庫內 general 類資料目前為 0 筆，所有非紅旗問句皆會誠實回傳 `no_match`（不捏造醫療內容）；general 衛教內容須另經醫師審核後始得入庫。
 - **急重症紅旗偵測 (`src/general/red_flags.py`)**：
@@ -521,8 +523,90 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - 預約方式固定為 `https://doctor-toolbox.com/`（HIS 廠商）；留資表單由該平台承接，**本系統不接收、不儲存表單個資**。將來合併該平台程式前，須另行決定資料流與保存期限。
 - 隱私：不要求姓名、電話、身分證、照片；不記錄問句原文或對話（`/api/v1/general` 前綴受存取日誌過濾）；草稿佇列僅存去識別化後的問題文字。
 - **待辦**：端點的完整實機測試（含真實 LLM 生成耗時）尚未執行；診所專屬 FAQ（`special`）路徑未納入匿名端點，仍由 `/api/v1/query` 處理。
+- **Phase 28 補述**：實機探測已於 2026-10-17 完成（見 28-PROBE.md）；診所專屬 FAQ（`special`）已透過伺服器固定設定 `patient_clinic_id` 納入匿名端點安全檢索（詳見 2.25 節）。
 - **同題不重複生成**：同題（去識別化後完全相同）已有一般草稿時，`pending` 直接沿用其答案，`rejected` 回固定文字，皆不呼叫模型。
 - 測試：`tests/test_patient_consult.py`（紅旗不呼叫模型、生成並標示待審、LLM 失敗不寫入、忙碌不呼叫模型、同題重用）。
+
+### 2.25 病人端對話式諮詢與 24 小時預生成（Phase 28 新增）
+
+為讓病人端諮詢實踐「先提供價值、後獲取資訊」，解決即時生成耗時長、答案截斷與冷啟動等問題，自 Phase 28 起建立對話式組稿、24 小時預生成與非同步作業架構：
+
+- **耗時根因修復與本地 LLM 實機探測（28-PROBE.md）**：
+  - 舊版異常耗時根因：`PATIENT_GENERAL_SAMPLING` 舊設定 `max_tokens=12288` 加上空白輸出重試邏輯，在單一 slot 被佔用時最壞延遲可達約 960 秒。
+  - 2026-10-17 實機探測結果（Qwen3.8-27B-UD-Q4_K_XL，副本唯讀庫）：
+    - 真實解碼速率：實測生成解碼速度為 **22.17 ～ 22.54 tok/s**（平均約 **22.5 tok/s**）。舊版文檔「90 tok/s」實為 Prompt 處理速度（prompt_per_second），非輸出解碼速度。
+    - 思考關閉控制：`chat_template_kwargs: {"enable_thinking": false}` 能 100% 關閉本機思考推演（`reasoning_content` 為 0 字元、0 token，耗時從 33.7 秒降至 4.6 秒）；`reasoning_effort: "none"` 對本機 llama-server 之 Qwen3.8 GGUF 完全無效（已自程式碼移除）。
+  - 單次呼叫不重試：病人端組稿與未審說明強制設定 `retry_on_empty=False`，避免重複推論倍增等待時間。
+  - 取樣常數現值（安全邊界）：即時組稿 `PATIENT_COMPOSE_SAMPLING["max_tokens"] = 800`（最壞延遲約 35.5 秒）；未審說明 `PATIENT_GENERAL_SAMPLING["max_tokens"] = 1500`（最壞延遲約 66.7 秒），遠低於端點 240 秒逾時上限。日後若取得更多真實組稿之 `completion_tokens` 分布數據，可再視實測分布進一步收緊（待驗證）。
+  - 截斷異常偵測：當本機 LLM 回傳 `finish_reason == "length"` 時，一律視為異常截斷並拋出 `LLMTruncatedError`，防止不完整回答或遺失警訊之內容對外輸出。
+
+- **答案截斷修復與句界安全截斷 (`src/general/answer_compose.py`)**：
+  - 截斷根因：舊版 `rag_ask` 以硬性 500 字元截斷參考資料，導致置於段落末尾之就醫警訊字樣被切斷（如「若出現胸」）。
+  - 句界截斷 (`clip_at_sentence`)：純函式實作，截斷時以標點符號（`。！？\n`）為邊界收尾；若文本包含就醫警訊（`_is_warning_sentence`），優先保留警訊句完整性；總參考上下文長度受 `CONTEXT_TOTAL_CHARS = 2000` 嚴格限制。
+
+- **三段式回答結構與程式組裝 (`assemble_answer`)**：
+  - 標準結構：**價值回答（2～4 句） ＋ 單一追問 ＋ 固定預約邀請句**（先提供價值、後獲取資訊）。
+  - 單一追問：每次僅提出一個與當前療程最相關的追問（以繁體中文問號「？」收尾），絕不連續追問，絕不要求病患提供姓名、電話或個資。
+  - 預約邀請句：由常數 `CTA_TEXT` 提供固定文字（「若想進一步評估，可使用下方的預約連結，由醫師親自了解您的狀況。」），對應預約連結 `https://doctor-toolbox.com/`。
+  - 四層醫療安全驗證：價值回答段與追問分開獨立檢核（價格屏蔽、簡體字、政治爭議詞、保證療效、用藥劑量 DX-1~6），任一段不合規即觸發降級，保證對外內容 100% 符合法規。
+
+- **查詢路由與降級序列 (`src/general/patient_consult.py`)**：
+  1. 急重症紅旗偵測：命中立即同步回傳緊急就醫指示，不建立 job、不呼叫模型。
+  2. 已核准資料直答：候選池（診所 special 優先，通用 general 在後）比對，符合 AGENTS 2.8 雙門檻（問句覆蓋率 $\ge 0.9$、FAQ 覆蓋率 $\ge 0.7$）、五維風險特徵對稱、歧義邊界 $\ge 0.1$、最小長度 $\ge 4$ 時，0 次模型呼叫直答（回傳 `status="answered"`）。
+  3. LLM 組稿：有已核准候選資料但未達直答門檻時，組裝標註層級（診所／通用）之 prompt 呼叫本地 LLM 生成 2～4 句價值說明與追問。
+  4. 確定性降級 (`_deterministic_fallback`)：LLM 離線（`LocalLLMUnavailableError`）或生成驗證失敗（`LLMValidationError`）時，自動摘錄候選池第一句＋固定追問＋CTA，安全回答（`status="answered"`），不中斷對話。
+  5. 同題草稿重用：去識別化後若已有一般草稿，`pending` 沿用其答案，`rejected` 回固定文字，皆不呼叫模型。
+  6. 2.24 未審醫學說明：無任何已核准資料時，由本機模型生成一般說明，標示未經醫師審核（`LLM_LABEL`），並將去識別化問句存入一般草稿佇列供醫師審核。
+  7. 固定文字降級：完全無資料且無法生成時，回傳固定文字 `NO_DATA_TEXT`。
+
+- **共用生成鎖與排程互斥 (`src/pageindex/llm_lock.py`)**：
+  - 記憶體生成鎖 `GENERATION_LOCK`：跨執行緒互斥鎖，序列化保護病人端即時生成與背景補齊作業，杜絕多個併發請求同時排入本機單一 slot 造成推論延遲激增。
+  - 夜間批次排程互斥：`nightly_batch_running()` 透過非阻塞探測 `<db>.nightly.lock`，若夜間批次執行中，病人端即時推論直接快速回傳 `busy`（`BUSY_TEXT`），絕不與批次爭搶 GPU。
+  - 測試雙層安全防護：`tests/conftest.py` 提供函式層攔截拋出 `AssertionError`，以及 socket 連線層阻擋向 `127.0.0.1:8080` 發起真實網路連線，確保測試套件絕不依賴或呼叫本機真實 LLM。
+
+- **非同步作業佇列與純記憶體輪詢 (`src/general/consult_jobs.py`)**：
+  - 端點設計：`POST /api/v1/general/consult/jobs` 提交問句取得安全票券；`GET /api/v1/general/consult/jobs/{job_id}` 輪詢結果。
+  - 安全票券：`job_id` 為 16 位元組密碼學安全 URL-safe 亂數（正則 `^[A-Za-z0-9_-]{16,64}$`）。
+  - 容量與時效：單次讀取即刪除；未讀取保留時間 `RESULT_TTL_SECONDS = 300`；容量上限 `MAX_JOBS = 20`、並發上限 `MAX_RUNNING = 4`，超出上限立即回傳 `busy`，不無限排隊。
+  - 隱私承諾：問句僅作為 worker 參數傳遞，registry 狀態序列化（JSON/repr）絕不包含問句原文與診所代碼。
+  - 純記憶體輪詢：GET 輪詢端點純讀取記憶體 registry，零資料庫 Depends 開銷，絕不連線資料庫；存取日誌過濾器涵蓋 jobs 端點。
+
+- **夜間批次階段 8：24 小時主體醫學資訊預生成 (`src/batch/patient_prefill.py`)**：
+  - 五意圖模板：每個推理樹主題預生成五大常見問答：是什麼（`what`）、適合誰（`who`）、風險併發症（`risk`）、術後短期照護（`post`）、長期維持（`maintenance`）。
+  - 新鮮度與重排：`FRESHNESS_HOURS = 24`、`REFRESH_GRACE_HOURS = 2`。
+  - 識別與追蹤：以 `topic_key`（`prefill-{doc_id}-{intent}`）為唯一鍵；`metadata` 欄位記錄 `generated_at`（UTC ISO）、`tree_content_version`、`seed_title`、`input_signature`。
+  - 簽章與保護規則：已獲保護列（`approved`、`rejected` 或人工編修列）僅在簽章（推理樹版本或標題）實質變更時才重新生成（重置回 `pending`）；`time_stale` 僅對 `pending` 且非人工編修之過期列生效。
+  - 永不自動核准：新生成列一律透過 `faq_writer.upsert_faqs(..., source_type='llm_generated')` 寫入，狀態恆為 `pending`，夜間批次絕不自動核准任何列。
+  - 時鐘注入與資源防禦：`now_fn` 提供業務 UTC 時間，`clock` 提供時間預算單調時鐘；受 `--max-faq-topics`、`--time-budget-seconds` 與 `--max-pending` 上限約束。
+  - 批次摘要統計：包含 `prefill_topics_planned`、`prefill_generated`、`prefill_refreshed`、`prefill_rejected`、`prefill_protected_skipped`、`prefill_skipped_budget`、`prefill_skipped_no_title`、`prefill_backlog`；支援 CLI 旗標 `--skip-patient-prefill`。
+
+- **伺服器固定單一診所設定例外（P28-CLINIC）**：
+  - 固定單一診所設定：匿名端點（`/consult`、`/consult/jobs`）的診所範圍由伺服器環境變數 `CLINICBRAIN_PATIENT_CLINIC_ID`（對應 `config.patient_clinic_id`）決定，**無預設值**，程式碼中無任何寫死診所代碼字面值。
+  - 安全解析：`resolve_patient_clinic(conn, configured)` 每次使用皆經 `clinic_info` 驗證且為 10 碼數字；無效或資料表缺失時回傳 `None`（Fail-Closed，不改查他院）。
+  - 忽略請求夾帶：端點由伺服器設定決定診所，絕不讀取請求主體中的 `clinic_id` 與標頭 `X-Clinic-ID`（一律忽略）。
+  - 雙重跨診所隔離：僅經 `visible_faq_sql` 與 `visible_tree_sql` 檢索該診所已核准資料，並以 Python 雙重比對 `row.clinic_id == clinic_id`，不符一律丟棄。
+  - 營運關鍵字防護：問句含營運關鍵字（`_CLINIC_OPS_KEYWORDS`，如地址、電話、營業時間等）時直接回傳空證據，不使用診所私有資料；絕不讀取 `clinic_info`、`clinic_hours`、`clinic_custom_notes`。
+  - 隱私保護：問句不存庫、不寫入 cache_stats、系統日誌絕不包含問句原文。
+
+- **已知限制與維護說明**：
+  1. 未設定 `patient_clinic_id` 時，匿名諮詢端點不檢索任何診所資料（只命中一般資料）；正式庫目前推理樹皆為診所專屬，因此未設定 `patient_clinic_id` 時，這些樹來源的預生成內容匿名端點看不到（special 預生成仍可透過 `/api/v1/query` 帶 `clinic_id` 使用）。
+  2. 預生成題目標題只來自推理樹的 `title` 或種子 `title`（去除「常見問題」字樣），無中文標題者不進行預生成（計入 `prefill_skipped_no_title`）。
+  3. 積壓主題（`prefill_backlog`）受每日主題配額限制，可能跨晚逐步處理。
+  4. 未審核之 `pending` 列每 24 小時重新生成會消耗 GPU 計算資源，院所應建立定期審核機制。
+  5. 快取統計之未命中關鍵字由 Phase 9 種子機制承接，不在階段 8 預生成內直接使用。
+
+- **測試清單**：
+  - `tests/test_patient_consult_latency.py`：延遲修復、finish_reason=length 截斷偵測、單次不重試測試。
+  - `tests/test_answer_compose.py`：組稿純函式、句子邊界截斷、就醫警訊優先保留測試。
+  - `tests/test_patient_compose.py`：已核准資料組稿、層級標示、確定性降級、2000 字上限測試。
+  - `tests/test_consult_jobs.py`：非同步 job 佇列、TTL 過期清理、純記憶體輪詢零資料庫連線、容量上限測試。
+  - `tests/test_patient_prefill_plan.py`：24 小時新鮮度規劃層、五意圖模板、簽章規則、受保護列略過測試。
+  - `tests/test_patient_prefill_batch.py`：夜間批次階段 8 預生成執行器單元測試、時間預算、待審上限測試。
+  - `tests/test_patient_prefill_e2e.py`：夜間批次階段 8 跨日與端到端測試、核准後 0 次模型呼叫直答測試。
+  - `tests/test_probe_patient_thinking.py`：本地 LLM 思考關閉實機探測輔助與單元測試。
+  - `tests/test_patient_clinic_scope.py`：伺服器固定診所範圍、Fail-Closed、跨診所雙重防禦、忽略請求夾帶、營運關鍵字測試。
+  - `tests/test_patient_prefill_special_e2e.py`：special 推理樹預生成核准後直答、未設定不命中、錯誤診所不命中 e2e 測試。
+  - `tests/test_general_privacy.py`：一般諮詢隱私守門測試（AST 語法樹靜態掃描確保無 logging、print 或非 SELECT execute）。
 
 ---
 
@@ -552,8 +636,14 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   * `src/api/routes/sync.py`：doctor-toolbox.com 官方雙向同步契約端點
   * `src/api/routes/health.py`：系統與資料庫健康檢查端點
 * `src/batch/`：夜間批次排程與生成核心模組（`runner.py`, `run_log.py`, `topic_sources.py`, `faq_generator.py`, `tree_rebuild.py`）
+  * `src/batch/patient_prefill_plan.py`：夜間批次階段 8 預生成意圖規劃、24 小時新鮮度與簽章比對純函式
+  * `src/batch/patient_prefill.py`：夜間批次階段 8 主體醫學資訊預生成與唯一權威寫入管線
 * `src/soap/`：SOAP 紀錄處理核心模組（`section_parser.py`, `deid.py`, `soap_writer.py`）
 * `src/general/`：一般醫療諮詢核心業務模組（`__init__.py`, `disclaimer.py`, `red_flags.py`, `consult.py`）
+  * `src/general/answer_compose.py`：病人端三段式回答組裝純函式、句界截斷與警訊句保護
+  * `src/general/patient_compose.py`：病人諮詢已核准資料（診所與一般）組稿、層級標示與確定性降級
+  * `src/general/patient_clinic.py`：病人諮詢伺服器固定單一診所設定安全驗證函式（純 SELECT，Fail-Closed）
+  * `src/general/consult_jobs.py`：病人非同步諮詢作業登錄與管理模組（純記憶體 registry、TTL 讀後即刪）
 * `src/db/clinic_schema.sql`：完整資料庫 schema，唯一權威來源（僅表結構，資料種子交給對應 Python 模組）
 * `src/query/faq_shortcut.py`：高信心 FAQ 短路判定與五維風險特徵比對純函式
 * `src/query/cache_stats.py`：匿名快取命中統計寫入與彙總函式（白名單過濾）
@@ -563,6 +653,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `src/pageindex/seed_clinic_info.py`：`clinic_info` 種子資料的唯一權威來源
 * `src/pageindex/prompt_template.py`：LLM 生成臨床推理樹的 prompt 組裝 + 輸出驗證
 * `src/pageindex/llm_client.py`：本地 LLM（llama-server）呼叫 adapter
+* `src/pageindex/llm_lock.py`：跨執行緒共用生成鎖（`GENERATION_LOCK`）與夜間批次排程互斥探測模組
 * `src/pageindex/faq_writer.py`：`faq_cache` 的唯一 UPSERT 寫入邏輯
 * `src/pageindex/faq_conflicts.py`：相近診所問答衝突檢索模組（支援 visible_faq_sql 與唯讀模式）
 * `src/ingestion/`：文件擷取管線（`extract_text.py`/`convert_chinese.py`/`generate_faq.py`）
@@ -587,6 +678,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/ocr_draft.py`：手動 OCR 草稿 CLI（單張圖片、固定警語、預設印到標準輸出）
 * `scripts/run_stage1_ingestion.py`：文件擷取 Stage 1 端到端執行入口，僅寫入隔離測試複本
 * `scripts/run_api_server.py`：FastAPI 服務啟動入口腳本（支援 CLI 參數）
+* `scripts/probe_patient_thinking.py`：本地 LLM 思考關閉與解碼速率實機探測 CLI 腳本（需顯式核准 `--i-approve-live-probe`）
 * `clinicbrain-api.service`：API 服務 systemd 配置範本
 * `clinicbrain-nightly.service`：夜間批次排程 systemd 配置範本
 * `clinicbrain-nightly.timer`：夜間批次排程定時器範本
@@ -612,6 +704,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `src/scraper/timetable.py`：門診表（週次 × 星期）HTML 表格解析（純函式，僅輸出開診狀態，不含醫師）
 * `data/scraper/sources.json`：網址擷取白名單（`www.nu-vendome.com` 的 `/location-detail/`、`/service/`、`/service-detail/`）
 * `tests/test_service_detail.py`、`tests/test_timetable.py`、`tests/test_clinic_selector.py`、`tests/test_url_deps_resolver.py`：上述模組與診所管理相關測試
+* `tests/test_patient_consult_latency.py`、`tests/test_answer_compose.py`、`tests/test_patient_compose.py`、`tests/test_consult_jobs.py`、`tests/test_patient_prefill_plan.py`、`tests/test_patient_prefill_batch.py`、`tests/test_patient_prefill_e2e.py`、`tests/test_probe_patient_thinking.py`、`tests/test_patient_clinic_scope.py`、`tests/test_patient_prefill_special_e2e.py`：Phase 28 病人端對話式諮詢、延遲修復、非同步作業、24 小時預生成與伺服器固定診所範圍測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
