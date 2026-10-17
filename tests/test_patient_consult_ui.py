@@ -106,6 +106,7 @@ def test_offline_backend_consult_mock_general_structure(client, monkeypatch):
     )
     assert res.status_code == 200
     data = res.json()
+    assert data["status"] == "llm_general"
     from src.general.answer_compose import CTA_TEXT
 
     assert mock_body in data["message"]
