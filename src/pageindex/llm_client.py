@@ -31,6 +31,39 @@ class LLMEmptyOutputError(RuntimeError):
     """本地 LLM 回傳內容為空（例如思考長度耗盡 token、未完成生成等單題異常，非伺服器崩潰）。"""
 
 
+class LLMTruncatedError(LLMEmptyOutputError):
+    """本地 LLM 輸出達 max_tokens 被截斷，視為失敗。"""
+
+
+# 忠實引用資料的任務（RAG 提問）：單次請求關閉重複懲罰並降低溫度，避免模型為了「不重複」而改字、掉字
+FAITHFUL_SAMPLING = {
+    "temperature": 0.1,
+    "dry_multiplier": 0.0,
+    "repeat_penalty": 1.0,
+}
+
+# 病人端即時組稿取樣常數：
+# max_tokens 採保守上限 3000（於實測 21 tok/s 約 143 秒），在 28-07 實機探測證實關閉思考有效之前不得縮小
+# （縮小而思考未關閉會讓 content 為空）；提示依 AGENTS 2.21 要求「思考不超過 100 字」
+# （28-02 的 build_compose_prompt 第一條規則）；關閉思考兩個欄位是否對此 Qwen3.8 GGUF 模板生效尚待 28-07 驗證，
+# 收緊由 28-07 Task 3 負責。使用端應以 dict(...) 複製後使用，避免就地修改污染常數。
+PATIENT_COMPOSE_SAMPLING = {
+    **FAITHFUL_SAMPLING,
+    "max_tokens": 3000,
+    "reasoning_effort": "none",
+    "chat_template_kwargs": {"enable_thinking": False},
+}
+
+# 病人端一般醫學說明（AGENTS 2.24 未審草稿 JSON 路徑）取樣常數：
+# 限制上限 3000 tokens 並嘗試關閉思考，避免模型無限推演消耗數千 tokens
+PATIENT_GENERAL_SAMPLING = {
+    **FAITHFUL_SAMPLING,
+    "max_tokens": 3000,
+    "reasoning_effort": "none",
+    "chat_template_kwargs": {"enable_thinking": False},
+}
+
+
 def check_llm_health(timeout: int = 5) -> str:
     """檢查本地 llama-server 是否正常存活。
     成功時回傳當前載入之模型 ID 或名稱；若服務未啟動則拋出 LocalLLMUnavailableError。
@@ -107,7 +140,15 @@ def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = N
     if not choices or not isinstance(choices, list):
         raise LocalLLMUnavailableError(f"本地 LLM 回應格式異常，缺少 choices：{resp_json}")
 
-    message = choices[0].get("message", {})
+    first_choice = choices[0]
+    fr = first_choice.get("finish_reason")
+    if fr == "length":
+        usage = resp_json.get("usage", {})
+        raise LLMTruncatedError(
+            f"本地 LLM 輸出達長度限制被截斷（finish_reason=length, usage={usage}）"
+        )
+
+    message = first_choice.get("message", {})
     content = message.get("content")
 
     # 嚴格驗證 content，絕不使用 reasoning_content

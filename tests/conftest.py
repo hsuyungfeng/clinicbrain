@@ -177,3 +177,40 @@ def _block_outbound_network_for_scraper(monkeypatch):
     monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket, "getaddrinfo", guarded_getaddrinfo)
+
+
+@pytest.fixture(autouse=True)
+def _forbid_real_llm_endpoint(monkeypatch):
+    """防止測試呼叫 127.0.0.1:8080 (llama-server) 真實模型端點。"""
+    import urllib.request
+    orig_urlopen = urllib.request.urlopen
+
+    def guarded_urlopen(req, *args, **kwargs):
+        url = req.full_url if hasattr(req, "full_url") else str(req)
+        url_lower = url.lower()
+        if "127.0.0.1:8080" in url_lower or "localhost:8080" in url_lower:
+            raise AssertionError("測試不得呼叫真實 LLM")
+        return orig_urlopen(req, *args, **kwargs)
+
+    monkeypatch.setattr(urllib.request, "urlopen", guarded_urlopen)
+
+
+@pytest.fixture(autouse=True)
+def _forbid_real_patient_llm(monkeypatch):
+    """防止病人端諮詢相關測試意外觸發真實 default_patient_llm。"""
+    def _raise_error(*args, **kwargs):
+        raise AssertionError("測試不得呼叫真實 LLM")
+
+    import src.general.patient_consult as pc
+    if not hasattr(pc, "_orig_default_patient_llm"):
+        pc._orig_default_patient_llm = pc.default_patient_llm
+        pc._orig_default_patient_compose_llm = pc.default_patient_compose_llm
+
+    monkeypatch.setattr(pc, "default_patient_llm", _raise_error, raising=False)
+    monkeypatch.setattr(pc, "default_patient_compose_llm", _raise_error, raising=False)
+
+    try:
+        import src.api.routes.general as rg
+        monkeypatch.setattr(rg, "default_patient_llm", _raise_error, raising=False)
+    except ImportError:
+        pass

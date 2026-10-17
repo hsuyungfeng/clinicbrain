@@ -23,6 +23,15 @@
 - [ ] **DEBT-03**：駁回題目可由人明確觸發重新生成（預設仍不自動重生成，避免被駁回內容自行回流）
 - [ ] **DEBT-04**：批次對真實 LLM 的完整實跑驗證，僅在資料庫複本上進行（不碰正式庫），需 `llama-server` 空閒
 
+### PATIENT-CONSULT 病人端對話式諮詢（Phase 28）
+- [ ] **P28-LAT**：查明並修復約 960 秒生成耗時
+- [ ] **P28-TRUNC**：答案不得截斷、就醫警訊不得遺失
+- [ ] **P28-TPL**：價值回答加單一追問加預約邀請結構
+- [ ] **P28-PRE**：夜間批次預生成待審問答
+- [ ] **P28-FRESH**：各主題主體醫學資訊 24 小時內預生成，以 topic_key 追蹤、版本變更重排、永不自動核准
+- [ ] **P28-ASYNC**：背景 job 加輪詢且不保留問句
+- [ ] **P28-CLINIC**：匿名病人諮詢可由伺服器固定單一診所設定使用該診所已核准資料，絕不跨診所、請求夾帶一律忽略
+
 ## Future Requirements（延後）
 - 健保給付規定類問答（審查注意事項，需加註「以健保署公告為準」、記錄規則日期、走審核閘門）
 - 紅旗詞表殘餘漏報增補（詞表增修須使用者審閱）
@@ -59,5 +68,12 @@
 | GC-04 | Phase 12 | Pending |
 | DEBT-03 | Phase 12 | Pending |
 | DEBT-04 | Phase 13 | Pending |
+| P28-LAT | Phase 28 | Pending |
+| P28-TRUNC | Phase 28 | Pending |
+| P28-TPL | Phase 28 | Pending |
+| P28-PRE | Phase 28 | Pending |
+| P28-FRESH | Phase 28 | Pending |
+| P28-ASYNC | Phase 28 | Pending |
+| P28-CLINIC | Phase 28 | Pending |
 
-涵蓋：11/11（無孤立、無重複）
+涵蓋：18/18（無孤立、無重複）

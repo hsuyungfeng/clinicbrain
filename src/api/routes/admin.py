@@ -10,6 +10,7 @@ import re
 import sqlite3
 import tempfile
 import threading
+from threading import Lock
 import time
 from typing import Any, Literal, Optional
 import unicodedata
@@ -58,8 +59,11 @@ _ZIP_MAGIC = b"PK\x03\x04"
 _PDF_MAGIC = b"%PDF-"
 _Q_PREFIXES = ("問：", "問:", "Q:", "Q：", "q:", "q：")
 
+from ...pageindex.llm_lock import GENERATION_LOCK
+from ...pageindex.llm_client import FAITHFUL_SAMPLING
+
 # AI 生成：單一本機 llama-server 一次只服務一題，避免請求堆疊拖垮推論
-_GENERATION_LOCK = threading.Lock()
+_GENERATION_LOCK = GENERATION_LOCK
 LLM_GENERATE_TIMEOUT_SECONDS = 480
 
 
@@ -71,7 +75,6 @@ def _local_llm_call(prompt: str) -> str:
 
 
 # 忠實引用資料的任務（RAG 提問）：單次請求關閉重複懲罰並降低溫度，避免模型為了「不重複」而改字、掉字
-FAITHFUL_SAMPLING = {"temperature": 0.1, "dry_multiplier": 0.0, "repeat_penalty": 1.0}
 LLM_ASK_TIMEOUT_SECONDS = 480
 
 
@@ -418,7 +421,7 @@ async def upload_admin_file(
                 pass
 
 DEFAULT_SOURCES_PATH = Path(__file__).resolve().parents[3] / "data" / "scraper" / "sources.json"
-_URL_FETCH_LOCK = threading.Lock()
+_URL_FETCH_LOCK = Lock()
 
 
 def get_url_fetch_deps() -> UrlFetchDeps:

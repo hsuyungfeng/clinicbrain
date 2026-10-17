@@ -19,7 +19,14 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..pageindex.general_fallback import GeneralDraftError, generate_general_draft, find_existing_general_draft
-from ..pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
+from ..pageindex.llm_client import (
+    LLMEmptyOutputError,
+    LLMTruncatedError,
+    LocalLLMUnavailableError,
+    PATIENT_COMPOSE_SAMPLING,
+    PATIENT_GENERAL_SAMPLING,
+)
+from ..pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
 from .consult import consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
 from .red_flags import detect_red_flag
@@ -30,8 +37,19 @@ LLM_DISCLAIMER = "本說明無法取代醫師面對面診察。請洽合作診�
 NO_DATA_TEXT = "目前沒有已核准的相關資料，無法提供說明。建議您洽詢合作診所或醫師評估。"
 BUSY_TEXT = "目前諮詢人數較多，請稍後再試。"
 
-# 病人端只允許一次生成（本機 LLM 單一 slot）；忙碌時直接回覆，不排隊
-_PATIENT_LLM_LOCK = threading.Lock()
+# 病人端與管理端共用唯一模型生成鎖；保留 _PATIENT_LLM_LOCK 別名以相容既有引用
+_PATIENT_LLM_LOCK = GENERATION_LOCK
+
+
+def _get_db_path(conn: sqlite3.Connection) -> str:
+    """自 SQLite 連線取得主資料庫檔案路徑。"""
+    try:
+        for row in conn.execute("PRAGMA database_list").fetchall():
+            if len(row) >= 3 and row[1] == "main" and row[2]:
+                return str(row[2])
+    except Exception:
+        pass
+    return ""
 
 
 @dataclass
@@ -83,13 +101,21 @@ def patient_consult(
             label=None, booking_url=BOOKING_URL,
         )
 
-    if not _PATIENT_LLM_LOCK.acquire(blocking=False):
+    # 檢查夜間批次是否正在執行（跨行程檔案鎖探測）
+    db_path = _get_db_path(conn)
+    if nightly_batch_running(db_path):
+        return PatientConsultResult(
+            status="busy", message=BUSY_TEXT, disclaimer=LLM_DISCLAIMER,
+            label=None, booking_url=BOOKING_URL,
+        )
+
+    if not GENERATION_LOCK.acquire(blocking=False):
         return PatientConsultResult(
             status="busy", message=BUSY_TEXT, disclaimer=LLM_DISCLAIMER,
             label=None, booking_url=BOOKING_URL,
         )
     try:
-        draft = generate_general_draft(conn, query, llm_call)
+        draft = generate_general_draft(conn, query, llm_call, retry_on_empty=False)
         return PatientConsultResult(
             status="llm_general",
             message=draft["answer"],
@@ -97,26 +123,36 @@ def patient_consult(
             label=LLM_LABEL,
             booking_url=BOOKING_URL,
         )
-    except (GeneralDraftError, LLMEmptyOutputError, LocalLLMUnavailableError, RuntimeError):
-        # 驗證未通過、LLM 離線或資料庫未遷移：回固定文字，不外露內部細節
+    except (GeneralDraftError, LLMEmptyOutputError, LLMTruncatedError, LocalLLMUnavailableError, RuntimeError):
+        # 驗證未通過、輸出截斷、LLM 離線或資料庫未遷移：回固定文字，不外露內部細節
         return PatientConsultResult(
             status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
             label=None, booking_url=BOOKING_URL,
         )
     finally:
-        _PATIENT_LLM_LOCK.release()
+        GENERATION_LOCK.release()
 
 
-GENERAL_LLM_TIMEOUT_SECONDS = 900  # 一般醫學說明提示較長，實測可能超過 480 秒
-GENERAL_LLM_MAX_TOKENS = 12288
+PATIENT_LLM_TIMEOUT_SECONDS = 240  # 限制單題上限 4 分鐘內，避免公開端點無限懸掛
 
 
 def default_patient_llm(prompt: str) -> str:
-    """病人端預設 LLM 呼叫：本機 llama-server，放寬 token 與逾時（與管理端一般草稿一致）。"""
+    """病人端預設 LLM 呼叫（未審草稿路徑）：使用 PATIENT_GENERAL_SAMPLING，timeout 240 秒。"""
     from ..pageindex.llm_client import local_llm_call
 
     return local_llm_call(
         prompt,
-        timeout=GENERAL_LLM_TIMEOUT_SECONDS,
-        sampling={"max_tokens": GENERAL_LLM_MAX_TOKENS},
+        timeout=PATIENT_LLM_TIMEOUT_SECONDS,
+        sampling=dict(PATIENT_GENERAL_SAMPLING),
+    )
+
+
+def default_patient_compose_llm(prompt: str) -> str:
+    """病人端即時組稿預設 LLM 呼叫：使用 PATIENT_COMPOSE_SAMPLING，timeout 240 秒。"""
+    from ..pageindex.llm_client import local_llm_call
+
+    return local_llm_call(
+        prompt,
+        timeout=PATIENT_LLM_TIMEOUT_SECONDS,
+        sampling=dict(PATIENT_COMPOSE_SAMPLING),
     )

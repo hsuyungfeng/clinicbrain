@@ -39,14 +39,18 @@ def _topic_key(question: str) -> str:
 _NO_THINK_SUFFIX = "\n/no_think\n請跳過思考過程，直接輸出 JSON 陣列，不要任何說明文字。"
 
 
-def _call_no_think_first(llm_call: Callable[[str], str], prompt: str) -> str:
+def _call_no_think_first(llm_call: Callable[[str], str], prompt: str, retry_on_empty: bool = True) -> str:
     """JSON 生成任務預設關閉思考（思考過長會耗盡 token 或逾時，實測多次回傳空白）。
 
-    仍保留一次空白重試作為保險；僅限本一般草稿路徑，RAG 與其他任務不受影響。
+    retry_on_empty=True 時保留一次空白重試作為保險（管理端與批次路徑）；
+    retry_on_empty=False 時（病人端即時路徑）遇到 LLMEmptyOutputError 不重試直接上拋，
+    避免單題耗時加倍。
     """
     try:
         return llm_call(prompt + _NO_THINK_SUFFIX)
     except LLMEmptyOutputError:
+        if not retry_on_empty:
+            raise
         return llm_call(prompt + _NO_THINK_SUFFIX)
 
 
@@ -73,6 +77,7 @@ def generate_general_draft(
     conn: sqlite3.Connection,
     question: str,
     llm_call: Callable[[str], str],
+    retry_on_empty: bool = True,
 ) -> dict:
     """生成一般醫學草稿並寫入 faq_cache（pending）。回傳寫入結果與待審草稿摘要。
 
@@ -93,7 +98,7 @@ def generate_general_draft(
         reference_context=None,
         require_doctor_warning=True,
     )
-    raw = _clean_llm_output(_call_no_think_first(llm_call, prompt))
+    raw = _clean_llm_output(_call_no_think_first(llm_call, prompt, retry_on_empty=retry_on_empty))
     valid, rejected = parse_and_validate_faq(
         raw, return_rejected=True, check_dosage=True, require_doctor_warning=True,
     )
