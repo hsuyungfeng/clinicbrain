@@ -9,7 +9,8 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 | 1 | 28-01（延遲與截斷偵測、共用鎖）、28-02（組稿純函式、句界截斷） |
 | 2 | 28-03（組稿接入病人路由）、28-05（24 小時新鮮度規劃）、28-07（實機探測，非自主） |
 | 3 | 28-04（job 加輪詢加 UI）、28-06（階段 8 預生成、CLI） |
-| 4 | 28-08（AGENTS.md 2.25 文件,最後撰寫） |
+| 4 | 28-09（伺服器固定單一診所設定：診所範圍檢索） |
+| 5 | 28-08（AGENTS.md 2.25 與 2.6／2.9 例外文件,最後撰寫） |
 
 ## Nyquist 對照
 | 需求 | 行為 | 自動化驗證 | 計畫 |
@@ -20,6 +21,7 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 | P28-TRUNC | 句界截斷、警訊保留 | tests/test_answer_compose.py、tests/test_rag_ask_enhancement.py | 02 |
 | P28-TPL | 價值＋單一追問＋邀請、驗證 | tests/test_answer_compose.py、tests/test_patient_compose.py、tests/test_patient_consult.py | 02、03 |
 | P28-ASYNC | job、TTL、隱私、輪詢 | tests/test_consult_jobs.py、tests/test_patient_consult_ui.py | 04 |
+| P28-CLINIC | 設定／無效／隔離／忽略夾帶／營運關鍵字／風險檢查／special 預生成 e2e | tests/test_patient_clinic_scope.py、tests/test_patient_prefill_special_e2e.py | 09 |
 | P28-PRE | 預生成 pending、隔離、預算、skipped_budget | tests/test_patient_prefill_plan.py、tests/test_patient_prefill_batch.py | 05、06 |
 | P28-FRESH | 24 小時、簽章、積壓（假時鐘） | tests/test_patient_prefill_plan.py、tests/test_patient_prefill_e2e.py | 05、06 |
 
@@ -44,7 +46,7 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 | 延後 | 留資表單、limit_req、18 失敗測試 | 不納入 |
 
 ## 待使用者確認的假設
-1. 匿名 /consult 本期不檢索診所專屬 special FAQ。注意：CONTEXT 的「診所專屬資料即時組稿」需要診所識別；special 預生成問答目前只能經 /api/v1/query（帶 clinic_id）使用。若要讓匿名諮詢使用診所資料，需另行決定診所識別方式（例如伺服器固定設定）。**此項建議在執行 28-03 前確認。**
+1. （已決定,見待決事項 BLOCKER-1,由 28-09 實作。）原假設「不檢索 special」作廢。注意：CONTEXT 的「診所專屬資料即時組稿」需要診所識別；special 預生成問答目前只能經 /api/v1/query（帶 clinic_id）使用。若要讓匿名諮詢使用診所資料，需另行決定診所識別方式（例如伺服器固定設定）。**此項建議在執行 28-03 前確認。**
 2. 已核准資料組稿的回答不加「未經醫師審核」標示；2.24 未審說明保留標示。
 3. 實機探測為 28-07 獨立任務，僅副本庫、不重啟、不改設定，需使用者核准。
 4. 病人、管理端、背景補齊共用一把鎖；病人端有已核准資料時忙碌降級為確定性回答，無資料時回 busy。
@@ -54,7 +56,7 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 8. 每晚處理的主題數受 --max-faq-topics 限制；主題多時積壓跨晚，24 小時為目標而非硬保證，摘要回報 prefill_backlog。
 
 ## 待決事項(阻斷性)
-- **BLOCKER-1(等使用者決定,計畫暫不更動)**:匿名 /consult 是否檢索診所專屬資料,以及診所識別方式。在決定前,28-03 維持僅用一般類已核准資料;special 預生成只能經 /api/v1/query 命中。
+- **BLOCKER-1(已決定,2026-10-17,使用者採「伺服器固定單一診所設定」)**:新增顯式設定 `patient_clinic_id`(無預設值;須存在於 clinic_info,否則視為未設定,Fail-Closed)。設定後匿名 /consult 只可用該診所已核准的 special FAQ 與樹來源預生成內容;請求的 clinic_id 與 X-Clinic-ID 一律忽略;風險檢查與營運關鍵字規則照舊。由 28-09 實作(28-03 維持一般資料;special 範圍 e2e 因需要 28-06 與 28-09 同時存在,放在 28-09),文件由 28-08 補 AGENTS 2.6／2.9 例外。
 
 ## 第 1 輪修訂摘要(依規劃檢查員回報)
 - B2:受保護列(approved/rejected/人工編修)簽章未變時不排入(28-05/06)。
@@ -67,3 +69,5 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 - W9:見上方來源稽核。
 - W10:ROADMAP 補 Requirements 行。
 - W11:urlopen 層測試防護(28-01)、consult_jobs 測試 db 守門與並行限制調整(28-04)、`prefill_skipped_budget`(28-06)。
+
+- B1 決定後新增:28-09 與 P28-CLINIC;28-08 移至 Wave 5。

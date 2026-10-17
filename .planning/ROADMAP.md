@@ -183,9 +183,10 @@
   3. 組稿結構：價值回答（2～4 句）＋單一追問＋預約／留資邀請；FAITHFUL_SAMPLING 與長度上限。
   4. 夜間批次預生成相似 QA（pending，醫師核准後才公開）。
   5. 不收集個資；留資表單與 doctor-toolbox.com 整合為階段二，不在本期。
+  6. 24 小時預生成各主題主體醫學資訊（以 topic_key 追蹤）；伺服器固定單一診所設定（patient_clinic_id）使匿名諮詢可用該診所已核准資料。
 **Constraints**: 不得直接寫正式庫；不得啟用 systemd；不得重啟 llama-server；價格屏蔽與繁體中文規則照舊；未審 LLM 內容不得進公開快取（AGENTS 2.24 例外僅限即時標示未審的一般說明）。
-**Requirements**: P28-LAT, P28-TRUNC, P28-TPL, P28-PRE, P28-FRESH, P28-ASYNC
-**Plans**: 8 plans
+**Requirements**: P28-LAT, P28-TRUNC, P28-TPL, P28-PRE, P28-FRESH, P28-ASYNC, P28-CLINIC
+**Plans**: 9 plans
 Plans:
 - [ ] 28-01-PLAN.md — 耗時修復：截斷偵測、病人端不重試、共用生成鎖、P28 需求條目（Wave 1）
 - [ ] 28-02-PLAN.md — 組稿純函式與句界截斷、rag_ask 修復（Wave 1）
@@ -194,4 +195,5 @@ Plans:
 - [ ] 28-07-PLAN.md — 關思考實機探測（非自主，需核准）（Wave 2）
 - [ ] 28-04-PLAN.md — job 加輪詢與 consult.html（Wave 3）
 - [ ] 28-06-PLAN.md — 夜間批次階段 8 預生成、CLI（Wave 3）
-- [ ] 28-08-PLAN.md — AGENTS.md 2.25 文件（Wave 4）
+- [ ] 28-09-PLAN.md — 伺服器固定單一診所設定（patient_clinic_id）：匿名諮詢使用該診所已核准資料（Wave 4）
+- [ ] 28-08-PLAN.md — AGENTS.md 2.25 與 2.6／2.9 例外文件（Wave 5）
