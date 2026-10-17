@@ -169,14 +169,14 @@ def test_sampling_constants_and_payload_capture():
     )
 
     assert FAITHFUL_SAMPLING == {"temperature": 0.1, "dry_multiplier": 0.0, "repeat_penalty": 1.0}
-    assert PATIENT_COMPOSE_SAMPLING["max_tokens"] == 600
+    assert PATIENT_COMPOSE_SAMPLING["max_tokens"] == 800
     assert "reasoning_effort" not in PATIENT_COMPOSE_SAMPLING
     assert PATIENT_COMPOSE_SAMPLING["chat_template_kwargs"] == {"enable_thinking": False}
     assert PATIENT_COMPOSE_SAMPLING["temperature"] == 0.1
     assert PATIENT_COMPOSE_SAMPLING["dry_multiplier"] == 0.0
     assert PATIENT_COMPOSE_SAMPLING["repeat_penalty"] == 1.0
 
-    assert PATIENT_GENERAL_SAMPLING["max_tokens"] == 600
+    assert PATIENT_GENERAL_SAMPLING["max_tokens"] == 1500
     assert "reasoning_effort" not in PATIENT_GENERAL_SAMPLING
     assert PATIENT_GENERAL_SAMPLING["chat_template_kwargs"] == {"enable_thinking": False}
 
@@ -209,11 +209,11 @@ def test_sampling_constants_and_payload_capture():
     payload = json.loads(captured_req.data.decode("utf-8"))
     assert "reasoning_effort" not in payload
     assert payload["chat_template_kwargs"] == {"enable_thinking": False}
-    assert payload["max_tokens"] == 600
+    assert payload["max_tokens"] == 800
     assert payload["temperature"] == 0.1
     assert payload["dry_multiplier"] == 0.0
     assert payload["repeat_penalty"] == 1.0
-    assert PATIENT_COMPOSE_SAMPLING["max_tokens"] == 600, "模組常數不得被污染"
+    assert PATIENT_COMPOSE_SAMPLING["max_tokens"] == 800, "模組常數不得被污染"
 
 
 def test_llm_lock_and_nightly_batch_running(tmp_path):

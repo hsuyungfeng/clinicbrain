@@ -43,23 +43,23 @@ FAITHFUL_SAMPLING = {
 }
 
 # 病人端即時組稿取樣常數：
-# 依據 Phase 28 Plan 07 實機探測（28-PROBE.md）：
+# 依據 Phase 28 Plan 07 實機探測與複審評估（28-PROBE.md）：
 # 1. chat_template_kwargs.enable_thinking=False 經實測證實能完全關閉思考（reasoning_chars=0），
 #    而 reasoning_effort: "none" 無效故予以移除。
-# 2. 實測正常衛教組稿僅需約 78 tokens（耗時 4.6 秒，解碼速率約 22.5 tok/s）；
-#    依據 28-07 規則（最大 tokens * 1.5，下限 600）收緊為 max_tokens=600，
-#    最壞情況延遲由原本 133 秒大幅縮減至約 26.6 秒。使用端應以 dict(...) 複製後使用。
+# 2. 考量真實衛教組稿（價值段 2～4 句＋追問＋警訊句）長度與防範合規長句被長度誤截斷（LLMTruncatedError），
+#    max_tokens 設定為 800（於 22.5 tok/s 最壞延遲約 35.5 秒，遠低於 240 秒逾時）。使用端應以 dict(...) 複製後使用。
 PATIENT_COMPOSE_SAMPLING = {
     **FAITHFUL_SAMPLING,
-    "max_tokens": 600,
+    "max_tokens": 800,
     "chat_template_kwargs": {"enable_thinking": False},
 }
 
 # 病人端一般醫學說明（AGENTS 2.24 未審草稿 JSON 路徑）取樣常數：
-# 限制上限 600 tokens 並以 chat_template_kwargs 關閉思考，避免模型產生思考推演消耗延遲
+# 考量 JSON 格式與一般衛教說明可能包含 100～600 字之完整醫學內容，
+# max_tokens 設定為 1500（於 22.5 tok/s 最壞延遲約 66.7 秒，遠低於 240 秒逾時），並以 chat_template_kwargs 關閉思考
 PATIENT_GENERAL_SAMPLING = {
     **FAITHFUL_SAMPLING,
-    "max_tokens": 600,
+    "max_tokens": 1500,
     "chat_template_kwargs": {"enable_thinking": False},
 }
 

@@ -36,10 +36,14 @@
 3. **取樣常數收緊依據 (Task 3)**：
    - 觀察到關閉思考後的實際生成 tokens 數：`completion_tokens = 78`。
    - 依據 28-07-PLAN.md Task 3 規格：「max_tokens 設為觀察到的最大 completion_tokens 的 1.5 倍，上下限 600～3000」：
-     $$78 \times 1.5 = 117 \text{ tokens} \implies \text{低於下限 600，故採用下限 } 600 \text{ tokens}$$
+     $$78 \times 1.5 = 117 \text{ tokens} \implies \text{低於下限 600，初版暫採下限 } 600 \text{ tokens}$$
    - **調整方案**：
-     - `PATIENT_COMPOSE_SAMPLING` 與 `PATIENT_GENERAL_SAMPLING` 之 `max_tokens` 由保守值 3000 收緊至 **600**。
      - 移除無效之 `"reasoning_effort": "none"` 參數。
      - 保留並確認有效之 `"chat_template_kwargs": {"enable_thinking": False}`。
-   - **延遲預期改善**：
-     - 收緊至 600 tokens 後，在 22.5 tok/s 下的最壞情況逾時上限從原本的 133 秒下降至約 **26.6 秒**。正常無思考衛教回覆（約 80 tokens）僅需約 **3.5 ～ 4.5 秒**。
+
+4. **複審調整（Claude 最後審查修正）**：
+   - **單一 78 token 樣本不具代表性**：探測時所用的單一衛教問答較簡短（約 118 字元），而病人端組稿（價值回答 2～4 句＋追問＋警訊句）與 2.24 一般醫學說明（JSON 格式內答案字數依規則允許達 100～600 字）在真實情境下的生成長度遠大於 78 tokens。若硬性收緊至 600 tokens，合規的長回答極易觸發 `finish_reason: "length"`（拋出 `LLMTruncatedError`），導致原本能正常運作的路徑意外降級為 `no_match`。
+   - **調整後之 max_tokens 設定**：
+     - `PATIENT_COMPOSE_SAMPLING["max_tokens"] = 800`：給予即時組稿充足之安全邊界。於 22.5 tok/s 下，最壞情況延遲約 **35.5 秒**（800 / 22.5），仍遠低於端點 240 秒逾時上限。
+     - `PATIENT_GENERAL_SAMPLING["max_tokens"] = 1500`：容納完整 JSON 格式與長篇未審衛教說明。於 22.5 tok/s 下，最壞情況延遲約 **66.7 秒**（1500 / 22.5），亦遠在 240 秒逾時內。
+   - **後續收緊規劃**：若日後夜間批次或真實使用累積更多組稿題目的 `completion_tokens` 分布數據，且確認長篇回答上限未達此閾值，可再視實測分布進一步收緊。
