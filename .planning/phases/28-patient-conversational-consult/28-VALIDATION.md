@@ -73,6 +73,9 @@ agy 執行計畫 -> hermes 測試 -> Claude 最後檢查。三方依序，不得
 - B1 決定後新增:28-09 與 P28-CLINIC;28-08 移至 Wave 5。
 
 ## 第 3 輪修訂摘要與真實資料假設
-- 預生成題目標題來源(28-05/06):正式庫 6 棵診所樹 doc_id 為英文 slug(laser-skin-resurfacing、botox-injection、electrowave-facelift、hyaluronic-acid-filler、fractional-laser、hifu-lifting),種子僅 2 個主題帶 tree_doc_id 且 title 為「…常見問題」。標題優先順序:`page_index_trees.title` → 種子 title 去掉「常見問題」→ 無可讀中文標題者不列入(日誌以 doc_id 記錄),絕不以 doc_id 拼題。**假設:正式庫 page_index_trees 具 title 欄位且為中文(執行者以 PRAGMA 確認;不具備則第一級跳過,多數樹將因無標題而不預生成,需使用者補 title 或種子)。**
+- 預生成題目標題來源(28-05/06):正式庫 6 棵診所樹 doc_id 為英文 slug(laser-skin-resurfacing、botox-injection、electrowave-facelift、hyaluronic-acid-filler、fractional-laser、hifu-lifting),種子僅 2 個主題帶 tree_doc_id 且 title 為「…常見問題」。標題優先順序:`page_index_trees.title` → 種子 title 去掉「常見問題」→ 無可讀中文標題者不列入(日誌以 doc_id 記錄),絕不以 doc_id 拼題。**實查結果(唯讀連線):page_index_trees.title 欄位存在,但正式庫 6 棵診所樹的 title 全為空;僅 hifu-lifting、hyaluronic-acid-filler 可由種子取得標題(去掉「常見問題」)。其餘 4 棵(laser-skin-resurfacing、botox-injection、electrowave-facelift、fractional-laser)在補上中文 title 前不會預生成,28-06 以 `prefill_skipped_no_title` 回報略過數。**
 - 28-09:config 用 `field(default_factory=...)`、conftest 重設、無資料不得 answered(W1、W5);28-03 驗收移除 PREFILL_HIT_COVERAGE(W3);28-06 Test 4 夾具為 general NULL 樹(W4);28-08 文件矛盾與 2.24 待辦指向(W2)。
 - 已知實況:正式庫樹全為診所專屬,未設定 `patient_clinic_id` 時這些預生成內容匿名端點看不到。
+
+## 待使用者確認(新增)
+- 是否由使用者補 6 棵(至少其餘 4 棵)樹的中文 title:這是資料操作,需先備份並經使用者核准,不屬本 phase 程式碼範圍;未補之前預生成只涵蓋有標題的樹。
