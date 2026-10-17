@@ -9,17 +9,24 @@
 
 import dataclasses
 import sqlite3
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 
 from ..access_log_filter import install_access_log_filter
+from ..config import config
 from ..dependencies import get_read_db, get_write_db
 from ..models.general import GeneralConsultResponse, GeneralQueryRequest
 from .query import deep_mask_prices
 from ...general.consult import consult_general
-from ...general.patient_consult import BOOKING_URL, default_patient_llm, patient_consult
+from ...general.consult_jobs import get_job_result, submit_job
+from ...general.patient_consult import (
+    BOOKING_URL,
+    default_patient_compose_llm,
+    default_patient_llm,
+    patient_consult,
+)
 
 # 模組載入時自動安裝日誌過濾器（具冪等性）
 install_access_log_filter()
@@ -85,7 +92,12 @@ def post_general_consult(
     conn: sqlite3.Connection = Depends(get_write_db),
 ) -> dict:
     """寫入端點（僅在無資料時寫入一般草稿，狀態 pending）。"""
-    result = patient_consult(conn, request.query, default_patient_llm)
+    result = patient_consult(
+        conn,
+        request.query,
+        default_patient_llm,
+        compose_llm_call=default_patient_compose_llm,
+    )
     return {
         "status": result.status,
         "message": deep_mask_prices(result.message),
@@ -93,3 +105,44 @@ def post_general_consult(
         "disclaimer": result.disclaimer,
         "booking_url": BOOKING_URL,
     }
+
+
+@router.post(
+    "/consult/jobs",
+    summary="病人非同步諮詢作業（提交問句並取得 job_id）",
+    description=(
+        "提供病人端送出問句並取得非同步作業票券 (job_id)：\n"
+        "- 隱私保證：問句置於請求主體，不落地儲存、不進入 URL 與存取日誌。\n"
+        "- 紅旗優先：急重症徵候立即同步回傳緊急指示，不建立背景作業、不呼叫模型。\n"
+        "- 快速回覆：正常問句送出後立即取得不可預測之安全票券，由前端輪詢。\n"
+        "- 容量保護：worker 達到 4 或作業總數達 20 時直接回傳 busy，不無限排隊。"
+    ),
+)
+def post_general_consult_jobs(
+    request: GeneralQueryRequest,
+) -> dict:
+    """非同步諮詢作業提交端點（不依賴資料庫 Depends，由作業層自行開啟連線）。"""
+    db_path = str(config.db_path)
+    return submit_job(db_path, request.query)
+
+
+@router.get(
+    "/consult/jobs/{job_id}",
+    summary="輪詢病人諮詢作業結果",
+    description=(
+        "輪詢非同步諮詢作業狀態與結果：\n"
+        "- 純記憶體讀取：絕不連線資料庫，無 Depends 連線開銷。\n"
+        "- 處理中狀態：回傳 {\"status\": \"pending\"}。\n"
+        "- 讀取即刪除：完成後第一次讀取回傳完整結果並立即清除記憶體；第二次讀取或已過期回傳 404。\n"
+        "- 隱私保護：不存在、格式錯誤或超過 5 分鐘 TTL 統一回傳 404 固定錯誤訊息。"
+    ),
+)
+def get_general_consult_job_result(
+    job_id: str,
+) -> dict:
+    """純記憶體輪詢端點（無 Depends）。"""
+    res = get_job_result(job_id)
+    if res is None:
+        raise HTTPException(status_code=404, detail="找不到結果")
+    return res
+

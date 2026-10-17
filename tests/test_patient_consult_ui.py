@@ -64,11 +64,15 @@ def test_consult_source_code_features():
     """驗證前端原始碼包含必要之後端端點呼叫、安全賦值與關鍵文字。"""
     content = Path("src/web/static/consult.html").read_text(encoding="utf-8")
 
+    assert "/api/v1/general/consult/jobs" in content, "必須包含 /api/v1/general/consult/jobs 呼叫路徑"
     assert "/api/v1/general/consult" in content, "必須包含 /api/v1/general/consult 呼叫路徑"
     assert "textContent" in content, "所有回傳內容必須使用 textContent 寫入"
-    assert "整理中，約 1～3 分鐘" in content, "送出狀態必須包含指定等待提示文字"
+    assert "整理中，通常需 20 秒至 2 分鐘，請稍候" in content, "送出狀態必須包含指定等待提示文字"
     assert "預約諮詢" in content, "必須包含預約諮詢按鈕文字"
     assert 'maxlength="300"' in content, "輸入框必須限制最多 300 字"
+    assert "POLL_MAX_MS" in content, "必須包含輪詢逾時常數"
+    assert "POLL_INTERVAL_MS" in content, "必須包含輪詢間隔常數"
+    assert "setInterval" not in content, "不得使用 setInterval"
 
 
 def test_offline_backend_consult_red_flag_structure(client):
