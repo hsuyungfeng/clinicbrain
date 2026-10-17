@@ -44,9 +44,9 @@ _PATIENT_LLM_LOCK = GENERATION_LOCK
 def _get_db_path(conn: sqlite3.Connection) -> str:
     """自 SQLite 連線取得主資料庫檔案路徑。"""
     try:
-        for row in conn.execute("PRAGMA database_list").fetchall():
-            if len(row) >= 3 and row[1] == "main" and row[2]:
-                return str(row[2])
+        row = conn.execute("SELECT file FROM pragma_database_list WHERE name = 'main'").fetchone()
+        if row and row[0]:
+            return str(row[0])
     except Exception:
         pass
     return ""
