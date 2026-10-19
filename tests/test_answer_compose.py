@@ -181,3 +181,24 @@ def test_build_compose_prompt():
     assert "[F1]" in prompt
     assert "[T1]" in prompt
     assert "不要輸出 JSON" in prompt
+
+
+def test_default_followup_other_neutral():
+    """驗證 other 類別預設追問為中性用語，不假設為療程，且通過合規檢驗。"""
+    other_fol = ac.DEFAULT_FOLLOWUPS["other"]
+    assert "療程" not in other_fol
+    assert other_fol == "您目前是否有特定的困擾部位，或想先了解哪方面的照護方式？"
+    ok, err = ac._validate_followup_text(other_fol)
+    assert ok, f"預設追問檢驗失敗: {err}"
+
+
+def test_build_compose_prompt_warning_rule():
+    """驗證 build_compose_prompt 無錯字且提供通過 has_doctor_warning 檢驗之示範警訊句。"""
+    prompt = ac.build_compose_prompt("測試題目", [], "other")
+    assert "一工具體" not in prompt, "prompt 內不得包含錯字『一工具體』"
+    assert "一句具體" in prompt
+    # 驗證 prompt 內提示詞含有示範警訊句且通過 has_doctor_warning 檢查
+    demo_sentence = "若傷口出現持續紅腫或化膿，請盡速回診尋求醫師評估。"
+    assert demo_sentence in prompt
+    assert has_doctor_warning(demo_sentence)
+
