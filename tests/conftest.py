@@ -259,3 +259,26 @@ def _reset_patient_clinic_id(monkeypatch):
     """於每個測試前將全域 config.patient_clinic_id 設為 None，避免環境變數污染其他測試。"""
     from src.api.config import config
     monkeypatch.setattr(config, "patient_clinic_id", None)
+
+
+@pytest.fixture(scope="session")
+def playwright_browser():
+    """Session 層級 Playwright Chromium 實例（不可用時自動 skip）。"""
+    try:
+        from playwright.sync_api import sync_playwright
+        p = sync_playwright().start()
+        browser = p.chromium.launch()
+        yield browser
+        browser.close()
+        p.stop()
+    except Exception as e:
+        pytest.skip(f"Playwright 或 Chromium 不可用：{e}")
+
+
+@pytest.fixture
+def playwright_page(playwright_browser):
+    """Function 層級 Playwright 頁面實例。"""
+    page = playwright_browser.new_page(viewport={"width": 1000, "height": 700})
+    yield page
+    page.close()
+
