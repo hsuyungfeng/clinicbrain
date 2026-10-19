@@ -16,6 +16,7 @@ Phase 29 Task 1: 視覺解說卡關鍵字比對與對外輸出整形測試 (test
 from __future__ import annotations
 
 import ast
+import json
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -109,7 +110,7 @@ def test_find_visual_matches_approved_and_shapes_output(isolated_db_path: Path):
         assert len(res["scenes"]) == 3
 
         for s in res["scenes"]:
-            assert set(s.keys()) == {"blueprint", "title", "caption", "labels"}
+            assert set(s.keys()) == {"blueprint", "title", "caption", "labels", "params", "duration_sec"}
             for lb in s["labels"]:
                 assert set(lb.keys()) == {"text", "tone"}
 
@@ -276,3 +277,55 @@ def test_match_module_ast_pure_select_and_no_logging():
             upper_val = node.value.upper()
             for kw in forbidden_sql:
                 assert f"{kw} " not in upper_val, f"match.py 不得含寫入 SQL: {kw}"
+
+
+def test_find_visual_with_params_and_duration_sec(isolated_db_path: Path):
+    """帶 params 與 duration_sec 的核准資產可正確輸出，且舊資產無 params 時為 None。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        ir_with_params = _make_sample_ir()
+        ir_with_params["scenes"][0]["params"] = {"particles": 5}
+        ir_with_params["scenes"][0]["duration_sec"] = 8
+        _seed_asset(conn, ir_with_params, source_type="manual")
+        set_review_status(conn, "autologous-fat-grafting", "approved")
+
+        res = find_visual(conn, "自體脂肪補脂諮詢")
+        assert res is not None
+        s0 = res["scenes"][0]
+        assert s0["params"] == {"particles": 5}
+        assert s0["duration_sec"] == 8
+
+        s1 = res["scenes"][1]
+        assert s1["params"] is None
+        assert s1["duration_sec"] is None
+    finally:
+        conn.close()
+
+
+def test_find_visual_tampered_params_rejected_by_visible_assets(isolated_db_path: Path):
+    """資料庫內 params 遭竄改（如含 fill="#fff"）時，visible_assets 自動略過，find_visual 回傳 None。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        ir_valid = _make_sample_ir()
+        _seed_asset(conn, ir_valid, source_type="manual")
+        set_review_status(conn, "autologous-fat-grafting", "approved")
+
+        # 繞過審核直接以 SQL 竄改 ir_json，加入違法屬性
+        cur = conn.cursor()
+        cur.execute("SELECT ir_json FROM visual_assets WHERE topic_key = 'autologous-fat-grafting'")
+        data = json.loads(cur.fetchone()[0])
+        data["scenes"][0]["params"] = {"particles": 5, "fill": "#ffffff"}
+        cur.execute(
+            "UPDATE visual_assets SET ir_json = ? WHERE topic_key = 'autologous-fat-grafting'",
+            (json.dumps(data, ensure_ascii=False),),
+        )
+        conn.commit()
+
+        # visible_assets 應因 validate_ir 失敗而排除該筆，find_visual 應安全回傳 None
+        res = find_visual(conn, "自體脂肪補脂諮詢")
+        assert res is None
+    finally:
+        conn.close()
+

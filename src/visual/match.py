@@ -47,6 +47,12 @@ def _shape_public_visual(asset: dict[str, Any]) -> dict[str, Any]:
                 "title": str(sc.get("title", "")),
                 "caption": str(sc.get("caption", "")),
                 "labels": shaped_labels,
+                "params": sc.get("params") if isinstance(sc.get("params"), dict) else None,
+                "duration_sec": (
+                    int(sc["duration_sec"])
+                    if isinstance(sc.get("duration_sec"), int) and not isinstance(sc.get("duration_sec"), bool)
+                    else None
+                ),
             }
         )
 

@@ -124,6 +124,9 @@ def test_answered_attaches_approved_visual(isolated_db_path: Path):
         assert res.visual is not None
         assert res.visual["topic_key"] == "autologous-fat-grafting"
         assert len(res.visual["scenes"]) == 3
+        for sc in res.visual["scenes"]:
+            assert "params" in sc
+            assert "duration_sec" in sc
     finally:
         conn.close()
 
