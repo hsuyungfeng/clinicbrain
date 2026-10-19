@@ -670,6 +670,8 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - `tests/test_visual_stats.py`：匿名事件計數累加、未核准忽略、422 固定訊息、存取日誌過濾與隱私測試。
   - `tests/test_consult_visual_ui.py`：諮詢頁解說卡靜態安全掃描、三種 SVG 模板、免責常數與事件回報測試。
 
+- **2026-10-19 CSP 與前端腳本位置（重要踩雷）**：`/admin` 靜態頁帶 CSP `script-src 'self'`（見 2.17），**瀏覽器會阻擋內嵌 `<script>`**。病人諮詢頁 `consult.html` 自 Phase 27 起以內嵌腳本實作，因此在真實瀏覽器中從未能執行（既有測試只做靜態掃描，未發現）；2026-10-19 以 Playwright 實際操作才查出，已將腳本移至同源 `src/web/static/consult.js`。此後 `consult.html` 不得再有內嵌 `<script>`（`tests/test_patient_consult_ui.py::test_consult_has_no_inline_script_and_loads_external_js` 把關），靜態安全掃描須同時涵蓋 HTML 與 JS。新增前端頁面務必以真實瀏覽器驗證一次，不能只信任靜態測試。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則

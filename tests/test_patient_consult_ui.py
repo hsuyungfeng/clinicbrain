@@ -45,7 +45,7 @@ def test_consult_route_served(client):
 
 def test_consult_source_code_safety_and_privacy():
     """驗證前端原始碼嚴格不含禁止的 DOM 操作與客戶端儲存 API。"""
-    content = Path("src/web/static/consult.html").read_text(encoding="utf-8")
+    content = _read_consult_sources()
 
     forbidden_tokens = [
         "innerHTML",
@@ -62,7 +62,7 @@ def test_consult_source_code_safety_and_privacy():
 
 def test_consult_source_code_features():
     """驗證前端原始碼包含必要之後端端點呼叫、安全賦值與關鍵文字。"""
-    content = Path("src/web/static/consult.html").read_text(encoding="utf-8")
+    content = _read_consult_sources()
 
     assert "/api/v1/general/consult/jobs" in content, "必須包含 /api/v1/general/consult/jobs 呼叫路徑"
     assert "/api/v1/general/consult" in content, "必須包含 /api/v1/general/consult 呼叫路徑"
@@ -119,3 +119,27 @@ def test_offline_backend_consult_mock_general_structure(client, monkeypatch):
     assert data["label"] == pc.LLM_LABEL
     assert data["disclaimer"] == pc.LLM_DISCLAIMER
     assert data["booking_url"] == "https://doctor-toolbox.com/"
+
+
+def _read_consult_sources() -> str:
+    """HTML 與 consult.js 合併內容（CSP script-src 'self' 禁止內嵌腳本，邏輯在 consult.js；掃描須兩者皆含）。"""
+    html = Path("src/web/static/consult.html").read_text(encoding="utf-8")
+    js = Path("src/web/static/consult.js").read_text(encoding="utf-8")
+    return html + "\n" + js
+
+
+def test_consult_has_no_inline_script_and_loads_external_js(client):
+    """回歸（2026-10-19）：/admin 帶 CSP script-src 'self'，consult.html 不得有內嵌 <script>，
+    否則瀏覽器會阻擋整個頁面邏輯（Phase 27 起即存在的缺陷，靜態測試未能發現）。"""
+    import re
+
+    html = Path("src/web/static/consult.html").read_text(encoding="utf-8")
+    inline = [m for m in re.findall(r"<script\b([^>]*)>", html, re.I) if "src=" not in m]
+    assert inline == [], "consult.html 不得含內嵌 <script>（會被 CSP 阻擋）"
+    assert '<script src="/admin/consult.js"></script>' in html
+
+    res = client.get("/admin/consult.js")
+    assert res.status_code == 200
+    assert "javascript" in res.headers.get("content-type", "")
+    csp = client.get("/admin/consult.html").headers.get("content-security-policy", "")
+    assert "script-src 'self'" in csp and "unsafe-inline" not in csp.split("style-src")[0]

@@ -22,10 +22,13 @@ from pathlib import Path
 
 
 CONSULT_HTML_PATH = Path("src/web/static/consult.html")
+CONSULT_JS_PATH = Path("src/web/static/consult.js")
 
 
 def _read_consult_html() -> str:
-    return CONSULT_HTML_PATH.read_text(encoding="utf-8")
+    # 2026-10-19：/admin 的 CSP 為 script-src 'self'，內嵌腳本會被瀏覽器阻擋，
+    # 前端邏輯已移至 consult.js；靜態掃描須同時涵蓋 HTML 與 JS，否則掃描會變成空掃描。
+    return CONSULT_HTML_PATH.read_text(encoding="utf-8") + "\n" + CONSULT_JS_PATH.read_text(encoding="utf-8")
 
 
 def test_consult_visual_security_no_dangerous_apis_or_external_assets():
@@ -47,7 +50,10 @@ def test_consult_visual_security_no_dangerous_apis_or_external_assets():
         assert sub not in html, f"consult.html 不得包含禁用子字串: {sub}"
 
     # 禁止外部 script 或外部 img
-    assert not re.search(r"<script\b[^>]*\bsrc\s*=", html, re.IGNORECASE)
+    # 2026-10-19 最小更新：邏輯已移至同源 /admin/consult.js（CSP 禁止內嵌腳本），
+    # 因此只允許該同源腳本；任何其他 src（含 http(s)、// 協定相對、其他路徑）一律禁止。
+    script_srcs = re.findall(r"<script\b[^>]*\bsrc\s*=\s*['\"]([^'\"]*)['\"]", html, re.IGNORECASE)
+    assert script_srcs == ["/admin/consult.js"], f"只允許同源 consult.js，實際: {script_srcs}"
     assert not re.search(r"<img\b[^>]*\bsrc\s*=\s*['\"]?https?:", html, re.IGNORECASE)
 
 
