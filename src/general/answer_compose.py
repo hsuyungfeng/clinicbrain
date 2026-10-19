@@ -45,6 +45,20 @@ DEFAULT_FOLLOWUPS = {
 # 追問中禁止出現的用藥動詞/關鍵字
 _FOLLOWUP_FORBIDDEN_MED = ("服藥", "吃藥", "服用", "劑量", "處方", "開立", "買藥")
 
+# 療程專用術語：通用衛教追問中絕不可出現
+PROCEDURE_ONLY_TERMS: tuple[str, ...] = ("術後", "療程", "手術", "治療", "施作")
+
+# 通用衛教中性追問常數表（無療程術語、皆以？結尾、恰一個？、無網址、無數字與用藥）
+GENERAL_FOLLOWUPS: dict[str, str] = {
+    "what": "您是希望先了解整體概念，還是想知道日常上怎麼留意呢？",
+    "recovery": "您比較在意休息與恢復的安排，還是日常活動上的限制呢？",
+    "risk": "您主要想了解常見的暫時性狀況，還是需要留意的少數情形呢？",
+    "suitable": "您目前是否有正在關注的身體狀況或體質想先與醫師確認呢？",
+    "when_to_see_doctor": "您目前是否已有特定不適症狀需要醫師協助評估呢？",
+    "other": "您目前是否有特定的困擾部位，或想先了解哪方面的照護方式？",
+}
+
+
 
 def split_sentences(text: str) -> list[str]:
     """將文字依句末標點切分，保留標點；空字串回空清單。"""
@@ -206,13 +220,15 @@ def validate_composed(value: str, followup: str | None) -> tuple[bool, str | Non
     return True, None
 
 
-def assemble_answer(value: str, followup: str | None, intent: str) -> str | None:
+def assemble_answer(value: str, followup: str | None, intent: str, scope: str = "procedure") -> str | None:
     """將價值段、追問句與預約邀請組裝為固定結構。
 
     規則：
     1. 價值段 2～4 句，超長時取「警訊句加前面句子」湊足 4 句並維持原相對順序。
     2. 少於 2 句時回傳 None（由呼叫端降級）。
     3. 追問取第一個「？」結尾的句子，缺少或不合規時退回預設追問。
+       - 若 scope == "general"，候選追問不得包含 PROCEDURE_ONLY_TERMS，否則退回通用中性追問。
+       - 預設追問在 scope == "general" 時取 GENERAL_FOLLOWUPS，其餘（procedure 或未知）取 DEFAULT_FOLLOWUPS。
     4. 最終整體回答恰好包含一個「？」，結尾附加固定 CTA_TEXT。
     """
     v = (value or "").strip()
@@ -256,10 +272,16 @@ def assemble_answer(value: str, followup: str | None, intent: str) -> str | None
             first_q = candidate.split("？")[0].strip() + "？"
             ok, _ = _validate_followup_text(first_q)
             if ok and is_complete_ending(first_q) and first_q.count("？") == 1:
-                chosen_followup = first_q
+                if scope == "general" and any(term in first_q for term in PROCEDURE_ONLY_TERMS):
+                    chosen_followup = None
+                else:
+                    chosen_followup = first_q
 
     if not chosen_followup:
-        chosen_followup = DEFAULT_FOLLOWUPS.get(intent, DEFAULT_FOLLOWUPS["other"])
+        if scope == "general":
+            chosen_followup = GENERAL_FOLLOWUPS.get(intent, GENERAL_FOLLOWUPS["other"])
+        else:
+            chosen_followup = DEFAULT_FOLLOWUPS.get(intent, DEFAULT_FOLLOWUPS["other"])
 
     # 確保價值段內沒有「？」避免出現多個問號
     # 衛教說明通常為陳述句，若價值段含有「？」，替換為「。」以保證全篇恰一個問號
@@ -301,3 +323,11 @@ for _intent_key, _f_text in DEFAULT_FOLLOWUPS.items():
     assert is_complete_ending(_f_text), f"DEFAULT_FOLLOWUPS[{_intent_key}] 必須為完整句結尾"
     _ok, _err = _validate_followup_text(_f_text)
     assert _ok, f"DEFAULT_FOLLOWUPS[{_intent_key}] 未通過合規檢查: {_err}"
+
+for _intent_key, _f_text in GENERAL_FOLLOWUPS.items():
+    assert _f_text.count("？") == 1, f"GENERAL_FOLLOWUPS[{_intent_key}] 必須恰包含一個問號"
+    assert is_complete_ending(_f_text), f"GENERAL_FOLLOWUPS[{_intent_key}] 必須為完整句結尾"
+    _ok, _err = _validate_followup_text(_f_text)
+    assert _ok, f"GENERAL_FOLLOWUPS[{_intent_key}] 未通過合規檢查: {_err}"
+    for _term in PROCEDURE_ONLY_TERMS:
+        assert _term not in _f_text, f"GENERAL_FOLLOWUPS[{_intent_key}] 包含療程專用詞: {_term}"

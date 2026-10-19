@@ -202,3 +202,67 @@ def test_build_compose_prompt_warning_rule():
     assert demo_sentence in prompt
     assert has_doctor_warning(demo_sentence)
 
+
+def test_general_followups_keys_and_validity():
+    """驗證 GENERAL_FOLLOWUPS 鍵與 DEFAULT_FOLLOWUPS 一致，且每句皆無療程術語。"""
+    assert hasattr(ac, "GENERAL_FOLLOWUPS"), "必須定義 GENERAL_FOLLOWUPS"
+    assert hasattr(ac, "PROCEDURE_ONLY_TERMS"), "必須定義 PROCEDURE_ONLY_TERMS"
+    assert set(ac.GENERAL_FOLLOWUPS.keys()) == set(ac.DEFAULT_FOLLOWUPS.keys())
+
+    for k, text in ac.GENERAL_FOLLOWUPS.items():
+        assert text.count("？") == 1, f"GENERAL_FOLLOWUPS[{k}] 必須恰一個問號"
+        assert ac.is_complete_ending(text), f"GENERAL_FOLLOWUPS[{k}] 必須為完整句結尾"
+        ok, reason = ac._validate_followup_text(text)
+        assert ok, f"GENERAL_FOLLOWUPS[{k}] 合規失敗: {reason}"
+        for term in ac.PROCEDURE_ONLY_TERMS:
+            assert term not in text, f"GENERAL_FOLLOWUPS[{k}] 不得包含療程術語 '{term}': {text}"
+
+
+def test_assemble_answer_scope_behavior():
+    """驗證 assemble_answer 依 scope 選用追問表，預設維持 procedure。"""
+    val = "傷口保持清潔乾燥。" + WARNING_SENT
+
+    # 1. scope='general' 取 GENERAL_FOLLOWUPS
+    ans_general = ac.assemble_answer(val, None, "recovery", scope="general")
+    assert ans_general is not None
+    assert ac.GENERAL_FOLLOWUPS["recovery"] in ans_general
+    assert "術後" not in ans_general.split("\n")[1]
+
+    # 2. scope 省略時（預設）維持 procedure 行為（DEFAULT_FOLLOWUPS）
+    ans_default = ac.assemble_answer(val, None, "recovery")
+    ans_proc = ac.assemble_answer(val, None, "recovery", scope="procedure")
+    assert ans_default == ans_proc
+    assert ac.DEFAULT_FOLLOWUPS["recovery"] in ans_default
+    assert "術後" in ans_default
+
+    # 3. 未知 scope 視同 procedure
+    ans_unknown = ac.assemble_answer(val, None, "recovery", scope="unrecognized_scope")
+    assert ans_unknown == ans_proc
+
+
+def test_assemble_answer_model_followup_procedure_terms_blocked_in_general():
+    """驗證 scope='general' 時模型自帶追問若含療程詞彙則退回中性追問；scope='procedure' 則保留。"""
+    val = "傷口保持清潔乾燥。" + WARNING_SENT
+    model_fol_procedure = "您想了解術後照護的哪個部分？"
+
+    # scope='general' 時模型自帶療程追問被攔截，退回 GENERAL_FOLLOWUPS
+    ans_gen = ac.assemble_answer(val, model_fol_procedure, "recovery", scope="general")
+    assert ans_gen is not None
+    assert model_fol_procedure not in ans_gen
+    assert ac.GENERAL_FOLLOWUPS["recovery"] in ans_gen
+
+    # scope='procedure' 時模型自帶療程追問被保留
+    ans_proc = ac.assemble_answer(val, model_fol_procedure, "recovery", scope="procedure")
+    assert ans_proc is not None
+    assert model_fol_procedure in ans_proc
+
+    # scope='general' 時完全中性的模型追問正常保留
+    model_fol_neutral = "您比較在意哪方面的生活調整呢？"
+    ans_gen_neutral = ac.assemble_answer(val, model_fol_neutral, "recovery", scope="general")
+    assert ans_gen_neutral is not None
+    assert model_fol_neutral in ans_gen_neutral
+
+    assert ans_gen.count("？") == 1
+    assert ans_gen.endswith(ac.CTA_TEXT)
+
+
