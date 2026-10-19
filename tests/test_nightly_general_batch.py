@@ -86,6 +86,8 @@ def test_skip_general_batch(isolated_conn: sqlite3.Connection, tmp_path: Path):
         max_faq_topics=5,
     )
 
+    init_max_id = conn.execute("SELECT COALESCE(MAX(id), 0) FROM faq_cache").fetchone()[0]
+
     summary = run_batch(
         conn,
         cfg,
@@ -96,9 +98,12 @@ def test_skip_general_batch(isolated_conn: sqlite3.Connection, tmp_path: Path):
 
     assert summary.status == "completed"
 
-    # 驗證產出之 FAQ 不包含 general
+    # 驗證本批次產出之新 FAQ 不包含 general
     cur = conn.cursor()
-    cur.execute("SELECT category FROM faq_cache WHERE source_type = 'llm_generated'")
+    cur.execute(
+        "SELECT category FROM faq_cache WHERE source_type = 'llm_generated' AND id > ?",
+        (init_max_id,),
+    )
     rows = cur.fetchall()
     for (cat,) in rows:
         assert cat != "general"

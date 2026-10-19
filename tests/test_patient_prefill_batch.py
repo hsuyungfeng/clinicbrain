@@ -359,3 +359,81 @@ def test_12_newly_prefilled_rows_invisible_before_approval(isolated_conn, tmp_pa
     )
     visible_count = cur.fetchone()[0]
     assert visible_count == 0  # 醫師核准前對外完全隱蔽
+
+
+def test_reject_code_for_mapping():
+    """驗證 reject_code_for 正確歸類各種失敗原因為細分碼。"""
+    from src.batch.patient_prefill import reject_code_for
+
+    assert reject_code_for("", "現有資料並未提及隆鼻清潔方式。") == "insufficient_evidence"
+    assert reject_code_for("", "因資料不足無法提供說明。") == "insufficient_evidence"
+    assert reject_code_for("缺少警訊句", "") == "missing_warning"
+    assert reject_code_for("包含具體金額價格", "") == "price_leak"
+    assert reject_code_for("含政治立場詞", "") == "political_phrase"
+    assert reject_code_for("簡體字檢測失敗", "") == "simplified_chinese"
+    assert reject_code_for("含保證療效詞彙", "") == "guarantee_phrase"
+    assert reject_code_for("含劑量處方", "") == "dosage_or_prescription"
+    assert reject_code_for("句子數量不符", "") == "sentence_count"
+    assert reject_code_for("其他原因", "") == "other_validation"
+
+
+def test_prefill_rejects_insufficient_evidence(isolated_conn, tmp_path):
+    """驗證模型輸出表明現有資料不足時，預生成直接剔除且不寫入資料庫。"""
+    from src.batch.patient_prefill import run_prefill_stage
+
+    doc_id = _setup_test_tree(isolated_conn, "tree-t13", "隆鼻手術照護")
+    seed_file = tmp_path / "seeds.json"
+    seed_file.write_text(json.dumps({"topics": [], "tree_procedure_names": {}}), encoding="utf-8")
+
+    def _insufficient_llm(prompt: str) -> str:
+        return (
+            "答：現有資料並未提及相關隆鼻照護內容，建議諮詢醫師。\n"
+            f"{WARNING_TEXT}\n"
+            "追問：您想先了解其他部位嗎？"
+        )
+
+    log_dir = tmp_path / "logs"
+    logger = RunLogger(log_dir)
+
+    cfg = DummyConfig(max_faq_topics=5, seed_path=str(seed_file))
+    res = run_prefill_stage(isolated_conn, cfg, _insufficient_llm, now=NOW_FIXED, logger=logger)
+
+    assert res.status == "completed"
+    assert res.rejected == 5
+    assert res.generated == 0
+
+    # 資料庫中沒有寫入任何該主題的記錄
+    cur = isolated_conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE ?",
+        (f"{PREFILL_TOPIC_PREFIX}{doc_id}-%",),
+    )
+    assert cur.fetchone()[0] == 0
+
+    # 檢查 log 紀錄 reason_code 為 insufficient_evidence
+    log_text = "\n".join(logger.lines)
+    assert "insufficient_evidence" in log_text
+
+
+def test_prefill_logger_payload_privacy_check(isolated_conn, tmp_path):
+    """驗證 RunLogger 在預生成剔除時不輸出病患問句、答案等全文。"""
+    from src.batch.patient_prefill import run_prefill_stage
+
+    doc_id = _setup_test_tree(isolated_conn, "tree-t14", "音波拉皮介紹")
+    seed_file = tmp_path / "seeds.json"
+    seed_file.write_text(json.dumps({"topics": [], "tree_procedure_names": {}}), encoding="utf-8")
+
+    secret_query_keyword = "極度機密不應出現的病患敏感字眼"
+    def _leak_test_llm(prompt: str) -> str:
+        return f"答：這是一段回答包含{secret_query_keyword}。\n追問：你想了解嗎？"
+
+    log_dir = tmp_path / "logs_privacy"
+    logger = RunLogger(log_dir)
+
+    cfg = DummyConfig(max_faq_topics=5, seed_path=str(seed_file))
+    run_prefill_stage(isolated_conn, cfg, _leak_test_llm, now=NOW_FIXED, logger=logger)
+
+    log_content = "\n".join(logger.lines)
+    assert secret_query_keyword not in log_content
+
+

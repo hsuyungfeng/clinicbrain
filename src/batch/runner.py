@@ -109,6 +109,8 @@ class BatchSummary:
     prefill_generated: int = 0
     prefill_refreshed: int = 0
     prefill_rejected: int = 0
+    prefill_rejected_warning: int = 0
+    prefill_rejected_insufficient: int = 0
     prefill_protected_skipped: int = 0
     prefill_skipped_budget: int = 0
     prefill_skipped_no_title: int = 0
@@ -576,6 +578,8 @@ def run_batch(
             summary.prefill_generated = prefill_res.generated
             summary.prefill_refreshed = prefill_res.refreshed_unchanged
             summary.prefill_rejected = prefill_res.rejected
+            summary.prefill_rejected_warning = prefill_res.rejected_warning
+            summary.prefill_rejected_insufficient = prefill_res.rejected_insufficient
             summary.prefill_protected_skipped = prefill_res.protected_skipped
             summary.prefill_skipped_budget = prefill_res.skipped_budget
             summary.prefill_skipped_no_title = prefill_res.skipped_no_title

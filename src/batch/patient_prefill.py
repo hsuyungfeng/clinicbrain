@@ -43,6 +43,34 @@ from src.pageindex.llm_client import (
 from src.pageindex.tree_review import visible_tree_sql
 
 
+from dataclasses import dataclass, field
+
+
+def reject_code_for(reason: str, answer_body: str = "") -> str:
+    """將驗證失敗原因歸類為結構化細分剔除碼。"""
+    from src.general.patient_compose import looks_insufficient
+
+    if looks_insufficient(answer_body):
+        return "insufficient_evidence"
+
+    r = (reason or "").lower()
+    if "warn" in r or "警訊" in r:
+        return "missing_warning"
+    if "price" in r or "金額" in r or "價格" in r:
+        return "price_leak"
+    if "politic" in r or "立場" in r:
+        return "political_phrase"
+    if "simp" in r or "簡體" in r:
+        return "simplified_chinese"
+    if "guarantee" in r or "保證" in r:
+        return "guarantee_phrase"
+    if "med" in r or "劑量" in r or "處方" in r:
+        return "dosage_or_prescription"
+    if "sent" in r or "句" in r:
+        return "sentence_count"
+    return "other_validation"
+
+
 @dataclass
 class PrefillResult:
     """預生成階段執行統計摘要。"""
@@ -51,6 +79,9 @@ class PrefillResult:
     generated: int = 0
     refreshed_unchanged: int = 0
     rejected: int = 0
+    rejected_warning: int = 0
+    rejected_insufficient: int = 0
+    rejected_reasons: dict[str, int] = field(default_factory=dict)
     protected_skipped: int = 0
     skipped_budget: int = 0
     skipped_no_title: int = 0
@@ -174,8 +205,19 @@ def run_prefill_stage(
                 continue
 
             val_text, _ = parse_model_output(raw_output)
+            from src.general.patient_compose import looks_insufficient
+
+            if looks_insufficient(val_text):
+                res.rejected += 1
+                res.rejected_insufficient += 1
+                res.rejected_reasons["insufficient_evidence"] = res.rejected_reasons.get("insufficient_evidence", 0) + 1
+                if logger:
+                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="insufficient_evidence")
+                continue
+
             if not is_complete_ending(val_text):
                 res.rejected += 1
+                res.rejected_reasons["incomplete_ending"] = res.rejected_reasons.get("incomplete_ending", 0) + 1
                 if logger:
                     logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="incomplete_ending")
                 continue
@@ -191,8 +233,9 @@ def run_prefill_stage(
             sents = split_sentences(val_text.strip())
             if len(sents) < MIN_VALUE_SENTENCES:
                 res.rejected += 1
+                res.rejected_reasons["sentence_count"] = res.rejected_reasons.get("sentence_count", 0) + 1
                 if logger:
-                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="value_too_short")
+                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="sentence_count")
                 continue
 
             warn_indices = [i for i, s in enumerate(sents) if has_doctor_warning(s)]
@@ -213,23 +256,39 @@ def run_prefill_stage(
 
             if len(selected_sents) < MIN_VALUE_SENTENCES:
                 res.rejected += 1
+                res.rejected_reasons["sentence_count"] = res.rejected_reasons.get("sentence_count", 0) + 1
                 if logger:
-                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="value_too_short")
+                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="sentence_count")
                 continue
 
             clean_value_body = "".join(selected_sents).replace("？", "。").replace("?", "。").strip()
 
+            if looks_insufficient(clean_value_body):
+                res.rejected += 1
+                res.rejected_insufficient += 1
+                res.rejected_reasons["insufficient_evidence"] = res.rejected_reasons.get("insufficient_evidence", 0) + 1
+                if logger:
+                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="insufficient_evidence")
+                continue
+
             if not is_complete_ending(clean_value_body):
                 res.rejected += 1
+                res.rejected_reasons["incomplete_ending"] = res.rejected_reasons.get("incomplete_ending", 0) + 1
                 if logger:
                     logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="incomplete_ending")
                 continue
 
             ok, reason = validate_composed(clean_value_body, None)
             if not ok:
+                rej_code = reject_code_for(reason or "", clean_value_body)
                 res.rejected += 1
+                if rej_code == "missing_warning":
+                    res.rejected_warning += 1
+                elif rej_code == "insufficient_evidence":
+                    res.rejected_insufficient += 1
+                res.rejected_reasons[rej_code] = res.rejected_reasons.get(rej_code, 0) + 1
                 if logger:
-                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code="validation_failed")
+                    logger.info("prefill_item_rejected", topic_key=tp_plan.topic.topic_key, intent_code=item.intent, reason_code=rej_code)
                 continue
 
             assembled = clean_value_body

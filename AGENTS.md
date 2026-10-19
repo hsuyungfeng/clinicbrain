@@ -588,6 +588,13 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 營運關鍵字防護：問句含營運關鍵字（`_CLINIC_OPS_KEYWORDS`，如地址、電話、營業時間等）時直接回傳空證據，不使用診所私有資料；絕不讀取 `clinic_info`、`clinic_hours`、`clinic_custom_notes`。
   - 隱私保護：問句不存庫、不寫入 cache_stats、系統日誌絕不包含問句原文。
 
+- **真實端到端驗收補強與品質防禦（28-10 新增）**：
+  - 證據相關度檢核與雙重防禦 (`is_relevant_evidence` / `filter_relevant`)：問句標準化後剔除泛用名詞（`GENERIC_TERMS`，如「照顧、注意、事項、方法、怎麼、可以、在家、平常、哪些、什麼、如何、自己、時候、需要、問題、內容、包含、處理、門診、術後、術前、風險、照護、有沒有、要不要、手術、療程、治療、項目」），取剩餘相鄰 CJK 2-gram 集合（扣除泛用詞 bigrams）。候選資料若與問句無交集即判定不相關（Fail-Closed）；組稿前過濾不相關資料，避免不相干之已核准資料被誤當證據組稿。
+  - 模型資料不足輸出攔截 (`looks_insufficient` / `InsufficientEvidenceError`)：若模型組稿輸出包含「資料不足」或（「參考資料」「提供的資料」「現有資料」）且（「無法」「不足」「未提及」「並未」「僅涵蓋」「沒有」），立即拋出 `InsufficientEvidenceError`，自動跳過資料庫預設答覆並放行至 2.24 未審醫學說明路徑，杜絕「現有資料並未提及...」等內部口吻外露。
+  - 中性預設追問常數表 (`DEFAULT_FOLLOWUPS["other"]`)：修正為「您目前是否有特定的困擾部位，或想先了解哪方面的照護方式？」，不假設病患諮詢之主題為療程，維持通用中性。
+  - 即時組稿提示詞修正與警訊句規範：修正提示詞中「一句具體」錯字，明示警訊句必須包含具體症狀詞（如紅腫、發燒、疼痛、化膿、出血等）與就醫動作，並於 prompt 提供合法示範句（「若傷口出現持續紅腫或化膿，請盡速回診尋求醫師評估。」），大幅提升模型首發警訊句合規良率。
+  - 夜間預生成剔除原因結構化細分 (`reject_code_for`)：預生成輸出若表明資料不足（`looks_insufficient`）直接剔除不入庫；驗證失敗原因細分為 `missing_warning`、`price_leak`、`political_phrase`、`simplified_chinese`、`guarantee_phrase`、`dosage_or_prescription`、`sentence_count` 與 `insufficient_evidence`，且日誌 payload 嚴格禁止包含問句或答案原文，兼顧可觀測性與病患隱私。
+
 - **已知限制與維護說明**：
   1. 未設定 `patient_clinic_id` 時，匿名諮詢端點不檢索任何診所資料（只命中一般資料）；正式庫目前推理樹皆為診所專屬，因此未設定 `patient_clinic_id` 時，這些樹來源的預生成內容匿名端點看不到（special 預生成仍可透過 `/api/v1/query` 帶 `clinic_id` 使用）。
   2. 預生成題目標題只來自推理樹的 `title` 或種子 `title`（去除「常見問題」字樣），無中文標題者不進行預生成（計入 `prefill_skipped_no_title`）。
