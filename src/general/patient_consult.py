@@ -27,11 +27,14 @@ from ..pageindex.llm_client import (
     PATIENT_GENERAL_SAMPLING,
 )
 from ..pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
-from .consult import consult_general
+from .consult import GeneralConsultResult, consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
 from .patient_compose import (
+    ClinicEvidence,
+    InsufficientEvidenceError,
     compose_from_approved,
     decorate_general_answer,
+    filter_relevant,
     retrieve_clinic_evidence,
 )
 from .red_flags import detect_red_flag
@@ -122,17 +125,25 @@ def patient_consult(
             booking_url=BOOKING_URL,
         )
 
-    clinic_ev = retrieve_clinic_evidence(conn, query, clinic_id) if clinic_id else None
+    raw_clinic_ev = retrieve_clinic_evidence(conn, query, clinic_id) if clinic_id else None
     found = consult_general(conn, query)
 
+    # 過濾不相關的已核准資料並取得乾淨複本
+    clinic_ev, filtered_found = filter_relevant(query, raw_clinic_ev, found)
+
     has_clinic_evidence = bool(clinic_ev and (clinic_ev.faq_hits or clinic_ev.guide_hits))
-    has_general_evidence = found.status == "answered"
+    has_general_evidence = filtered_found.status == "answered"
 
     if has_clinic_evidence or has_general_evidence:
         actual_compose_llm = compose_llm_call or llm_call
-        composed_msg = compose_from_approved(
-            conn, query, found, actual_compose_llm, clinic_evidence=clinic_ev
-        )
+        try:
+            composed_msg = compose_from_approved(
+                conn, query, filtered_found, actual_compose_llm, clinic_evidence=clinic_ev
+            )
+        except InsufficientEvidenceError:
+            composed_msg = None
+            has_general_evidence = False
+
         if composed_msg:
             return PatientConsultResult(
                 status="answered",
@@ -141,10 +152,10 @@ def patient_consult(
                 label=None,
                 booking_url=BOOKING_URL,
             )
-        elif has_general_evidence and found.message:
+        elif has_general_evidence and filtered_found.message:
             return PatientConsultResult(
                 status="answered",
-                message=found.message,
+                message=filtered_found.message,
                 disclaimer=found.disclaimer,
                 label=None,
                 booking_url=BOOKING_URL,

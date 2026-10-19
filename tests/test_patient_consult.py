@@ -154,3 +154,98 @@ def test_max_llm_calls_is_at_most_one(isolated_conn):
     pc.patient_consult(isolated_conn, "胸痛無法呼吸", counting_llm)
     assert len(calls) == 0
 
+
+def test_irrelevant_evidence_filtered_to_general_draft(isolated_conn):
+    """Phase 28 Plan 10: 問感冒居家照顧但資料庫僅有甲溝炎 FAQ 時，過濾後無相關證據，直接進入 2.24，不呼叫組稿模型。"""
+    from src.pageindex.faq_writer import upsert_faqs
+
+    # 植入已核准之甲溝炎 FAQ（一般類）
+    upsert_faqs(
+        isolated_conn,
+        [{
+            "clinic_id": None,
+            "topic_key": "paronychia-care",
+            "category": "general",
+            "question": "甲溝炎門診處理與日常照顧方法",
+            "answer": f"甲溝炎主要是指甲邊緣軟組織發炎化膿，門診需評估是否修剪甲片。{WARNING}",
+        }],
+        source_type="manual",
+    )
+    isolated_conn.execute("UPDATE faq_cache SET review_status='approved' WHERE topic_key='paronychia-care'")
+    isolated_conn.commit()
+
+    compose_calls = []
+    def _tracking_compose_llm(p):
+        compose_calls.append(p)
+        return "不應被呼叫"
+
+    general_calls = []
+    def _fake_general_llm(p):
+        general_calls.append(p)
+        return json.dumps([{
+            "question": "感冒的時候可以怎麼在家照顧自己？",
+            "answer": f"感冒期間應多休息、適當補充水分並維持清淡飲食。{WARNING}",
+        }], ensure_ascii=False)
+
+    q = "感冒的時候可以怎麼在家照顧自己？"
+    res = pc.patient_consult(
+        isolated_conn,
+        q,
+        llm_call=_fake_general_llm,
+        compose_llm_call=_tracking_compose_llm,
+    )
+
+    # 1. 組稿模型完全不被呼叫
+    assert len(compose_calls) == 0
+    # 2. 進入 2.24 未審一般說明路徑
+    assert res.status == "llm_general"
+    assert "甲溝炎" not in res.message
+    assert "發炎化膿" not in res.message
+    assert "感冒期間應多休息" in res.message
+
+
+def test_insufficient_output_bypasses_general_evidence_to_2_24(isolated_conn, monkeypatch):
+    """Phase 28 Plan 10: 組稿模型輸出自述參考資料不足時，拋出 InsufficientEvidenceError，跳過組稿與 found.message，進入 2.24。"""
+    from src.general.patient_compose import InsufficientEvidenceError
+
+    app_q = "測試資料不足退回二點二四"
+    from src.pageindex.faq_writer import upsert_faqs
+    upsert_faqs(
+        isolated_conn,
+        [{
+            "clinic_id": None,
+            "topic_key": "insufficient-test-key",
+            "category": "general",
+            "question": app_q,
+            "answer": f"這是一段一般測試回答說明。{WARNING}",
+        }],
+        source_type="manual",
+    )
+    isolated_conn.execute("UPDATE faq_cache SET review_status='approved' WHERE topic_key='insufficient-test-key'")
+    isolated_conn.commit()
+
+    # 模擬 compose_from_approved 拋出 InsufficientEvidenceError
+    def _mock_compose_insufficient(*args, **kwargs):
+        raise InsufficientEvidenceError("模型輸出自述資料不足")
+
+    monkeypatch.setattr(pc, "compose_from_approved", _mock_compose_insufficient)
+
+    general_calls = []
+    def _fake_general_llm(p):
+        general_calls.append(p)
+        return json.dumps([{
+            "question": app_q,
+            "answer": f"由未審模型生成的完整一般衛教說明。{WARNING}",
+        }], ensure_ascii=False)
+
+    res = pc.patient_consult(
+        isolated_conn,
+        app_q,
+        llm_call=_fake_general_llm,
+    )
+
+    # 必須跳過 found.message（不回傳 answered），進入 2.24 回傳 llm_general
+    assert res.status == "llm_general"
+    assert "由未審模型生成的完整一般衛教說明" in res.message
+
+

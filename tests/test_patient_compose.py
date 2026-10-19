@@ -353,3 +353,134 @@ def test_9_prefill_approved_direct_hit_and_pending_isolated(isolated_conn):
     assert res is not None
     assert "超音波拉提" in res
     assert CTA_TEXT in res
+
+
+# ==============================================================================
+# Phase 28 Plan 10: Task 1 相關度過濾與「資料不足」偵測測試
+# ==============================================================================
+
+def test_10_is_relevant_evidence_algorithm():
+    """Test 10: is_relevant_evidence bigram 相關度底線判定演算法。"""
+    from src.general.patient_compose import is_relevant_evidence
+
+    # 1. 「感冒的時候可以怎麼在家照顧自己？」 vs 甲溝炎 FAQ -> 不相關 (False)
+    q_cold = "感冒的時候可以怎麼在家照顧自己？"
+    faq_paronychia = {
+        "question": "甲溝炎門診處理與日常護理",
+        "answer": f"甲溝炎主要是指甲邊緣軟組織發炎化膿，門診需評估是否修剪甲片。{WARNING}",
+    }
+    assert is_relevant_evidence(q_cold, faq_paronychia) is False
+
+    # 2. 「電波拉皮術後要注意什麼？」 vs 電波拉皮推理樹 -> 相關 (True)
+    q_thermage = "電波拉皮術後要注意什麼？"
+    tree_thermage = {
+        "doc_id": "thermage-flx",
+        "category": "special",
+        "summary_text": "電波拉皮利用單極電波加熱真皮層以刺激膠原蛋白緊實。",
+        "pre_op": "術前諮詢與卸除飾品。",
+        "procedure": "塗抹導極凝膠進行電波緊緻施打處置。",
+        "post_op_short": "電波拉皮術後初期可能微紅，加強保濕與防曬。",
+        "maintenance": "長期維持良好作息。",
+    }
+    assert is_relevant_evidence(q_thermage, tree_thermage) is True
+
+    # 3. 「甲溝炎門診處理包含哪些內容？」 vs 同題 FAQ -> 相關 (True)
+    q_paronychia = "甲溝炎門診處理包含哪些內容？"
+    faq_paronychia_exact = {
+        "question": "甲溝炎門診處理包含哪些項目？",
+        "answer": f"甲溝炎門診處置包含指甲局部消毒修剪與抗生素治療。{WARNING}",
+    }
+    assert is_relevant_evidence(q_paronychia, faq_paronychia_exact) is True
+
+    # 4. 「音波拉提有哪些風險與注意事項？」 vs 音波 FAQ -> 相關 (True)
+    q_hifu = "音波拉提有哪些風險與注意事項？"
+    faq_hifu = {
+        "question": "音波拉提有哪些風險與注意事項？",
+        "answer": f"音波拉提主要利用超音波能量聚焦，術後偶有短暫紅腫與麻木感。{WARNING}",
+    }
+    assert is_relevant_evidence(q_hifu, faq_hifu) is True
+
+    # 5. 問句只剩通用詞 -> topic_bigrams 為空 -> 視為不相關 (Fail-Closed)
+    q_all_generic = "在家的時候可以如何處理這些問題？"
+    assert is_relevant_evidence(q_all_generic, faq_hifu) is False
+
+
+def test_11_filter_relevant_copies_and_empty_status():
+    """Test 11: filter_relevant 回傳複本，不改動原物件；無相關時 status='no_match' 且 message=''。"""
+    from src.general.patient_compose import ClinicEvidence, filter_relevant
+
+    q_cold = "感冒的時候可以怎麼在家照顧自己？"
+    orig_found = _make_found(
+        faq_hits=[{
+            "question": "甲溝炎處置",
+            "answer": f"甲溝炎需局部修剪。{WARNING}",
+        }],
+        guide_hits=[{
+            "doc_id": "tree-paronychia",
+            "summary_text": "甲溝炎臨床指引",
+        }],
+    )
+    orig_clinic_ev = ClinicEvidence(
+        faq_hits=[{
+            "question": "皮膚感染處理",
+            "answer": f"皮膚感染需抗生素。{WARNING}",
+        }],
+        guide_hits=[],
+    )
+
+    filtered_clinic_ev, filtered_found = filter_relevant(q_cold, orig_clinic_ev, orig_found)
+
+    # 1. 原物件未被改動（複本保證）
+    assert len(orig_found.faq_hits) == 1
+    assert len(orig_found.guide_hits) == 1
+    assert orig_found.status == "answered"
+    assert orig_found.message == "這是一般衛教資訊說明。"
+    assert len(orig_clinic_ev.faq_hits) == 1
+
+    # 2. 複本過濾後為空，status 變為 no_match，且 message 清空
+    assert len(filtered_found.faq_hits) == 0
+    assert len(filtered_found.guide_hits) == 0
+    assert filtered_found.status == "no_match"
+    assert filtered_found.message == ""
+    assert filtered_clinic_ev is not None
+    assert len(filtered_clinic_ev.faq_hits) == 0
+    assert len(filtered_clinic_ev.guide_hits) == 0
+
+
+def test_12_looks_insufficient_cases():
+    """Test 12: looks_insufficient 正例與負例共現判定。"""
+    from src.general.patient_compose import looks_insufficient
+
+    # 正例：「提供的資料／參考資料／現有資料」且「無法／不足／未提及／並未／僅涵蓋／沒有」；或含「資料不足」
+    assert looks_insufficient("提供的參考資料僅涵蓋皮膚感染，無法提供感冒照顧說明。") is True
+    assert looks_insufficient("參考資料並未提及相關居家照護處置。") is True
+    assert looks_insufficient("現有資料沒有關於此項手術的說明。") is True
+    assert looks_insufficient("目前資料不足，建議您親洽專業醫師診察評估。") is True
+    assert looks_insufficient("提供的資料僅涵蓋部分症狀。") is True
+
+    # 負例：未共現資料詞與否定詞，不得誤殺正常衛教句
+    assert looks_insufficient("此方法僅涵蓋局部區域，並不影響周邊正常健康組織。") is False
+    assert looks_insufficient("術後並未提及的症狀請回診，若出現紅腫化膿請儘速就醫。") is False
+    assert looks_insufficient("一般感冒期間應多休息、多補充溫開水並維持清淡飲食。") is False
+    assert looks_insufficient("") is False
+    assert looks_insufficient(None) is False
+
+
+def test_13_compose_from_approved_raises_insufficient_evidence_error(isolated_conn):
+    """Test 13: 當 LLM 輸出 looks_insufficient 為 True 時，拋出 InsufficientEvidenceError，不得走降級。"""
+    from src.general.patient_compose import InsufficientEvidenceError
+
+    q = "感冒照護方法有哪些？"
+    found = _make_found(
+        faq_hits=[{
+            "question": "皮膚感染照護",
+            "answer": f"皮膚感染需保持通風乾燥。{WARNING}",
+        }]
+    )
+
+    def _insufficient_llm(prompt):
+        return "答：提供的參考資料僅涵蓋皮膚感染，無法提供感冒照護說明。\n" f"{WARNING}\n" "追問：您目前是否有其他症狀呢？"
+
+    with pytest.raises(InsufficientEvidenceError):
+        compose_from_approved(isolated_conn, q, found, _insufficient_llm)
+

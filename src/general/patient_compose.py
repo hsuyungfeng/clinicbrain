@@ -47,6 +47,126 @@ from .answer_compose import (
 from .consult import GeneralConsultResult
 
 
+class InsufficientEvidenceError(RuntimeError):
+    """模型輸出表示參考資料不足以回答問句。"""
+    pass
+
+
+GENERIC_TERMS: frozenset[str] = frozenset({
+    "照顧", "注意", "事項", "方法", "怎麼", "可以", "在家", "平常",
+    "哪些", "什麼", "如何", "自己", "時候", "需要", "問題", "內容",
+    "包含", "處理", "門診", "術後", "術前", "風險", "照護", "有沒有", "要不要",
+    "手術", "療程", "治療", "項目",
+})
+
+
+def _build_generic_bigrams(terms: frozenset[str]) -> frozenset[str]:
+    bg: set[str] = set()
+    for t in terms:
+        for i in range(len(t) - 1):
+            pair = t[i : i + 2]
+            if len(pair) == 2 and "\u4e00" <= pair[0] <= "\u9fff" and "\u4e00" <= pair[1] <= "\u9fff":
+                bg.add(pair)
+    return frozenset(bg)
+
+
+_GENERIC_BIGRAMS: frozenset[str] = _build_generic_bigrams(GENERIC_TERMS)
+
+
+def _extract_cjk_bigrams(text: str) -> set[str]:
+    """取得字串中所有相鄰中文字元形成的 bigram 集合。"""
+    bg: set[str] = set()
+    for i in range(len(text) - 1):
+        c1, c2 = text[i], text[i + 1]
+        if "\u4e00" <= c1 <= "\u9fff" and "\u4e00" <= c2 <= "\u9fff":
+            bg.add(c1 + c2)
+    return bg
+
+
+def is_relevant_evidence(query: str, hit: dict) -> bool:
+    """判斷單筆已核准資料是否與問句具備足夠主題相關性（相鄰 2-gram 交集）。"""
+    topic_text = normalize_for_match(query, stopword_pattern=STOPWORD_SPLIT_PATTERN)
+    # 按長度降序逐一剔除泛用詞彙
+    sorted_generic = sorted(GENERIC_TERMS, key=len, reverse=True)
+    for term in sorted_generic:
+        topic_text = topic_text.replace(term, "")
+
+    topic_bigrams = _extract_cjk_bigrams(topic_text) - _GENERIC_BIGRAMS
+    if not topic_bigrams:
+        return False
+
+    # 提取候選資料文字
+    if "question" in hit or "answer" in hit:
+        target_text = (hit.get("question") or "") + (hit.get("answer") or "")
+    else:
+        target_text = (
+            (hit.get("doc_id") or "")
+            + (hit.get("category") or "")
+            + (hit.get("summary_text") or "")
+            + (hit.get("pre_op") or "")
+            + (hit.get("procedure") or "")
+            + (hit.get("post_op_short") or "")
+            + (hit.get("maintenance") or "")
+        )
+
+    target_bigrams = _extract_cjk_bigrams(target_text)
+    return bool(target_bigrams & topic_bigrams)
+
+
+def filter_relevant(query: str, *args):
+    """過濾出與問句具備足夠相關性之已核准資料。
+
+    支援兩種呼叫型式：
+    1. filter_relevant(query, hits: list[dict]) -> list[dict]
+    2. filter_relevant(query, clinic_ev: Optional[ClinicEvidence], found: GeneralConsultResult) -> tuple[Optional[ClinicEvidence], GeneralConsultResult]
+    """
+    if not args:
+        return []
+
+    if len(args) == 1 and isinstance(args[0], list):
+        hits = args[0]
+        if not query or not hits:
+            return []
+        return [h for h in hits if is_relevant_evidence(query, h)]
+
+    if len(args) == 2:
+        clinic_ev, found = args[0], args[1]
+        new_clinic_ev = None
+        if clinic_ev is not None:
+            new_faqs = [h for h in clinic_ev.faq_hits if is_relevant_evidence(query, h)]
+            new_guides = [h for h in clinic_ev.guide_hits if is_relevant_evidence(query, h)]
+            new_clinic_ev = ClinicEvidence(faq_hits=new_faqs, guide_hits=new_guides)
+
+        new_general_faqs = [h for h in found.faq_hits if is_relevant_evidence(query, h)]
+        new_general_guides = [h for h in found.guide_hits if is_relevant_evidence(query, h)]
+        has_any = bool(new_general_faqs or new_general_guides)
+        new_found = GeneralConsultResult(
+            status=found.status if has_any else "no_match",
+            red_flag_level=found.red_flag_level,
+            message=found.message if has_any else "",
+            disclaimer=found.disclaimer,
+            faq_hits=new_general_faqs,
+            guide_hits=new_general_guides,
+        )
+        return new_clinic_ev, new_found
+
+    raise ValueError("Invalid arguments for filter_relevant")
+
+
+def looks_insufficient(text: str) -> bool:
+    """檢查模型輸出是否表明現有參考資料不足以回答。"""
+    t = (text or "").strip()
+    if not t:
+        return False
+    if "資料不足" in t:
+        return True
+    data_indicators = ("參考資料", "提供的資料", "現有資料")
+    lack_indicators = ("無法", "不足", "未提及", "並未", "僅涵蓋", "沒有")
+    if any(d in t for d in data_indicators) and any(l in t for l in lack_indicators):
+        return True
+    return False
+
+
 @dataclass
 class ClinicEvidence:
     """診所已核准證據資料（含常見問答與衛教指引樹）。"""
@@ -355,6 +475,8 @@ def compose_from_approved(
         GENERATION_LOCK.release()
 
     value, followup = parse_model_output(raw_output)
+    if looks_insufficient(value):
+        raise InsufficientEvidenceError("Model indicated insufficient evidence")
     if not is_complete_ending(value):
         return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
     if followup and not is_complete_ending(followup):
