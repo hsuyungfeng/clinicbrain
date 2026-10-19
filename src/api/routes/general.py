@@ -108,6 +108,7 @@ def post_general_consult(
         "label": result.label,
         "disclaimer": result.disclaimer,
         "booking_url": BOOKING_URL,
+        "visual": deep_mask_prices(result.visual),
     }
 
 

@@ -156,6 +156,7 @@ def _worker(
                 "label": res.label,
                 "disclaimer": res.disclaimer,
                 "booking_url": res.booking_url,
+                "visual": res.visual,
             }
             res_dict = deep_mask_prices(raw_res)
         finally:
