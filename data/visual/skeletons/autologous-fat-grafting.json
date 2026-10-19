@@ -15,7 +15,39 @@
       "labels": [
         {"text": "抽取脂肪", "tone": "neutral"},
         {"text": "離心純化", "tone": "optimal"}
-      ]
+      ],
+      "params": {
+        "source": {
+          "label": "皮下脂肪",
+          "fill": "skin"
+        },
+        "particles": 5,
+        "container_layers": [
+          {
+            "label": "油滴",
+            "fill": "oil",
+            "weight": 2,
+            "keep": false
+          },
+          {
+            "label": "純化脂肪",
+            "fill": "fat",
+            "weight": 3,
+            "keep": true
+          },
+          {
+            "label": "血水",
+            "fill": "blood",
+            "weight": 2,
+            "keep": false
+          }
+        ],
+        "step_labels": [
+          "微創抽取",
+          "離心分層",
+          "保留純化脂肪"
+        ]
+      }
     },
     {
       "blueprint": "contrast",
@@ -23,7 +55,21 @@
       "labels": [
         {"text": "分層少量", "tone": "optimal"},
         {"text": "單處過量", "tone": "warning"}
-      ]
+      ],
+      "params": {
+        "left": {
+          "title": "單處過量",
+          "note": "較易出現硬塊",
+          "mode": "mass"
+        },
+        "right": {
+          "title": "分層少量",
+          "note": "接觸周圍組織",
+          "mode": "layered",
+          "rows": 3,
+          "per_row": 5
+        }
+      }
     },
     {
       "blueprint": "timeline",
@@ -31,7 +77,17 @@
       "labels": [
         {"text": "避免按壓", "tone": "warning"},
         {"text": "逐步適應", "tone": "optimal"}
-      ]
+      ],
+      "params": {
+        "milestones": [
+          "術後初期",
+          "微血管長入",
+          "狀態穩定"
+        ],
+        "unit_effect": "mature",
+        "connectors": "vessels",
+        "units": 3
+      }
     }
   ],
   "reference": [

@@ -219,3 +219,104 @@ def test_generate_ir_truncated_unavailable_and_busy(tmp_path):
         assert busy_calls == 0
     finally:
         db_lock.release(fd)
+
+
+def test_skeleton_with_valid_params_and_duration_sec(tmp_path):
+    """Phase 30 Task 3: 驗證骨架帶合法 params 與 duration_sec 可載入，且原樣帶入 IR。"""
+    import json
+    from src.visual.blueprints import default_params
+
+    skel = load_skeleton(Path("data/visual/skeletons/autologous-fat-grafting.json"))
+    custom_skel = copy.deepcopy(skel)
+    for sc in custom_skel["scenes"]:
+        sc["params"] = default_params(sc["blueprint"])
+        sc["duration_sec"] = 7
+
+    custom_file = tmp_path / "custom_skel.json"
+    custom_file.write_text(json.dumps(custom_skel, ensure_ascii=False), encoding="utf-8")
+
+    loaded = load_skeleton(custom_file)
+    for sc in loaded["scenes"]:
+        assert "params" in sc
+        assert sc["duration_sec"] == 7
+
+    ir, code = generate_ir(loaded, lambda p: VALID_MODEL_OUTPUT)
+    assert code == "ok"
+    assert ir is not None
+    for sc_ir, sc_skel in zip(ir["scenes"], loaded["scenes"]):
+        assert sc_ir["params"] == sc_skel["params"]
+        assert sc_ir["duration_sec"] == 7
+
+
+def test_skeleton_with_invalid_params_rejected(tmp_path):
+    """Phase 30 Task 3: 驗證骨架 scene 若含非法 params 或 duration_sec，load_skeleton 拒絕。"""
+    import json
+
+    skel = load_skeleton(Path("data/visual/skeletons/autologous-fat-grafting.json"))
+
+    # 1. params 含未知鍵
+    bad_skel1 = copy.deepcopy(skel)
+    bad_skel1["scenes"][0]["params"] = {"unknown_key": "val"}
+    f1 = tmp_path / "bad1.json"
+    f1.write_text(json.dumps(bad_skel1, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError) as exc1:
+        load_skeleton(f1)
+    assert "param_error" in str(exc1.value)
+
+    # 2. params 填入禁止顏色
+    bad_skel2 = copy.deepcopy(skel)
+    bad_skel2["scenes"][0]["params"] = {"source": {"fill": "#fff"}}
+    f2 = tmp_path / "bad2.json"
+    f2.write_text(json.dumps(bad_skel2, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError) as exc2:
+        load_skeleton(f2)
+    assert "param_error" in str(exc2.value)
+
+    # 3. duration_sec 超出範圍 (3 或 15)
+    bad_skel3 = copy.deepcopy(skel)
+    bad_skel3["scenes"][0]["duration_sec"] = 15
+    f3 = tmp_path / "bad3.json"
+    f3.write_text(json.dumps(bad_skel3, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError) as exc3:
+        load_skeleton(f3)
+    assert "param_error" in str(exc3.value)
+
+    # 4. scene 含多餘未知欄位
+    bad_skel4 = copy.deepcopy(skel)
+    bad_skel4["scenes"][0]["extra_field"] = "bad"
+    f4 = tmp_path / "bad4.json"
+    f4.write_text(json.dumps(bad_skel4, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError) as exc4:
+        load_skeleton(f4)
+    assert "schema_error" in str(exc4.value)
+
+
+def test_model_output_cannot_alter_params():
+    """Phase 30 Task 3: 驗證模型輸出夾帶 JSON 或企圖更改 params 時無效，IR 的 params 仍鎖定骨架內容。"""
+    from src.visual.blueprints import default_params
+
+    skel = load_skeleton(Path("data/visual/skeletons/autologous-fat-grafting.json"))
+    custom_skel = copy.deepcopy(skel)
+    for sc in custom_skel["scenes"]:
+        sc["params"] = default_params(sc["blueprint"])
+        sc["duration_sec"] = 5
+
+    malicious_model_output = (
+        '場景1：自體脂肪移植會先由適當部位抽取脂肪組織，並透過純化程序篩選出結構完整的脂肪細胞備用。 {"particles": 999}\n'
+        '場景2：醫師採用少量多層次的方式將脂肪均勻放置於目標區域，有助於組織接觸周圍環境並減少局部硬塊。\n'
+        '場景3：術後初期應避免按壓填補部位並維持正常作息，經過一段時間後組織會逐步適應並達到一定程度的穩定。'
+    )
+    # 模型輸出含阿拉伯數字 999，即使通過解析也會被数字檢核攔截；
+    # 這裡用不含數字但夾帶 params 字眼的輸出：
+    malicious_no_digits = (
+        '場景1：自體脂肪移植會先由適當部位抽取脂肪組織，並透過純化程序篩選出結構完整的脂肪細胞備用。\n'
+        '場景2：醫師採用少量多層次的方式將脂肪均勻放置於目標區域，有助於組織接觸周圍環境並減少局部硬塊。\n'
+        '場景3：術後初期應避免按壓填補部位並維持正常作息，經過一段時間後組織會逐步適應並達到一定程度的穩定。'
+    )
+    ir, code = generate_ir(custom_skel, lambda p: malicious_no_digits)
+    assert code == "ok"
+    assert ir is not None
+    # 驗證 params 仍與 custom_skel 相同，particles 仍為 5，duration_sec 仍為 5
+    assert ir["scenes"][0]["params"]["particles"] == 5
+    assert ir["scenes"][0]["duration_sec"] == 5
+

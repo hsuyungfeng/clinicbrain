@@ -98,11 +98,30 @@ def load_skeleton(path: Path | str) -> dict[str, Any]:
     if not isinstance(scenes, list) or not (3 <= len(scenes) <= 5):
         raise ValueError("骨架 scenes 數量不符: schema_error")
 
+    scene_required_keys = {"blueprint", "title", "labels"}
+    scene_allowed_optional = {"params", "duration_sec"}
+
     for sc in scenes:
-        if not isinstance(sc, dict) or set(sc.keys()) != {"blueprint", "title", "labels"}:
+        if not isinstance(sc, dict):
+            raise ValueError("骨架 scene 欄位不符: schema_error")
+        sc_keys = set(sc.keys())
+        if not scene_required_keys.issubset(sc_keys) or not sc_keys.issubset(scene_required_keys | scene_allowed_optional):
             raise ValueError("骨架 scene 欄位不符: schema_error")
         if sc["blueprint"] not in VALID_BLUEPRINTS:
             raise ValueError("骨架 blueprint 不合規: unknown_blueprint")
+
+        if "duration_sec" in sc:
+            dur = sc["duration_sec"]
+            if not isinstance(dur, int) or isinstance(dur, bool) or not (4 <= dur <= 12):
+                raise ValueError("骨架 scene duration_sec 不合規: param_error")
+
+        if "params" in sc:
+            from src.visual.blueprints import validate_params
+
+            p_ok, p_code = validate_params(sc["blueprint"], sc["params"])
+            if not p_ok:
+                raise ValueError(f"骨架 scene params 驗證失敗: {p_code}")
+
         stitle = sc["title"]
         if not isinstance(stitle, str) or not (1 <= len(stitle) <= 16):
             raise ValueError("骨架 scene title 長度不符: schema_error")
@@ -253,12 +272,17 @@ def generate_ir(
             # 組裝 IR：結構欄位 100% 複製自骨架，模型只能填入 caption
             ir_scenes = []
             for sc_skel, cap in zip(skeleton["scenes"], captions):
-                ir_scenes.append({
+                scene_dict = {
                     "blueprint": sc_skel["blueprint"],
                     "title": sc_skel["title"],
                     "caption": cap,
                     "labels": copy.deepcopy(sc_skel["labels"]),
-                })
+                }
+                if "duration_sec" in sc_skel:
+                    scene_dict["duration_sec"] = sc_skel["duration_sec"]
+                if "params" in sc_skel:
+                    scene_dict["params"] = copy.deepcopy(sc_skel["params"])
+                ir_scenes.append(scene_dict)
 
             candidate_ir = {
                 "topic_key": skeleton["topic_key"],
