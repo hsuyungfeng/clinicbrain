@@ -197,3 +197,18 @@ Plans:
 - [ ] 28-06-PLAN.md — 夜間批次階段 8 預生成、CLI（Wave 3）
 - [ ] 28-09-PLAN.md — 伺服器固定單一診所設定（patient_clinic_id）：匿名諮詢使用該診所已核准資料（Wave 4）
 - [ ] 28-08-PLAN.md — AGENTS.md 2.25 與 2.6／2.9 例外文件（Wave 5）
+
+### Phase 29: 一般醫學視覺解說卡（MVP）
+
+**Goal**: 以結構化 IR 與固定模板，為「自體脂肪移植」預生成 3 場景解說卡（共用、一律待審），醫師核准後在病人諮詢頁答案下方顯示，降低手術焦慮並導向預約；不收個資。
+**Status**: Planned（29-01~29-05 規劃中）
+**Depends on**: Phase 28（`/consult`、job 輪詢、審核閘門慣例）
+**Constraints**: 不收個資；LLM 只填說明文字；未審內容不得對外；`src/general/` 隱私守門不得放寬；不得直接寫正式庫。
+**Requirements**: P29-SCHEMA, P29-IR, P29-GEN, P29-REVIEW, P29-SERVE, P29-UI, P29-STATS, P29-DOC
+**Plans**: 5 plans
+Plans:
+- [ ] 29-01-PLAN.md — 資料表、遷移、IR 驗證與唯一寫入路徑（Wave 1）
+- [ ] 29-02-PLAN.md — 本地 LLM 預生成 CLI 與醫師審核 CLI（Wave 2）
+- [ ] 29-03-PLAN.md — 關鍵字比對、諮詢回應帶出動畫、匿名事件計數端點（Wave 2）
+- [ ] 29-04-PLAN.md — consult.html 解說卡（Wave 3）
+- [ ] 29-05-PLAN.md — AGENTS 2.26 與目錄文件（Wave 4）
