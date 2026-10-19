@@ -23,12 +23,20 @@ from pathlib import Path
 
 CONSULT_HTML_PATH = Path("src/web/static/consult.html")
 CONSULT_JS_PATH = Path("src/web/static/consult.js")
+ENGINE_JS_PATH = Path("src/web/static/visual_engine.js")
 
 
 def _read_consult_html() -> str:
     # 2026-10-19：/admin 的 CSP 為 script-src 'self'，內嵌腳本會被瀏覽器阻擋，
-    # 前端邏輯已移至 consult.js；靜態掃描須同時涵蓋 HTML 與 JS，否則掃描會變成空掃描。
-    return CONSULT_HTML_PATH.read_text(encoding="utf-8") + "\n" + CONSULT_JS_PATH.read_text(encoding="utf-8")
+    # 前端邏輯在 consult.js 與 visual_engine.js；靜態掃描須同時涵蓋 HTML 與所有同源 JS。
+    engine_js = ENGINE_JS_PATH.read_text(encoding="utf-8") if ENGINE_JS_PATH.exists() else ""
+    return (
+        CONSULT_HTML_PATH.read_text(encoding="utf-8")
+        + "\n"
+        + CONSULT_JS_PATH.read_text(encoding="utf-8")
+        + "\n"
+        + engine_js
+    )
 
 
 def test_consult_visual_security_no_dangerous_apis_or_external_assets():
@@ -50,11 +58,21 @@ def test_consult_visual_security_no_dangerous_apis_or_external_assets():
         assert sub not in html, f"consult.html 不得包含禁用子字串: {sub}"
 
     # 禁止外部 script 或外部 img
-    # 2026-10-19 最小更新：邏輯已移至同源 /admin/consult.js（CSP 禁止內嵌腳本），
-    # 因此只允許該同源腳本；任何其他 src（含 http(s)、// 協定相對、其他路徑）一律禁止。
+    # 2026-10-19 最小更新：同源引入 visual_engine.js 與 consult.js（順序：引擎在前），
+    # 任何其他 src（含 http(s)、// 協定相對、其他路徑）一律禁止。
     script_srcs = re.findall(r"<script\b[^>]*\bsrc\s*=\s*['\"]([^'\"]*)['\"]", html, re.IGNORECASE)
-    assert script_srcs == ["/admin/consult.js"], f"只允許同源 consult.js，實際: {script_srcs}"
+    assert script_srcs == ["/admin/visual_engine.js", "/admin/consult.js"], f"只允許同源 visual_engine.js 與 consult.js，實際: {script_srcs}"
     assert not re.search(r"<img\b[^>]*\bsrc\s*=\s*['\"]?https?:", html, re.IGNORECASE)
+
+
+def test_consult_html_script_order_and_no_inline():
+    """回歸驗證：HTML 無內嵌 <script>，且 visual_engine.js 在 consult.js 之前。"""
+    raw_html = CONSULT_HTML_PATH.read_text(encoding="utf-8")
+    inline_scripts = [m for m in re.findall(r"<script\b([^>]*)>", raw_html, re.IGNORECASE) if "src=" not in m]
+    assert inline_scripts == [], "consult.html 不得含內嵌 <script>"
+
+    srcs = re.findall(r"<script\b[^>]*\bsrc\s*=\s*['\"]([^'\"]*)['\"]", raw_html, re.IGNORECASE)
+    assert srcs == ["/admin/visual_engine.js", "/admin/consult.js"], f"腳本順序必須為引擎在前，實際: {srcs}"
 
 
 def test_consult_visual_card_has_no_input_or_form_elements():

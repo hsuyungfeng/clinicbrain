@@ -40,7 +40,24 @@
         }
     }
 
+    var activeAnimId = null;
+    var activeEngineCtrl = null;
+
+    function cancelActiveAnim() {
+        if (activeAnimId !== null && typeof window !== "undefined" && window.cancelAnimationFrame) {
+            window.cancelAnimationFrame(activeAnimId);
+            activeAnimId = null;
+        }
+    }
+
     function hideVisualCard() {
+        cancelActiveAnim();
+        if (activeEngineCtrl && typeof activeEngineCtrl.destroy === "function") {
+            try {
+                activeEngineCtrl.destroy();
+            } catch (err) {}
+            activeEngineCtrl = null;
+        }
         if (!visualCard) {
             return;
         }
@@ -292,6 +309,17 @@
         var shownSent = false;
         var completedSent = false;
 
+        var useEngine = false;
+        try {
+            if (typeof window !== "undefined" && window.ClinicVisual && typeof window.ClinicVisual.mount === "function") {
+                useEngine = scenes.every(function(s) {
+                    return s && typeof s === "object" && typeof s.params === "object" && s.params !== null;
+                });
+            }
+        } catch (e) {
+            useEngine = false;
+        }
+
         var headerEl = document.createElement("div");
         headerEl.className = "visual-header";
 
@@ -361,12 +389,41 @@
         visualCard.appendChild(controlsEl);
         visualCard.appendChild(disclaimerEl);
 
-        function updateSceneView() {
-            var sc = scenes[currentIndex] || {};
-            stepIndicator.textContent = (currentIndex + 1) + " / " + scenes.length;
-            sceneTitle.textContent = sc.title ? String(sc.title) : "";
-            sceneCaption.textContent = sc.caption ? String(sc.caption) : "";
+        var engineSvg = null;
+        var engineCtrl = null;
+        var sceneStarts = [];
+        var sceneDurs = [];
 
+        if (useEngine) {
+            try {
+                engineSvg = createSvgNode("svg", {
+                    "class": "visual-engine-canvas",
+                    role: "img",
+                    "aria-label": vis.title ? String(vis.title) : "醫學視覺解說"
+                });
+                engineSvg.style.width = "100%";
+                engineSvg.style.height = "auto";
+                engineSvg.style.display = "block";
+
+                engineCtrl = window.ClinicVisual.mount(engineSvg, scenes);
+                activeEngineCtrl = engineCtrl;
+
+                var accT = 0;
+                for (var si = 0; si < scenes.length; si++) {
+                    var dur = window.ClinicVisual.sceneDuration(scenes[si]);
+                    sceneStarts.push(accT);
+                    sceneDurs.push(dur);
+                    accT += dur;
+                }
+            } catch (err) {
+                useEngine = false;
+                engineSvg = null;
+                engineCtrl = null;
+                activeEngineCtrl = null;
+            }
+        }
+
+        function renderStaticView(sc) {
             clearElement(svgWrap);
             var svgNode = buildBlueprintSvg(sc);
             if (svgNode) {
@@ -374,6 +431,76 @@
                 svgWrap.style.display = "flex";
             } else {
                 svgWrap.style.display = "none";
+            }
+        }
+
+        function updateSceneView() {
+            var sc = scenes[currentIndex] || {};
+            stepIndicator.textContent = (currentIndex + 1) + " / " + scenes.length;
+            sceneTitle.textContent = sc.title ? String(sc.title) : "";
+            sceneCaption.textContent = sc.caption ? String(sc.caption) : "";
+
+            cancelActiveAnim();
+
+            if (useEngine && engineCtrl && engineSvg) {
+                try {
+                    clearElement(svgWrap);
+                    svgWrap.appendChild(engineSvg);
+                    svgWrap.style.display = "block";
+
+                    var startT = sceneStarts[currentIndex] || 0;
+                    var dur = sceneDurs[currentIndex] || 8;
+                    var durMs = dur * 1000;
+
+                    var prefersReduced = false;
+                    try {
+                        if (typeof window !== "undefined" && window.matchMedia) {
+                            prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                        }
+                    } catch (e) {
+                        prefersReduced = false;
+                    }
+
+                    if (prefersReduced) {
+                        engineCtrl.renderAt(startT + dur);
+                    } else {
+                        engineCtrl.renderAt(startT);
+                        var startTimestamp = null;
+                        function animStep(timestamp) {
+                            if (startTimestamp === null) {
+                                startTimestamp = timestamp;
+                            }
+                            var elapsed = timestamp - startTimestamp;
+                            var fraction = durMs > 0 ? elapsed / durMs : 1;
+                            if (fraction >= 1) {
+                                engineCtrl.renderAt(startT + dur);
+                                activeAnimId = null;
+                                return;
+                            }
+                            engineCtrl.renderAt(startT + dur * fraction);
+                            if (typeof window !== "undefined" && window.requestAnimationFrame) {
+                                activeAnimId = window.requestAnimationFrame(animStep);
+                            }
+                        }
+                        if (typeof window !== "undefined" && window.requestAnimationFrame) {
+                            activeAnimId = window.requestAnimationFrame(animStep);
+                        }
+                    }
+                } catch (err) {
+                    useEngine = false;
+                    if (engineCtrl) {
+                        try { engineCtrl.destroy(); } catch (e) {}
+                        engineCtrl = null;
+                        activeEngineCtrl = null;
+                    }
+                    if (engineSvg && engineSvg.parentNode) {
+                        engineSvg.parentNode.removeChild(engineSvg);
+                    }
+                    engineSvg = null;
+                    renderStaticView(sc);
+                }
+            } else {
+                renderStaticView(sc);
             }
 
             clearElement(labelsWrap);

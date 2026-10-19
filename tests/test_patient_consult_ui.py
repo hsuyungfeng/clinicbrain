@@ -122,24 +122,32 @@ def test_offline_backend_consult_mock_general_structure(client, monkeypatch):
 
 
 def _read_consult_sources() -> str:
-    """HTML 與 consult.js 合併內容（CSP script-src 'self' 禁止內嵌腳本，邏輯在 consult.js；掃描須兩者皆含）。"""
+    """HTML、consult.js 與 visual_engine.js 合併內容（CSP script-src 'self' 禁止內嵌腳本，邏輯在外部 JS；掃描須全數涵蓋）。"""
     html = Path("src/web/static/consult.html").read_text(encoding="utf-8")
     js = Path("src/web/static/consult.js").read_text(encoding="utf-8")
-    return html + "\n" + js
+    engine_js_path = Path("src/web/static/visual_engine.js")
+    engine_js = engine_js_path.read_text(encoding="utf-8") if engine_js_path.exists() else ""
+    return html + "\n" + js + "\n" + engine_js
 
 
 def test_consult_has_no_inline_script_and_loads_external_js(client):
     """回歸（2026-10-19）：/admin 帶 CSP script-src 'self'，consult.html 不得有內嵌 <script>，
-    否則瀏覽器會阻擋整個頁面邏輯（Phase 27 起即存在的缺陷，靜態測試未能發現）。"""
+    且必須依序載入 visual_engine.js 與 consult.js。"""
     import re
 
     html = Path("src/web/static/consult.html").read_text(encoding="utf-8")
     inline = [m for m in re.findall(r"<script\b([^>]*)>", html, re.I) if "src=" not in m]
     assert inline == [], "consult.html 不得含內嵌 <script>（會被 CSP 阻擋）"
+    assert '<script src="/admin/visual_engine.js"></script>' in html
     assert '<script src="/admin/consult.js"></script>' in html
+
+    res_engine = client.get("/admin/visual_engine.js")
+    assert res_engine.status_code == 200
+    assert "javascript" in res_engine.headers.get("content-type", "")
 
     res = client.get("/admin/consult.js")
     assert res.status_code == 200
     assert "javascript" in res.headers.get("content-type", "")
     csp = client.get("/admin/consult.html").headers.get("content-security-policy", "")
     assert "script-src 'self'" in csp and "unsafe-inline" not in csp.split("style-src")[0]
+
