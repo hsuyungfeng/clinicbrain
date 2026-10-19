@@ -63,6 +63,15 @@ PATIENT_GENERAL_SAMPLING = {
     "chat_template_kwargs": {"enable_thinking": False},
 }
 
+# 視覺解說卡場景說明預生成取樣常數（Phase 29 P29-GEN）：
+# 忠實取樣、關閉思考（enable_thinking=False）、上限 600 tokens，不使用無效之 reasoning_effort
+VISUAL_SAMPLING = {
+    **FAITHFUL_SAMPLING,
+    "max_tokens": 600,
+    "chat_template_kwargs": {"enable_thinking": False},
+}
+
+
 
 def check_llm_health(timeout: int = 5) -> str:
     """檢查本地 llama-server 是否正常存活。

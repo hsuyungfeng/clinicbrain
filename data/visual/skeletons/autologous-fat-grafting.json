@@ -1,0 +1,44 @@
+{
+  "topic_key": "autologous-fat-grafting",
+  "title": "自體脂肪移植原理",
+  "keywords": [
+    "自體脂肪",
+    "脂肪移植",
+    "脂肪填充",
+    "補脂",
+    "自體脂肪移植"
+  ],
+  "scenes": [
+    {
+      "blueprint": "process_diagram",
+      "title": "抽取與純化",
+      "labels": [
+        {"text": "抽取脂肪", "tone": "neutral"},
+        {"text": "離心純化", "tone": "optimal"}
+      ]
+    },
+    {
+      "blueprint": "contrast",
+      "title": "少量多層次注射",
+      "labels": [
+        {"text": "分層少量", "tone": "optimal"},
+        {"text": "單處過量", "tone": "warning"}
+      ]
+    },
+    {
+      "blueprint": "timeline",
+      "title": "術後逐步穩定",
+      "labels": [
+        {"text": "避免按壓", "tone": "warning"},
+        {"text": "逐步適應", "tone": "optimal"}
+      ]
+    }
+  ],
+  "reference": [
+    "抽取後先經過純化處理，篩選出結構完整的脂肪組織。",
+    "採分多層次少量放置的方式，使每份脂肪皆能接觸周圍組織。",
+    "若於單處過量放置，較易出現局部硬塊與組織狀況不佳的情形。",
+    "術後一段時間內身體會逐步適應並達到一定程度的穩定。",
+    "實際結果因人而異，須由醫師當面評估個人狀況。"
+  ]
+}
