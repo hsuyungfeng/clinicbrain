@@ -116,7 +116,8 @@
       }
     }
 
-    // 右側離心容器
+    // 右側離心容器與頂蓋
+    ctx.rect({ x: 592, y: 72, width: 40, height: 16, rx: 4, fill: "#475569", stroke: "#64748b" });
     ctx.rect({ x: 570, y: 85, width: 84, height: 270, rx: 24, fill: "#0f172a", stroke: "#64748b", "stroke-width": 3 });
 
     // 容器分層
@@ -225,6 +226,10 @@
       const rows = params.right.rows;
       const perRow = params.right.per_row;
       const totalUnits = rows * perRow;
+
+      // 注射套管（微幅往返）
+      const cannulaX = 420 + Math.sin(u * Math.PI * 4) * 8;
+      ctx.rect({ x: cannulaX, y: 135, width: 36, height: 6, rx: 3, fill: "#94a3b8" });
 
       for (let r = 0; r < rows; r++) {
         const rowY = 150 + (180 / (rows + 1)) * (r + 1);
