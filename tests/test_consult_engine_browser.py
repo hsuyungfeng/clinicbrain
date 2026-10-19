@@ -349,3 +349,92 @@ def test_consult_missing_engine_script_falls_back_to_static(playwright_browser, 
         assert static_svg.get_attribute("viewBox") == "0 0 480 120"
     finally:
         page.close()
+
+
+# ---------------------------------------------------------------------------
+# 回歸（2026-10-19）：場景結尾畫面不得變成下一個場景的起點
+# 真實瀏覽器驗收發現：播放結束時 renderAt(startT + dur) 恰在邊界，被引擎判為下一場景 u=0，
+# 導致場景 1、2 一播完就顯示成下一場景的畫面（只有最後一個場景剛好正確）。
+# 既有測試只檢查步驟指示與 viewBox，沒有驗證「畫的是對的 blueprint」，故以獨特標記字串鎖定。
+# ---------------------------------------------------------------------------
+
+MARKED_VISUAL = {
+    "topic_key": "marker-topic",
+    "title": "標記主題",
+    "scenes": [
+        {"blueprint": "process_diagram", "title": "場景一", "caption": "第一幕說明文字。", "labels": [],
+         "params": {"source": {"label": "起點甲", "fill": "skin"}}, "duration_sec": 4},
+        {"blueprint": "contrast", "title": "場景二", "caption": "第二幕說明文字。", "labels": [],
+         "params": {"left": {"title": "對照乙"}}, "duration_sec": 4},
+        {"blueprint": "timeline", "title": "場景三", "caption": "第三幕說明文字。", "labels": [],
+         "params": {"milestones": ["里程丙", "里程丁", "里程戊"]}, "duration_sec": 4},
+    ],
+}
+SCENE_MARKERS = ["起點甲", "對照乙", "里程丙"]
+
+
+def _route_marked_visual(page):
+    def handle_api(route):
+        req = route.request
+        url = req.url
+        if "/api/v1/general/consult/jobs" in url and req.method == "POST":
+            route.fulfill(status=200, content_type="application/json", body=json.dumps({"job_id": "mock-job-marker"}))
+        elif "/api/v1/general/consult/jobs/mock-job-marker" in url and req.method == "GET":
+            route.fulfill(status=200, content_type="application/json", body=json.dumps({
+                "status": "answered", "message": "說明", "disclaimer": "免責", "booking_url": "https://doctor-toolbox.com/",
+                "visual": MARKED_VISUAL}))
+        elif "/api/v1/general/visual/event" in url:
+            route.fulfill(status=200, content_type="application/json", body=json.dumps({"ok": True}))
+        else:
+            route.continue_()
+
+    page.route("**/api/v1/general/**", handle_api)
+
+
+def _canvas_text(page) -> str:
+    return page.evaluate(
+        "() => Array.from(document.querySelectorAll('#visualCard svg.visual-engine-canvas text')).map(e => e.textContent).join('|')"
+    )
+
+
+def _assert_only_marker(text: str, idx: int, where: str):
+    assert SCENE_MARKERS[idx] in text, f"{where}：場景 {idx + 1} 應畫出自己的標記 {SCENE_MARKERS[idx]}，實際文字：{text}"
+    for j, m in enumerate(SCENE_MARKERS):
+        if j != idx:
+            assert m not in text, f"{where}：場景 {idx + 1} 不得畫出場景 {j + 1} 的標記 {m}，實際文字：{text}"
+
+
+def test_consult_each_scene_draws_its_own_blueprint_reduced_motion(playwright_browser, consult_server):
+    """減少動態路徑：每個場景進入後直接呈現自己的結尾畫面，而不是下一個場景的起點。"""
+    ctx = playwright_browser.new_context(viewport={"width": 800, "height": 900}, reduced_motion="reduce")
+    page = ctx.new_page()
+    try:
+        _route_marked_visual(page)
+        page.goto(f"{consult_server}/admin/consult.html")
+        page.fill("#consultInput", "標記測試")
+        page.click("#btnSubmit")
+        page.wait_for_selector("#visualCard svg.visual-engine-canvas", state="attached", timeout=10000)
+
+        for idx in range(3):
+            page.wait_for_function(
+                f"() => document.querySelector('.visual-step-indicator').textContent.includes('{idx + 1} / 3')")
+            _assert_only_marker(_canvas_text(page), idx, "reduced-motion")
+            if idx < 2:
+                page.locator("button.btn-visual-nav", has_text="下一步").click()
+    finally:
+        ctx.close()
+
+
+def test_consult_first_scene_animation_end_is_not_next_scene(playwright_browser, consult_server):
+    """真實動畫路徑：第一個場景播放完畢（4 秒）後，畫面仍是場景一，不得跳成場景二的起點。"""
+    page = playwright_browser.new_page(viewport={"width": 800, "height": 900})
+    try:
+        _route_marked_visual(page)
+        page.goto(f"{consult_server}/admin/consult.html")
+        page.fill("#consultInput", "標記測試")
+        page.click("#btnSubmit")
+        page.wait_for_selector("#visualCard svg.visual-engine-canvas", state="attached", timeout=10000)
+        page.wait_for_timeout(5000)  # 場景 duration_sec=4，等待動畫完整結束
+        _assert_only_marker(_canvas_text(page), 0, "animation-end")
+    finally:
+        page.close()

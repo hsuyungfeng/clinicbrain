@@ -1,5 +1,6 @@
 (function() {
     var POLL_INTERVAL_MS = 2500;
+    var SCENE_END_EPSILON = 0.001;  // 場景結尾取略小於邊界的時間（避免被判為下一場景起點）
     var POLL_MAX_MS = 240000;
     var SVG_NS = "http://www.w3.org/2000/svg";
     var VISUAL_FIXED_DISCLAIMER = "一般醫學知識說明，非個人化診斷；實際狀況須由醫師當面評估";
@@ -461,8 +462,11 @@
                         prefersReduced = false;
                     }
 
+                    // 場景結尾必須取略小於邊界的時間點：恰好等於 startT+dur 時，引擎會判定為下一個場景的起點
+                    var endT = startT + dur - SCENE_END_EPSILON;
+
                     if (prefersReduced) {
-                        engineCtrl.renderAt(startT + dur);
+                        engineCtrl.renderAt(endT);
                     } else {
                         engineCtrl.renderAt(startT);
                         var startTimestamp = null;
@@ -473,11 +477,11 @@
                             var elapsed = timestamp - startTimestamp;
                             var fraction = durMs > 0 ? elapsed / durMs : 1;
                             if (fraction >= 1) {
-                                engineCtrl.renderAt(startT + dur);
+                                engineCtrl.renderAt(endT);
                                 activeAnimId = null;
                                 return;
                             }
-                            engineCtrl.renderAt(startT + dur * fraction);
+                            engineCtrl.renderAt(Math.min(endT, startT + dur * fraction));
                             if (typeof window !== "undefined" && window.requestAnimationFrame) {
                                 activeAnimId = window.requestAnimationFrame(animStep);
                             }
