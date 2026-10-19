@@ -1,0 +1,99 @@
+{
+  "topic_key": "hyaluronic-acid-filler",
+  "title": "玻尿酸填充原理",
+  "keywords": [
+    "玻尿酸",
+    "玻尿酸填充",
+    "填充",
+    "微整形填充"
+  ],
+  "scenes": [
+    {
+      "blueprint": "process_diagram",
+      "title": "質地與分層注射",
+      "labels": [
+        {"text": "凝膠質地", "tone": "neutral"},
+        {"text": "適量分層", "tone": "optimal"}
+      ],
+      "params": {
+        "source": {
+          "label": "凝膠",
+          "fill": "gel"
+        },
+        "particles": 8,
+        "container_layers": [
+          {
+            "label": "淺層",
+            "fill": "pale",
+            "weight": 2,
+            "keep": false
+          },
+          {
+            "label": "中層",
+            "fill": "gel",
+            "weight": 3,
+            "keep": true
+          },
+          {
+            "label": "深層",
+            "fill": "skin",
+            "weight": 2,
+            "keep": false
+          }
+        ],
+        "step_labels": [
+          "準備凝膠",
+          "緩慢注入",
+          "依需求分層"
+        ]
+      }
+    },
+    {
+      "blueprint": "contrast",
+      "title": "分點微量注射",
+      "labels": [
+        {"text": "分點少量", "tone": "optimal"},
+        {"text": "單點過量", "tone": "warning"}
+      ],
+      "params": {
+        "left": {
+          "title": "單點過量",
+          "note": "較不自然",
+          "mode": "mass"
+        },
+        "right": {
+          "title": "分點少量",
+          "note": "更貼近自然",
+          "mode": "layered",
+          "rows": 2,
+          "per_row": 5
+        }
+      }
+    },
+    {
+      "blueprint": "timeline",
+      "title": "代謝與維持進程",
+      "labels": [
+        {"text": "逐漸融入", "tone": "optimal"},
+        {"text": "定期評估", "tone": "neutral"}
+      ],
+      "params": {
+        "milestones": [
+          "術後初期",
+          "逐漸融入",
+          "維持期"
+        ],
+        "unit_effect": "fade",
+        "connectors": "none",
+        "units": 4
+      }
+    }
+  ],
+  "reference": [
+    "玻尿酸為凝膠質地並具備可被身體逐步吸收代謝的特性。",
+    "採取分層分點微量放置的方式，使外觀線條更為柔和自然。",
+    "若在單一位置集中過量注入，較易產生局部不自然或不平整的情形。",
+    "效果隨時間會產生自然變化，後續需依醫師專業評估再行調整。",
+    "實際施作成果因個人體質而異，須由專業醫師當面諮詢評估。"
+  ]
+}
