@@ -12,8 +12,14 @@
       "blueprint": "process_diagram",
       "title": "質地與分層注射",
       "labels": [
-        {"text": "凝膠質地", "tone": "neutral"},
-        {"text": "適量分層", "tone": "optimal"}
+        {
+          "text": "凝膠質地",
+          "tone": "neutral"
+        },
+        {
+          "text": "適量分層",
+          "tone": "optimal"
+        }
       ],
       "params": {
         "source": {
@@ -52,21 +58,33 @@
       "blueprint": "contrast",
       "title": "分點微量注射",
       "labels": [
-        {"text": "分點少量", "tone": "optimal"},
-        {"text": "單點過量", "tone": "warning"}
+        {
+          "text": "分點少量",
+          "tone": "optimal"
+        },
+        {
+          "text": "單點過量",
+          "tone": "warning"
+        }
       ],
       "params": {
         "left": {
           "title": "單點過量",
           "note": "較不自然",
-          "mode": "mass"
+          "mode": "mass",
+          "core_effect": "none",
+          "core_label": "集中放置",
+          "footnote": "集中放置：易顯得不自然",
+          "unit_fill": "gel"
         },
         "right": {
           "title": "分點少量",
           "note": "更貼近自然",
           "mode": "layered",
           "rows": 2,
-          "per_row": 5
+          "per_row": 5,
+          "footnote": "分散放置：貼近自然",
+          "unit_fill": "gel"
         }
       }
     },
@@ -74,8 +92,14 @@
       "blueprint": "timeline",
       "title": "代謝與維持進程",
       "labels": [
-        {"text": "逐漸融入", "tone": "optimal"},
-        {"text": "定期評估", "tone": "neutral"}
+        {
+          "text": "逐漸融入",
+          "tone": "optimal"
+        },
+        {
+          "text": "定期評估",
+          "tone": "neutral"
+        }
       ],
       "params": {
         "milestones": [
@@ -85,7 +109,8 @@
         ],
         "unit_effect": "fade",
         "connectors": "none",
-        "units": 4
+        "units": 4,
+        "unit_fill": "gel"
       }
     }
   ],

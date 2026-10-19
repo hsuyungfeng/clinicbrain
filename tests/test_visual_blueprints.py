@@ -239,3 +239,39 @@ def test_error_code_never_contains_raw_text():
     assert ok is False
     assert raw_sensitive not in code
     assert code == "text_unsafe"
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-19 補充：對照場景與時間軸的主題專屬內容必須是參數（玻尿酸驗證主題暴露）
+# ---------------------------------------------------------------------------
+
+def test_contrast_and_timeline_topic_specific_text_and_color_are_params():
+    """core_effect／core_label／footnote／unit_fill 皆為受驗證的參數，預設值保留脂肪移植畫面。"""
+    d = default_params("contrast")
+    assert d["left"]["core_effect"] == "dim" and d["left"]["core_label"] == "中心缺血"
+    assert d["left"]["footnote"] and d["right"]["footnote"]
+    assert d["left"]["unit_fill"] == "fat" and d["right"]["unit_fill"] == "fat"
+    assert default_params("timeline")["unit_fill"] == "fat"
+
+    ok, code = validate_params("contrast", {"left": {"core_effect": "none", "footnote": "集中放置：易顯得不自然", "unit_fill": "gel"},
+                                            "right": {"footnote": "分散放置：貼近自然", "unit_fill": "gel"}})
+    assert ok is True, code
+    assert validate_params("timeline", {"unit_fill": "gel"})[0] is True
+
+
+@pytest.mark.parametrize(
+    "bp,params",
+    [
+        ("contrast", {"left": {"core_effect": "blink"}}),            # 列舉外
+        ("contrast", {"left": {"unit_fill": "#ff0000"}}),            # 任意色碼
+        ("contrast", {"right": {"unit_fill": "red"}}),               # 非調色盤代號
+        ("contrast", {"left": {"footnote": "字" * 17}}),             # 超過長度
+        ("contrast", {"right": {"footnote": "永久有效"}}),            # 禁詞
+        ("contrast", {"left": {"core_label": "<b>缺血</b>"}}),        # HTML
+        ("timeline", {"unit_fill": "#fff"}),
+    ],
+)
+def test_new_topic_params_reject_unsafe_values(bp, params):
+    ok, code = validate_params(bp, params)
+    assert ok is False
+    assert code in {"param_error", "text_unsafe", "forbidden_phrase", "schema_error"}

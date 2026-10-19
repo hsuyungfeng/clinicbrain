@@ -4,10 +4,15 @@
     "blueprint": "timeline",
     "input_params": null,
     "expected": {
-      "milestones": ["術後初期", "微血管長入", "狀態穩定"],
+      "milestones": [
+        "術後初期",
+        "微血管長入",
+        "狀態穩定"
+      ],
       "unit_effect": "mature",
       "connectors": "vessels",
-      "units": 3
+      "units": 3,
+      "unit_fill": "fat"
     }
   },
   {
@@ -15,10 +20,15 @@
     "blueprint": "timeline",
     "input_params": {},
     "expected": {
-      "milestones": ["術後初期", "微血管長入", "狀態穩定"],
+      "milestones": [
+        "術後初期",
+        "微血管長入",
+        "狀態穩定"
+      ],
       "unit_effect": "mature",
       "connectors": "vessels",
-      "units": 3
+      "units": 3,
+      "unit_fill": "fat"
     }
   },
   {
@@ -28,23 +38,37 @@
       "units": 4
     },
     "expected": {
-      "milestones": ["術後初期", "微血管長入", "狀態穩定"],
+      "milestones": [
+        "術後初期",
+        "微血管長入",
+        "狀態穩定"
+      ],
       "unit_effect": "mature",
       "connectors": "vessels",
-      "units": 4
+      "units": 4,
+      "unit_fill": "fat"
     }
   },
   {
     "description": "timeline replacing entire milestones list",
     "blueprint": "timeline",
     "input_params": {
-      "milestones": ["第1天", "第7天", "第30天"]
+      "milestones": [
+        "第1天",
+        "第7天",
+        "第30天"
+      ]
     },
     "expected": {
-      "milestones": ["第1天", "第7天", "第30天"],
+      "milestones": [
+        "第1天",
+        "第7天",
+        "第30天"
+      ],
       "unit_effect": "mature",
       "connectors": "vessels",
-      "units": 3
+      "units": 3,
+      "unit_fill": "fat"
     }
   },
   {
@@ -59,14 +83,20 @@
       "left": {
         "title": "集中填補",
         "note": "較易出現硬塊",
-        "mode": "mass"
+        "mode": "mass",
+        "core_effect": "dim",
+        "core_label": "中心缺血",
+        "footnote": "單處集中：不易獲取充足養分",
+        "unit_fill": "fat"
       },
       "right": {
         "title": "分層少量",
         "note": "接觸周圍組織",
         "mode": "layered",
         "rows": 3,
-        "per_row": 5
+        "per_row": 5,
+        "footnote": "多層分散：接觸周圍健康組織",
+        "unit_fill": "fat"
       }
     }
   },
@@ -83,14 +113,20 @@
       "left": {
         "title": "單處過量",
         "note": "較易出現硬塊",
-        "mode": "mass"
+        "mode": "mass",
+        "core_effect": "dim",
+        "core_label": "中心缺血",
+        "footnote": "單處集中：不易獲取充足養分",
+        "unit_fill": "fat"
       },
       "right": {
         "title": "分層少量",
         "note": "接觸周圍組織",
         "mode": "layered",
         "rows": 2,
-        "per_row": 4
+        "per_row": 4,
+        "footnote": "多層分散：接觸周圍健康組織",
+        "unit_fill": "fat"
       }
     }
   },
@@ -107,11 +143,30 @@
       },
       "particles": 8,
       "container_layers": [
-        {"label": "油滴", "fill": "oil", "weight": 2, "keep": false},
-        {"label": "純化脂肪", "fill": "fat", "weight": 3, "keep": true},
-        {"label": "血水", "fill": "blood", "weight": 2, "keep": false}
+        {
+          "label": "油滴",
+          "fill": "oil",
+          "weight": 2,
+          "keep": false
+        },
+        {
+          "label": "純化脂肪",
+          "fill": "fat",
+          "weight": 3,
+          "keep": true
+        },
+        {
+          "label": "血水",
+          "fill": "blood",
+          "weight": 2,
+          "keep": false
+        }
       ],
-      "step_labels": ["微創抽取", "離心分層", "保留純化脂肪"]
+      "step_labels": [
+        "微創抽取",
+        "離心分層",
+        "保留純化脂肪"
+      ]
     }
   },
   {
@@ -129,11 +184,30 @@
       },
       "particles": 5,
       "container_layers": [
-        {"label": "油滴", "fill": "oil", "weight": 2, "keep": false},
-        {"label": "純化脂肪", "fill": "fat", "weight": 3, "keep": true},
-        {"label": "血水", "fill": "blood", "weight": 2, "keep": false}
+        {
+          "label": "油滴",
+          "fill": "oil",
+          "weight": 2,
+          "keep": false
+        },
+        {
+          "label": "純化脂肪",
+          "fill": "fat",
+          "weight": 3,
+          "keep": true
+        },
+        {
+          "label": "血水",
+          "fill": "blood",
+          "weight": 2,
+          "keep": false
+        }
       ],
-      "step_labels": ["微創抽取", "離心分層", "保留純化脂肪"]
+      "step_labels": [
+        "微創抽取",
+        "離心分層",
+        "保留純化脂肪"
+      ]
     }
   },
   {
@@ -141,8 +215,18 @@
     "blueprint": "process_diagram",
     "input_params": {
       "container_layers": [
-        {"label": "上層油", "fill": "oil", "weight": 1, "keep": false},
-        {"label": "精華層", "fill": "gel", "weight": 4, "keep": true}
+        {
+          "label": "上層油",
+          "fill": "oil",
+          "weight": 1,
+          "keep": false
+        },
+        {
+          "label": "精華層",
+          "fill": "gel",
+          "weight": 4,
+          "keep": true
+        }
       ]
     },
     "expected": {
@@ -152,10 +236,24 @@
       },
       "particles": 5,
       "container_layers": [
-        {"label": "上層油", "fill": "oil", "weight": 1, "keep": false},
-        {"label": "精華層", "fill": "gel", "weight": 4, "keep": true}
+        {
+          "label": "上層油",
+          "fill": "oil",
+          "weight": 1,
+          "keep": false
+        },
+        {
+          "label": "精華層",
+          "fill": "gel",
+          "weight": 4,
+          "keep": true
+        }
       ],
-      "step_labels": ["微創抽取", "離心分層", "保留純化脂肪"]
+      "step_labels": [
+        "微創抽取",
+        "離心分層",
+        "保留純化脂肪"
+      ]
     }
   },
   {
@@ -173,14 +271,20 @@
       "left": {
         "title": "單處過量",
         "note": "較易出現硬塊",
-        "mode": "scattered"
+        "mode": "scattered",
+        "core_effect": "dim",
+        "core_label": "中心缺血",
+        "footnote": "單處集中：不易獲取充足養分",
+        "unit_fill": "fat"
       },
       "right": {
         "title": "分層少量",
         "note": "接觸周圍組織",
         "mode": "mass",
         "rows": 3,
-        "per_row": 5
+        "per_row": 5,
+        "footnote": "多層分散：接觸周圍健康組織",
+        "unit_fill": "fat"
       }
     }
   }

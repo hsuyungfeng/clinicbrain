@@ -181,6 +181,15 @@
   }
 
   // Blueprint 2: 對照圖解（少量多層次 vs 單處過量）
+  // 各調色盤代號對應的描邊色（只存引擎內，不接受外部色碼）
+  const STROKE_FOR = {
+    fat: "#d97706", oil: "#ca8a04", blood: "#b91c1c", skin: "#c08a6b", neutral: "#64748b",
+    accent: "#2563eb", warn: "#b91c1c", ok: "#15803d", gel: "#0f766e", pale: "#94a3b8"
+  };
+  function strokeFor(token) {
+    return STROKE_FOR[token] || STROKE_FOR.fat;
+  }
+
   function drawContrast(ctx, params, u) {
     ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
     ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
@@ -193,16 +202,21 @@
     ctx.text({ x: 210, y: 92, "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" }, params.left.note);
     ctx.rect({ x: 50, y: 115, width: 320, height: 250, rx: 12, fill: "#273549", stroke: "#384a62" });
 
+    const leftFill = PALETTE[params.left.unit_fill] || PALETTE.fat;
+    const leftStroke = strokeFor(params.left.unit_fill);
+    const rightFill = PALETTE[params.right.unit_fill] || PALETTE.fat;
+    const rightStroke = strokeFor(params.right.unit_fill);
+
     if (params.left.mode === "mass") {
       const growScale = Math.min(1, u * 2);
       const rad = 56 * growScale;
-      ctx.circle({ cx: 210, cy: 235, r: rad, fill: PALETTE.fat, stroke: "#d97706", "stroke-width": 2 });
-      if (u >= 0.38) {
+      ctx.circle({ cx: 210, cy: 235, r: rad, fill: leftFill, stroke: leftStroke, "stroke-width": 2 });
+      if (params.left.core_effect === "dim" && u >= 0.38) {
         const coreU = Math.min(1, (u - 0.38) / 0.35);
         const pulse = 0.75 + 0.25 * Math.sin(u * Math.PI * 6);
         ctx.circle({ cx: 210, cy: 235, r: 38 * coreU, fill: "#451a03", opacity: 0.85 * pulse });
         if (coreU > 0.6) {
-          ctx.text({ x: 210, y: 240, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#ffffff" }, "中心缺血");
+          ctx.text({ x: 210, y: 240, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#ffffff" }, params.left.core_label);
         }
       }
     } else {
@@ -212,10 +226,10 @@
         const hy = deterministicHash(i, 7);
         const cx = 90 + hx * 240;
         const cy = 145 + hy * 190;
-        ctx.circle({ cx: cx, cy: cy, r: 16, fill: PALETTE.fat, stroke: "#d97706", "stroke-width": 1.5 });
+        ctx.circle({ cx: cx, cy: cy, r: 16, fill: leftFill, stroke: leftStroke, "stroke-width": 1.5 });
       }
     }
-    ctx.text({ x: 210, y: 395, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: PALETTE.warn }, "單處集中：不易獲取充足養分");
+    ctx.text({ x: 210, y: 395, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: PALETTE.warn }, params.left.footnote);
 
     // 右側面板（推薦側）
     ctx.text({ x: 590, y: 65, "text-anchor": "middle", "font-size": 18, "font-weight": "bold", fill: PALETTE.ok }, params.right.title);
@@ -244,14 +258,14 @@
             // 光圈
             ctx.circle({ cx: unitX, cy: rowY, r: 12 * unitProgress, fill: "none", stroke: PALETTE.ok, "stroke-width": 1.5, opacity: 0.6 });
             // 微粒
-            ctx.circle({ cx: unitX, cy: rowY, r: 7 * unitProgress, fill: PALETTE.fat });
+            ctx.circle({ cx: unitX, cy: rowY, r: 7 * unitProgress, fill: rightFill });
           }
         }
       }
     } else {
-      ctx.circle({ cx: 590, cy: 235, r: 50, fill: PALETTE.fat, stroke: "#d97706", "stroke-width": 2 });
+      ctx.circle({ cx: 590, cy: 235, r: 50, fill: rightFill, stroke: rightStroke, "stroke-width": 2 });
     }
-    ctx.text({ x: 590, y: 395, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: PALETTE.ok }, "多層分散：接觸周圍健康組織");
+    ctx.text({ x: 590, y: 395, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: PALETTE.ok }, params.right.footnote);
   }
 
   // Blueprint 3: 時間軸進程（逐步穩定）
@@ -265,39 +279,39 @@
     // 組織基質
     ctx.rect({ x: 60, y: 90, width: 680, height: 230, rx: 14, fill: "#273549", stroke: "#384a62" });
 
-    // 血管生長（純函式進度，使用 pathLength 搭配 stroke-dashoffset，不使用 getTotalLength）
+    // 血管網路（純函式進度：主幹由兩側向中間長出，再由主幹分支到各單元；
+    // 皆用 pathLength 搭配 stroke-dashoffset，不依賴版面量測）
     const unitCount = params.units;
     if (params.connectors === "vessels") {
-      const vesselProgress = Math.max(0, Math.min(1, u * 1.25));
-      const dashOffset = String(100 * (1 - vesselProgress));
-
+      const clamp01 = function (x) { return Math.max(0, Math.min(1, x)); };
+      const trunkP = clamp01(u * 2.2);
+      const vesselPath = function (d, progress, width) {
+        ctx.path({
+          d: d,
+          fill: "none",
+          stroke: PALETTE.blood,
+          "stroke-width": width,
+          "stroke-linecap": "round",
+          pathLength: "100",
+          "stroke-dasharray": "100",
+          "stroke-dashoffset": String(100 * (1 - progress))
+        });
+      };
+      // 上、下兩條主幹，各自從左右兩端向中央延伸
+      vesselPath("M 70 112 L 400 112", trunkP, 4);
+      vesselPath("M 730 112 L 400 112", trunkP, 4);
+      vesselPath("M 70 298 L 400 298", trunkP, 4);
+      vesselPath("M 730 298 L 400 298", trunkP, 4);
+      // 由主幹分支到各單元（上下交替，依序長出）
       for (let i = 0; i < unitCount; i++) {
         const ux = 160 + (480 / (unitCount - 1 || 1)) * i;
         const uy = 190 + (i % 2 === 0 ? -16 : 16);
-
-        const d1 = "M " + (ux - 28) + " 95 Q " + (ux - 16) + " 140 " + (ux - 8) + " " + (uy - 12);
-        ctx.path({
-          d: d1,
-          fill: "none",
-          stroke: PALETTE.blood,
-          "stroke-width": 3,
-          "stroke-linecap": "round",
-          pathLength: "100",
-          "stroke-dasharray": "100",
-          "stroke-dashoffset": dashOffset
-        });
-
-        const d2 = "M " + (ux + 28) + " 95 Q " + (ux + 16) + " 142 " + (ux + 8) + " " + (uy - 8);
-        ctx.path({
-          d: d2,
-          fill: "none",
-          stroke: PALETTE.blood,
-          "stroke-width": 2.5,
-          "stroke-linecap": "round",
-          pathLength: "100",
-          "stroke-dasharray": "100",
-          "stroke-dashoffset": dashOffset
-        });
+        const fromTop = i % 2 === 0;
+        const startY = fromTop ? 112 : 298;
+        const endY = fromTop ? uy - 36 : uy + 36;
+        const midY = (startY + endY) / 2;
+        const branchP = clamp01((u - 0.2 - 0.08 * i) * 3);
+        vesselPath("M " + ux + " " + startY + " Q " + (ux + 10) + " " + midY + " " + ux + " " + endY, branchP, 3);
       }
     }
 
@@ -313,8 +327,9 @@
         unitOpacity = 1.0 - 0.55 * u;
       }
 
-      ctx.circle({ cx: ux, cy: uy, r: 35, fill: PALETTE.fat, stroke: "#d97706", "stroke-width": 2, opacity: unitOpacity });
-      ctx.circle({ cx: ux, cy: uy, r: 22, fill: "#fef08a", opacity: unitOpacity * 0.7 });
+      const tlFill = PALETTE[params.unit_fill] || PALETTE.fat;
+      ctx.circle({ cx: ux, cy: uy, r: 35, fill: tlFill, stroke: strokeFor(params.unit_fill), "stroke-width": 2, opacity: unitOpacity });
+      ctx.circle({ cx: ux, cy: uy, r: 22, fill: params.unit_fill === "fat" || !params.unit_fill ? "#fef08a" : "#ffffff", opacity: unitOpacity * (params.unit_fill === "fat" || !params.unit_fill ? 0.7 : 0.35) });
     }
 
     // 底部時間軸進度線條
@@ -368,25 +383,32 @@
         left: {
           title: "單處過量",
           note: "較易出現硬塊",
-          mode: "mass"
+          mode: "mass",
+          core_effect: "dim",
+          core_label: "中心缺血",
+          footnote: "單處集中：不易獲取充足養分",
+          unit_fill: "fat"
         },
         right: {
           title: "分層少量",
           note: "接觸周圍組織",
           mode: "layered",
           rows: 3,
-          per_row: 5
+          per_row: 5,
+          footnote: "多層分散：接觸周圍健康組織",
+          unit_fill: "fat"
         }
       },
       draw: drawContrast
     },
     timeline: {
-      params: ["milestones", "unit_effect", "connectors", "units"],
+      params: ["milestones", "unit_effect", "connectors", "units", "unit_fill"],
       defaults: {
         milestones: ["術後初期", "微血管長入", "狀態穩定"],
         unit_effect: "mature",
         connectors: "vessels",
-        units: 3
+        units: 3,
+        unit_fill: "fat"
       },
       draw: drawTimeline
     }
@@ -460,6 +482,10 @@
       out.left.title = String(out.left.title || "").slice(0, 8);
       out.left.note = String(out.left.note || "").slice(0, 14);
       if (out.left.mode !== "mass" && out.left.mode !== "scattered") out.left.mode = "mass";
+      if (out.left.core_effect !== "dim" && out.left.core_effect !== "none") out.left.core_effect = "dim";
+      out.left.core_label = String(out.left.core_label || "").slice(0, 8);
+      out.left.footnote = String(out.left.footnote || "").slice(0, 16);
+      if (!PALETTE[out.left.unit_fill]) out.left.unit_fill = "fat";
 
       if (!out.right || typeof out.right !== "object") out.right = cloneObject(def.right);
       out.right.title = String(out.right.title || "").slice(0, 8);
@@ -467,6 +493,8 @@
       if (out.right.mode !== "layered" && out.right.mode !== "mass") out.right.mode = "layered";
       out.right.rows = clampNumber(Math.round(out.right.rows), 1, 4);
       out.right.per_row = clampNumber(Math.round(out.right.per_row), 3, 8);
+      out.right.footnote = String(out.right.footnote || "").slice(0, 16);
+      if (!PALETTE[out.right.unit_fill]) out.right.unit_fill = "fat";
     } else if (blueprint === "timeline") {
       if (!Array.isArray(out.milestones) || out.milestones.length !== 3) {
         out.milestones = cloneObject(def.milestones);
@@ -482,6 +510,7 @@
         out.connectors = "vessels";
       }
       out.units = clampNumber(Math.round(out.units), 2, 5);
+      if (!PALETTE[out.unit_fill]) out.unit_fill = "fat";
     }
 
     return out;

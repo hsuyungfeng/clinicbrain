@@ -13,8 +13,14 @@
       "blueprint": "process_diagram",
       "title": "抽取與純化",
       "labels": [
-        {"text": "抽取脂肪", "tone": "neutral"},
-        {"text": "離心純化", "tone": "optimal"}
+        {
+          "text": "抽取脂肪",
+          "tone": "neutral"
+        },
+        {
+          "text": "離心純化",
+          "tone": "optimal"
+        }
       ],
       "params": {
         "source": {
@@ -53,21 +59,33 @@
       "blueprint": "contrast",
       "title": "少量多層次注射",
       "labels": [
-        {"text": "分層少量", "tone": "optimal"},
-        {"text": "單處過量", "tone": "warning"}
+        {
+          "text": "分層少量",
+          "tone": "optimal"
+        },
+        {
+          "text": "單處過量",
+          "tone": "warning"
+        }
       ],
       "params": {
         "left": {
           "title": "單處過量",
           "note": "較易出現硬塊",
-          "mode": "mass"
+          "mode": "mass",
+          "core_effect": "dim",
+          "core_label": "中心缺血",
+          "footnote": "單處集中：不易獲取充足養分",
+          "unit_fill": "fat"
         },
         "right": {
           "title": "分層少量",
           "note": "接觸周圍組織",
           "mode": "layered",
           "rows": 3,
-          "per_row": 5
+          "per_row": 5,
+          "footnote": "多層分散：接觸周圍健康組織",
+          "unit_fill": "fat"
         }
       }
     },
@@ -75,8 +93,14 @@
       "blueprint": "timeline",
       "title": "術後逐步穩定",
       "labels": [
-        {"text": "避免按壓", "tone": "warning"},
-        {"text": "逐步適應", "tone": "optimal"}
+        {
+          "text": "避免按壓",
+          "tone": "warning"
+        },
+        {
+          "text": "逐步適應",
+          "tone": "optimal"
+        }
       ],
       "params": {
         "milestones": [
@@ -86,7 +110,8 @@
         ],
         "unit_effect": "mature",
         "connectors": "vessels",
-        "units": 3
+        "units": 3,
+        "unit_fill": "fat"
       }
     }
   ],

@@ -281,3 +281,55 @@ def test_visual_engine_graceful_degradation(playwright_page, tmp_path):
     })()"""
     )
     assert console_errors == []
+
+
+def _texts_of_scene(playwright_page, blueprint: str, params_json: str, u: float) -> list:
+    return playwright_page.evaluate(
+        f"""(() => {{
+        const svg = document.getElementById('testSvg');
+        const m = window.ClinicVisual.mount(svg, [{{ blueprint: '{blueprint}', title: 't', params: {params_json} }}]);
+        m.renderAt({u} * m.totalDuration);
+        return Array.from(svg.querySelectorAll('text')).map(e => e.textContent);
+    }})()"""
+    )
+
+
+def test_contrast_has_no_hardcoded_fat_graft_text(playwright_page, tmp_path):
+    """回歸（2026-10-19）：玻尿酸驗證主題暴露對照場景寫死『中心缺血／不易獲取充足養分』。
+    現在核心標籤與底註都來自 params；core_effect=none 時不得畫核心暗化與其標籤。"""
+    _setup_page(playwright_page, tmp_path)
+    gel = json.dumps({
+        "left": {"title": "單點過量", "note": "較不自然", "mode": "mass", "core_effect": "none",
+                 "core_label": "集中放置", "footnote": "集中放置：易顯得不自然", "unit_fill": "gel"},
+        "right": {"title": "分點少量", "note": "更貼近自然", "mode": "layered", "rows": 2, "per_row": 5,
+                  "footnote": "分散放置：貼近自然", "unit_fill": "gel"},
+    }, ensure_ascii=False)
+    for u in (0.5, 1.0):
+        texts = _texts_of_scene(playwright_page, "contrast", gel, u)
+        joined = "".join(texts)
+        assert "缺血" not in joined and "養分" not in joined, f"不得出現脂肪移植專屬字樣：{texts}"
+        assert "集中放置：易顯得不自然" in joined and "分散放置：貼近自然" in joined
+
+    # 預設（脂肪移植）仍保留原畫面文字
+    default_texts = "".join(_texts_of_scene(playwright_page, "contrast", "null", 1.0))
+    assert "中心缺血" in default_texts and "不易獲取充足養分" in default_texts
+
+
+def test_unit_fill_param_changes_unit_color(playwright_page, tmp_path):
+    """unit_fill 以調色盤代號控制脂肪球／凝膠球顏色；fat 與 gel 渲染結果必須不同。"""
+    _setup_page(playwright_page, tmp_path)
+
+    def fills(bp, params_json):
+        return playwright_page.evaluate(
+            f"""(() => {{
+            const svg = document.getElementById('testSvg');
+            const m = window.ClinicVisual.mount(svg, [{{ blueprint: '{bp}', title: 't', params: {params_json} }}]);
+            m.renderAt(m.totalDuration);
+            return Array.from(svg.querySelectorAll('circle')).map(e => e.getAttribute('fill'));
+        }})()"""
+        )
+
+    assert fills("timeline", '{"unit_fill":"fat"}') != fills("timeline", '{"unit_fill":"gel"}')
+    right_fat = fills("contrast", '{"right":{"unit_fill":"fat"}}')
+    right_gel = fills("contrast", '{"right":{"unit_fill":"gel"}}')
+    assert right_fat != right_gel
