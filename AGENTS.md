@@ -709,14 +709,20 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - **無障礙支援**：偵測到 `@media (prefers-reduced-motion: reduce)` 時直接渲染 $u=1$ 最終靜態畫面。
   - **防禦性退回**：渲染過程發生任何未預期例外時，安全清理容器與 rAF 迴圈並退回靜態圖，確保諮詢功能不中斷。
 
-- **第二主題證明（零 JS 改動）**：
+- **第二主題證明（2026-10-20 更正：驗證過程促成引擎補參數）**：
   - 於 `data/visual/skeletons/hyaluronic-acid-filler.json` 定義第二主題「玻尿酸填充原理」（含凝膠分層抽吸、單點過量 vs 分點少量對照、微粒吸收代謝時程）。
-  - 證明完全由骨架 JSON 與既有三大 blueprint 參數驅動，`src/web/static/*.js`、`demo/visual/*.js`、`scripts/` 與 `src/` 達成 **100% 零改動**。
+  - **事實更正**：agy 的 30-05 摘要曾宣稱「100% 零 JS 改動」，但 Claude 於最後檢查以真實 llama-server 生成並渲染玻尿酸後發現，對照場景寫死了脂肪移植專屬的「中心缺血」「不易獲取充足養分」文字與琥珀色，套到玻尿酸會變成醫學上錯誤的說法。因此補上參數 `contrast.left.core_effect`／`core_label`／`footnote`／`unit_fill`、`contrast.right.footnote`／`unit_fill`、`timeline.unit_fill`（預設值保留脂肪移植畫面，向後相容）。**補完參數之後**，第二主題才達成只靠骨架 JSON 渲染、無需再改引擎；測試以「引擎仍恰為三個 blueprint」與「玻尿酸參數渲染不得出現『缺血』『養分』」把關（`tests/test_visual_engine_browser.py::test_contrast_has_no_hardcoded_fat_graft_text`）。
+  - 時間軸血管同時由「自上緣垂下」改為兩側主幹加分支的網路畫法（較貼近實際）。
   - 撰寫標準手冊 `docs/visual-blueprints.md` 定義未來新增 blueprint 之五大標準步驟與防護清單。
 
 - **前端安全規則與靜態防禦**：
   - **CSP 遵循與外部檔案**：配合 `/admin` CSP `script-src 'self'`，所有前端邏輯一律置於同源外部 `.js` 檔案，`consult.html` 與 `player.html` **嚴禁包含任何內嵌 `<script>`**。
-  - **嚴格禁用子字串檢驗**：JavaScript 原始碼與註解嚴禁包含 `innerHTML`、`insertAdjacentHTML`、`document.write`、`outerHTML`、`eval`（任何大小寫與複合單字）、`localStorage`、`sessionStorage`、`document.cookie`、`setInterval`、`setTimeout`、`Date.now`、`Math.random`、`new Date`、`performance.now`、`fetch(`、`XMLHttpRequest`、`import(` 或 `<script`。
+  - **嚴格禁用子字串檢驗**：前端 JS（`consult.js`、`visual_engine.js`、`player.js`）與註解嚴禁包含 `innerHTML`、`insertAdjacentHTML`、`document.write`、`outerHTML`、`eval`（含複合單字，如 retrieval）、`localStorage`、`sessionStorage`、`document.cookie`、`setInterval`。**僅 `visual_engine.js` 另外禁用**（因其須為純函式）`setTimeout`、`Date.now`、`Math.random`、`new Date`、`performance.now`、`fetch(`、`XMLHttpRequest`、`import(` 與 `<script`；`consult.js` 與 `player.js` 實際會使用 `setTimeout`／`Date.now`／`fetch`，不受此加嚴規則限制。
+
+- **2026-10-20 真實驗收教訓（兩個缺陷皆由真實瀏覽器加真實模型才抓到，agy 的測試與審計未發現）**：
+  1. **主題專屬內容不得寫死在引擎**：第二主題實際渲染才暴露對照場景寫死脂肪移植文字與顏色。新增或修改 blueprint 時，必須用**第二個不同主題**實際渲染並人工檢視，確認沒有寫死的主題文字、醫學說法或顏色。
+  2. **場景結尾時間點會落在下一場景起點**：引擎場景區間為左閉右開，`renderAt(startT+dur)` 恰為下一場景的 `u=0`，使 `consult.js` 播完場景 1、2 後顯示成下一場景畫面（最後一場景因夾限剛好正確）。已改以 `SCENE_END_EPSILON` 取略小於邊界的時間。**既有測試只檢查步驟指示與 viewBox，沒檢查畫出的是哪個 blueprint**；回歸測試改以各場景獨特標記字串驗證（`tests/test_consult_engine_browser.py`），並已確認錯誤版本會使其失敗。
+  3. 通則：靜態測試與假資料測試通過，不代表畫面正確；有視覺輸出的功能，驗收必須包含真實瀏覽器逐場景截圖檢視。
 
 - **已知限制與待驗證事項**：
   1. **新 Blueprint 需人工設計**：目前提供 3 種通用幾何模板（流程、對照、時程）；若需全新幾何結構仍需由開發人員或 Claude 依照指南手動新增，系統不支援亦不允許由 LLM 自行發明 SVG 結構。
@@ -733,7 +739,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - `tests/test_visual_player.py`：`player.html` 與 `player.js` 靜態安全掃描、路徑注入攔截與 Playwright 播放控制測試。
   - `tests/test_visual_video.py`：`render_video.py --bundle` 路徑安全、相依工具檢查與 ffmpeg MP4 端到端錄製測試。
   - `tests/test_consult_engine_browser.py`：`consult.html` 整合引擎之真實瀏覽器動畫渲染、手動切換、降級退回與 reduced motion 測試。
-  - `tests/test_visual_second_topic.py`：玻尿酸填充第二主題 IR 驗證、Bundle 匯出、瀏覽器邊界與零 JS 改動測試。
+  - `tests/test_visual_second_topic.py`：玻尿酸填充第二主題 IR 驗證、Bundle 匯出、瀏覽器邊界與引擎未擴充測試。
 
 ---
 

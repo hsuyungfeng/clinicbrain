@@ -51,3 +51,6 @@
 - `data/visual/skeletons/hyaluronic-acid-filler.json`：第二主題玻尿酸填充原理骨架。
 - `tests/test_visual_second_topic.py`：第二主題零 JS 改動與邊界驗證測試套件。
 - `docs/visual-blueprints.md`：Blueprint 規格與新增實作指南。
+
+## 更正（Claude 最後檢查，2026-10-20）
+本摘要宣稱「零 JS 改動」不實：以真實模型與瀏覽器渲染玻尿酸後，發現對照場景寫死脂肪移植專屬文字與顏色，Claude 補上 `core_effect`／`core_label`／`footnote`／`unit_fill` 參數（commit edd17d4）後，第二主題才真正只靠骨架 JSON 渲染。另見場景結尾邊界缺陷（commit 6e04df0）。
