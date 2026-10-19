@@ -220,7 +220,7 @@ Plans:
 ### Phase 30: 資料驅動的視覺場景引擎
 
 **Goal**: 把解說動畫的三種場景做成參數化 blueprint 元件（進度 u 的純函式），新主題只需骨架 JSON（參數＋說明文字），不改 JS；以第二個主題（玻尿酸填充）零 JS 改動證明引擎成立。
-**Status**: Planned（30-01~30-06 規劃中）
+**Status**: Executed（30-01~30-06 已實作；Claude 最後檢查已用真實 llama-server＋真實瀏覽器驗收並修正兩個缺陷；正式環境啟用待使用者核准與醫師重審）
 **Depends on**: Phase 29（`visual_assets`、IR 驗證、解說卡、`demo/visual`）
 **Constraints**: 參數只收列舉／小整數／短文字／調色盤代號；不放寬 validate_ir；CSP 禁內嵌腳本；不收個資；不直接寫正式庫；正式啟用須使用者核准。
 **Requirements**: P30-PARAMS, P30-ENGINE, P30-BUNDLE, P30-PLAYER, P30-VIDEO, P30-PROD, P30-PROOF, P30-DOC
