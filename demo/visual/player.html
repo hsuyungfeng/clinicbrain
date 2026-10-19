@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通用醫學視覺解說播放器</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --card: #1e293b;
+    --ink: #f1f5f9;
+    --mute: #94a3b8;
+    --line: #334155;
+    --blue: #38bdf8;
+    --accent: #2b6cb0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, "Noto Sans TC", sans-serif;
+  }
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .error-box {
+    max-width: 600px;
+    margin: 60px auto;
+    padding: 24px;
+    background: #450a0a;
+    border: 1px solid #dc2626;
+    border-radius: 12px;
+    color: #fecaca;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+  }
+  h1 { font-size: 22px; margin: 8px 0 4px; color: #fff; }
+  .sub { color: var(--mute); font-size: 13px; margin-bottom: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .head b { font-size: 16px; color: var(--blue); }
+  .step {
+    background: #0f172a;
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-size: 12px;
+    color: var(--mute);
+    border: 1px solid var(--line);
+  }
+  .stage {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0f172a;
+    border: 1px solid var(--line);
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .caption {
+    margin: 12px 4px 8px;
+    line-height: 1.7;
+    min-height: 3.4em;
+    font-size: 14px;
+    color: #e2e8f0;
+  }
+  .cta {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.94);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+  }
+  .cta.show { display: flex; }
+  .cta .q { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #fff; }
+  .cta a {
+    display: inline-block;
+    background: var(--blue);
+    color: #0f172a;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .cta small { color: var(--mute); font-size: 12px; margin-bottom: 14px; }
+  .cta button {
+    background: #334155;
+    color: #fff;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    padding: 6px 16px;
+    cursor: pointer;
+  }
+  .ctrl {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  button.primary {
+    background: var(--blue);
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--blue);
+    cursor: pointer;
+  }
+  .time {
+    font-size: 13px;
+    color: var(--mute);
+    font-family: monospace;
+    min-width: 90px;
+    text-align: right;
+  }
+  .chapters {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .chap {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: #0f172a;
+    border: 1px solid var(--line);
+    color: var(--mute);
+    cursor: pointer;
+  }
+  .chap.on {
+    color: var(--blue);
+    border-color: var(--blue);
+    background: #0c4a6e;
+    font-weight: 700;
+  }
+  .disc {
+    border-top: 1px dashed var(--line);
+    margin-top: 14px;
+    padding-top: 10px;
+    font-size: 12px;
+    color: var(--mute);
+    text-align: center;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stage * {
+      animation-duration: 0.01s !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div id="errorBox" class="error-box" style="display:none;"></div>
+  <div id="playerWrap" class="wrap">
+    <h1 id="mainTitle">通用醫學視覺解說</h1>
+    <div class="sub" id="subTitle">影片式互動圖解</div>
+    <div class="card">
+      <div class="head">
+        <b id="chapTitle">載入中…</b>
+        <span class="step" id="chapLabel">章節 1 / 1</span>
+      </div>
+      <div class="stage">
+        <svg id="playerSvg" viewBox="0 0 800 510" role="img" aria-label="視覺解說畫面"></svg>
+        <div class="cta" id="cta">
+          <div class="q">想了解自己的狀況適不適合？</div>
+          <a href="https://doctor-toolbox.com/" target="_blank" rel="noopener">預約諮詢，由醫師親自評估</a>
+          <small>本系統不收集任何個人資料；預約由合作平台承接</small>
+          <button id="again">重新播放</button>
+        </div>
+      </div>
+      <div class="caption" id="cap"></div>
+      <div class="ctrl">
+        <button class="primary" id="play">播放</button>
+        <input type="range" id="seek" min="0" max="1000" value="0" aria-label="進度">
+        <span class="time" id="time">0:00 / 0:00</span>
+      </div>
+      <div class="chapters" id="chaps"></div>
+      <div class="disc">一般醫學知識說明，非個人化診斷；實際狀況須由醫師當面評估</div>
+    </div>
+  </div>
+
+  <script src="../../src/web/static/visual_engine.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>
