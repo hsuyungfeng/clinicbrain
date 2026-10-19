@@ -72,7 +72,23 @@ def _ensure_faq_metadata(db_path: Path):
     apply_metadata_migration(db_path)
 
 
+def _reset_tree_titles(db_path: Path):
+    """重置隔離副本推理樹標題為 NULL。
+
+    隔離副本不得隨正式庫的標題資料變動，使預生成測試回到補標題前的狀態。
+    表或欄位不存在時安靜略過。
+    """
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("UPDATE page_index_trees SET title = NULL")
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
 def apply_visual_migration(db_path: Path):
+
     """為測試複本套用 visual_assets 與 visual_stats 結構（預設不套用，各測試需要時顯式呼叫）。"""
     from scripts.migrate_visual_assets import apply_visual_schema
     apply_visual_schema(db_path)
@@ -115,7 +131,9 @@ def isolated_db_path(tmp_path: Path) -> Path:
     _reset_cache_stats(target_path)
     _ensure_soap_records(target_path)
     _ensure_faq_metadata(target_path)
+    _reset_tree_titles(target_path)
     yield target_path
+
     # 測試結束即刪除副本（每份約 45 MB；不清理會耗盡 /tmp 配額）
     target_path.unlink(missing_ok=True)
 
