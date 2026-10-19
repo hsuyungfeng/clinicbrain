@@ -115,6 +115,7 @@ def validate_ir(ir: Any) -> Tuple[bool, str]:
         - 'price_leak': 檢出具體金額或價格數字
         - 'simplified_chinese': 檢出簡體中文
         - 'dosage_prescription': 檢出用藥劑量或處方
+        - 'param_error': 參數規格或時長不符
     """
     if not isinstance(ir, dict):
         return False, "schema_error"
@@ -152,16 +153,34 @@ def validate_ir(ir: Any) -> Tuple[bool, str]:
     if not isinstance(scenes, list) or not (3 <= len(scenes) <= 5):
         return False, "schema_error"
 
+    required_keys = {"blueprint", "title", "caption", "labels"}
+    allowed_optional = {"params", "duration_sec"}
+
     for scene in scenes:
         if not isinstance(scene, dict):
             return False, "schema_error"
-        if set(scene.keys()) != {"blueprint", "title", "caption", "labels"}:
+        scene_keys = set(scene.keys())
+        if not required_keys.issubset(scene_keys) or not scene_keys.issubset(required_keys | allowed_optional):
             return False, "schema_error"
 
         # blueprint
         blueprint = scene.get("blueprint")
         if not isinstance(blueprint, str) or blueprint not in VALID_BLUEPRINTS:
             return False, "unknown_blueprint"
+
+        # duration_sec（選填，4..12 整數）
+        if "duration_sec" in scene:
+            dur = scene["duration_sec"]
+            if not isinstance(dur, int) or isinstance(dur, bool) or not (4 <= dur <= 12):
+                return False, "param_error"
+
+        # params（選填，委派 blueprints.validate_params 檢驗）
+        if "params" in scene:
+            from src.visual.blueprints import validate_params
+
+            p_ok, p_code = validate_params(blueprint, scene["params"])
+            if not p_ok:
+                return False, p_code
 
         # scene title
         stitle = scene.get("title")

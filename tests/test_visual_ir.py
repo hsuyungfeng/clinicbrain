@@ -265,6 +265,7 @@ def test_code_never_leaks_original_text():
         "simplified_chinese",
         "dosage_prescription",
         "unknown_blueprint",
+        "param_error",
     }
     sample_fail_texts = [
         "<script>bad()</script>",
@@ -279,3 +280,93 @@ def test_code_never_leaks_original_text():
         assert ok is False
         assert code in valid_codes
         assert text not in code
+
+
+def test_valid_ir_with_params_and_duration_sec():
+    """Phase 30 Task 2: 驗證帶有合法 params 與 duration_sec 之 IR 完全通過。"""
+    from src.visual.blueprints import default_params
+
+    ir_with_params = copy.deepcopy(VALID_IR_SAMPLE)
+    for scene in ir_with_params["scenes"]:
+        scene["params"] = default_params(scene["blueprint"])
+        scene["duration_sec"] = 6
+
+    ok, code = validate_ir(ir_with_params)
+    assert ok is True
+    assert code == "ok"
+
+
+def test_ir_scene_params_errors_rejected():
+    """Phase 30 Task 2: 驗證 scene.params 各種規格或文字違規被拒絕並回傳對應代碼。"""
+    # 1. 未知鍵 -> param_error
+    ir_bad_key = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad_key["scenes"][0]["params"] = {"particles": 5, "unknown_field": True}
+    ok, code = validate_ir(ir_bad_key)
+    assert ok is False
+    assert code == "param_error"
+
+    # 2. 顏色填入 hex -> param_error
+    ir_bad_color = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad_color["scenes"][0]["params"] = {"source": {"fill": "#fff"}}
+    ok, code = validate_ir(ir_bad_color)
+    assert ok is False
+    assert code == "param_error"
+
+    # 3. 超出數值範圍 -> param_error
+    ir_bad_num = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad_num["scenes"][0]["params"] = {"particles": 99}
+    ok, code = validate_ir(ir_bad_num)
+    assert ok is False
+    assert code == "param_error"
+
+    # 4. blueprint 與 params 欄位不符
+    ir_mismatch = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_mismatch["scenes"][0]["params"] = {"units": 3}  # timeline 欄位放在 process_diagram
+    ok, code = validate_ir(ir_mismatch)
+    assert ok is False
+    assert code == "param_error"
+
+    # 5. params 非 dict
+    ir_non_dict = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_non_dict["scenes"][0]["params"] = "bad"
+    ok, code = validate_ir(ir_non_dict)
+    assert ok is False
+    assert code == "param_error"
+
+
+def test_ir_scene_duration_sec_bounds():
+    """Phase 30 Task 2: 驗證 duration_sec 必須為 4..12 整數，超範圍或型別不符回 param_error。"""
+    # 邊界 4 與 12 通過
+    ir_ok4 = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_ok4["scenes"][0]["duration_sec"] = 4
+    assert validate_ir(ir_ok4) == (True, "ok")
+
+    ir_ok12 = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_ok12["scenes"][0]["duration_sec"] = 12
+    assert validate_ir(ir_ok12) == (True, "ok")
+
+    # 超界 3 與 13 拒絕
+    ir_bad3 = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad3["scenes"][0]["duration_sec"] = 3
+    assert validate_ir(ir_bad3) == (False, "param_error")
+
+    ir_bad13 = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad13["scenes"][0]["duration_sec"] = 13
+    assert validate_ir(ir_bad13) == (False, "param_error")
+
+    # 型別錯誤（字串、布林）
+    ir_bad_str = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad_str["scenes"][0]["duration_sec"] = "6"
+    assert validate_ir(ir_bad_str) == (False, "param_error")
+
+    ir_bad_bool = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_bad_bool["scenes"][0]["duration_sec"] = True
+    assert validate_ir(ir_bad_bool) == (False, "param_error")
+
+
+def test_ir_scene_extra_keys_rejected():
+    """Phase 30 Task 2: 驗證 scene 包含 params / duration_sec 以外之未知鍵回 schema_error。"""
+    ir_extra = copy.deepcopy(VALID_IR_SAMPLE)
+    ir_extra["scenes"][0]["extra_unsupported"] = 123
+    assert validate_ir(ir_extra) == (False, "schema_error")
+

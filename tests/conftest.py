@@ -87,6 +87,18 @@ def _reset_tree_titles(db_path: Path):
         pass
 
 
+def _reset_visual_tables(db_path: Path):
+    """隔離副本預設不套用 visual 表（各測試需要時顯式呼叫 apply_visual_migration）。"""
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("DROP TABLE IF EXISTS visual_assets")
+        conn.execute("DROP TABLE IF EXISTS visual_stats")
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
 def apply_visual_migration(db_path: Path):
 
     """為測試複本套用 visual_assets 與 visual_stats 結構（預設不套用，各測試需要時顯式呼叫）。"""
@@ -132,6 +144,7 @@ def isolated_db_path(tmp_path: Path) -> Path:
     _ensure_soap_records(target_path)
     _ensure_faq_metadata(target_path)
     _reset_tree_titles(target_path)
+    _reset_visual_tables(target_path)
     yield target_path
 
     # 測試結束即刪除副本（每份約 45 MB；不清理會耗盡 /tmp 配額）
