@@ -672,6 +672,69 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 
 - **2026-10-19 CSP 與前端腳本位置（重要踩雷）**：`/admin` 靜態頁帶 CSP `script-src 'self'`（見 2.17），**瀏覽器會阻擋內嵌 `<script>`**。病人諮詢頁 `consult.html` 自 Phase 27 起以內嵌腳本實作，因此在真實瀏覽器中從未能執行（既有測試只做靜態掃描，未發現）；2026-10-19 以 Playwright 實際操作才查出，已將腳本移至同源 `src/web/static/consult.js`。此後 `consult.html` 不得再有內嵌 `<script>`（`tests/test_patient_consult_ui.py::test_consult_has_no_inline_script_and_loads_external_js` 把關），靜態安全掃描須同時涵蓋 HTML 與 JS。新增前端頁面務必以真實瀏覽器驗證一次，不能只信任靜態測試。
 
+### 2.27 視覺場景引擎（Phase 30 新增）
+
+為將醫療概念定義（骨架 JSON 與文字敘述）與視覺幾何渲染（純 JavaScript 繪圖引擎）解耦，避免任意 LLM 生成 SVG 或程式碼帶來之安全風險，自 Phase 30 起建立資料驅動的視覺場景引擎（Visual Scene Engine）架構：
+
+- **定位與動機**：
+  - **資料驅動與純函式渲染**：醫學場景參數由結構化資料定義，前端引擎為進度 $u \in [0, 1]$ 之無狀態純函式，不依賴 LLM 即時生成向量幾何或外部動畫庫。
+  - **跨平台一致性**：同一份資產規格同時驅動線上諮詢解說卡動畫、獨立通用播放器檢視與無聲 MP4 影片匯出，確保拖曳、重播與逐格錄影之一致性。
+  - **漸進增強與零破壞**：引擎與動畫為視覺卡之增強表現層；未帶參數或引擎不可用時無縫退回靜態圖，不影響病患諮詢與醫療衛教基本功能。
+
+- **Blueprint 參數規格單一來源與向後相容 (`src/visual/blueprints.py`, `src/visual/ir.py`)**：
+  - **單一來源註冊表 (`BLUEPRINTS`)**：`src/visual/blueprints.py` 為參數規格唯一權威來源。定義 `process_diagram`（微粒流動、離心分層、針管抽吸）、`contrast`（單點過量脈動 vs 分點少量接觸光圈）、`timeline`（組織基質、微血管生長、里程碑進度）三大模板之參數規格與預設值（`default_params`）。
+  - **安全參數型別與語意調色盤 (`PALETTE_TOKENS`)**：參數僅接受列舉值、小整數、短文字、布林值與 10 種語意調色盤代號（`fat`、`oil`、`blood`、`skin`、`neutral`、`accent`、`warn`、`ok`、`gel`、`pale`）；嚴禁接收任意 CSS 顏色代碼、HTML 標籤或自訂腳本。
+  - **合併語意與向量測試 (`merge_defaults`)**：物件採遞迴合併、陣列採整體覆寫、`None` 或缺省視為全預設值；跨語言合併行為以 `tests/fixtures/visual_merge_vectors.json` 10 組向量雙向鎖定。
+  - **Typed IR 延伸相容 (`validate_ir`)**：`scenes` 允許選填 `params`（dict）與 `duration_sec`（4～12 整數）。未帶 `params` 之資產完全向後相容，既有 Phase 29 IR 驗證行為零改動；提供時委派 `validate_params` 進行型別與邊界嚴格檢驗，違規回傳固定英文錯誤碼。
+  - **骨架與生成器整合 (`src/visual/generator.py`)**：`load_skeleton` 嚴格檢驗骨架之選填參數；`generate_ir` 原樣帶入骨架參數，本機 LLM 僅填寫說明文字，完全無法竄改畫面幾何或結構。
+
+- **JavaScript 視覺引擎純函式架構 (`src/web/static/visual_engine.js`)**：
+  - **公開介面 (`ClinicVisual`)**：IIFE 封裝導出全域物件，提供 `blueprints`、`PALETTE`（凍結調色盤映射至安全十六進位色碼）、`resolveParams(blueprint, params)`、`sceneDuration(scene)` 與 `mount(svgEl, scenes)`。
+  - **純函式與進度 $u$ 推進**：每個 blueprint 的 `draw(ctx, params, u)` 僅依賴進度 $u \in [0, 1]$ 與正規化參數，不保留任何跨影格狀態，拖曳 seek 與亂序重播結果皆 100% 字元級確定。
+  - **無依賴幾何計算與確定性雜湊**：微粒隨機感採座標與索引之確定性雜湊；血管生長嚴格使用 SVG `pathLength="100"` 搭配 `stroke-dasharray="100"` 與 `stroke-dashoffset` 換算，**絕不呼叫版面相依之 `getTotalLength()`**。
+  - **視窗邊界與字幕安全區**：`mount` 自動綁定 `viewBox="0 0 800 510"`；所有繪圖元素落在 $[5, 795] \times [5, 505]$ 安全區內，所有文字（`text`）元素底部 $y \le 410$，嚴格保留下方字幕安全空間。
+
+- **視覺 Bundle 唯讀匯出工具 (`scripts/export_visual_bundle.py`)**：
+  - **嚴格唯讀連線**：以 SQLite URI `mode=ro` 連線開啟資料庫，拒絕任何寫入行為。
+  - **正式庫雙重保護**：預設僅匯出審核狀態為 `approved` 之資產；支援 `--allow-pending` 供測試預覽，但若 `--db` 為專案正式庫 `clinic.db` 時，於連線前立即以結束碼 `2` 阻斷。
+  - **完整合規檢核**：匯出前強制經由 `validate_ir` 執行醫療合規檢驗，並透過 `merge_defaults` 補齊所有場景之預設 `params` 與 `duration_sec`，輸出為標準 UTF-8 JSON 檔案。
+
+- **通用解說播放器與無聲 MP4 影片匯出 (`demo/visual/`)**：
+  - **通用播放器 (`player.html`, `player.js`)**：純外部檔案架構（零內嵌腳本），支援 `?bundle=<path>` 參數載入 bundle JSON。路徑嚴格檢核 `^[A-Za-z0-9][A-Za-z0-9._/-]*\.json$` 且禁止 `..`、`//` 或協定前綴；提供播放、暫停、seek 拖曳、章節切換與結尾預約諮詢外連卡；對外暴露 `window.__player = {seek, total, ready}` 控制介面。
+  - **泛化 MP4 影片匯出 (`render_video.py --bundle PATH`)**：啟動本機臨時 HTTP 伺服器載入播放器，透過無頭 Chromium 逐格 seek 截圖，再以 ffmpeg 合成標準 H.264/yuv420p 格式之 MP4 影片（無聲）；遺失相依工具時以結束碼 `2` 清楚提示。
+
+- **正式衛教諮詢解說卡引擎整合與平順降級 (`src/web/static/consult.html`, `consult.js`)**：
+  - **雙軌渲染判斷**：`consult.js` 僅在 `window.ClinicVisual` 存在且該資產所有場景皆具備非空 `params` 時啟用引擎動畫；否則自動退回 Phase 29 既有之 480×120 靜態 SVG 圖解。
+  - **動畫驅動與互動**：使用 `requestAnimationFrame` 之回呼時間戳推進進度 $u$（不使用 `setInterval` 或 `Date.now`）；維持病患手動點擊「上一步／下一步」翻頁，不自動強制輪播。
+  - **無障礙支援**：偵測到 `@media (prefers-reduced-motion: reduce)` 時直接渲染 $u=1$ 最終靜態畫面。
+  - **防禦性退回**：渲染過程發生任何未預期例外時，安全清理容器與 rAF 迴圈並退回靜態圖，確保諮詢功能不中斷。
+
+- **第二主題證明（零 JS 改動）**：
+  - 於 `data/visual/skeletons/hyaluronic-acid-filler.json` 定義第二主題「玻尿酸填充原理」（含凝膠分層抽吸、單點過量 vs 分點少量對照、微粒吸收代謝時程）。
+  - 證明完全由骨架 JSON 與既有三大 blueprint 參數驅動，`src/web/static/*.js`、`demo/visual/*.js`、`scripts/` 與 `src/` 達成 **100% 零改動**。
+  - 撰寫標準手冊 `docs/visual-blueprints.md` 定義未來新增 blueprint 之五大標準步驟與防護清單。
+
+- **前端安全規則與靜態防禦**：
+  - **CSP 遵循與外部檔案**：配合 `/admin` CSP `script-src 'self'`，所有前端邏輯一律置於同源外部 `.js` 檔案，`consult.html` 與 `player.html` **嚴禁包含任何內嵌 `<script>`**。
+  - **嚴格禁用子字串檢驗**：JavaScript 原始碼與註解嚴禁包含 `innerHTML`、`insertAdjacentHTML`、`document.write`、`outerHTML`、`eval`（任何大小寫與複合單字）、`localStorage`、`sessionStorage`、`document.cookie`、`setInterval`、`setTimeout`、`Date.now`、`Math.random`、`new Date`、`performance.now`、`fetch(`、`XMLHttpRequest`、`import(` 或 `<script`。
+
+- **已知限制與待驗證事項**：
+  1. **新 Blueprint 需人工設計**：目前提供 3 種通用幾何模板（流程、對照、時程）；若需全新幾何結構仍需由開發人員或 Claude 依照指南手動新增，系統不支援亦不允許由 LLM 自行發明 SVG 結構。
+  2. **MP4 影片為無聲圖解**：影片匯出僅錄製畫面幾何演進，不含語音旁白或配樂。
+  3. **醫學敘述臨床審核**：預生成之說明文字與衛教正確性最終仍嚴格仰賴執業醫師人工審核簽核。
+  4. **正式環境啟用須使用者核准**：正式資料庫 `clinic.db` 之資產目前未套用 Phase 30 參數升級；正式啟用須由使用者明確授權並執行遷移與重新核准，不得自動生效。
+  5. **衛教轉換成效待驗證**：視覺引擎動畫對於病患理解度與預約轉換率之實際臨床成效**待驗證**。
+
+- **測試清單**：
+  - `tests/test_visual_blueprints.py`：參數規格註冊表、PALETTE_TOKENS、預設值、遞迴合併語意、數值邊界與向量測試。
+  - `tests/test_visual_engine_static.py`：`visual_engine.js` 禁用子字串靜態安全掃描、介面符號與調色盤對齊測試。
+  - `tests/test_visual_engine_browser.py`：Playwright 瀏覽器契約一致性、向量一致性、進度 u 完全確定性、視窗邊界與字幕安全區測試。
+  - `tests/test_visual_bundle.py`：`export_visual_bundle.py` 唯讀連線、預設已核准、正式庫禁止 `--allow-pending`、合規驗證與邊界測試。
+  - `tests/test_visual_player.py`：`player.html` 與 `player.js` 靜態安全掃描、路徑注入攔截與 Playwright 播放控制測試。
+  - `tests/test_visual_video.py`：`render_video.py --bundle` 路徑安全、相依工具檢查與 ffmpeg MP4 端到端錄製測試。
+  - `tests/test_consult_engine_browser.py`：`consult.html` 整合引擎之真實瀏覽器動畫渲染、手動切換、降級退回與 reduced motion 測試。
+  - `tests/test_visual_second_topic.py`：玻尿酸填充第二主題 IR 驗證、Bundle 匯出、瀏覽器邊界與零 JS 改動測試。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -775,6 +838,14 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `scripts/generate_visual_assets.py`：視覺解說卡本地 LLM 預生成 CLI 腳本（寫入狀態恆為 `pending`）
 * `scripts/review_visual.py`：視覺解說卡醫師審核 CLI 工具（`list`/`show`/`approve`/`reject`/`reset`）
 * `tests/test_migrate_visual_assets.py`、`tests/test_visual_ir.py`、`tests/test_visual_writer.py`、`tests/test_visual_generator.py`、`tests/test_visual_cli.py`、`tests/test_visual_match.py`、`tests/test_visual_serving.py`、`tests/test_visual_stats.py`、`tests/test_consult_visual_ui.py`：Phase 29 一般醫學視覺解說卡資料層、IR 驗證、預生成、審核、比對、事件計數與前端渲染測試
+* `src/visual/blueprints.py`：視覺場景 Blueprint 參數規格單一來源、調色盤代號常數、預設值與合併驗證函式
+* `src/web/static/visual_engine.js`：視覺場景引擎前端純函式主程式（`ClinicVisual`、進度 $u$ 驅動、零被禁 API）
+* `scripts/export_visual_bundle.py`：視覺解說卡 Bundle 唯讀匯出 CLI 腳本（`--allow-pending` 嚴禁用於正式庫）
+* `demo/visual/player.html`、`demo/visual/player.js`：通用解說播放器展示頁面與控制腳本（嚴格路徑檢驗、外連預約卡）
+* `demo/visual/render_video.py`：泛化 MP4 影片匯出腳本（支援 `--bundle`、無頭 Chromium 截圖、ffmpeg H.264 無聲合成）
+* `data/visual/skeletons/hyaluronic-acid-filler.json`：玻尿酸填充原理視覺解說卡固定場景骨架定義檔（第二主題零 JS 改動證明）
+* `docs/visual-blueprints.md`：視覺解說卡 Blueprint 規格與新增實作指南
+* `tests/test_visual_blueprints.py`、`tests/test_visual_engine_static.py`、`tests/test_visual_engine_browser.py`、`tests/test_visual_bundle.py`、`tests/test_visual_player.py`、`tests/test_visual_video.py`、`tests/test_consult_engine_browser.py`、`tests/test_visual_second_topic.py`：Phase 30 視覺場景引擎規格、靜態安全、瀏覽器契約、Bundle 匯出、通用播放器、MP4 匯出與第二主題測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
