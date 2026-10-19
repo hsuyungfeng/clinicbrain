@@ -216,3 +216,19 @@ Plans:
 - [x] 29-03-PLAN.md — 關鍵字比對、諮詢回應帶出動畫、匿名事件計數端點（Wave 2）
 - [x] 29-04-PLAN.md — consult.html 解說卡（Wave 3）
 - [x] 29-05-PLAN.md — AGENTS 2.26 與目錄文件（Wave 4）
+
+### Phase 30: 資料驅動的視覺場景引擎
+
+**Goal**: 把解說動畫的三種場景做成參數化 blueprint 元件（進度 u 的純函式），新主題只需骨架 JSON（參數＋說明文字），不改 JS；以第二個主題（玻尿酸填充）零 JS 改動證明引擎成立。
+**Status**: Planned（30-01~30-06 規劃中）
+**Depends on**: Phase 29（`visual_assets`、IR 驗證、解說卡、`demo/visual`）
+**Constraints**: 參數只收列舉／小整數／短文字／調色盤代號；不放寬 validate_ir；CSP 禁內嵌腳本；不收個資；不直接寫正式庫；正式啟用須使用者核准。
+**Requirements**: P30-PARAMS, P30-ENGINE, P30-BUNDLE, P30-PLAYER, P30-VIDEO, P30-PROD, P30-PROOF, P30-DOC
+**Plans**: 6 plans
+Plans:
+- [ ] 30-01-PLAN.md — blueprint 參數 schema 單一來源與 IR 向後相容擴充（Wave 1）
+- [ ] 30-02-PLAN.md — JS 場景引擎（純函式元件、契約測試、確定性與邊界測試）（Wave 2）
+- [ ] 30-03-PLAN.md — bundle 匯出、通用播放器、MP4 匯出泛化（Wave 3）
+- [ ] 30-04-PLAN.md — 正式解說卡改用引擎（有 params 時；Wave 3）
+- [ ] 30-05-PLAN.md — 第二主題（玻尿酸填充）零 JS 改動驗證與「新增 blueprint 指南」（Wave 4）
+- [ ] 30-06-PLAN.md — AGENTS 2.27、skill 更新與路線圖（Wave 5）
