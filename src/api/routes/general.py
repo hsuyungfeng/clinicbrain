@@ -17,7 +17,7 @@ from fastapi.routing import APIRoute
 from ..access_log_filter import install_access_log_filter
 from ..config import config
 from ..dependencies import get_read_db, get_write_db
-from ..models.general import GeneralConsultResponse, GeneralQueryRequest
+from ..models.general import GeneralConsultResponse, GeneralQueryRequest, VisualEventRequest
 from .query import deep_mask_prices
 from ...general.consult import consult_general
 from ...general.consult_jobs import get_job_result, submit_job
@@ -28,6 +28,7 @@ from ...general.patient_consult import (
     default_patient_llm,
     patient_consult,
 )
+from ...visual.stats import record_event
 
 # 模組載入時自動安裝日誌過濾器（具冪等性）
 install_access_log_filter()
@@ -155,4 +156,21 @@ def get_general_consult_job_result(
     if res is None:
         raise HTTPException(status_code=404, detail="找不到結果")
     return res
+
+
+@router.post(
+    "/visual/event",
+    summary="視覺解說卡匿名事件計數（僅收 shown 與 completed）",
+    description=(
+        "記錄視覺解說卡之匿名展示與完播日聚合計數：\n"
+        "- 嚴格白名單：僅接受 shown 與 completed 事件，且僅對已核准之主題累加。\n"
+        "- 隱私與防探測：不記錄 IP、標頭或問句；無論主題是否存在或資料庫是否遷移，一律回傳固定 200。"
+    ),
+)
+def post_general_visual_event(
+    request: VisualEventRequest,
+) -> dict:
+    """匿名視覺解說卡事件計數端點（所有例外全吞，固定回傳 200）。"""
+    record_event(config.db_path, request.topic_key, request.event)
+    return {"ok": True}
 

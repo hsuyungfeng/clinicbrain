@@ -7,7 +7,24 @@
 """
 
 from typing import Literal, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class VisualEventRequest(BaseModel):
+    """視覺解說卡匿名事件計數請求模型。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    topic_key: str = Field(
+        ...,
+        min_length=1,
+        max_length=64,
+        description="視覺解說卡主題識別碼",
+    )
+    event: Literal["shown", "completed"] = Field(
+        ...,
+        description="事件類型（僅限 shown 或 completed）",
+    )
 
 
 class GeneralQueryRequest(BaseModel):
