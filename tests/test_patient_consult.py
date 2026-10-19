@@ -249,3 +249,19 @@ def test_insufficient_output_bypasses_general_evidence_to_2_24(isolated_conn, mo
     assert "由未審模型生成的完整一般衛教說明" in res.message
 
 
+def test_patient_consult_followup_no_procedure_terms_when_general_only(isolated_conn):
+    """驗證 2.24 未審說明與通用資料直答時，追問一律為中性，不含療程/術後詞彙。"""
+    from src.general.answer_compose import PROCEDURE_ONLY_TERMS
+
+    q = "平日如何預防感冒與維持抵抗力？"
+    res = pc.patient_consult(isolated_conn, q, _llm_ok)
+    assert res.status == "llm_general"
+    lines = res.message.split("\n")
+    assert len(lines) == 3
+    fol_line = lines[1]
+    assert fol_line.endswith("？")
+    for term in PROCEDURE_ONLY_TERMS:
+        assert term not in fol_line, f"通用說明追問不得出現療程專用詞 '{term}': {fol_line}"
+
+
+

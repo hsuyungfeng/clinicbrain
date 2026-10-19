@@ -345,6 +345,7 @@ def _deterministic_fallback(
     intent: str,
     extra_faqs: Optional[list[dict]] = None,
     extra_guides: Optional[list[dict]] = None,
+    scope: str = "procedure",
 ) -> Optional[str]:
     """從已核准資料萃取確定性回答，確保結構為 2～4 句並附加追問與 CTA。"""
     faqs = (extra_faqs or []) + found.faq_hits
@@ -358,7 +359,7 @@ def _deterministic_fallback(
 
         # 1. 嘗試以句界截斷 400 字
         clipped = clip_at_sentence(ans, 400)
-        assembled = assemble_answer(value=clipped, followup=None, intent=intent)
+        assembled = assemble_answer(value=clipped, followup=None, intent=intent, scope=scope)
         if assembled:
             return sanitize_faq_text(assembled)
 
@@ -375,7 +376,7 @@ def _deterministic_fallback(
                     break
             chosen_sents.append(sents[w_idx])
             fallback_val = "".join(chosen_sents)
-            assembled = assemble_answer(value=fallback_val, followup=None, intent=intent)
+            assembled = assemble_answer(value=fallback_val, followup=None, intent=intent, scope=scope)
             if assembled:
                 return sanitize_faq_text(assembled)
 
@@ -386,7 +387,7 @@ def _deterministic_fallback(
         combined = f"{summary}。{post_op}" if summary and post_op else (summary or post_op)
         if combined:
             clipped = clip_at_sentence(combined, 400)
-            assembled = assemble_answer(value=clipped, followup=None, intent=intent)
+            assembled = assemble_answer(value=clipped, followup=None, intent=intent, scope=scope)
             if assembled:
                 return sanitize_faq_text(assembled)
 
@@ -415,12 +416,15 @@ def compose_from_approved(
     all_faqs = clinic_faqs + found.faq_hits
     all_guides = clinic_guides + found.guide_hits
 
+    # 僅在具備診所專屬證據（FAQ 或衛教指引樹）時使用 procedure 療程追問，否則走 general 中性通用追問
+    scope = "procedure" if (clinic_evidence and (clinic_evidence.faq_hits or clinic_evidence.guide_hits)) else "general"
+
     # 1. 嘗試高信心直答（預生成核准後或既有 FAQ 命中即回，診所優先，不呼叫 LLM）
     best_faq = _evaluate_direct_shortcut(q, all_faqs)
     if best_faq is not None:
         best_ans = best_faq.get("answer") or ""
         clipped_val = clip_at_sentence(best_ans, 400)
-        assembled = assemble_answer(value=clipped_val, followup=None, intent=intent)
+        assembled = assemble_answer(value=clipped_val, followup=None, intent=intent, scope=scope)
         if assembled:
             return sanitize_faq_text(assembled)
 
@@ -447,7 +451,7 @@ def compose_from_approved(
             blocks.append(f"[T{i}]{lvl}\n{body}")
 
     if not blocks:
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
 
     # 總長限制 2000 字
     total_len = 0
@@ -461,16 +465,16 @@ def compose_from_approved(
     # 鎖探測：非阻塞取得 GENERATION_LOCK 且 nightly_batch_running 為 False
     db_path = _get_db_path(conn)
     if nightly_batch_running(db_path):
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
 
     if not GENERATION_LOCK.acquire(blocking=False):
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
 
     try:
         prompt = build_compose_prompt(q, filtered_blocks, intent)
         raw_output = llm_call(prompt)
     except Exception:
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
     finally:
         GENERATION_LOCK.release()
 
@@ -478,17 +482,17 @@ def compose_from_approved(
     if looks_insufficient(value):
         raise InsufficientEvidenceError("Model indicated insufficient evidence")
     if not is_complete_ending(value):
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
     if followup and not is_complete_ending(followup):
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
 
     ok, _ = validate_composed(value, followup)
     if not ok:
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
 
-    assembled = assemble_answer(value, followup, intent)
+    assembled = assemble_answer(value, followup, intent, scope=scope)
     if not assembled:
-        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides)
+        return _deterministic_fallback(found, intent, clinic_faqs, clinic_guides, scope=scope)
 
     return sanitize_faq_text(assembled)
 
@@ -496,5 +500,6 @@ def compose_from_approved(
 def decorate_general_answer(answer: str, query: str) -> str:
     """為 2.24 未審一般說明附單一追問與預約邀請，原答案少於 2 句時安全退回原 answer。"""
     intent = classify_intent(query)
-    assembled = assemble_answer(value=answer, followup=None, intent=intent)
+    assembled = assemble_answer(value=answer, followup=None, intent=intent, scope="general")
     return assembled if assembled else answer
+

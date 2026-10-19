@@ -596,6 +596,11 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 即時組稿提示詞修正與警訊句規範：修正提示詞中「一句具體」錯字，明示警訊句必須包含具體症狀詞（如紅腫、發燒、疼痛、化膿、出血等）與就醫動作，並於 prompt 提供合法示範句（「若傷口出現持續紅腫或化膿，請盡速回診尋求醫師評估。」），大幅提升模型首發警訊句合規良率。
   - 夜間預生成剔除原因結構化細分 (`reject_code_for`)：預生成輸出若表明資料不足（`looks_insufficient`）直接剔除不入庫；驗證失敗原因細分為 `missing_warning`、`price_leak`、`political_phrase`、`simplified_chinese`、`guarantee_phrase`、`dosage_or_prescription`、`sentence_count` 與 `insufficient_evidence`，且日誌 payload 嚴格禁止包含問句或答案原文，兼顧可觀測性與病患隱私。
 
+- **通用衛教與療程專屬追問情境分流（28-11 新增）**：
+  - 情境二分原則：追問句依資料來源情境分為療程專用（`procedure`，當且僅當具有診所專屬樹或 FAQ 證據時採用）與中性通用（`general`，2.24 未審醫學說明或僅有通用衛教資料時採用）。
+  - 通用中性追問常數表 (`GENERAL_FOLLOWUPS`)：包含六大意圖（`what`, `recovery`, `risk`, `suitable`, `when_to_see_doctor`, `other`）之問句，每句皆經合規檢驗且絕不包含療程專用詞彙（`PROCEDURE_ONLY_TERMS`，如「術後」、「療程」、「手術」、「治療」、「施作」）。
+  - 療程術語過濾與安全退回：在 `scope="general"` 情境下，若模型自帶追問包含任一 `PROCEDURE_ONLY_TERMS` 詞彙，立即退回中性預設追問（`GENERAL_FOLLOWUPS`），杜絕通用健康諮詢（如感冒、日常保健）被誤配「術後照護」或「療程安排」追問之違和感；2.24 未審說明裝飾（`decorate_general_answer`）一律強制使用 `scope="general"`。
+
 - **已知限制與維護說明**：
   1. 未設定 `patient_clinic_id` 時，匿名諮詢端點不檢索任何診所資料（只命中一般資料）；正式庫目前推理樹皆為診所專屬，因此未設定 `patient_clinic_id` 時，這些樹來源的預生成內容匿名端點看不到（special 預生成仍可透過 `/api/v1/query` 帶 `clinic_id` 使用）。
   2. 預生成題目標題只來自推理樹的 `title` 或種子 `title`（去除「常見問題」字樣），無中文標題者不進行預生成（計入 `prefill_skipped_no_title`）。

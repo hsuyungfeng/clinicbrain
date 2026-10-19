@@ -484,3 +484,96 @@ def test_13_compose_from_approved_raises_insufficient_evidence_error(isolated_co
     with pytest.raises(InsufficientEvidenceError):
         compose_from_approved(isolated_conn, q, found, _insufficient_llm)
 
+
+def test_decorate_general_answer_uses_general_scope():
+    """驗證 decorate_general_answer 採用 scope='general'，追問無療程術語。"""
+    from src.general.answer_compose import GENERAL_FOLLOWUPS, PROCEDURE_ONLY_TERMS
+
+    ans = f"一般感冒需多補充水分與睡眠，維持生活作息規律。{WARNING}"
+    decorated = decorate_general_answer(ans, "感冒如何在家恢復？")
+    lines = decorated.split("\n")
+    assert len(lines) == 3
+    fol_line = lines[1]
+    assert fol_line == GENERAL_FOLLOWUPS["recovery"]
+    for term in PROCEDURE_ONLY_TERMS:
+        assert term not in fol_line
+
+
+def test_deterministic_fallback_scope_param():
+    """驗證 _deterministic_fallback 支援 scope 參數並產出對應追問。"""
+    from src.general.patient_compose import _deterministic_fallback
+    from src.general.answer_compose import DEFAULT_FOLLOWUPS, GENERAL_FOLLOWUPS, PROCEDURE_ONLY_TERMS
+
+    found = _make_found(
+        faq_hits=[{
+            "question": "生活保養",
+            "answer": f"日常飲食宜清淡，避免過度勞累與熬夜。{WARNING}",
+        }]
+    )
+
+    # 1. scope='general' 回傳 GENERAL_FOLLOWUPS
+    res_gen = _deterministic_fallback(found, intent="recovery", scope="general")
+    assert res_gen is not None
+    fol_gen = res_gen.split("\n")[1]
+    assert fol_gen == GENERAL_FOLLOWUPS["recovery"]
+    for term in PROCEDURE_ONLY_TERMS:
+        assert term not in fol_gen
+
+    # 2. scope='procedure' 回傳 DEFAULT_FOLLOWUPS
+    res_proc = _deterministic_fallback(found, intent="recovery", scope="procedure")
+    assert res_proc is not None
+    fol_proc = res_proc.split("\n")[1]
+    assert fol_proc == DEFAULT_FOLLOWUPS["recovery"]
+
+
+def test_compose_from_approved_scope_selection(isolated_conn):
+    """驗證 compose_from_approved 依有無診所專屬證據切換 scope。"""
+    from src.general.patient_compose import ClinicEvidence
+    from src.general.answer_compose import DEFAULT_FOLLOWUPS, GENERAL_FOLLOWUPS, PROCEDURE_ONLY_TERMS
+
+    found = _make_found(
+        faq_hits=[{
+            "question": "皮膚照護如何進行？",
+            "answer": f"日常清潔保持乾燥通風，不可搔抓。{WARNING}",
+        }]
+    )
+
+    def _dummy_llm(p):
+        return f"答：日常清潔保持乾燥通風。\n{WARNING}\n追問：您想知道術後如何照顧嗎？"
+
+    # 1. 無診所證據：scope 應為 'general'，模型追問若含療程詞退回 GENERAL_FOLLOWUPS
+    res_no_clinic = compose_from_approved(
+        isolated_conn,
+        "皮膚照護如何進行？",
+        found,
+        _dummy_llm,
+        clinic_evidence=None,
+    )
+    assert res_no_clinic is not None
+    fol_no_clinic = res_no_clinic.split("\n")[1]
+    assert fol_no_clinic == GENERAL_FOLLOWUPS["what"] or fol_no_clinic == GENERAL_FOLLOWUPS["recovery"] or fol_no_clinic == GENERAL_FOLLOWUPS["other"]
+    for term in PROCEDURE_ONLY_TERMS:
+        assert term not in fol_no_clinic
+
+    # 2. 有診所證據：scope 應為 'procedure'，模型追問之療程術語保留或使用 DEFAULT_FOLLOWUPS
+    clinic_ev = ClinicEvidence(
+        faq_hits=[{
+            "question": "診所專屬雷射照護",
+            "answer": f"診所雷射後請加強防曬與冰敷。\n{WARNING}",
+            "clinic_id": "3503190424",
+            "level": "診所",
+        }]
+    )
+    res_with_clinic = compose_from_approved(
+        isolated_conn,
+        "診所雷射後如何保養？",
+        found,
+        _dummy_llm,
+        clinic_evidence=clinic_ev,
+    )
+    assert res_with_clinic is not None
+    fol_with_clinic = res_with_clinic.split("\n")[1]
+    # 保留了模型產生的療程追問「您想知道術後如何照顧嗎？」
+    assert "術後" in fol_with_clinic
+
+
