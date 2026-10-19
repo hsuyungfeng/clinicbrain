@@ -13,7 +13,6 @@ from __future__ import annotations
 import re
 from typing import Any, Tuple
 
-from src.api.routes.query import deep_mask_prices
 from src.ingestion.generate_faq import validate_single_faq
 
 # IR 規格列舉常數
@@ -65,7 +64,9 @@ def validate_visual_text(text: str) -> Tuple[bool, str]:
     if "javascript:" in t.lower():
         return False, "text_unsafe"
 
-    # 2. 價格洩漏檢驗
+    # 2. 價格洩漏檢驗（延遲匯入避免與 src.api.__init__ 產生循環匯入）
+    from src.api.routes.query import deep_mask_prices
+
     if deep_mask_prices(t) != t:
         return False, "price_leak"
 
