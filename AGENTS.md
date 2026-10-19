@@ -297,6 +297,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **就醫警訊強制檢驗與免責聲明欄位 (GC-03)**：
   - General 類別問答之 answer 強制要求具體症狀或數值條件之就醫警訊收尾句，實測正例 15/15 通過、負例 17/17 攔截；單純「若症狀加重請回診」單獨出現視為不合規。**複審補強**：勸人別就醫的反向句（「胸痛時不要去醫院」「無需前往醫院」）不算警訊；條列式「請儘速就醫：1. 高燒超過3天 2. 呼吸困難」會併入前一行判斷（LLM 回答「何時就醫」最常見的格式）。外科微創警訊（Phase 20 加固）：危險症狀擴充為紅腫、化膿、流膿、發炎、滲血、組織壞死等。否定語境以同一分句內「否定詞＋≤4 個非標點字元」判定（`_NEG_PRE`），如「不紅腫」「沒有明顯紅腫化膿」「未見化膿」一律不得充當具體警訊；代價是「沒有好轉的紅腫化膿」這類句子會被保守拒絕（Fail-Closed 取向，可接受）。
 已知寬鬆：「出現高燒時應就醫」（單獨一個危險症狀即算具體條件）視為合格（程式：`src/ingestion/medical_safety.py:has_doctor_warning`；測試：`tests/test_medical_safety.py::test_classify_missing_doctor_warning_code`）。
+  - **2026-10-19 經使用者核准新增警訊症狀詞**：危險症狀（`_SYMPTOM`）詞庫新增「持續性疼痛」與「異常腫脹」兩詞（僅限此二詞，其餘規則與 `_NEG_PRE` 維持不變）。
   - 批次生成針對 general 主題注入第 9 條 Prompt 就醫警訊收尾規則，違規者以 `missing_doctor_warning` 剔除（程式：`src/batch/faq_generator.py:build_seed_faq_prompt`；測試：`tests/test_medical_safety.py::test_prompt_build_seed_faq_prompt_rules`）。
   - 雙向資料同步匯入（`/api/v1/sync/import`）對 general FAQ 實施前置合規檢核，劑量違規或缺警訊者以 HTTP 400 整批原子性阻斷；special 類別維持豁免（程式：`src/api/routes/sync.py:import_sync_data`；測試：`tests/test_sync_general_validation.py::test_sync_import_general_faq_dosage_blocked_and_atomic`）。
   - 自然語言查詢回應結構純加法擴充 `disclaimer: Optional[str] = None` 欄位；當 `data_level == 'general'` 時自動附帶法定醫療免責宣告文字，診所層級為 null（程式：`src/query/router.py:handle_query`；測試：`tests/test_query_disclaimer_field.py::test_query_response_disclaimer_general_shortcut`）。

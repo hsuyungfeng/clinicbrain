@@ -465,3 +465,24 @@ DX4_MUST_BLOCK = [
 def test_academic_or_doctor_exemption_never_releases_recommendation(text):
     from src.ingestion.medical_safety import check_dosage_prescription
     assert check_dosage_prescription(text) is not None, f"處方式建議被豁免放行: {text}"
+
+
+def test_user_approved_symptoms_persistent_pain_and_abnormal_swelling():
+    """驗證 2026-10-19 使用者核准新增之『持續性疼痛』與『異常腫脹』警訊正例、否定負例與未具體負例。"""
+    from src.ingestion.medical_safety import has_doctor_warning
+
+    # 正例
+    assert has_doctor_warning("若術後出現持續性疼痛或異常腫脹，請盡速回診尋求醫師評估。") is True
+    assert has_doctor_warning("若出現持續性疼痛，請儘速就醫。") is True
+    assert has_doctor_warning("若傷口有異常腫脹，請回診檢查。") is True
+
+    # 否定語境負例（不得充當警訊）
+    assert has_doctor_warning("沒有持續性疼痛，請就醫追蹤。") is False
+    assert has_doctor_warning("不會異常腫脹，應回診檢查。") is False
+    assert has_doctor_warning("術後傷口並無持續性疼痛，請按時回診。") is False
+    assert has_doctor_warning("患部未見異常腫脹，請依指示回診。") is False
+
+    # 仍須不合規之非具體負例
+    assert has_doctor_warning("若症狀加重請回診。") is False
+    assert has_doctor_warning("若感覺不舒服請盡速就醫。") is False
+
