@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>展示 A：輕量版（CSS/SVG 動畫）— 自體脂肪移植原理</title>
+<style>
+  :root { --bg:#f4f7fb; --card:#fff; --ink:#1f2a37; --mute:#64748b; --line:#dbe3ee; --blue:#2b6cb0;
+          --fat:#f6b93b; --fat-d:#e08e0b; --oil:#fde9a8; --blood:#e25555; --skin:#f7d9c4; --skin2:#f0c3a5; --ok:#2f9e6b; --warn:#d9534f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,"Noto Sans TC",sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; padding:16px; }
+  .badge { display:inline-block; background:#fff3cd; color:#8a6d00; border:1px solid #ffe08a; border-radius:999px; padding:2px 10px; font-size:12px; }
+  h1 { font-size:20px; margin:8px 0 4px; }
+  .sub { color:var(--mute); font-size:13px; margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 2px 10px rgba(30,60,100,.06); }
+  .head { display:flex; justify-content:space-between; align-items:center; }
+  .head b { font-size:16px; }
+  .step { background:#eef2f7; border-radius:999px; padding:2px 10px; font-size:12px; color:var(--mute); }
+  .stitle { color:var(--blue); font-weight:700; margin:10px 0 6px; }
+  svg { width:100%; height:auto; display:block; background:linear-gradient(#fbfdff,#f1f6fc); border-radius:10px; border:1px solid var(--line); }
+  .cap { margin:12px 0 8px; line-height:1.7; min-height:3.4em; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { border-radius:999px; padding:3px 12px; font-size:13px; }
+  .chip.neutral { background:#e8eef6; } .chip.optimal { background:#d7f2e4; color:#17623f; } .chip.warning { background:#fde2c8; color:#8a4b00; }
+  .nav { display:flex; align-items:center; justify-content:space-between; margin-top:14px; gap:8px; }
+  button { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:7px 16px; cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  button.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .dots { display:flex; gap:6px; } .dot { width:8px; height:8px; border-radius:50%; background:#cbd5e1; } .dot.on { background:var(--blue); }
+  .disc { border-top:1px dashed var(--line); margin-top:14px; padding-top:10px; font-size:12px; color:var(--mute); text-align:center; }
+  .scene { display:none; } .scene.active { display:block; }
+  text { font-family:system-ui,"Noto Sans TC",sans-serif; }
+
+  /* ---------- 場景 1：抽取與純化 ---------- */
+  .s1 .cannula { animation:suck 1.6s ease-in-out infinite; }
+  @keyframes suck { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-34px)} }
+  .s1 .drop { opacity:0; animation:flow 2.6s linear infinite; }
+  @keyframes flow { 0%{opacity:0; transform:translateX(0)} 10%{opacity:1} 70%{opacity:1; transform:translateX(250px)} 100%{opacity:0; transform:translateX(262px)} }
+  .s1 .mix { animation:mixfade 1s ease 3.2s forwards; }
+  @keyframes mixfade { to{opacity:0} }
+  .s1 .layer { transform-box:fill-box; transform-origin:center top; transform:scaleY(0); animation:grow 1.4s ease 3.4s forwards; }
+  .s1 .l2 { animation-delay:3.7s; } .s1 .l3 { animation-delay:4.0s; }
+  @keyframes grow { to{transform:scaleY(1)} }
+  .s1 .glow { opacity:0; animation:pulse 1.4s ease-in-out 5.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:.15} 50%{opacity:.9} }
+  .s1 .lab { opacity:0; animation:fadein .6s ease forwards; }
+  .s1 .lab1 { animation-delay:.4s } .s1 .lab2 { animation-delay:3.4s } .s1 .lab3 { animation-delay:5.0s }
+  @keyframes fadein { to{opacity:1} }
+
+  /* ---------- 場景 2：少量多層次 vs 單處過量 ---------- */
+  .s2 .big { opacity:0; transform-box:fill-box; transform-origin:center; transform:scale(.3); animation:popbig 1.2s ease .3s forwards; }
+  @keyframes popbig { to{opacity:1; transform:scale(1)} }
+  .s2 .core { opacity:0; animation:necro 2.4s ease 1.6s forwards, throb 1.6s ease-in-out 4s infinite; }
+  @keyframes necro { to{opacity:.85} } @keyframes throb { 0%,100%{opacity:.85} 50%{opacity:.4} }
+  .s2 .g { opacity:0; transform-box:fill-box; transform-origin:center; transform:scale(0); animation:popg .5s ease forwards; }
+  @keyframes popg { to{opacity:1; transform:scale(1)} }
+  .s2 .ring { opacity:0; animation:ringp 1.6s ease-in-out infinite; }
+  @keyframes ringp { 0%,100%{opacity:0} 50%{opacity:.8} }
+  .s2 .track { stroke-dasharray:6 6; opacity:.5; animation:dash 1.2s linear infinite; }
+  @keyframes dash { to{stroke-dashoffset:-24} }
+
+  /* ---------- 場景 3：逐步穩定 ---------- */
+  .s3 .vessel { stroke-dasharray:200; stroke-dashoffset:200; animation:draw 2.2s ease forwards; }
+  .s3 .v2 { animation-delay:1.4s } .s3 .v3 { animation-delay:2.8s } .s3 .v4 { animation-delay:4.2s }
+  @keyframes draw { to{stroke-dashoffset:0} }
+  .s3 .gl { fill:#fbe3a6; animation:mature 1.6s ease forwards; }
+  .s3 .gl.a { animation-delay:2.4s } .s3 .gl.b { animation-delay:3.8s } .s3 .gl.c { animation-delay:5.2s }
+  @keyframes mature { to{fill:#f0a81f} }
+  .s3 .node { fill:#cbd5e1; animation:nodeon .5s ease forwards; }
+  .s3 .n1 { animation-delay:.2s } .s3 .n2 { animation-delay:2.6s } .s3 .n3 { animation-delay:5.0s }
+  @keyframes nodeon { to{fill:#2b6cb0} }
+  .s3 .ml { opacity:0; animation:fadein .6s ease forwards; }
+  .s3 .m1 { animation-delay:.3s } .s3 .m2 { animation-delay:2.7s } .s3 .m3 { animation-delay:5.1s }
+  .s3 .fill { transform-box:fill-box; transform-origin:left center; transform:scaleX(0); animation:bar 6s linear forwards; }
+  @keyframes bar { to{transform:scaleX(1)} }
+
+  @media (prefers-reduced-motion: reduce) { .scene * { animation-duration:.01s !important; animation-delay:0s !important; animation-iteration-count:1 !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">展示用 DEMO · 展示 A 輕量版（純 CSS/SVG，無影片、無外部資源）</span>
+  <h1>自體脂肪移植原理</h1>
+  <div class="sub">三步圖解；按「下一步」切換，「重播」重新播放目前場景動畫。</div>
+
+  <div class="card">
+    <div class="head"><b>自體脂肪移植原理</b><span class="step" id="step">1 / 3</span></div>
+    <div class="stitle" id="stitle"></div>
+
+    <!-- ===== 場景 1 ===== -->
+    <div class="scene s1" data-title="抽取與純化">
+      <svg viewBox="0 0 640 340" role="img" aria-label="抽取與純化動畫">
+        <!-- 身體部位 -->
+        <path d="M30 120 Q30 90 70 90 L150 90 Q190 90 190 130 L190 250 Q190 290 150 290 L70 290 Q30 290 30 250 Z" fill="var(--skin)" stroke="#e3b79a"/>
+        <path d="M50 150 Q50 130 80 130 L140 130 Q170 130 170 155 L170 235 Q170 262 140 262 L80 262 Q50 262 50 235 Z" fill="#fbe7b5" stroke="#f1cd7a"/>
+        <text x="110" y="205" text-anchor="middle" font-size="13" fill="#8a6d00">皮下脂肪</text>
+        <!-- 抽取管（微創） -->
+        <g class="cannula"><rect x="150" y="193" width="120" height="8" rx="4" fill="#7b8794"/><rect x="262" y="187" width="30" height="20" rx="4" fill="#4a5563"/></g>
+        <!-- 流動的脂肪滴 -->
+        <g>
+          <circle class="drop" cx="300" cy="197" r="6" fill="var(--fat)" style="animation-delay:0s"/>
+          <circle class="drop" cx="300" cy="197" r="5" fill="var(--oil)" style="animation-delay:.5s"/>
+          <circle class="drop" cx="300" cy="197" r="6" fill="var(--fat)" style="animation-delay:1s"/>
+          <circle class="drop" cx="300" cy="197" r="4" fill="var(--blood)" style="animation-delay:1.5s"/>
+          <circle class="drop" cx="300" cy="197" r="6" fill="var(--fat)" style="animation-delay:2s"/>
+        </g>
+        <!-- 離心管 -->
+        <rect x="480" y="50" width="70" height="240" rx="26" fill="#fff" stroke="#8aa0b8" stroke-width="3"/>
+        <g clip-path="url(#tube)">
+          <rect class="mix" x="483" y="60" width="64" height="226" fill="#f3b36b"/>
+          <rect class="layer l1" x="483" y="60" width="64" height="62" fill="var(--oil)"/>
+          <rect class="layer l2" x="483" y="122" width="64" height="100" fill="var(--fat)"/>
+          <rect class="layer l3" x="483" y="222" width="64" height="64" fill="var(--blood)"/>
+        </g>
+        <clipPath id="tube"><rect x="483" y="53" width="64" height="234" rx="23"/></clipPath>
+        <rect class="glow" x="478" y="120" width="74" height="104" rx="10" fill="none" stroke="#2f9e6b" stroke-width="4"/>
+        <text class="lab lab1" x="110" y="320" text-anchor="middle" font-size="14" fill="#475569">① 微創抽取</text>
+        <text class="lab lab2" x="515" y="320" text-anchor="middle" font-size="14" fill="#475569">② 離心分層</text>
+        <text class="lab lab3" x="400" y="175" text-anchor="middle" font-size="15" font-weight="700" fill="#17623f">③ 保留純化脂肪 →</text>
+        <text class="lab lab3" x="578" y="72" font-size="12" fill="#a07400">油滴</text>
+        <text class="lab lab3" x="578" y="260" font-size="12" fill="#b03a3a">血水</text>
+      </svg>
+    </div>
+
+    <!-- ===== 場景 2 ===== -->
+    <div class="scene s2" data-title="少量多層次注射">
+      <svg viewBox="0 0 640 340" role="img" aria-label="少量多層次注射對照動畫">
+        <defs>
+          <radialGradient id="necro"><stop offset="0" stop-color="#5b3a22"/><stop offset="1" stop-color="#5b3a22" stop-opacity="0"/></radialGradient>
+        </defs>
+        <!-- 左：單處過量 -->
+        <rect x="14" y="50" width="296" height="250" rx="10" fill="#fff" stroke="#e9c4c4"/>
+        <rect x="14" y="50" width="296" height="22" fill="var(--skin2)"/><rect x="14" y="72" width="296" height="48" fill="var(--skin)"/><rect x="14" y="120" width="296" height="180" fill="#fdf0cc"/>
+        <circle class="big" cx="162" cy="210" r="62" fill="var(--fat)" stroke="var(--fat-d)" stroke-width="2"/>
+        <circle class="core" cx="162" cy="210" r="46" fill="url(#necro)"/>
+        <text x="162" y="214" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">中心難獲養分</text>
+        <text x="162" y="34" text-anchor="middle" font-size="15" font-weight="700" fill="var(--warn)">單處過量</text>
+        <text x="162" y="322" text-anchor="middle" font-size="12" fill="#8a4b00">較易出現硬塊與組織狀況不佳</text>
+        <!-- 右：分層少量 -->
+        <rect x="330" y="50" width="296" height="250" rx="10" fill="#fff" stroke="#bfe3d0"/>
+        <rect x="330" y="50" width="296" height="22" fill="var(--skin2)"/><rect x="330" y="72" width="296" height="48" fill="var(--skin)"/><rect x="330" y="120" width="296" height="180" fill="#fdf0cc"/>
+        <!-- 注射軌跡 -->
+        <path class="track" d="M334 100 L600 130" stroke="#2f9e6b" fill="none" stroke-width="2"/>
+        <path class="track" d="M334 100 L600 190" stroke="#2f9e6b" fill="none" stroke-width="2"/>
+        <path class="track" d="M334 100 L600 250" stroke="#2f9e6b" fill="none" stroke-width="2"/>
+        <g id="gl"></g>
+        <text x="478" y="34" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ok)">分層少量</text>
+        <text x="478" y="322" text-anchor="middle" font-size="12" fill="#17623f">每一小份都能接觸周圍組織</text>
+        <text x="338" y="66" font-size="11" fill="#9a6b4c">表皮</text><text x="338" y="96" font-size="11" fill="#9a6b4c">真皮</text><text x="338" y="136" font-size="11" fill="#a08a3c">皮下層</text>
+      </svg>
+    </div>
+
+    <!-- ===== 場景 3 ===== -->
+    <div class="scene s3" data-title="術後逐步穩定">
+      <svg viewBox="0 0 640 340" role="img" aria-label="術後逐步穩定動畫">
+        <rect x="40" y="60" width="560" height="170" rx="12" fill="#fdf0cc" stroke="#f0d98c"/>
+        <!-- 血管長入 -->
+        <path class="vessel v1" d="M60 80 C140 80 160 130 230 140" stroke="var(--blood)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path class="vessel v2" d="M60 215 C150 215 200 170 270 160" stroke="var(--blood)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path class="vessel v3" d="M590 80 C500 80 470 130 400 140" stroke="var(--blood)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path class="vessel v4" d="M590 215 C490 215 440 170 370 160" stroke="var(--blood)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <!-- 脂肪顆粒 -->
+        <circle class="gl a" cx="260" cy="145" r="22" stroke="#e0a000"/>
+        <circle class="gl b" cx="320" cy="170" r="24" stroke="#e0a000"/>
+        <circle class="gl c" cx="380" cy="145" r="22" stroke="#e0a000"/>
+        <!-- 時間軸 -->
+        <line x1="90" y1="285" x2="550" y2="285" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round"/>
+        <rect class="fill" x="90" y="282" width="460" height="6" rx="3" fill="#2b6cb0"/>
+        <circle class="node n1" cx="90" cy="285" r="10"/><circle class="node n2" cx="320" cy="285" r="10"/><circle class="node n3" cx="550" cy="285" r="10"/>
+        <text class="ml m1" x="90" y="318" text-anchor="middle" font-size="13" fill="#475569">術後初期</text>
+        <text class="ml m2" x="320" y="318" text-anchor="middle" font-size="13" fill="#475569">血管逐步長入</text>
+        <text class="ml m3" x="550" y="318" text-anchor="middle" font-size="13" fill="#475569">逐步穩定</text>
+        <text x="320" y="48" text-anchor="middle" font-size="13" fill="#64748b">實際結果因人而異，須由醫師評估</text>
+      </svg>
+    </div>
+
+    <div class="cap" id="cap"></div>
+    <div class="chips" id="chips"></div>
+    <div class="nav">
+      <button id="prev">上一步</button>
+      <div class="dots" id="dots"></div>
+      <button id="replay">重播</button>
+      <button id="next" class="primary">下一步</button>
+    </div>
+    <div class="disc">一般醫學知識說明，非個人化診斷；實際狀況須由醫師當面評估</div>
+  </div>
+</div>
+<script>
+(function(){
+  var DATA = [
+    {t:"抽取與純化", c:"抽取後先經過純化處理，篩選出結構完整的脂肪組織，為後續移植做準備。", l:[["抽取脂肪","neutral"],["離心純化","optimal"]]},
+    {t:"少量多層次注射", c:"採分多層次少量放置，使每份脂肪皆能接觸周圍組織；若單處過量，較易出現區域性硬塊與組織狀況不佳。", l:[["分層少量","optimal"],["單處過量","warning"]]},
+    {t:"術後逐步穩定", c:"術後一段時間內身體會逐步適應並達到穩定，期間應避免按壓，實際結果因人而異，須由醫師評估。", l:[["避免按壓","warning"],["逐步適應","optimal"]]}
+  ];
+  var i = 0, scenes = document.querySelectorAll(".scene");
+  // 場景 2 右側：三層小圓，依序出現
+  var NS="http://www.w3.org/2000/svg", g=document.getElementById("gl"), n=0;
+  [[100,5],[150,6],[200,6]].forEach(function(row,ri){
+    var y = [100,150,215][ri];
+    for (var k=0;k<row[1];k++){
+      var x = 372 + k*44 + (ri%2)*14, d = (0.4 + n*0.38).toFixed(2); n++;
+      var c = document.createElementNS(NS,"circle"); c.setAttribute("class","g"); c.setAttribute("cx",x); c.setAttribute("cy",y+(ri==0?k*4:ri==1?k*10:k*8)); c.setAttribute("r",11);
+      c.setAttribute("fill","#f6b93b"); c.setAttribute("stroke","#e08e0b"); c.style.animationDelay=d+"s"; g.appendChild(c);
+      var r = document.createElementNS(NS,"circle"); r.setAttribute("class","ring"); r.setAttribute("cx",x); r.setAttribute("cy",c.getAttribute("cy")); r.setAttribute("r",17);
+      r.setAttribute("fill","none"); r.setAttribute("stroke","#2f9e6b"); r.setAttribute("stroke-width","2"); r.style.animationDelay=(d*1+1)+"s"; g.appendChild(r);
+    }
+  });
+  var dots = document.getElementById("dots"); DATA.forEach(function(){ var d=document.createElement("span"); d.className="dot"; dots.appendChild(d); });
+  function show(){
+    scenes.forEach(function(s,k){ s.classList.remove("active"); });
+    var s = scenes[i]; void s.offsetWidth; s.classList.add("active");   // 重新觸發動畫
+    // 重新啟動 CSS 動畫：複製節點
+    var parent = s.parentNode, clone = s.cloneNode(true); parent.replaceChild(clone, s); scenes = document.querySelectorAll(".scene"); scenes[i].classList.add("active");
+    document.getElementById("step").textContent = (i+1)+" / "+DATA.length;
+    document.getElementById("stitle").textContent = DATA[i].t;
+    document.getElementById("cap").textContent = DATA[i].c;
+    var chips = document.getElementById("chips"); chips.textContent="";
+    DATA[i].l.forEach(function(x){ var e=document.createElement("span"); e.className="chip "+x[1]; e.textContent=x[0]; chips.appendChild(e); });
+    document.getElementById("prev").disabled = i===0; document.getElementById("next").disabled = i===DATA.length-1;
+    Array.prototype.forEach.call(dots.children,function(d,k){ d.className = "dot"+(k===i?" on":""); });
+  }
+  document.getElementById("prev").onclick=function(){ if(i>0){i--;show();} };
+  document.getElementById("next").onclick=function(){ if(i<DATA.length-1){i++;show();} };
+  document.getElementById("replay").onclick=show;
+  show();
+})();
+</script>
+</body>
+</html>

@@ -14,3 +14,4 @@ clinic.db.bak-*
 logs/
 # 夜間批次鎖檔，位於資料庫同目錄
 *.nightly.lock
+demo/visual/out/

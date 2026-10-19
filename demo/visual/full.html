@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>展示 B：完整版（影片式時間軸播放器）— 自體脂肪移植原理</title>
+<style>
+  :root { --ink:#e8eef7; --mute:#9fb0c6; --bg:#0f1722; --panel:#162233; --line:#27364d; --fat:#f6b93b; --oil:#fde9a8; --blood:#e25555; --ok:#43c58a; --warn:#ff7b6b; --blue:#5aa2ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,"Noto Sans TC",sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:16px; }
+  .badge { display:inline-block; background:#3a3216; color:#ffd966; border:1px solid #6b5a1e; border-radius:999px; padding:2px 10px; font-size:12px; }
+  h1 { font-size:20px; margin:8px 0 4px; } .sub { color:var(--mute); font-size:13px; margin-bottom:12px; }
+  .player { background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .stage { position:relative; background:radial-gradient(circle at 50% 30%,#1b2b42,#0e1622); }
+  svg { width:100%; height:auto; display:block; }
+  text { font-family:system-ui,"Noto Sans TC",sans-serif; }
+  .titlebar { position:absolute; left:14px; top:10px; font-size:13px; color:var(--mute); letter-spacing:1px; }
+  .titlebar b { color:#fff; font-size:15px; margin-left:6px; }
+  .caption { position:absolute; left:0; right:0; bottom:0; padding:12px 18px 14px; background:linear-gradient(transparent,rgba(5,10,18,.88) 40%); font-size:16px; line-height:1.6; text-align:center; min-height:64px; }
+  .ctrl { display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--line); }
+  button { font:inherit; border:1px solid var(--line); background:#1d2c42; color:var(--ink); border-radius:8px; padding:6px 14px; cursor:pointer; }
+  button.primary { background:var(--blue); border-color:var(--blue); color:#06121f; font-weight:700; }
+  input[type=range] { flex:1; accent-color:var(--blue); }
+  .time { font-variant-numeric:tabular-nums; color:var(--mute); font-size:13px; min-width:84px; text-align:right; }
+  .chapters { display:flex; gap:8px; padding:0 14px 12px; flex-wrap:wrap; }
+  .chap { font-size:12px; padding:3px 10px; border-radius:999px; border:1px solid var(--line); color:var(--mute); cursor:pointer; }
+  .chap.on { background:#203a5c; color:#fff; border-color:#35588a; }
+  .opts { display:flex; align-items:center; gap:8px; color:var(--mute); font-size:13px; }
+  .cta { position:absolute; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px; background:rgba(8,14,24,.82); text-align:center; padding:20px; }
+  .cta.show { display:flex; }
+  .cta .q { font-size:18px; max-width:560px; line-height:1.6; } .cta a { background:var(--ok); color:#06210f; text-decoration:none; font-weight:700; padding:10px 22px; border-radius:10px; }
+  .cta small { color:var(--mute); }
+  .disc { color:var(--mute); font-size:12px; text-align:center; padding:10px 14px 14px; border-top:1px dashed var(--line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">展示用 DEMO · 展示 B 完整版（時間軸、解剖剖面、旁白字幕；模擬影片管線成品，可輸出 MP4）</span>
+  <h1>自體脂肪移植原理</h1>
+  <div class="sub">按「播放」觀看約 24 秒圖解；可拖曳進度條、點章節跳轉；可開啟瀏覽器語音旁白（需系統有中文語音）。</div>
+
+  <div class="player">
+    <div class="stage">
+      <div class="titlebar"><span id="chapLabel">章節 1</span><b id="chapTitle"></b></div>
+      <svg id="svg" viewBox="0 0 800 510" role="img" aria-label="自體脂肪移植原理影片式圖解">
+        <defs>
+          <linearGradient id="skinG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3cdb4"/><stop offset="1" stop-color="#e8b693"/></linearGradient>
+          <radialGradient id="necro"><stop offset="0" stop-color="#3b2415"/><stop offset="1" stop-color="#3b2415" stop-opacity="0"/></radialGradient>
+          <clipPath id="tube"><rect x="610" y="80" width="64" height="250" rx="24"/></clipPath>
+          <clipPath id="cut"><rect x="40" y="100" width="720" height="250" rx="12"/></clipPath>
+        </defs>
+
+        <!-- ============ 場景 1 ============ -->
+        <g id="s1">
+          <!-- 腹部剖面 -->
+          <rect x="40" y="110" width="330" height="230" rx="14" fill="url(#skinG)"/>
+          <rect x="40" y="110" width="330" height="22" rx="14" fill="#efc0a2"/>
+          <rect x="40" y="132" width="330" height="40" fill="#e9b898"/>
+          <rect x="40" y="172" width="330" height="120" fill="#fbe08f"/>
+          <rect x="40" y="292" width="330" height="48" rx="14" fill="#c97a63"/>
+          <text x="52" y="126" font-size="11" fill="#7a4a35">表皮</text><text x="52" y="156" font-size="11" fill="#7a4a35">真皮</text>
+          <text x="52" y="235" font-size="12" fill="#8a6d00">皮下脂肪</text><text x="52" y="320" font-size="11" fill="#fbe3d8">肌肉</text>
+          <g id="cannula"><rect x="0" y="-4" width="150" height="8" rx="4" fill="#9aa8b8"/><rect x="146" y="-9" width="34" height="18" rx="4" fill="#5b6778"/></g>
+          <g id="drops"></g>
+          <!-- 離心管 -->
+          <rect x="606" y="76" width="72" height="258" rx="28" fill="#0f1a28" stroke="#7d93ad" stroke-width="3"/>
+          <g clip-path="url(#tube)">
+            <rect id="mix" x="610" y="80" width="64" height="250" fill="#e9a35a"/>
+            <rect id="lo" x="610" y="80" width="64" height="0" fill="var(--oil)"/>
+            <rect id="lf" x="610" y="80" width="64" height="0" fill="var(--fat)"/>
+            <rect id="lb" x="610" y="80" width="64" height="0" fill="var(--blood)"/>
+          </g>
+          <rect id="hl" x="602" y="150" width="80" height="110" rx="10" fill="none" stroke="var(--ok)" stroke-width="4" opacity="0"/>
+          <text id="t1a" x="205" y="388" text-anchor="middle" font-size="15" fill="#cfe0f5" opacity="0">① 微創抽取</text>
+          <text id="t1b" x="642" y="372" text-anchor="middle" font-size="15" fill="#cfe0f5" opacity="0">② 離心分層</text>
+          <text id="t1c" x="470" y="215" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ok)" opacity="0">③ 保留純化脂肪 →</text>
+        </g>
+
+        <!-- ============ 場景 2 ============ -->
+        <g id="s2">
+          <rect x="40" y="100" width="720" height="250" rx="12" fill="#e9b898"/>
+          <g clip-path="url(#cut)">
+            <rect x="40" y="100" width="720" height="26" fill="#efc0a2"/>
+            <rect x="40" y="126" width="720" height="54" fill="#e9b898"/>
+            <rect x="40" y="180" width="720" height="110" fill="#fbe08f"/>
+            <rect x="40" y="290" width="720" height="60" fill="#c97a63"/>
+          </g>
+          <text x="52" y="118" font-size="11" fill="#7a4a35">表皮</text><text x="52" y="150" font-size="11" fill="#7a4a35">真皮</text>
+          <text x="52" y="205" font-size="12" fill="#8a6d00">皮下層（放置區）</text>
+          <!-- 三條扇形軌跡 -->
+          <path id="k1" d="M60 140 L720 160" stroke="#43c58a" stroke-width="2" stroke-dasharray="6 6" fill="none" opacity=".6"/>
+          <path id="k2" d="M60 140 L720 215" stroke="#43c58a" stroke-width="2" stroke-dasharray="6 6" fill="none" opacity=".6"/>
+          <path id="k3" d="M60 140 L720 270" stroke="#43c58a" stroke-width="2" stroke-dasharray="6 6" fill="none" opacity=".6"/>
+          <g id="globes"></g>
+          <g id="cann2"><rect x="-150" y="-4" width="150" height="8" rx="4" fill="#9aa8b8"/><rect x="-4" y="-9" width="30" height="18" rx="4" fill="#5b6778"/></g>
+          <!-- 對照：單處過量 -->
+          <g id="contrast" opacity="0">
+            <circle cx="620" cy="235" r="62" fill="var(--fat)" stroke="#e08e0b" stroke-width="2"/>
+            <circle id="core" cx="620" cy="235" r="48" fill="url(#necro)" opacity="0"/>
+            <text x="620" y="239" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">中心難獲養分</text>
+            <text x="620" y="330" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">對照：單處過量，較易出現硬塊</text>
+          </g>
+          <text id="t2a" x="230" y="388" text-anchor="middle" font-size="15" fill="var(--ok)" font-weight="700" opacity="0">分層少量：每一小份都能接觸周圍組織</text>
+        </g>
+
+        <!-- ============ 場景 3 ============ -->
+        <g id="s3">
+          <rect x="40" y="100" width="720" height="210" rx="14" fill="#fbe08f" opacity=".92"/>
+          <g id="vessels"></g>
+          <g id="globes3"></g>
+          <line x1="110" y1="368" x2="690" y2="368" stroke="#2a3d57" stroke-width="6" stroke-linecap="round"/>
+          <line id="prog" x1="110" y1="368" x2="110" y2="368" stroke="var(--blue)" stroke-width="6" stroke-linecap="round"/>
+          <circle id="n1" cx="110" cy="368" r="10" fill="#2a3d57"/><circle id="n2" cx="400" cy="368" r="10" fill="#2a3d57"/><circle id="n3" cx="690" cy="368" r="10" fill="#2a3d57"/>
+          <text id="m1" x="110" y="403" text-anchor="middle" font-size="13" fill="#cfe0f5" opacity="0">術後初期</text>
+          <text id="m2" x="400" y="403" text-anchor="middle" font-size="13" fill="#cfe0f5" opacity="0">血管逐步長入</text>
+          <text id="m3" x="690" y="403" text-anchor="middle" font-size="13" fill="#cfe0f5" opacity="0">逐步穩定</text>
+          <text x="400" y="92" text-anchor="middle" font-size="13" fill="#9fb0c6">實際結果因人而異，須由醫師評估</text>
+        </g>
+      </svg>
+      <div class="caption" id="cap"></div>
+      <div class="cta" id="cta">
+        <div class="q">想了解自己的狀況適不適合？</div>
+        <a href="https://doctor-toolbox.com/" target="_blank" rel="noopener">預約諮詢，由醫師親自評估</a>
+        <small>本系統不收集任何個人資料；預約由合作平台承接</small>
+        <button id="again">重新播放</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <button class="primary" id="play">播放</button>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="進度">
+      <span class="time" id="time">0:00 / 0:24</span>
+    </div>
+    <div class="chapters" id="chaps"></div>
+    <div class="ctrl" style="border-top:none;padding-top:0"><label class="opts"><input type="checkbox" id="tts"> 語音旁白（瀏覽器內建中文語音）</label></div>
+    <div class="disc">一般醫學知識說明，非個人化診斷；實際狀況須由醫師當面評估</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg", TOTAL=24;
+  var CH=[
+    {t:0,  d:8, title:"抽取與純化", cap:"抽取後先經過純化處理，篩選出結構完整的脂肪組織，為後續移植做準備。"},
+    {t:8,  d:9, title:"少量多層次注射", cap:"採分多層次少量放置，使每份脂肪皆能接觸周圍組織；若單處過量，較易出現區域性硬塊與組織狀況不佳。"},
+    {t:17, d:7, title:"術後逐步穩定", cap:"術後一段時間內身體會逐步適應並達到穩定，期間應避免按壓，實際結果因人而異，須由醫師評估。"}
+  ];
+  function $(id){ return document.getElementById(id); }
+  function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+  function ease(x){ return x<.5 ? 2*x*x : 1-Math.pow(-2*x+2,2)/2; }
+  function seg(t,a,b){ return clamp((t-a)/(b-a),0,1); }          // 區間進度 0..1
+  function el(tag,attrs,parent){ var e=document.createElementNS(NS,tag); for(var k in attrs) e.setAttribute(k,attrs[k]); (parent||svg).appendChild(e); return e; }
+  var svg=$("svg");
+
+  // ---- 預先建立元素 ----
+  var dropsG=$("drops"), drops=[];
+  for(var i=0;i<10;i++){ drops.push(el("circle",{r:6,fill:["#f6b93b","#fde9a8","#f6b93b","#e25555","#f6b93b"][i%5],opacity:0},dropsG)); }
+  var globesG=$("globes"), globes=[], rows=[[160,6],[215,7],[270,7]];
+  rows.forEach(function(r,ri){ for(var k=0;k<r[1];k++){
+    var x=150+k*84+ri*10, y=r[0]+k*(ri==0?3.2:ri==1?7.5:9.2)*1;
+    var gg=el("g",{opacity:0},globesG); el("circle",{cx:x,cy:y,r:13,fill:"#f6b93b",stroke:"#e08e0b","stroke-width":2},gg);
+    el("circle",{cx:x,cy:y,r:20,fill:"none",stroke:"#43c58a","stroke-width":2,opacity:.6},gg); globes.push({g:gg,x:x,y:y,row:ri,k:k});
+  }});
+  var vesG=$("vessels"), ves=[], vp=[
+    "M70 130 C170 130 230 190 300 200","M70 285 C180 285 250 230 330 215","M730 130 C630 130 560 190 500 200","M730 285 C620 285 540 230 470 215",
+    "M400 112 C400 150 400 170 400 188","M400 300 C400 270 400 250 400 232"];
+  vp.forEach(function(d){ var p=el("path",{d:d,stroke:"#e25555","stroke-width":5,fill:"none","stroke-linecap":"round"},vesG); var L=p.getTotalLength(); p.style.strokeDasharray=L; p.style.strokeDashoffset=L; ves.push({p:p,L:L}); });
+  var g3G=$("globes3"), g3=[[300,205,"a"],[400,210,"b"],[500,205,"c"]].map(function(a){ return el("circle",{cx:a[0],cy:a[1],r:26,fill:"#fbe3a6",stroke:"#e0a000","stroke-width":2},g3G); });
+
+  function lerpColor(a,b,t){ function h(c){return [1,3,5].map(function(i){return parseInt(c.substr(i,2),16);});} var A=h(a),B=h(b); return "rgb("+A.map(function(v,i){return Math.round(v+(B[i]-v)*t);}).join(",")+")"; }
+
+  // ---- 以 t（秒）繪製整個畫面 ----
+  function render(t){
+    var c = t<8?0:(t<17?1:2);
+    $("s1").style.display = c==0?"":"none"; $("s2").style.display = c==1?"":"none"; $("s3").style.display = c==2?"":"none";
+    $("chapLabel").textContent="章節 "+(c+1)+" / 3"; $("chapTitle").textContent=CH[c].title; $("cap").textContent=CH[c].cap;
+    document.querySelectorAll(".chap").forEach(function(e,k){ e.classList.toggle("on",k==c); });
+    if(c==0) s1(t); else if(c==1) s2(t-8); else s3(t-17);
+    $("cta").classList.toggle("show", t>=TOTAL-0.05);
+  }
+  function s1(t){
+    // 0-3.5s 抽取：管子往返、脂肪滴沿路徑流向離心管；3.5-5 混合 → 5-7 分層；7-8 強調
+    var sw=Math.sin(t*3)*14; $("cannula").setAttribute("transform","translate("+(200+sw)+" 232)");
+    drops.forEach(function(d,i){ var ph=((t*0.55 - i*0.1)%1+1)%1, on = t<4.8 ? 1 : 0;
+      var x=210+ph*430, y=232 - Math.sin(ph*Math.PI)*70 + (ph>0.85?(ph-0.85)*400:0);
+      d.setAttribute("cx",x); d.setAttribute("cy",y); d.setAttribute("opacity", on*(ph>0.02&&ph<0.97?1:0)); });
+    $("t1a").setAttribute("opacity",seg(t,0.2,1)); $("t1b").setAttribute("opacity",seg(t,4,5));
+    var mixIn=seg(t,2.0,4.0); $("mix").setAttribute("y",330-250*mixIn); $("mix").setAttribute("height",250*mixIn);
+    var s=ease(seg(t,5,6.8)), mixOut=1-seg(t,5,6.0); $("mix").setAttribute("opacity",t<5?1:mixOut);
+    $("lo").setAttribute("height",62*s); $("lf").setAttribute("y",80+62); $("lf").setAttribute("height",100*s); $("lb").setAttribute("y",80+62+100); $("lb").setAttribute("height",88*s);
+    $("hl").setAttribute("opacity",t>6.8?0.4+0.5*Math.abs(Math.sin((t-6.8)*4)):0); $("t1c").setAttribute("opacity",seg(t,6.8,7.5));
+    if(t<4.0) { $("lo").setAttribute("height",0); $("lf").setAttribute("height",0); $("lb").setAttribute("height",0); }
+  }
+  function s2(t){
+    // 0-6.5s：三條軌跡逐層放置；6.5-9s：對照單處過量
+    var tracks=[[0,0.4,2.3],[1,2.4,4.4],[2,4.5,6.5]];
+    var cur=null; tracks.forEach(function(tr){ if(t>=tr[1]&&t<=tr[2]+0.2) cur=tr; });
+    var y0=140, ends=[160,215,270];
+    var show=[0,1,2].map(function(r){ return r; });
+    var cs=seg(t,6.6,7.6), dim=1-0.82*cs;
+    var ca=$("cann2");
+    if(cur && cs===0){ var p=seg(t,cur[1],cur[2]); var sw=Math.sin(p*Math.PI); var x=60+ (p)*660, y=y0+(ends[cur[0]]-y0)*p; ca.setAttribute("transform","translate("+(x)+" "+y+") rotate("+Math.atan2(ends[cur[0]]-y0,660)*57.3+")"); ca.setAttribute("opacity",1); }
+    else ca.setAttribute("opacity",0);
+    ["k1","k2","k3"].forEach(function(id,i){ $(id).setAttribute("opacity", (t>tracks[i][1]-0.3?0.7:0.15)*dim); });
+    globes.forEach(function(gl){ var tr=tracks[gl.row], n=rows[gl.row][1]; var st=tr[1]+ (gl.k/n)*(tr[2]-tr[1]);
+      var p=seg(t,st,st+0.35); gl.g.setAttribute("opacity",p*dim); gl.g.setAttribute("transform","translate("+gl.x*(1-p)*0+" 0) scale(1)");
+      gl.g.style.transformOrigin=gl.x+"px "+gl.y+"px"; gl.g.style.transform="scale("+(0.3+0.7*p)+")"; });
+    $("t2a").setAttribute("opacity",seg(t,2.0,3.0));
+    $("contrast").setAttribute("opacity",cs); $("core").setAttribute("opacity",ease(seg(t,7.2,8.8))*0.9);
+  }
+  function s3(t){
+    // 0-7s：血管逐步長入；顆粒逐步成熟；時間軸前進
+    ves.forEach(function(v,i){ var st=[0.6,1.2,1.8,2.4,3.2,3.8][i], p=ease(seg(t,st,st+1.8)); v.p.style.strokeDashoffset=v.L*(1-p); });
+    g3.forEach(function(c,i){ var p=ease(seg(t,3.0+i*1.1,4.6+i*1.1)); c.setAttribute("fill",lerpColor("#fbe3a6","#f0a81f",p)); c.setAttribute("r",26+2*Math.sin(Math.max(0,t-5)*2)*seg(t,5,7)); });
+    var px=110+580*seg(t,0.3,6.8); $("prog").setAttribute("x2",px);
+    [["n1",0.2],["n2",3.0],["n3",6.4]].forEach(function(a){ $(a[0]).setAttribute("fill",t>=a[1]?"#5aa2ff":"#2a3d57"); });
+    $("m1").setAttribute("opacity",seg(t,0.3,0.9)); $("m2").setAttribute("opacity",seg(t,3.0,3.6)); $("m3").setAttribute("opacity",seg(t,6.3,6.9));
+  }
+
+  // ---- 播放器 ----
+  var chaps=$("chaps"); CH.forEach(function(c,i){ var e=document.createElement("span"); e.className="chap"; e.textContent=(i+1)+". "+c.title; e.onclick=function(){ seekTo(c.t+0.01); }; chaps.appendChild(e); });
+  var T=0, playing=false, last=0, spoken=-1;
+  function fmt(s){ s=Math.floor(s); return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2); }
+  function update(){ render(T); $("seek").value=Math.round(T/TOTAL*1000); $("time").textContent=fmt(T)+" / "+fmt(TOTAL); $("play").textContent=playing?"暫停":(T>=TOTAL?"重播":"播放"); }
+  function speak(c){ if(!$("tts").checked||!window.speechSynthesis) return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(CH[c].cap); u.lang="zh-TW"; u.rate=1.05; speechSynthesis.speak(u); }
+  function chapOf(t){ return t<8?0:(t<17?1:2); }
+  function tick(ts){ if(!playing) return; var dt=(ts-last)/1000; last=ts; T=Math.min(TOTAL,T+dt);
+    var c=chapOf(T); if(c!==spoken){ spoken=c; speak(c); }
+    update(); if(T>=TOTAL){ playing=false; update(); return; } requestAnimationFrame(tick); }
+  function play(){ if(T>=TOTAL){ T=0; spoken=-1; } playing=true; last=performance.now(); requestAnimationFrame(tick); update(); }
+  function pause(){ playing=false; if(window.speechSynthesis) speechSynthesis.cancel(); update(); }
+  function seekTo(t){ T=clamp(t,0,TOTAL); spoken=-1; update(); }
+  $("play").onclick=function(){ playing?pause():play(); };
+  $("again").onclick=function(){ T=0; spoken=-1; play(); };
+  $("seek").oninput=function(){ seekTo(this.value/1000*TOTAL); };
+  update();
+})();
+</script>
+</body>
+</html>
