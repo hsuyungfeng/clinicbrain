@@ -31,7 +31,9 @@
 | 21. 臨床決策推理樹提煉、審核與檢索擴展 | 3/3 | Complete | 2026-10-12 |
 | 22. RAG 提問檢索優化、BM25 排序與結構化衛教生成 | 3/3 | Complete | 2026-10-14 |
 | 23. 競品／合作機構網站擷取器 | 3/3 | Complete | 2026-10-14 |
-| 24. 上傳中心增強（名稱欄位與網址解析） | 0/3 | Planned | - |
+| 24. 上傳中心增強（名稱欄位與網址解析） | 3/3 | Complete | 2026-10-14 |
+| 28. 病人端對話式諮詢與預生成 QA | 11/11 | Complete | 2026-10-19 |
+| 29. 一般醫學視覺解說卡（MVP） | 5/5 | Complete | 2026-10-19 |
 
 ## Phase Details
 
@@ -172,10 +174,10 @@
 **Scope**: 病人頁（不存問句、不收個資）、靜態與行為測試、副本實測、速率限制文件。不含留資表單與 doctor-toolbox 整合。
 
 ---
-### Phase 28: 病人端對話式諮詢與預生成 QA
+### Phase 28: 病人端對話式諮詢與預生成 QA (已完成)
 
 **Goal**: 讓病人端諮詢「先提供價值、後獲取資訊」：以已核准診所專屬資料＋一般醫學資料組稿，簡短、人性化、結尾單一追問與預約邀請；常見問題由夜間批次預生成（待審），即時生成僅處理未命中；查明並修復約 960 秒的生成耗時；修復答案被截斷導致就醫警訊遺失的 bug。
-**Status**: Executed（28-01~28-09 已實作並通過測試與最後檢查；28-07 Task 4/5〔專案外 /home/hsu/AGENTS.md tok/s 更正〕待使用者確認；尚未做真實服務端到端驗收）
+**Status**: Complete（28-01~28-11 全部實作並通過測試與最終審查；28-07 Task 4/5〔專案外 /home/hsu/AGENTS.md tok/s 更正〕待使用者確認；真實服務端到端驗收待實機執行）
 **Depends on**: Phase 26 (`/api/v1/general/consult`), Phase 27 (病人諮詢頁), Phase 20 (背景補齊), Phase 9 (夜間批次)
 **Scope**:
   1. 耗時根因調查（reasoning／max_tokens／重試）與修復；必要時背景生成＋前端輪詢。
@@ -186,29 +188,31 @@
   6. 24 小時預生成各主題主體醫學資訊（以 topic_key 追蹤）；伺服器固定單一診所設定（patient_clinic_id）使匿名諮詢可用該診所已核准資料。
 **Constraints**: 不得直接寫正式庫；不得啟用 systemd；不得重啟 llama-server；價格屏蔽與繁體中文規則照舊；未審 LLM 內容不得進公開快取（AGENTS 2.24 例外僅限即時標示未審的一般說明）。
 **Requirements**: P28-LAT, P28-TRUNC, P28-TPL, P28-PRE, P28-FRESH, P28-ASYNC, P28-CLINIC
-**Plans**: 9 plans
+**Plans**: 11 plans
 Plans:
-- [ ] 28-01-PLAN.md — 耗時修復：截斷偵測、病人端不重試、共用生成鎖、P28 需求條目（Wave 1）
-- [ ] 28-02-PLAN.md — 組稿純函式與句界截斷、rag_ask 修復（Wave 1）
-- [ ] 28-03-PLAN.md — 已核准資料組稿接入病人路由（Wave 2）
-- [ ] 28-05-PLAN.md — 24 小時新鮮度預生成規劃層（Wave 2）
-- [ ] 28-07-PLAN.md — 關思考實機探測（非自主，需核准）（Wave 2）
-- [ ] 28-04-PLAN.md — job 加輪詢與 consult.html（Wave 3）
-- [ ] 28-06-PLAN.md — 夜間批次階段 8 預生成、CLI（Wave 3）
-- [ ] 28-09-PLAN.md — 伺服器固定單一診所設定（patient_clinic_id）：匿名諮詢使用該診所已核准資料（Wave 4）
-- [ ] 28-08-PLAN.md — AGENTS.md 2.25 與 2.6／2.9 例外文件（Wave 5）
+- [x] 28-01-PLAN.md — 耗時修復：截斷偵測、病人端不重試、共用生成鎖、P28 需求條目（Wave 1）
+- [x] 28-02-PLAN.md — 組稿純函式與句界截斷、rag_ask 修復（Wave 1）
+- [x] 28-03-PLAN.md — 已核准資料組稿接入病人路由（Wave 2）
+- [x] 28-05-PLAN.md — 24 小時新鮮度預生成規劃層（Wave 2）
+- [x] 28-07-PLAN.md — 關思考實機探測（非自主，需核准）（Wave 2）
+- [x] 28-04-PLAN.md — job 加輪詢與 consult.html（Wave 3）
+- [x] 28-06-PLAN.md — 夜間批次階段 8 預生成、CLI（Wave 3）
+- [x] 28-09-PLAN.md — 伺服器固定單一診所設定（patient_clinic_id）：匿名諮詢使用該診所已核准資料（Wave 4）
+- [x] 28-08-PLAN.md — AGENTS.md 2.25 與 2.6／2.9 例外文件（Wave 5）
+- [x] 28-10-PLAN.md — 修復 P28 殘留缺口：已核准證據優先組稿、special 推理樹預生成入庫、LLM 失敗重排（Wave 6）
+- [x] 28-11-PLAN.md — 追問分類後退安全網、預生成 prompt 具體警訊強制與 1 次重試（Wave 7）
 
-### Phase 29: 一般醫學視覺解說卡（MVP）
+### Phase 29: 一般醫學視覺解說卡（MVP）(已完成)
 
-**Goal**: 以結構化 IR 與固定模板，為「自體脂肪移植」預生成 3 場景解說卡（共用、一律待審），醫師核准後在病人諮詢頁答案下方顯示，降低手術焦慮並導向預約；不收個資。
-**Status**: Planned（29-01~29-05 規劃中）
+**Goal**: 以結構化 IR 與固定模板，為「自體脂肪移植」預生成 4 場景解說卡（共用、一律待審），醫師核准後在病人諮詢頁答案下方顯示，降低手術焦慮並導向預約；不收個資。
+**Status**: Complete（29-01~29-05 全部實作、通過 16 檔 313 項驗收測試與全套 1,600 項回歸測試，並完成最終審查）
 **Depends on**: Phase 28（`/consult`、job 輪詢、審核閘門慣例）
 **Constraints**: 不收個資；LLM 只填說明文字；未審內容不得對外；`src/general/` 隱私守門不得放寬；不得直接寫正式庫。
 **Requirements**: P29-SCHEMA, P29-IR, P29-GEN, P29-REVIEW, P29-SERVE, P29-UI, P29-STATS, P29-DOC
 **Plans**: 5 plans
 Plans:
-- [ ] 29-01-PLAN.md — 資料表、遷移、IR 驗證與唯一寫入路徑（Wave 1）
-- [ ] 29-02-PLAN.md — 本地 LLM 預生成 CLI 與醫師審核 CLI（Wave 2）
-- [ ] 29-03-PLAN.md — 關鍵字比對、諮詢回應帶出動畫、匿名事件計數端點（Wave 2）
-- [ ] 29-04-PLAN.md — consult.html 解說卡（Wave 3）
-- [ ] 29-05-PLAN.md — AGENTS 2.26 與目錄文件（Wave 4）
+- [x] 29-01-PLAN.md — 資料表、遷移、IR 驗證與唯一寫入路徑（Wave 1）
+- [x] 29-02-PLAN.md — 本地 LLM 預生成 CLI 與醫師審核 CLI（Wave 2）
+- [x] 29-03-PLAN.md — 關鍵字比對、諮詢回應帶出動畫、匿名事件計數端點（Wave 2）
+- [x] 29-04-PLAN.md — consult.html 解說卡（Wave 3）
+- [x] 29-05-PLAN.md — AGENTS 2.26 與目錄文件（Wave 4）
