@@ -44,3 +44,4 @@ metrics:
 
 - `cfa906b`: `fix(phase29): 延遲匯入 deep_mask_prices 避免 src.visual.ir 與 src.api 循環匯入`
 - `e9ecf4f`: `docs(phase29): 新增 AGENTS.md 2.26 一般醫學視覺解說卡規範與第 4 節目錄結構`
+- 最終審查微調：將 `AGENTS.md` 2.26 節預生成函式名稱修正為實作的 `generate_ir`、`load_skeleton`、`build_prompt`、`parse_output`，並明確記載模型僅輸出純文字行（`場景1：…`，禁止含任何阿拉伯數字）。

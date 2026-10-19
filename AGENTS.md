@@ -642,7 +642,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 
 - **唯一寫入路徑、預生成與醫師審核 (`src/visual/writer.py`, `src/visual/generator.py`, `src/visual/review.py`)**：
   - **唯一權威寫入 (`upsert_assets`)**：整批先經 `validate_ir` 驗證，任一筆失敗整批拒絕。新列 `review_status` 恆為 `'pending'`；既有列若 `title`、`keywords` 或 `ir_json` 實質變更，重置 `review_status='pending'`、`reviewed_at=NULL` 並遞增 `content_version`；內容未變則冪等跳過。
-  - **骨架與本地 LLM 預生成 (`generate_visual_asset`, `scripts/generate_visual_assets.py`)**：場景結構（`blueprint`、場景 `title`、`labels`）由人工於 `data/visual/skeletons/<topic>.json` 定義（目前提供首個主題 `autologous-fat-grafting.json` 自體脂肪移植），本地 LLM 僅負責生成各場景的 `caption` JSON 陣列。使用 `VISUAL_SAMPLING`（`max_tokens=900`、`enable_thinking=False`），最多嘗試 2 次，受 `GENERATION_LOCK` 與 `nightly_batch_running` 互斥保護（忙碌回 `busy`），寫入狀態一律為 `pending`。
+  - **骨架與本地 LLM 預生成 (`generate_ir`, `load_skeleton`, `build_prompt`, `parse_output`, `scripts/generate_visual_assets.py`)**：場景結構（`blueprint`、場景 `title`、`labels`）由人工於 `data/visual/skeletons/<topic>.json` 定義（目前提供首個主題 `autologous-fat-grafting.json` 自體脂肪移植），本地 LLM 僅負責生成各場景的 `caption` 純文字行（`場景1：…`，且嚴禁含任何阿拉伯數字）。使用 `VISUAL_SAMPLING`（`max_tokens=900`、`enable_thinking=False`），最多嘗試 2 次，受 `GENERATION_LOCK` 與 `nightly_batch_running` 互斥保護（忙碌回 `busy`），寫入狀態一律為 `pending`。
   - **醫師審核閘門 (`set_review_status`, `visible_assets`, `scripts/review_visual.py`)**：提供 `list`、`show`、`approve`、`reject`、`reset` 子指令。`approve` 寫入前強制重跑 `validate_ir`；`visible_assets` 對外查詢 `review_status='approved'` 時逐筆再次執行 `validate_ir`，遭竄改之資料自動略過不外洩。
 
 - **服務端關鍵字比對與諮詢回應帶出 (`src/visual/match.py`, `src/general/patient_consult.py`)**：
