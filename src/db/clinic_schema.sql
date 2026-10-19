@@ -418,3 +418,40 @@ VALUES
 ('3503190424', '星期五', '09:00', '12:00', '13:30', '17:30'),
 ('3503190424', '星期六', '09:00', '12:00', NULL, NULL),
 ('3503190424', '星期日', NULL, NULL, NULL, NULL);
+
+-- ===== visual_assets BEGIN =====
+-- ========================================
+-- Visual Explainer Cards Tables (Phase 29: 一般醫學視覺解說卡)
+-- 說明：
+-- 1. visual_assets 為共用視覺資產表，無診所代碼（共用資產）。
+-- 2. review_status 預設為 pending，未經醫師審核通過絕不對外公開。
+-- 3. visual_stats 僅記錄匿名點閱與完成次數，不記錄任何問句、IP 或個資。
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS visual_assets (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic_key TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    keywords TEXT NOT NULL,
+    ir_json TEXT NOT NULL,
+    source_type TEXT NOT NULL CHECK(source_type IN ('manual', 'llm_generated')),
+    review_status TEXT NOT NULL DEFAULT 'pending' CHECK(review_status IN ('pending', 'approved', 'rejected')),
+    reviewed_at TEXT,
+    content_version INTEGER NOT NULL DEFAULT 1,
+    metadata TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS visual_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic_key TEXT NOT NULL,
+    stat_date TEXT NOT NULL,
+    event TEXT NOT NULL CHECK(event IN ('shown', 'completed')),
+    count INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(topic_key, stat_date, event)
+);
+
+CREATE INDEX IF NOT EXISTS idx_visual_stats_date ON visual_stats(stat_date);
+-- ===== visual_assets END =====

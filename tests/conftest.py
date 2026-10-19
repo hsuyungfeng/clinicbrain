@@ -72,7 +72,14 @@ def _ensure_faq_metadata(db_path: Path):
     apply_metadata_migration(db_path)
 
 
+def apply_visual_migration(db_path: Path):
+    """為測試複本套用 visual_assets 與 visual_stats 結構（預設不套用，各測試需要時顯式呼叫）。"""
+    from scripts.migrate_visual_assets import apply_visual_schema
+    apply_visual_schema(db_path)
+
+
 @pytest.fixture(scope="session")
+
 def session_db_path(tmp_path_factory) -> Path:
     """Session 層級的資料庫複本（供唯讀查詢與檢索測試使用）。"""
     if not PROD_DB_PATH.exists():
