@@ -1,0 +1,187 @@
+[
+  {
+    "description": "timeline with None params returns full defaults",
+    "blueprint": "timeline",
+    "input_params": null,
+    "expected": {
+      "milestones": ["術後初期", "微血管長入", "狀態穩定"],
+      "unit_effect": "mature",
+      "connectors": "vessels",
+      "units": 3
+    }
+  },
+  {
+    "description": "timeline with empty dict returns full defaults",
+    "blueprint": "timeline",
+    "input_params": {},
+    "expected": {
+      "milestones": ["術後初期", "微血管長入", "狀態穩定"],
+      "unit_effect": "mature",
+      "connectors": "vessels",
+      "units": 3
+    }
+  },
+  {
+    "description": "timeline overriding single primitive field units",
+    "blueprint": "timeline",
+    "input_params": {
+      "units": 4
+    },
+    "expected": {
+      "milestones": ["術後初期", "微血管長入", "狀態穩定"],
+      "unit_effect": "mature",
+      "connectors": "vessels",
+      "units": 4
+    }
+  },
+  {
+    "description": "timeline replacing entire milestones list",
+    "blueprint": "timeline",
+    "input_params": {
+      "milestones": ["第1天", "第7天", "第30天"]
+    },
+    "expected": {
+      "milestones": ["第1天", "第7天", "第30天"],
+      "unit_effect": "mature",
+      "connectors": "vessels",
+      "units": 3
+    }
+  },
+  {
+    "description": "contrast nested object partial omission on left",
+    "blueprint": "contrast",
+    "input_params": {
+      "left": {
+        "title": "集中填補"
+      }
+    },
+    "expected": {
+      "left": {
+        "title": "集中填補",
+        "note": "較易出現硬塊",
+        "mode": "mass"
+      },
+      "right": {
+        "title": "分層少量",
+        "note": "接觸周圍組織",
+        "mode": "layered",
+        "rows": 3,
+        "per_row": 5
+      }
+    }
+  },
+  {
+    "description": "contrast nested object partial omission on right rows and per_row",
+    "blueprint": "contrast",
+    "input_params": {
+      "right": {
+        "rows": 2,
+        "per_row": 4
+      }
+    },
+    "expected": {
+      "left": {
+        "title": "單處過量",
+        "note": "較易出現硬塊",
+        "mode": "mass"
+      },
+      "right": {
+        "title": "分層少量",
+        "note": "接觸周圍組織",
+        "mode": "layered",
+        "rows": 2,
+        "per_row": 4
+      }
+    }
+  },
+  {
+    "description": "process_diagram overriding single integer particles",
+    "blueprint": "process_diagram",
+    "input_params": {
+      "particles": 8
+    },
+    "expected": {
+      "source": {
+        "label": "皮下脂肪",
+        "fill": "skin"
+      },
+      "particles": 8,
+      "container_layers": [
+        {"label": "油滴", "fill": "oil", "weight": 2, "keep": false},
+        {"label": "純化脂肪", "fill": "fat", "weight": 3, "keep": true},
+        {"label": "血水", "fill": "blood", "weight": 2, "keep": false}
+      ],
+      "step_labels": ["微創抽取", "離心分層", "保留純化脂肪"]
+    }
+  },
+  {
+    "description": "process_diagram nested source partial override of label",
+    "blueprint": "process_diagram",
+    "input_params": {
+      "source": {
+        "label": "淺層脂肪"
+      }
+    },
+    "expected": {
+      "source": {
+        "label": "淺層脂肪",
+        "fill": "skin"
+      },
+      "particles": 5,
+      "container_layers": [
+        {"label": "油滴", "fill": "oil", "weight": 2, "keep": false},
+        {"label": "純化脂肪", "fill": "fat", "weight": 3, "keep": true},
+        {"label": "血水", "fill": "blood", "weight": 2, "keep": false}
+      ],
+      "step_labels": ["微創抽取", "離心分層", "保留純化脂肪"]
+    }
+  },
+  {
+    "description": "process_diagram replacing container_layers list entirely",
+    "blueprint": "process_diagram",
+    "input_params": {
+      "container_layers": [
+        {"label": "上層油", "fill": "oil", "weight": 1, "keep": false},
+        {"label": "精華層", "fill": "gel", "weight": 4, "keep": true}
+      ]
+    },
+    "expected": {
+      "source": {
+        "label": "皮下脂肪",
+        "fill": "skin"
+      },
+      "particles": 5,
+      "container_layers": [
+        {"label": "上層油", "fill": "oil", "weight": 1, "keep": false},
+        {"label": "精華層", "fill": "gel", "weight": 4, "keep": true}
+      ],
+      "step_labels": ["微創抽取", "離心分層", "保留純化脂肪"]
+    }
+  },
+  {
+    "description": "contrast nested overrides on both left and right modes",
+    "blueprint": "contrast",
+    "input_params": {
+      "left": {
+        "mode": "scattered"
+      },
+      "right": {
+        "mode": "mass"
+      }
+    },
+    "expected": {
+      "left": {
+        "title": "單處過量",
+        "note": "較易出現硬塊",
+        "mode": "scattered"
+      },
+      "right": {
+        "title": "分層少量",
+        "note": "接觸周圍組織",
+        "mode": "mass",
+        "rows": 3,
+        "per_row": 5
+      }
+    }
+  }
+]
