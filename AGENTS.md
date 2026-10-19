@@ -621,6 +621,55 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - `tests/test_patient_prefill_special_e2e.py`：special 推理樹預生成核准後直答、未設定不命中、錯誤診所不命中 e2e 測試。
   - `tests/test_general_privacy.py`：一般諮詢隱私守門測試（AST 語法樹靜態掃描確保無 logging、print 或非 SELECT execute）。
 
+### 2.26 一般醫學視覺解說卡（Phase 29 新增）
+
+為協助病患在諮詢時以圖解步驟理解一般醫學原理與照護流程，自 Phase 29 起建立一般醫學視覺解說卡（Visual Explainer Cards）架構：
+
+- **定位與使用者決策**：
+  - **純一般醫學知識說明**：解說卡僅提供通用醫學與衛教概念圖解，非個人化診斷，亦非特定診所療效承諾。
+  - **合作診所共用資產**：`visual_assets` 資料表刻意不設 `clinic_id` 欄位，屬於跨診所共用的一般醫學圖解資產。
+  - **零個資收集**：解說卡與諮詢頁絕不收集姓名、電話、LINE 或任何表單輸入；預約導流維持既有的單一外部連結 `https://doctor-toolbox.com/`。
+
+- **Typed IR 規格與唯一權威驗證 (`src/visual/ir.py`)**：
+  - **結構限制**：頂層鍵必須嚴格為 `{"topic_key", "title", "keywords", "scenes"}`（不允許額外鍵）。`topic_key` 符合 `^[a-z0-9-]{3,64}$`；`title` 為 1～30 字；`keywords` 為 1～8 個（每個 2～12 字）；`scenes` 為 3～5 個場景。
+  - **場景與標籤**：每個場景必須含 `{"blueprint", "title", "caption", "labels"}`。`blueprint` 僅限 `"process_diagram"`、`"contrast"`、`"timeline"` 三種固定模板；場景 `title` 1～16 字、`caption` 20～120 字；`labels` 為 0～4 個 `{"text": 1~12字, "tone": "neutral"|"warning"|"optimal"}`。
+  - **單一權威驗證 (`validate_ir` / `validate_visual_text`)**：入庫、審核與對外展示前皆強制執行檢驗。除重用 `validate_single_faq(..., check_dosage=True, require_doctor_warning=False)` 與 `deep_mask_prices(text) == text` 攔截價格、簡體字、政治爭議詞、通用保證療效與用藥劑量外，另禁止 HTML 標籤字元（`<`、`>`）、網址（`http://`、`https://`、`www.`、`://`）、`javascript:`、百分比數字（`\d+\s*[%％]`）及視覺卡專屬額外禁詞 `VISUAL_EXTRA_FORBIDDEN`（`永久`、`終身`、`一輩子`、`成為身體一部分`、`百分之`、`存活率`、`保證`、`一定能`、`一定會`、`一定有效`、`絕對`、`完全不會`、`零風險`；刻意不單列「一定」以免誤殺「一定程度」「不一定」「一定時間」）。
+  - **零原文錯誤碼**：驗證失敗僅回傳固定英文代碼（`schema_error`、`unknown_blueprint`、`text_unsafe`、`forbidden_phrase`、`price_leak`、`simplified_chinese`、`dosage_prescription`），絕不將違規原文放入錯誤訊息或日誌。
+
+- **資料表與單一來源遷移 (`src/db/clinic_schema.sql`, `scripts/migrate_visual_assets.py`)**：
+  - **DDL 位置與回歸保護**：`visual_assets` 與 `visual_stats` 定義於 `src/db/clinic_schema.sql` 最末端 `Sample Data` 標記之後，並以 `-- ===== visual_assets BEGIN/END =====` 包夾，確保舊遷移腳本與 `tests/conftest.py` 的歷史擷取邏輯不含 `visual_` 表。
+  - **手動遷移與 Fail-Closed**：正式庫不自動建表，須先備份再執行 `python3 scripts/migrate_visual_assets.py --db-path <path> --confirm-prod-backup`（支援 `--dry-run`）。未遷移時：讀取端（`visible_assets`、`find_visual`）回傳空或 `None`，寫入與審核端拋出 `RuntimeError`，匿名計數端安全回傳 `False`。
+
+- **唯一寫入路徑、預生成與醫師審核 (`src/visual/writer.py`, `src/visual/generator.py`, `src/visual/review.py`)**：
+  - **唯一權威寫入 (`upsert_assets`)**：整批先經 `validate_ir` 驗證，任一筆失敗整批拒絕。新列 `review_status` 恆為 `'pending'`；既有列若 `title`、`keywords` 或 `ir_json` 實質變更，重置 `review_status='pending'`、`reviewed_at=NULL` 並遞增 `content_version`；內容未變則冪等跳過。
+  - **骨架與本地 LLM 預生成 (`generate_visual_asset`, `scripts/generate_visual_assets.py`)**：場景結構（`blueprint`、場景 `title`、`labels`）由人工於 `data/visual/skeletons/<topic>.json` 定義（目前提供首個主題 `autologous-fat-grafting.json` 自體脂肪移植），本地 LLM 僅負責生成各場景的 `caption` JSON 陣列。使用 `VISUAL_SAMPLING`（`max_tokens=900`、`enable_thinking=False`），最多嘗試 2 次，受 `GENERATION_LOCK` 與 `nightly_batch_running` 互斥保護（忙碌回 `busy`），寫入狀態一律為 `pending`。
+  - **醫師審核閘門 (`set_review_status`, `visible_assets`, `scripts/review_visual.py`)**：提供 `list`、`show`、`approve`、`reject`、`reset` 子指令。`approve` 寫入前強制重跑 `validate_ir`；`visible_assets` 對外查詢 `review_status='approved'` 時逐筆再次執行 `validate_ir`，遭竄改之資料自動略過不外洩。
+
+- **服務端關鍵字比對與諮詢回應帶出 (`src/visual/match.py`, `src/general/patient_consult.py`)**：
+  - **確定性子字串比對 (`find_visual`)**：純 `SELECT` 模組（無寫入、無 logging、無 print），對問句與已核准資產之 `keywords` 執行 `NFKC` 正規化並轉小寫後計算命中數；命中 0 回傳 `None`，多筆取命中數最高者（同分取字典序較小之 `topic_key`）。對外整形僅保留 `{"topic_key", "title", "scenes"}`，排除資料庫 `id`、`ir_json` 原文、審核欄位、`metadata` 與 `keywords`。
+  - **附帶條件**：`patient_consult` 僅在 `status` 為 `"answered"` 或 `"llm_general"` 的回傳點附加 `find_visual` 結果（並隨 `/api/v1/general/consult` 與 `/api/v1/general/consult/jobs` 回應帶出）；`red_flag`、`no_match`、`busy` 狀態永不附帶動畫（一律為 `None`）。`GET /consult/jobs/{id}` 維持純記憶體輪詢零資料庫連線。
+
+- **匿名事件計數與前端安全渲染 (`src/visual/stats.py`, `src/web/static/consult.html`)**：
+  - **匿名日聚合計數 (`record_event`, `POST /api/v1/general/visual/event`)**：僅收白名單事件 `shown` 與 `completed`（由 `VisualEventRequest(extra="forbid")` 與 `AnonymousRoute` 把關，格式不符回固定 422 `{"detail": "請求格式不正確"}`），且 `topic_key` 須為 `visible_assets` 中已核准主題才以獨立連線 UPSERT `visual_stats`（同日同事件 `count + 1`）；未核准主題、缺表或寫入失敗一律全吞並回傳固定 200 `{"ok": true}`，不記 IP、標頭或問句，路徑亦受 `/api/v1/general` 存取日誌過濾器保護。
+  - **前端安全與無障礙 (`consult.html`)**：僅當回應 `status` 為 `answered` 或 `llm_general` 且 `visual.scenes` 為 3～5 筆時顯示解說卡；所有動態文字一律以 `textContent` 寫入，三種場景圖解以 `document.createElementNS("http://www.w3.org/2000/svg", ...)` 建立固定 SVG，嚴禁 `innerHTML`、`insertAdjacentHTML`、`document.write`、`eval`、`setInterval` 或外部資源；以「上一步／下一步」按鈕手動切換並支援 `@media (prefers-reduced-motion: reduce)`；卡片底部固定顯示前端常數免責文字「一般醫學知識說明，非個人化診斷；實際狀況須由醫師當面評估」；首次顯示回報 `shown`、首次到達最後一幕回報 `completed`。
+
+- **已知限制**：
+  1. 醫學敘述之臨床正確性最終仰賴醫師透過審核工具人工把關核准。
+  2. 關鍵字比對採確定性子字串匹配，若病患提問措辭與預設關鍵字差異較大，將不會觸發解說卡顯示。
+  3. 目前僅建立 1 個骨架主題（`autologous-fat-grafting` 自體脂肪移植）。
+  4. 真實本地 LLM 生成品質與解說卡對預約諮詢之轉換成效**待驗證**。
+
+- **測試清單**：
+  - `tests/test_migrate_visual_assets.py`：單一來源遷移、冪等性、未確認備份拒絕、舊遷移與 conftest 不含 `visual_` 回歸測試。
+  - `tests/test_visual_ir.py`：Typed IR 結構、三種 blueprint、禁詞、百分比、價格與劑量攔截、錯誤碼零原文洩漏測試。
+  - `tests/test_visual_writer.py`：唯一寫入路徑 `upsert_assets`、內容變更重置 `pending`、核准前重驗、`visible_assets` 竄改防禦測試。
+  - `tests/test_visual_generator.py`：骨架載入、prompt 組裝、重試上限、生成鎖與夜間批次互斥測試。
+  - `tests/test_visual_cli.py`：預生成 CLI 與醫師審核 CLI（`list`/`show`/`approve`/`reject`/`reset`）測試。
+  - `tests/test_visual_match.py`：關鍵字比對確定性、輸出整形、Fail-Closed 與 AST 純讀取掃描測試。
+  - `tests/test_visual_serving.py`：諮詢回應與非同步 job 帶出解說卡、紅旗/no_match/busy 不附帶、輪詢零資料庫連線測試。
+  - `tests/test_visual_stats.py`：匿名事件計數累加、未核准忽略、422 固定訊息、存取日誌過濾與隱私測試。
+  - `tests/test_consult_visual_ui.py`：諮詢頁解說卡靜態安全掃描、三種 SVG 模板、免責常數與事件回報測試。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -718,6 +767,12 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `data/scraper/sources.json`：網址擷取白名單（`www.nu-vendome.com` 的 `/location-detail/`、`/service/`、`/service-detail/`）
 * `tests/test_service_detail.py`、`tests/test_timetable.py`、`tests/test_clinic_selector.py`、`tests/test_url_deps_resolver.py`：上述模組與診所管理相關測試
 * `tests/test_patient_consult_latency.py`、`tests/test_answer_compose.py`、`tests/test_patient_compose.py`、`tests/test_consult_jobs.py`、`tests/test_patient_prefill_plan.py`、`tests/test_patient_prefill_batch.py`、`tests/test_patient_prefill_e2e.py`、`tests/test_probe_patient_thinking.py`、`tests/test_patient_clinic_scope.py`、`tests/test_patient_prefill_special_e2e.py`：Phase 28 病人端對話式諮詢、延遲修復、非同步作業、24 小時預生成與伺服器固定診所範圍測試
+* `src/visual/`：一般醫學視覺解說卡核心模組（`__init__.py`, `ir.py`, `writer.py`, `review.py`, `generator.py`, `match.py`, `stats.py`）
+* `data/visual/skeletons/autologous-fat-grafting.json`：自體脂肪移植視覺解說卡固定場景骨架定義檔
+* `scripts/migrate_visual_assets.py`：`visual_assets` 與 `visual_stats` 單一來源 DDL 遷移腳本（`--confirm-prod-backup`、`--dry-run`）
+* `scripts/generate_visual_assets.py`：視覺解說卡本地 LLM 預生成 CLI 腳本（寫入狀態恆為 `pending`）
+* `scripts/review_visual.py`：視覺解說卡醫師審核 CLI 工具（`list`/`show`/`approve`/`reject`/`reset`）
+* `tests/test_migrate_visual_assets.py`、`tests/test_visual_ir.py`、`tests/test_visual_writer.py`、`tests/test_visual_generator.py`、`tests/test_visual_cli.py`、`tests/test_visual_match.py`、`tests/test_visual_serving.py`、`tests/test_visual_stats.py`、`tests/test_consult_visual_ui.py`：Phase 29 一般醫學視覺解說卡資料層、IR 驗證、預生成、審核、比對、事件計數與前端渲染測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
