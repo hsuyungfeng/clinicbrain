@@ -86,10 +86,12 @@ def _local_llm_ask_call(prompt: str) -> str:
 
 
 def _visual_llm_call(prompt: str) -> str:
-    """呼叫本地 LLM 生成動畫草稿（使用 VISUAL_SAMPLING 取樣參數；測試時可由 monkeypatch 替換）。"""
+    """呼叫本地 LLM 生成動畫草稿（使用 VISUAL_SAMPLING 並擴充 token 上限至 1800；測試時可由 monkeypatch 替換）。"""
     from ...pageindex.llm_client import VISUAL_SAMPLING, local_llm_call
 
-    return local_llm_call(prompt, timeout=180, sampling=dict(VISUAL_SAMPLING))
+    sampling = dict(VISUAL_SAMPLING)
+    sampling["max_tokens"] = max(int(sampling.get("max_tokens", 900)), 1800)
+    return local_llm_call(prompt, timeout=240, sampling=sampling)
 
 
 class BatchReviewRequest(BaseModel):

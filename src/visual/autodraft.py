@@ -138,9 +138,21 @@ def fetch_eligible_trees(
     return result
 
 
+def _resolve_tree_title(tree: dict[str, Any]) -> str:
+    """從推理樹取得繁體中文主題名稱；若 title 為空則自 summary_text 擷取『XX術前』前綴。"""
+    raw_title = (tree.get("title") or "").strip()
+    if raw_title:
+        return raw_title
+    summary = (tree.get("summary_text") or "").strip()
+    m = re.match(r"^([\u4e00-\u9fffA-Za-z]{2,15}?)(?:術前|療程|手術|治療)", summary)
+    if m:
+        return m.group(1).strip()
+    return (tree.get("doc_id") or "醫療療程").strip()
+
+
 def build_tree_visual_prompt(tree: dict[str, Any]) -> str:
     """依據推理樹內容組裝自動生成 3 場景視覺解說卡 Typed IR 的 LLM 提示詞。"""
-    title = tree.get("title") or tree.get("doc_id") or "醫療療程"
+    title = _resolve_tree_title(tree)
     summary = tree.get("summary_text") or ""
     pre_op = tree.get("pre_op") or ""
     procedure = tree.get("procedure") or ""
@@ -477,8 +489,10 @@ def parse_and_build_tree_ir(
 
 
 def _default_visual_llm(prompt: str) -> str:
-    """預設本地 LLM 呼叫包裝。"""
-    return local_llm_call(prompt, timeout=180, sampling=dict(VISUAL_SAMPLING))
+    """預設本地 LLM 呼叫包裝（3 場景完整 JSON 含 params 需較高 token 上限）。"""
+    sampling = dict(VISUAL_SAMPLING)
+    sampling["max_tokens"] = max(int(sampling.get("max_tokens", 900)), 1800)
+    return local_llm_call(prompt, timeout=240, sampling=sampling)
 
 
 def autodraft_from_tree(
@@ -531,7 +545,8 @@ def autodraft_from_tree(
 
     act_llm = llm_call or _default_visual_llm
     prompt = build_tree_visual_prompt(tree)
-    fallback_title = tree.get("title") or f"{doc_id}手術原理"
+    resolved_title = _resolve_tree_title(tree)
+    fallback_title = f"{resolved_title}原理圖解" if not resolved_title.endswith("原理") else resolved_title
 
     try:
         last_code = "parse_error"

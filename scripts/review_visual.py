@@ -61,19 +61,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     subparsers = parser.add_subparsers(dest="subcommand", help="審核子命令")
 
     p_list = subparsers.add_parser("list", help="列出所有視覺解說卡資產與狀態")
-    p_list.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
+    p_list.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
 
     p_show = subparsers.add_parser("show", help="檢視指定主題之完整場景內容")
     p_show.add_argument("topic_key", type=str, help="主題識別碼 (topic_key)")
-    p_show.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
+    p_show.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
 
     p_app = subparsers.add_parser("approve", help="核准指定主題之視覺解說卡")
     p_app.add_argument("topic_key", type=str, help="欲核准之主題識別碼 (topic_key)")
-    p_app.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
+    p_app.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
 
     p_rej = subparsers.add_parser("reject", help="駁回指定主題之視覺解說卡")
     p_rej.add_argument("topic_key", type=str, help="欲駁回之主題識別碼 (topic_key)")
-    p_rej.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
+    p_rej.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
 
     args = parser.parse_args(argv)
     if not args.subcommand:
@@ -115,11 +115,17 @@ def main(argv: Optional[list[str]] = None) -> int:
             has_clinic_col = "clinic_id" in [r[1] for r in cur.fetchall()]
 
             if has_clinic_col:
-                cur.execute(
-                    "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at, clinic_id "
-                    "FROM visual_assets WHERE clinic_id IS ? ORDER BY id ASC",
-                    (clinic_id,),
-                )
+                if clinic_id is not None:
+                    cur.execute(
+                        "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at, clinic_id "
+                        "FROM visual_assets WHERE clinic_id IS ? ORDER BY id ASC",
+                        (clinic_id,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at, clinic_id "
+                        "FROM visual_assets ORDER BY id ASC"
+                    )
             else:
                 cur.execute(
                     "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at "
