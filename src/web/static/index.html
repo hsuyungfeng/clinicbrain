@@ -35,6 +35,9 @@
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-trees">
                 🌳 臨床推理樹簽核
             </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-visuals">
+                🎬 待簽核動畫
+            </button>
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-upload">
                 📁 文件拖曳上傳中心
             </button>
@@ -52,7 +55,7 @@
         <!-- 頁籤 1：總覽儀表板 -->
         <section id="tab-dashboard" class="tab-content block">
             <h2 class="text-lg font-bold text-gray-800 mb-4">系統狀態與統計摘要</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
                     <div class="text-xs text-gray-500 font-medium">待簽核 FAQ 草稿</div>
                     <div id="statPendingTotal" class="text-2xl font-bold text-amber-600 mt-1">--</div>
@@ -62,6 +65,11 @@
                     <div class="text-xs text-gray-500 font-medium">待簽核推理樹</div>
                     <div id="statTreesPendingTotal" class="text-2xl font-bold text-emerald-600 mt-1">--</div>
                     <div class="text-xs text-gray-400 mt-1">臨床決策樹草稿</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                    <div class="text-xs text-gray-500 font-medium">待簽核動畫</div>
+                    <div id="statVisualsPendingTotal" class="text-2xl font-bold text-purple-600 mt-1">--</div>
+                    <div class="text-xs text-gray-400 mt-1">解說卡動畫草稿</div>
                 </div>
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
                     <div class="text-xs text-gray-500 font-medium">已發布衛教問答</div>
@@ -209,6 +217,49 @@
             <div id="treesContainer" class="space-y-6">
                 <div class="skeleton"></div>
                 <div class="skeleton"></div>
+            </div>
+        </section>
+
+        <!-- 頁籤：待簽核動畫 (Phase 31) -->
+        <section id="tab-visuals" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h2 class="text-lg font-bold text-gray-800">🎬 待簽核視覺解說動畫 (Visual Explainer Review)</h2>
+                <div class="flex space-x-3 items-center flex-wrap gap-2">
+                    <select id="visualsFilterClinic" aria-label="診所篩選" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="">全部診所</option>
+                    </select>
+                    <select id="visualsFilterScope" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="all">全部範圍 (all)</option>
+                        <option value="clinic">診所專屬 (clinic)</option>
+                        <option value="general">一般醫學共用 (general)</option>
+                    </select>
+                    <select id="visualsFilterStatus" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="pending">待簽核 (pending)</option>
+                        <option value="approved">已發布 (approved)</option>
+                        <option value="rejected">已駁回 (rejected)</option>
+                        <option value="all">全部狀態 (all)</option>
+                    </select>
+                    <button id="btnRefreshVisuals" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded transition">
+                        重新整理
+                    </button>
+                </div>
+            </div>
+
+            <!-- 自動生成工具列 -->
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <label for="visualsTreeSelect" class="text-sm font-medium text-gray-700">由已核准推理樹生成動畫草稿：</label>
+                    <select id="visualsTreeSelect" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white max-w-md">
+                        <option value="">-- 請選擇已核准推理樹 --</option>
+                    </select>
+                </div>
+                <button id="btnAutodraftVisual" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded transition font-medium shadow-sm flex items-center space-x-1">
+                    <span>✨ 由推理樹生成動畫草稿</span>
+                </button>
+            </div>
+
+            <div id="visualsContainer" class="space-y-6">
+                <!-- 動畫審核卡片動態載入 -->
             </div>
         </section>
 
@@ -431,6 +482,7 @@
         </div>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/admin/visual_engine.js"></script>
     <script src="/admin/app.js"></script>
     <!-- 共用：新增診所對話框（任一機構代碼下拉選單選「＋ 新增診所」時開啟） -->
     <div id="clinicCreateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="clinicCreateTitle">

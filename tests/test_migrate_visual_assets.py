@@ -75,9 +75,11 @@ def test_extract_visual_ddl():
     ddl = extract_visual_ddl(schema_text)
 
     assert "CREATE TABLE IF NOT EXISTS visual_assets" in ddl
+    assert "clinic_id TEXT REFERENCES clinic_info(clinic_id)" in ddl
+    assert "idx_visual_assets_general_topic" in ddl
+    assert "idx_visual_assets_clinic_id" in ddl
     assert "CREATE TABLE IF NOT EXISTS visual_stats" in ddl
     assert "CREATE INDEX IF NOT EXISTS idx_visual_stats_date" in ddl
-    assert "clinic_id" not in ddl.split("visual_assets")[1].split("visual_stats")[0], "visual_assets 不得含 clinic_id"
 
     # 若缺少起始標記應拋出 RuntimeError
     with pytest.raises(RuntimeError):
@@ -96,6 +98,7 @@ def test_apply_visual_schema_and_idempotence(isolated_db_path):
     cursor.execute("PRAGMA table_info(visual_assets)")
     asset_cols = {row[1]: row[2] for row in cursor.fetchall()}
     assert "id" in asset_cols
+    assert "clinic_id" in asset_cols, "visual_assets 必須含 clinic_id 欄位"
     assert "topic_key" in asset_cols
     assert "title" in asset_cols
     assert "keywords" in asset_cols
@@ -107,7 +110,12 @@ def test_apply_visual_schema_and_idempotence(isolated_db_path):
     assert "metadata" in asset_cols
     assert "created_at" in asset_cols
     assert "updated_at" in asset_cols
-    assert "clinic_id" not in asset_cols, "visual_assets 不得含 clinic_id 欄位"
+
+    # 驗證索引
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_visual_assets_general_topic'")
+    assert cursor.fetchone() is not None
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_visual_assets_clinic_id'")
+    assert cursor.fetchone() is not None
 
     # 驗證 visual_stats
     cursor.execute("PRAGMA table_info(visual_stats)")
@@ -126,6 +134,97 @@ def test_apply_visual_schema_and_idempotence(isolated_db_path):
 
     # 第二次套用（冪等性測試）
     apply_visual_schema(isolated_db_path)
+
+
+def test_table_rebuild_migration_from_old_schema(isolated_db_path):
+    """驗證舊表（無 clinic_id）在既有資料下執行無損重建遷移。"""
+    conn = sqlite3.connect(str(isolated_db_path))
+    # 建立舊版 Phase 29 表（無 clinic_id）
+    conn.executescript("""
+        CREATE TABLE visual_assets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic_key TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            keywords TEXT NOT NULL,
+            ir_json TEXT NOT NULL,
+            source_type TEXT NOT NULL CHECK(source_type IN ('manual', 'llm_generated')),
+            review_status TEXT NOT NULL DEFAULT 'pending' CHECK(review_status IN ('pending', 'approved', 'rejected')),
+            reviewed_at TEXT,
+            content_version INTEGER NOT NULL DEFAULT 1,
+            metadata TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO visual_assets (
+            topic_key, title, keywords, ir_json, source_type,
+            review_status, reviewed_at, content_version, metadata
+        )
+        VALUES (
+            'fat-grafting', '自體脂肪移植', '["抽脂", "補脂"]', '{"scenes":[]}', 'manual',
+            'approved', '2026-10-19T10:00:00', 2, '{"author": "doctor"}'
+        );
+    """)
+    conn.commit()
+    conn.close()
+
+    # 執行升級遷移
+    apply_visual_schema(isolated_db_path)
+
+    conn = sqlite3.connect(str(isolated_db_path))
+    cursor = conn.cursor()
+
+    # 1. 驗證欄位已包含 clinic_id
+    cursor.execute("PRAGMA table_info(visual_assets)")
+    cols = {row[1]: row[2] for row in cursor.fetchall()}
+    assert "clinic_id" in cols
+
+    # 2. 驗證既有資料列完整保留且 clinic_id IS NULL
+    cursor.execute("SELECT id, clinic_id, topic_key, title, review_status, content_version, metadata FROM visual_assets")
+    row = cursor.fetchone()
+    assert row is not None
+    assert row[1] is None  # clinic_id 為 NULL
+    assert row[2] == "fat-grafting"
+    assert row[3] == "自體脂肪移植"
+    assert row[4] == "approved"
+    assert row[5] == 2
+    assert row[6] == '{"author": "doctor"}'
+
+    # 3. 驗證同一診所與一般醫學可擁有相同 topic_key
+    cursor.execute(
+        """
+        INSERT INTO visual_assets (clinic_id, topic_key, title, keywords, ir_json, source_type, review_status)
+        VALUES ('3503190424', 'fat-grafting', '緻妍自體脂肪', '["補脂"]', '{"scenes":[]}', 'manual', 'pending')
+        """
+    )
+    conn.commit()
+
+    # 4. 同為 NULL 的相同 topic_key 會觸發 IntegrityError（由部分唯一索引保護）
+    with pytest.raises(sqlite3.IntegrityError):
+        cursor.execute(
+            """
+            INSERT INTO visual_assets (clinic_id, topic_key, title, keywords, ir_json, source_type, review_status)
+            VALUES (NULL, 'fat-grafting', '重複一般醫學', '[]', '{}', 'manual', 'pending')
+            """
+        )
+
+    # 5. 同診所的相同 topic_key 也會觸發 IntegrityError（由 UNIQUE(clinic_id, topic_key) 保護）
+    with pytest.raises(sqlite3.IntegrityError):
+        cursor.execute(
+            """
+            INSERT INTO visual_assets (clinic_id, topic_key, title, keywords, ir_json, source_type, review_status)
+            VALUES ('3503190424', 'fat-grafting', '重複診所資產', '[]', '{}', 'manual', 'pending')
+            """
+        )
+
+    conn.close()
+
+    # 再次執行 apply_visual_schema（冪等性驗證，且既有資料包含非 NULL clinic_id）
+    apply_visual_schema(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM visual_assets")
+    assert cursor.fetchone()[0] == 2
+    conn.close()
 
 
 def test_visual_tables_constraints(isolated_db_path):

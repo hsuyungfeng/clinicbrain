@@ -71,10 +71,10 @@ class PatientConsultResult:
     visual: dict | None = None
 
 
-def _safe_find_visual(conn: sqlite3.Connection, query: str) -> dict | None:
+def _safe_find_visual(conn: sqlite3.Connection, query: str, clinic_id: str | None = None) -> dict | None:
     """安全呼叫 find_visual，任何例外皆視為 None（Fail-Closed）。"""
     try:
-        return find_visual(conn, query)
+        return find_visual(conn, query, clinic_id=clinic_id)
     except Exception:
         return None
 
@@ -161,7 +161,7 @@ def patient_consult(
                 disclaimer=found.disclaimer,
                 label=None,
                 booking_url=BOOKING_URL,
-                visual=_safe_find_visual(conn, query),
+                visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
             )
         elif has_general_evidence and filtered_found.message:
             return PatientConsultResult(
@@ -170,7 +170,7 @@ def patient_consult(
                 disclaimer=found.disclaimer,
                 label=None,
                 booking_url=BOOKING_URL,
-                visual=_safe_find_visual(conn, query),
+                visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
             )
 
     # 同一題已有一般草稿：直接沿用，不再呼叫模型（待審重用答案，駁回則回固定文字）
@@ -184,7 +184,7 @@ def patient_consult(
                 disclaimer=LLM_DISCLAIMER,
                 label=LLM_LABEL,
                 booking_url=BOOKING_URL,
-                visual=_safe_find_visual(conn, query),
+                visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
             )
         return PatientConsultResult(
             status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
@@ -212,7 +212,7 @@ def patient_consult(
             disclaimer=LLM_DISCLAIMER,
             label=LLM_LABEL,
             booking_url=BOOKING_URL,
-            visual=_safe_find_visual(conn, query),
+            visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
         )
     except (GeneralDraftError, LLMEmptyOutputError, LLMTruncatedError, LocalLLMUnavailableError, RuntimeError):
         # 驗證未通過、輸出截斷、LLM 離線或資料庫未遷移：回固定文字，不外露內部細節

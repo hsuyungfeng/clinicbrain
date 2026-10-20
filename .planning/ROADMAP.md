@@ -34,6 +34,8 @@
 | 24. 上傳中心增強（名稱欄位與網址解析） | 3/3 | Complete | 2026-10-14 |
 | 28. 病人端對話式諮詢與預生成 QA | 11/11 | Complete | 2026-10-19 |
 | 29. 一般醫學視覺解說卡（MVP） | 5/5 | Complete | 2026-10-19 |
+| 30. 資料驅動的視覺場景引擎 | 6/6 | Complete | 2026-10-20 |
+| 31. 由 PageIndex 自動生成動畫草稿、待簽核動畫分頁、診所優先 | 5/5 | Complete | 2026-10-20 |
 
 ## Phase Details
 
@@ -220,15 +222,29 @@ Plans:
 ### Phase 30: 資料驅動的視覺場景引擎
 
 **Goal**: 把解說動畫的三種場景做成參數化 blueprint 元件（進度 u 的純函式），新主題只需骨架 JSON（參數＋說明文字），不改 JS；以第二個主題（玻尿酸填充）零 JS 改動證明引擎成立。
-**Status**: Executed（30-01~30-06 已實作；Claude 最後檢查已用真實 llama-server＋真實瀏覽器驗收並修正兩個缺陷；正式環境啟用待使用者核准與醫師重審）
+**Status**: Complete（30-01~30-06 全部完成；已用真實 llama-server 與真實瀏覽器驗收並修正缺陷；正式環境啟用待使用者核准與醫師重審）
 **Depends on**: Phase 29（`visual_assets`、IR 驗證、解說卡、`demo/visual`）
 **Constraints**: 參數只收列舉／小整數／短文字／調色盤代號；不放寬 validate_ir；CSP 禁內嵌腳本；不收個資；不直接寫正式庫；正式啟用須使用者核准。
 **Requirements**: P30-PARAMS, P30-ENGINE, P30-BUNDLE, P30-PLAYER, P30-VIDEO, P30-PROD, P30-PROOF, P30-DOC
 **Plans**: 6 plans
 Plans:
-- [ ] 30-01-PLAN.md — blueprint 參數 schema 單一來源與 IR 向後相容擴充（Wave 1）
-- [ ] 30-02-PLAN.md — JS 場景引擎（純函式元件、契約測試、確定性與邊界測試）（Wave 2）
-- [ ] 30-03-PLAN.md — bundle 匯出、通用播放器、MP4 匯出泛化（Wave 3）
-- [ ] 30-04-PLAN.md — 正式解說卡改用引擎（有 params 時；Wave 3）
-- [ ] 30-05-PLAN.md — 第二主題（玻尿酸填充）零 JS 改動驗證與「新增 blueprint 指南」（Wave 4）
-- [ ] 30-06-PLAN.md — AGENTS 2.27、skill 更新與路線圖（Wave 5）
+- [x] 30-01-PLAN.md — blueprint 參數 schema 單一來源與 IR 向後相容擴充（Wave 1）
+- [x] 30-02-PLAN.md — JS 場景引擎（純函式元件、契約測試、確定性與邊界測試）（Wave 2）
+- [x] 30-03-PLAN.md — bundle 匯出、通用播放器、MP4 匯出泛化（Wave 3）
+- [x] 30-04-PLAN.md — 正式解說卡改用引擎（有 params 時；Wave 3）
+- [x] 30-05-PLAN.md — 第二主題（玻尿酸填充）零 JS 改動驗證與「新增 blueprint 指南」（Wave 4）
+- [x] 30-06-PLAN.md — AGENTS 2.27、skill 更新與路線圖（Wave 5）
+
+### Phase 31: 由 PageIndex 自動生成動畫草稿、待簽核動畫分頁、診所優先
+
+**Goal**: 由已核准的 PageIndex 推理樹自動生成「原理與手術過程」動畫草稿（LLM 只填受約束的結構化內容，一律待審）；審核頁新增「待簽核動畫」分頁讓醫師看動畫直接簽核；一般醫學與診所專屬動畫並存，病人問到時診所優先。
+**Status**: Complete（31-01~31-05 全部實作完成，含資料表擴充遷移、推理樹約束草稿生成、管理審核 API、「🎬 待簽核動畫」分頁與全套測試驗證）
+**Depends on**: Phase 29／30（visual_assets、引擎、bundle）、Phase 18／21（管理端與推理樹）
+**Requirements**: P31-SCOPE, P31-MIGRATE, P31-AUTODRAFT, P31-API, P31-UI, P31-DOC
+**Plans**: 5 plans
+Plans:
+- [x] 31-01-PLAN.md — visual_assets 加 clinic_id、資料表重建遷移、診所優先選取（Wave 1）
+- [x] 31-02-PLAN.md — 由推理樹自動生成動畫草稿（受約束結構化輸出）（Wave 2）
+- [x] 31-03-PLAN.md — 管理端動畫審核 API（Wave 2）
+- [x] 31-04-PLAN.md — 審核頁「🎬 待簽核動畫」分頁（Wave 3）
+- [x] 31-05-PLAN.md — AGENTS 2.28 文件（Wave 4）

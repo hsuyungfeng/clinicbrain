@@ -75,11 +75,22 @@ def upsert_assets(
 
     # 2. 逐筆 UPSERT
     cur = conn.cursor()
+    cur.execute("PRAGMA table_info(visual_assets)")
+    has_clinic_col = "clinic_id" in [row[1] for row in cur.fetchall()]
+
     inserted = 0
     updated = 0
     unchanged = 0
 
     for a in asset_list:
+        raw_clinic = a.get("clinic_id")
+        if raw_clinic is not None:
+            if not isinstance(raw_clinic, str):
+                raise ValueError(f"clinic_id 必須為字串或 None，得到 {type(raw_clinic).__name__}")
+            clinic_id = raw_clinic.strip() or None
+        else:
+            clinic_id = None
+
         topic_key = a["topic_key"]
         title = a["title"]
         keywords_json = json.dumps(a["keywords"], ensure_ascii=False)
@@ -87,23 +98,40 @@ def upsert_assets(
         raw_meta = a.get("metadata")
         metadata_str = json.dumps(raw_meta, ensure_ascii=False) if isinstance(raw_meta, (dict, list)) else (raw_meta or None)
 
-        cur.execute(
-            "SELECT title, keywords, ir_json, content_version FROM visual_assets WHERE topic_key = ?",
-            (topic_key,)
-        )
+        if has_clinic_col:
+            cur.execute(
+                "SELECT title, keywords, ir_json, content_version FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+                (clinic_id, topic_key)
+            )
+        else:
+            cur.execute(
+                "SELECT title, keywords, ir_json, content_version FROM visual_assets WHERE topic_key = ?",
+                (topic_key,)
+            )
         existing = cur.fetchone()
 
         if existing is None:
             # 新增記錄：review_status 恆為 pending，content_version 預設 1
-            cur.execute(
-                """
-                INSERT INTO visual_assets (
-                    topic_key, title, keywords, ir_json, source_type,
-                    review_status, reviewed_at, content_version, metadata
-                ) VALUES (?, ?, ?, ?, ?, 'pending', NULL, 1, ?)
-                """,
-                (topic_key, title, keywords_json, ir_json, source_type, metadata_str),
-            )
+            if has_clinic_col:
+                cur.execute(
+                    """
+                    INSERT INTO visual_assets (
+                        clinic_id, topic_key, title, keywords, ir_json, source_type,
+                        review_status, reviewed_at, content_version, metadata
+                    ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, 1, ?)
+                    """,
+                    (clinic_id, topic_key, title, keywords_json, ir_json, source_type, metadata_str),
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO visual_assets (
+                        topic_key, title, keywords, ir_json, source_type,
+                        review_status, reviewed_at, content_version, metadata
+                    ) VALUES (?, ?, ?, ?, ?, 'pending', NULL, 1, ?)
+                    """,
+                    (topic_key, title, keywords_json, ir_json, source_type, metadata_str),
+                )
             inserted += 1
         else:
             old_title, old_kw_json, old_ir_json, _ = existing
@@ -112,22 +140,40 @@ def upsert_assets(
                 unchanged += 1
             else:
                 # 內容實質變更：重設為 pending，清除 reviewed_at，content_version+1
-                cur.execute(
-                    """
-                    UPDATE visual_assets SET
-                        title = ?,
-                        keywords = ?,
-                        ir_json = ?,
-                        source_type = ?,
-                        review_status = 'pending',
-                        reviewed_at = NULL,
-                        content_version = content_version + 1,
-                        metadata = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE topic_key = ?
-                    """,
-                    (title, keywords_json, ir_json, source_type, metadata_str, topic_key),
-                )
+                if has_clinic_col:
+                    cur.execute(
+                        """
+                        UPDATE visual_assets SET
+                            title = ?,
+                            keywords = ?,
+                            ir_json = ?,
+                            source_type = ?,
+                            review_status = 'pending',
+                            reviewed_at = NULL,
+                            content_version = content_version + 1,
+                            metadata = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE clinic_id IS ? AND topic_key = ?
+                        """,
+                        (title, keywords_json, ir_json, source_type, metadata_str, clinic_id, topic_key),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        UPDATE visual_assets SET
+                            title = ?,
+                            keywords = ?,
+                            ir_json = ?,
+                            source_type = ?,
+                            review_status = 'pending',
+                            reviewed_at = NULL,
+                            content_version = content_version + 1,
+                            metadata = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE topic_key = ?
+                        """,
+                        (title, keywords_json, ir_json, source_type, metadata_str, topic_key),
+                    )
                 updated += 1
 
     if commit:

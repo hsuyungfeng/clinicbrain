@@ -37,12 +37,13 @@ WARNING = "若出現持續性疼痛或異常腫脹，請立即回診尋求醫師
 def _sample_visual_ir(
     topic_key: str = "autologous-fat-grafting",
     keywords: list[str] | None = None,
+    title: str = "自體脂肪移植原理與照護",
 ) -> dict[str, Any]:
     if keywords is None:
         keywords = ["自體脂肪", "補脂"]
     return {
         "topic_key": topic_key,
-        "title": "自體脂肪移植原理與照護",
+        "title": title,
         "keywords": keywords,
         "scenes": [
             {
@@ -291,5 +292,71 @@ def test_api_consult_and_jobs_serve_visual_and_preserve_poll_privacy(
         assert d_poll["status"] == "answered"
         assert d_poll["visual"] is not None
         assert d_poll["visual"]["topic_key"] == "autologous-fat-grafting"
+
+    consult_jobs.reset_for_tests()
+
+
+def test_consult_endpoint_prioritizes_server_configured_clinic_visual(
+    isolated_db_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """驗證 /consult 與 /consult/jobs 在設定 config.patient_clinic_id 時優先帶出診所專屬動畫，並忽略 X-Clinic-ID。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    q = "請問自體脂肪補脂手術？"
+    try:
+        _seed_approved_general_faq(conn, q)
+
+        # 1. 一般醫學資產
+        gen_ir = _sample_visual_ir(topic_key="gen-fat", keywords=["自體脂肪", "補脂"])
+        upsert_assets(
+            conn,
+            [{"clinic_id": None, "topic_key": gen_ir["topic_key"], "title": gen_ir["title"], "keywords": gen_ir["keywords"], "ir": gen_ir}],
+            source_type="manual",
+        )
+        set_review_status(conn, gen_ir["topic_key"], "approved", clinic_id=None)
+
+        # 2. 診所專屬資產 (3503190424)
+        c_ir = _sample_visual_ir(topic_key="clinic-fat", keywords=["自體脂肪"], title="緻妍專屬補脂")
+        upsert_assets(
+            conn,
+            [{"clinic_id": "3503190424", "topic_key": c_ir["topic_key"], "title": c_ir["title"], "keywords": c_ir["keywords"], "ir": c_ir}],
+            source_type="manual",
+        )
+        set_review_status(conn, c_ir["topic_key"], "approved", clinic_id="3503190424")
+    finally:
+        conn.close()
+
+    monkeypatch.setattr(config, "db_path", isolated_db_path)
+    monkeypatch.setattr(config, "allow_no_auth", True)
+    monkeypatch.setattr(config, "patient_clinic_id", "3503190424")
+    consult_jobs.reset_for_tests()
+
+    with TestClient(app) as client:
+        # (a) 同步 /consult，夾帶惡意 X-Clinic-ID: 3503264627，但伺服器固定為 3503190424 -> 優先回傳 3503190424 的 clinic-fat
+        res_sync = client.post(
+            "/api/v1/general/consult",
+            json={"query": q},
+            headers={"X-Clinic-ID": "3503264627"},
+        )
+        assert res_sync.status_code == 200
+        d_sync = res_sync.json()
+        assert d_sync["visual"] is not None
+        assert d_sync["visual"]["topic_key"] == "clinic-fat"
+
+        # (b) 非同步 /consult/jobs，同樣夾帶 X-Clinic-ID: 3503264627 -> 優先回傳 clinic-fat
+        res_job = client.post(
+            "/api/v1/general/consult/jobs",
+            json={"query": q},
+            headers={"X-Clinic-ID": "3503264627"},
+        )
+        assert res_job.status_code == 200
+        job_id = res_job.json()["job_id"]
+        assert consult_jobs.wait_idle(timeout=5.0)
+
+        res_poll = client.get(f"/api/v1/general/consult/jobs/{job_id}")
+        assert res_poll.status_code == 200
+        d_poll = res_poll.json()
+        assert d_poll["visual"] is not None
+        assert d_poll["visual"]["topic_key"] == "clinic-fat"
 
     consult_jobs.reset_for_tests()

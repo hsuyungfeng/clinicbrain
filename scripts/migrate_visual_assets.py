@@ -53,7 +53,7 @@ def extract_visual_ddl(schema_text: str) -> str:
 
 
 def apply_visual_schema(db_path: Path) -> None:
-    """冪等地將 visual_assets 與 visual_stats 結構套用至目標資料庫。"""
+    """冪等地將 visual_assets 與 visual_stats 結構套用至目標資料庫，支援無損 table rebuild。"""
     if not SCHEMA_PATH.exists():
         raise FileNotFoundError(f"找不到 schema 檔案：{SCHEMA_PATH}")
 
@@ -62,6 +62,37 @@ def apply_visual_schema(db_path: Path) -> None:
 
     conn = sqlite3.connect(str(db_path))
     try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='visual_assets'")
+        table_exists = cursor.fetchone() is not None
+
+        if table_exists:
+            cursor.execute("PRAGMA table_info(visual_assets)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if "clinic_id" not in columns:
+                # 舊版表結構（無 clinic_id）：單一交易內執行無損重建（table rebuild）
+                rebuild_script = f"""
+                PRAGMA foreign_keys = OFF;
+                BEGIN TRANSACTION;
+                ALTER TABLE visual_assets RENAME TO _visual_assets_old_p29;
+                {ddl}
+                INSERT INTO visual_assets (
+                    id, clinic_id, topic_key, title, keywords, ir_json,
+                    source_type, review_status, reviewed_at,
+                    content_version, metadata, created_at, updated_at
+                )
+                SELECT
+                    id, NULL, topic_key, title, keywords, ir_json,
+                    source_type, review_status, reviewed_at,
+                    content_version, metadata, created_at, updated_at
+                FROM _visual_assets_old_p29;
+                DROP TABLE _visual_assets_old_p29;
+                COMMIT;
+                PRAGMA foreign_keys = ON;
+                """
+                conn.executescript(rebuild_script)
+                return
+
         conn.executescript(ddl)
         conn.commit()
     finally:

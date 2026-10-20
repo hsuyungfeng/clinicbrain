@@ -135,7 +135,7 @@ def test_review_approval_makes_asset_visible(isolated_db_path):
     assert item["title"] == SAMPLE_IR["title"]
     assert item["keywords"] == SAMPLE_IR["keywords"]
     assert item["ir"]["topic_key"] == SAMPLE_IR["topic_key"]
-    assert "clinic_id" not in item
+    assert item["clinic_id"] is None
 
     conn.close()
 
@@ -280,5 +280,95 @@ def test_tamper_detection_in_visible_and_review(isolated_db_path):
 
     vis = visible_assets(conn)
     assert vis == [], "遭到竄改的非法資產在 visible_assets 中必須被略過！"
+
+    conn.close()
+
+
+def test_upsert_and_review_with_clinic_id(isolated_db_path):
+    """驗證一般醫學（None）與診所專屬資產並存、各自獨立 UPSERT、審核與跨診所隔離。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+
+    gen_asset = {
+        "clinic_id": None,
+        "topic_key": SAMPLE_IR["topic_key"],
+        "title": SAMPLE_IR["title"],
+        "keywords": SAMPLE_IR["keywords"],
+        "ir": SAMPLE_IR,
+    }
+
+    clinic_ir = copy.deepcopy(SAMPLE_IR)
+    clinic_ir["title"] = "緻妍自體脂肪移植客製解說"
+    clinic_asset = {
+        "clinic_id": "3503190424",
+        "topic_key": SAMPLE_IR["topic_key"],
+        "title": "緻妍自體脂肪移植客製解說",
+        "keywords": SAMPLE_IR["keywords"],
+        "ir": clinic_ir,
+    }
+
+    # 1. 新增兩筆同 topic_key 但 clinic_id 不同的資產
+    res1 = upsert_assets(conn, [gen_asset], source_type="manual")
+    assert res1 == {"inserted": 1, "updated": 0, "unchanged": 0}
+
+    res2 = upsert_assets(conn, [clinic_asset], source_type="manual")
+    assert res2 == {"inserted": 1, "updated": 0, "unchanged": 0}
+
+    # 2. 驗證尚未審核前，visible_assets 回傳空
+    assert visible_assets(conn, clinic_id=None) == []
+    assert visible_assets(conn, clinic_id="3503190424") == []
+
+    # 3. 僅核准一般醫學資產
+    rev1 = set_review_status(conn, SAMPLE_IR["topic_key"], "approved", clinic_id=None)
+    assert rev1["status"] == "ok"
+
+    # clinic_id=None 查到一般醫學資產
+    vis_gen = visible_assets(conn, clinic_id=None)
+    assert len(vis_gen) == 1
+    assert vis_gen[0]["clinic_id"] is None
+    assert vis_gen[0]["title"] == SAMPLE_IR["title"]
+
+    # clinic_id="3503190424" 查到一般醫學資產（因為診所專屬尚未核准）
+    vis_c1 = visible_assets(conn, clinic_id="3503190424")
+    assert len(vis_c1) == 1
+    assert vis_c1[0]["clinic_id"] is None
+
+    # 4. 核准診所專屬資產
+    rev2 = set_review_status(conn, SAMPLE_IR["topic_key"], "approved", clinic_id="3503190424")
+    assert rev2["status"] == "ok"
+
+    # clinic_id=None 仍只查到 1 筆一般醫學資產（不外洩診所專屬）
+    vis_gen_after = visible_assets(conn, clinic_id=None)
+    assert len(vis_gen_after) == 1
+    assert vis_gen_after[0]["clinic_id"] is None
+
+    # clinic_id="3503190424" 查到 2 筆（一般醫學與診所專屬）
+    vis_c1_after = visible_assets(conn, clinic_id="3503190424")
+    assert len(vis_c1_after) == 2
+    c_ids = {item["clinic_id"] for item in vis_c1_after}
+    assert c_ids == {None, "3503190424"}
+
+    # clinic_id="3503264627"（凡登診所）只查到 1 筆一般醫學，絕不含 3503190424
+    vis_c2 = visible_assets(conn, clinic_id="3503264627")
+    assert len(vis_c2) == 1
+    assert vis_c2[0]["clinic_id"] is None
+
+    # 5. set_review_status 支援 asset_id
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM visual_assets WHERE clinic_id = '3503190424'")
+    c_asset_id = cur.fetchone()[0]
+    rev_id = set_review_status(conn, "any-key", "rejected", asset_id=c_asset_id)
+    assert rev_id["status"] == "ok"
+
+    # 診所專屬變成 rejected，3503190424 只剩 1 筆一般醫學可見
+    vis_c1_rej = visible_assets(conn, clinic_id="3503190424")
+    assert len(vis_c1_rej) == 1
+    assert vis_c1_rej[0]["clinic_id"] is None
+
+    # 6. 非法 clinic_id 型別拋出 ValueError
+    bad_asset = copy.deepcopy(gen_asset)
+    bad_asset["clinic_id"] = 12345
+    with pytest.raises(ValueError, match="clinic_id 必須為字串或 None"):
+        upsert_assets(conn, [bad_asset], source_type="manual")
 
     conn.close()

@@ -421,17 +421,17 @@ VALUES
 
 -- ===== visual_assets BEGIN =====
 -- ========================================
--- Visual Explainer Cards Tables (Phase 29: 一般醫學視覺解說卡)
+-- Visual Explainer Cards Tables (Phase 29 & 31: 視覺解說卡與診所專屬動畫)
 -- 說明：
--- 1. visual_assets 為共用視覺資產表，無診所代碼（共用資產）。
+-- 1. visual_assets 支援一般醫學（clinic_id IS NULL）與診所專屬（clinic_id NOT NULL）。
 -- 2. review_status 預設為 pending，未經醫師審核通過絕不對外公開。
 -- 3. visual_stats 僅記錄匿名點閱與完成次數，不記錄任何問句、IP 或個資。
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS visual_assets (
-
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    topic_key TEXT NOT NULL UNIQUE,
+    clinic_id TEXT REFERENCES clinic_info(clinic_id),
+    topic_key TEXT NOT NULL,
     title TEXT NOT NULL,
     keywords TEXT NOT NULL,
     ir_json TEXT NOT NULL,
@@ -441,8 +441,12 @@ CREATE TABLE IF NOT EXISTS visual_assets (
     content_version INTEGER NOT NULL DEFAULT 1,
     metadata TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(clinic_id, topic_key)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_visual_assets_general_topic ON visual_assets(topic_key) WHERE clinic_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_visual_assets_clinic_id ON visual_assets(clinic_id);
 
 CREATE TABLE IF NOT EXISTS visual_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

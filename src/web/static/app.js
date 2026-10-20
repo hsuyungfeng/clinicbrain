@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initDashboard();
     initReviewSection();
     initTreesSection();
+    initVisualsSection();
     initUploadSection();
     initSoapSection();
     initAskSection();
@@ -92,6 +93,10 @@ function initTabNavigation() {
             if (targetId === "tab-dashboard") loadDashboardSummary();
             if (targetId === "tab-review") loadReviewFaqs();
             if (targetId === "tab-trees") loadTrees();
+            if (targetId === "tab-visuals") {
+                loadVisuals();
+                loadApprovedTreesForVisualSelect();
+            }
             if (targetId === "tab-soap") loadSoapRecords();
         });
     });
@@ -113,6 +118,8 @@ async function loadDashboardSummary() {
         document.getElementById("statPendingTotal").textContent = data.pending_total ?? 0;
         const elTreePend = document.getElementById("statTreesPendingTotal");
         if (elTreePend) elTreePend.textContent = data.trees_pending_total ?? 0;
+        const elVisPend = document.getElementById("statVisualsPendingTotal");
+        if (elVisPend) elVisPend.textContent = data.visuals_pending_total ?? 0;
         document.getElementById("statApprovedTotal").textContent = data.approved_total ?? 0;
         const elTreeApp = document.getElementById("statTreesApprovedTotal");
         if (elTreeApp) elTreeApp.textContent = data.trees_approved_total ?? 0;
@@ -1568,6 +1575,528 @@ function openTreeEditModal(tree) {
 }
 
 
+// =============================================================================
+// Phase 31: 待簽核視覺解說動畫審核與管理前端邏輯
+// =============================================================================
+
+function initVisualsSection() {
+    const btnRefresh = document.getElementById("btnRefreshVisuals");
+    if (btnRefresh) btnRefresh.addEventListener("click", loadVisuals);
+
+    const selStatus = document.getElementById("visualsFilterStatus");
+    if (selStatus) selStatus.addEventListener("change", loadVisuals);
+
+    const selScope = document.getElementById("visualsFilterScope");
+    if (selScope) selScope.addEventListener("change", loadVisuals);
+
+    const btnAutodraft = document.getElementById("btnAutodraftVisual");
+    if (btnAutodraft) btnAutodraft.addEventListener("click", handleAutodraftVisual);
+}
+
+async function loadApprovedTreesForVisualSelect() {
+    const sel = document.getElementById("visualsTreeSelect");
+    if (!sel) return;
+
+    try {
+        const resp = await fetch("/api/v1/admin/trees?status=approved&limit=100", {
+            headers: getAuthHeaders(),
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const trees = data.trees || [];
+
+        // 保留預設第一項
+        while (sel.options.length > 1) {
+            sel.remove(1);
+        }
+
+        trees.forEach((t) => {
+            const opt = document.createElement("option");
+            opt.value = t.id;
+            opt.textContent = `#${t.id} ${t.title || t.doc_id} (${t.doc_id || ""})`;
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("載入已核准推理樹失敗", e);
+    }
+}
+
+async function handleAutodraftVisual() {
+    const sel = document.getElementById("visualsTreeSelect");
+    const treeId = parseInt(sel ? sel.value : "", 10);
+    if (!treeId) {
+        showToast("請先選擇一筆已核准推理樹", "error");
+        return;
+    }
+
+    const btn = document.getElementById("btnAutodraftVisual");
+    const origText = btn ? btn.textContent : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ 正在生成動畫草稿...";
+    }
+
+    try {
+        const resp = await fetch("/api/v1/admin/visuals/autodraft", {
+            method: "POST",
+            headers: {
+                ...getAuthHeaders(),
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ tree_id: treeId }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+            showToast("動畫草稿已由推理樹成功生成！", "success");
+            loadVisuals();
+            loadDashboardSummary();
+        } else {
+            showToast(apiErrorText(data, "自動生成失敗"), "error");
+        }
+    } catch (e) {
+        showToast("連線異常，無法生成動畫草稿", "error");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = origText;
+        }
+    }
+}
+
+async function loadVisuals() {
+    const container = document.getElementById("visualsContainer");
+    if (!container) return;
+    container.replaceChildren(el("div", "skeleton"), el("div", "skeleton"));
+
+    const status = document.getElementById("visualsFilterStatus")?.value || "pending";
+    const scope = document.getElementById("visualsFilterScope")?.value || "all";
+    const clinic = document.getElementById("visualsFilterClinic")?.value || "";
+
+    const params = new URLSearchParams({ status, scope, limit: "100" });
+    if (clinic) params.set("clinic_id", clinic);
+
+    try {
+        const resp = await fetch(`/api/v1/admin/visuals?${params.toString()}`, {
+            headers: getAuthHeaders(),
+        });
+        if (!resp.ok) {
+            setStatusBox(container, `無法載入動畫列表 (HTTP ${resp.status})，請確認 API Key`, "error");
+            return;
+        }
+        const data = await resp.json();
+        const items = data.visuals || data.items || [];
+        if (items.length === 0) {
+            setStatusBox(container, "🎬 目前無相符之視覺解說卡資產。", "empty");
+            return;
+        }
+
+        container.replaceChildren();
+        items.forEach((item) => {
+            const card = createVisualReviewCard(item);
+            container.appendChild(card);
+        });
+    } catch (e) {
+        setStatusBox(container, "連線失敗，無法取得動畫列表", "error");
+    }
+}
+
+function createVisualReviewCard(asset) {
+    const card = el("div", "visual-review-card");
+
+    // 1. 頂部資訊與標籤
+    const header = el("div", "flex justify-between items-start flex-wrap gap-2");
+    const metaLeft = el("div", "space-y-1");
+
+    const badgesRow = el("div", "flex flex-wrap items-center gap-1.5");
+    const idBadge = el("span", "text-xs font-mono font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded", `#${asset.id}`);
+    const keyBadge = el("span", "text-xs font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded", asset.topic_key || "");
+    badgesRow.appendChild(idBadge);
+    badgesRow.appendChild(keyBadge);
+
+    // 診所範圍標籤
+    if (asset.clinic_id) {
+        badgesRow.appendChild(el("span", "text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded", `🏥 診所專屬 (${asset.clinic_id})`));
+    } else {
+        badgesRow.appendChild(el("span", "text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded", "🌐 一般醫學 (共用)"));
+    }
+
+    // 來源標籤
+    const srcText = asset.source_type === "llm_generated" ? "🤖 AI 生成" : (asset.source_type === "manual" ? "✍️ 人工手寫" : asset.source_type);
+    badgesRow.appendChild(el("span", "text-xs font-medium bg-purple-100 text-purple-800 px-2 py-0.5 rounded", srcText));
+
+    // 審核狀態標籤
+    let statusClass = "bg-amber-100 text-amber-800";
+    let statusText = "⏳ 待簽核";
+    if (asset.review_status === "approved") {
+        statusClass = "bg-emerald-100 text-emerald-800";
+        statusText = "✅ 已發布";
+    } else if (asset.review_status === "rejected") {
+        statusClass = "bg-rose-100 text-rose-800";
+        statusText = "❌ 已駁回";
+    }
+    badgesRow.appendChild(el("span", `text-xs font-medium px-2 py-0.5 rounded ${statusClass}`, statusText));
+
+    // 驗證標籤
+    const isValOk = asset.validation && asset.validation.ok;
+    const valClass = isValOk ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
+    const valText = isValOk ? "✅ 驗證通過" : "⚠️ 驗證未過";
+    badgesRow.appendChild(el("span", `text-xs font-medium px-2 py-0.5 rounded ${valClass}`, valText));
+
+    metaLeft.appendChild(badgesRow);
+
+    const titleEl = el("h3", "text-lg font-bold text-gray-800 mt-1", asset.title || "未命名動畫");
+    metaLeft.appendChild(titleEl);
+
+    // 關鍵字標籤
+    if (Array.isArray(asset.keywords) && asset.keywords.length > 0) {
+        const kwRow = el("div", "flex flex-wrap gap-1 text-xs text-gray-500 mt-1");
+        asset.keywords.forEach((kw) => {
+            kwRow.appendChild(el("span", "bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200", `#${kw}`));
+        });
+        metaLeft.appendChild(kwRow);
+    }
+    header.appendChild(metaLeft);
+
+    card.appendChild(header);
+
+    // 2. 播放器區塊
+    const playerBox = el("div", "visual-review-player");
+    const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svgEl.setAttribute("viewBox", "0 0 800 510");
+    svgEl.classList.add("visual-review-svg");
+    playerBox.appendChild(svgEl);
+
+    // 控制列
+    const controls = el("div", "visual-review-controls");
+    const btnPlay = el("button", "btn-visual-play px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition", "▶ 播放");
+    controls.appendChild(btnPlay);
+
+    const scrubber = document.createElement("input");
+    scrubber.type = "range";
+    scrubber.min = "0";
+    scrubber.max = "1000";
+    scrubber.value = "0";
+    scrubber.className = "visual-review-scrubber";
+    controls.appendChild(scrubber);
+
+    const timeDisplay = el("span", "text-xs text-gray-300 font-mono select-none", "0.0s / 0.0s");
+    controls.appendChild(timeDisplay);
+
+    const scenesNav = el("div", "flex items-center gap-1 ml-auto");
+    const btnScene1 = el("button", "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition", "場景 1");
+    const btnScene2 = el("button", "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition", "場景 2");
+    const btnScene3 = el("button", "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition", "場景 3");
+    scenesNav.appendChild(btnScene1);
+    scenesNav.appendChild(btnScene2);
+    scenesNav.appendChild(btnScene3);
+    controls.appendChild(scenesNav);
+
+    playerBox.appendChild(controls);
+    card.appendChild(playerBox);
+
+    // 3. 場景說明清單與內聯編輯區
+    const scenes = Array.isArray(asset.scenes) ? asset.scenes : [];
+    const scenesGrid = el("div", "visual-scene-list");
+    const sceneItemEls = [];
+
+    scenes.forEach((sc, i) => {
+        const itemBox = el("div", "visual-scene-item");
+        const headRow = el("div", "visual-scene-badge");
+        headRow.appendChild(el("span", "font-bold text-gray-700", `場景 ${i + 1}: ${sc.title || ""}`));
+        headRow.appendChild(el("span", "text-gray-400 font-mono text-xs", `${sc.blueprint || ""} (${sc.duration_sec || 8}s)`));
+        itemBox.appendChild(headRow);
+
+        const captionP = el("p", "text-xs text-gray-600 leading-relaxed", sc.caption || "");
+        itemBox.appendChild(captionP);
+
+        if (Array.isArray(sc.labels) && sc.labels.length > 0) {
+            const labelsRow = el("div", "flex flex-wrap gap-1 mt-1");
+            sc.labels.forEach((lb) => {
+                let toneBadge = "bg-gray-100 text-gray-700";
+                if (lb.tone === "optimal") toneBadge = "bg-emerald-100 text-emerald-700";
+                else if (lb.tone === "warning") toneBadge = "bg-amber-100 text-amber-700";
+                labelsRow.appendChild(el("span", `text-[10px] px-1.5 py-0.5 rounded font-medium ${toneBadge}`, lb.text || ""));
+            });
+            itemBox.appendChild(labelsRow);
+        }
+
+        sceneItemEls.push(itemBox);
+        scenesGrid.appendChild(itemBox);
+    });
+
+    card.appendChild(scenesGrid);
+
+    // 編輯區塊（展開前隱藏）
+    const editBox = el("div", "visual-edit-box hidden");
+    const editHead = el("h4", "text-sm font-bold text-gray-800", "✏️ 編輯動畫說明文字（儲存後將重置為待簽核）");
+    editBox.appendChild(editHead);
+
+    const titleField = el("div", "space-y-1");
+    titleField.appendChild(el("label", "block text-xs font-medium text-gray-700", "動畫整體標題："));
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "w-full text-sm border border-gray-300 rounded px-3 py-1.5 bg-white";
+    titleInput.value = asset.title || "";
+    titleField.appendChild(titleInput);
+    editBox.appendChild(titleField);
+
+    const sceneInputs = [];
+    scenes.forEach((sc, i) => {
+        const scBox = el("div", "bg-white p-3 rounded border border-gray-200 space-y-2");
+        scBox.appendChild(el("div", "text-xs font-bold text-gray-700", `場景 ${i + 1} (${sc.blueprint || ""})`));
+
+        const stField = el("div", "space-y-0.5");
+        stField.appendChild(el("label", "block text-[11px] text-gray-500", "場景標題："));
+        const stInput = document.createElement("input");
+        stInput.type = "text";
+        stInput.className = "w-full text-xs border border-gray-300 rounded px-2 py-1";
+        stInput.value = sc.title || "";
+        stField.appendChild(stInput);
+        scBox.appendChild(stField);
+
+        const capField = el("div", "space-y-0.5");
+        capField.appendChild(el("label", "block text-[11px] text-gray-500", "場景說明（禁止阿拉伯數字、禁止保證療效禁詞）："));
+        const capTextarea = document.createElement("textarea");
+        capTextarea.rows = 2;
+        capTextarea.className = "w-full text-xs border border-gray-300 rounded px-2 py-1 leading-relaxed";
+        capTextarea.value = sc.caption || "";
+        capField.appendChild(capTextarea);
+        scBox.appendChild(capField);
+
+        sceneInputs.push({ title: stInput, caption: capTextarea });
+        editBox.appendChild(scBox);
+    });
+
+    const editBtnRow = el("div", "flex justify-end items-center gap-2 pt-2");
+    const btnCancelEdit = el("button", "text-xs px-3 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50", "取消");
+    const btnSaveEdit = el("button", "text-xs px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-medium", "💾 儲存修訂");
+    editBtnRow.appendChild(btnCancelEdit);
+    editBtnRow.appendChild(btnSaveEdit);
+    editBox.appendChild(editBtnRow);
+
+    card.appendChild(editBox);
+
+    // 4. 卡片操作按鈕列
+    const actionsRow = el("div", "flex justify-between items-center pt-2 border-t border-gray-100 flex-wrap gap-2");
+    const btnToggleEdit = el("button", "text-xs text-indigo-600 hover:text-indigo-800 font-medium py-1 px-2 rounded hover:bg-indigo-50 transition", "✏️ 編輯說明文字");
+    actionsRow.appendChild(btnToggleEdit);
+
+    btnToggleEdit.addEventListener("click", () => {
+        const isHidden = editBox.classList.contains("hidden");
+        editBox.classList.toggle("hidden", !isHidden);
+        btnToggleEdit.textContent = isHidden ? "關閉編輯" : "✏️ 編輯說明文字";
+    });
+
+    btnCancelEdit.addEventListener("click", () => {
+        editBox.classList.add("hidden");
+        btnToggleEdit.textContent = "✏️ 編輯說明文字";
+    });
+
+    btnSaveEdit.addEventListener("click", async () => {
+        const newTitle = titleInput.value.trim();
+        const newScenes = sceneInputs.map((item) => ({
+            title: item.title.value.trim(),
+            caption: item.caption.value.trim(),
+        }));
+
+        btnSaveEdit.disabled = true;
+        btnSaveEdit.textContent = "儲存中...";
+
+        try {
+            const resp = await fetch(`/api/v1/admin/visuals/${asset.id}`, {
+                method: "PATCH",
+                headers: {
+                    ...getAuthHeaders(),
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    title: newTitle,
+                    scenes: newScenes,
+                }),
+            });
+            const resData = await resp.json().catch(() => ({}));
+            if (resp.ok) {
+                showToast("動畫說明文字已修訂，狀態重置為待簽核", "success");
+                loadVisuals();
+                loadDashboardSummary();
+            } else {
+                showToast(apiErrorText(resData, "修訂失敗"), "error");
+            }
+        } catch (e) {
+            showToast("連線異常，無法儲存修訂", "error");
+        } finally {
+            btnSaveEdit.disabled = false;
+            btnSaveEdit.textContent = "💾 儲存修訂";
+        }
+    });
+
+    const statusActions = el("div", "flex items-center gap-2 ml-auto");
+    if (asset.review_status !== "approved") {
+        const btnApprove = el("button", "btn btn-success text-xs px-3 py-1.5", "✅ 核准發布");
+        btnApprove.addEventListener("click", async () => {
+            if (!confirm(`確定核准發布動畫「${asset.title || asset.topic_key}」嗎？核准後將對外提供觀看。`)) return;
+            try {
+                const resp = await fetch(`/api/v1/admin/visuals/${asset.id}/approve`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                });
+                const resData = await resp.json().catch(() => ({}));
+                if (resp.ok) {
+                    showToast("動畫已成功核准發布！", "success");
+                    loadVisuals();
+                    loadDashboardSummary();
+                } else {
+                    showToast(apiErrorText(resData, "核准失敗"), "error");
+                }
+            } catch (e) {
+                showToast("連線異常，核准失敗", "error");
+            }
+        });
+        statusActions.appendChild(btnApprove);
+    }
+
+    if (asset.review_status !== "rejected") {
+        const btnReject = el("button", "btn btn-danger-soft text-xs px-3 py-1.5", "❌ 駁回");
+        btnReject.addEventListener("click", async () => {
+            if (!confirm(`確定駁回動畫「${asset.title || asset.topic_key}」草稿嗎？`)) return;
+            try {
+                const resp = await fetch(`/api/v1/admin/visuals/${asset.id}/reject`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                });
+                const resData = await resp.json().catch(() => ({}));
+                if (resp.ok) {
+                    showToast("動畫已駁回", "info");
+                    loadVisuals();
+                    loadDashboardSummary();
+                } else {
+                    showToast(apiErrorText(resData, "駁回失敗"), "error");
+                }
+            } catch (e) {
+                showToast("連線異常，駁回失敗", "error");
+            }
+        });
+        statusActions.appendChild(btnReject);
+    }
+
+    actionsRow.appendChild(statusActions);
+    card.appendChild(actionsRow);
+
+    // 5. 動畫播放控制與事件綁定
+    let ctrl = null;
+    let isPlaying = false;
+    let animId = null;
+    let lastTs = null;
+    let currentT = 0;
+    let totalDur = 0;
+    const sceneStarts = [];
+    const sceneButtons = [btnScene1, btnScene2, btnScene3];
+
+    function updateActiveSceneUI(idx) {
+        sceneButtons.forEach((b, i) => {
+            if (i === idx) {
+                b.className = "btn-scene-jump px-2 py-0.5 text-xs text-white bg-indigo-600 font-bold rounded transition";
+            } else {
+                b.className = "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition";
+            }
+        });
+        sceneItemEls.forEach((it, i) => {
+            if (i === idx) {
+                it.classList.add("ring-2", "ring-indigo-500", "bg-indigo-50/50");
+            } else {
+                it.classList.remove("ring-2", "ring-indigo-500", "bg-indigo-50/50");
+            }
+        });
+    }
+
+    if (typeof window !== "undefined" && window.ClinicVisual && typeof window.ClinicVisual.mount === "function") {
+        try {
+            ctrl = window.ClinicVisual.mount(svgEl, scenes);
+            if (ctrl) {
+                totalDur = ctrl.totalDuration;
+                timeDisplay.textContent = `0.0s / ${totalDur.toFixed(1)}s`;
+                let acc = 0;
+                for (let i = 0; i < scenes.length; i++) {
+                    sceneStarts.push(acc);
+                    const d = window.ClinicVisual.sceneDuration(scenes[i]);
+                    acc += d;
+                }
+                ctrl.renderAt(0);
+                updateActiveSceneUI(0);
+            }
+        } catch (err) {
+            console.error("ClinicVisual.mount 失敗", err);
+        }
+    }
+
+    function renderFrame(t) {
+        if (!ctrl) return;
+        currentT = Math.max(0, Math.min(t, totalDur));
+        const safeT = Math.min(currentT, Math.max(0, totalDur - 0.001));
+        ctrl.renderAt(safeT);
+        scrubber.value = Math.floor((currentT / Math.max(0.001, totalDur)) * 1000);
+        timeDisplay.textContent = `${currentT.toFixed(1)}s / ${totalDur.toFixed(1)}s`;
+        updateActiveSceneUI(ctrl.sceneIndexAt(safeT));
+    }
+
+    function animStep(ts) {
+        if (!isPlaying) return;
+        if (lastTs === null) lastTs = ts;
+        const dt = (ts - lastTs) / 1000;
+        lastTs = ts;
+        currentT += dt;
+        if (currentT >= totalDur) {
+            currentT = 0;
+        }
+        renderFrame(currentT);
+        animId = requestAnimationFrame(animStep);
+    }
+
+    btnPlay.addEventListener("click", () => {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            btnPlay.textContent = "⏸ 暫停";
+            lastTs = null;
+            animId = requestAnimationFrame(animStep);
+        } else {
+            btnPlay.textContent = "▶ 播放";
+            if (animId) cancelAnimationFrame(animId);
+            animId = null;
+            lastTs = null;
+        }
+    });
+
+    scrubber.addEventListener("input", () => {
+        if (isPlaying) {
+            isPlaying = false;
+            btnPlay.textContent = "▶ 播放";
+            if (animId) cancelAnimationFrame(animId);
+            animId = null;
+            lastTs = null;
+        }
+        const val = parseFloat(scrubber.value) || 0;
+        const targetT = (val / 1000) * totalDur;
+        renderFrame(targetT);
+    });
+
+    sceneButtons.forEach((b, i) => {
+        b.addEventListener("click", () => {
+            if (isPlaying) {
+                isPlaying = false;
+                btnPlay.textContent = "▶ 播放";
+                if (animId) cancelAnimationFrame(animId);
+                animId = null;
+                lastTs = null;
+            }
+            const t = sceneStarts[i] !== undefined ? sceneStarts[i] : 0;
+            renderFrame(t);
+        });
+    });
+
+    return card;
+}
+
+
 // ── 機構代碼下拉選單（上傳／SOAP／提問共用）與新增診所 ──
 const CLINIC_SELECT_IDS = ["uploadClinicId", "soapClinicId", "askClinicId"];
 const CLINIC_NEW_VALUE = "__new__";
@@ -1584,6 +2113,8 @@ function initClinicSelectors() {
     if (reviewClinic) reviewClinic.addEventListener("change", () => loadReviewFaqs());
     const treesClinic = document.getElementById("treesFilterClinic");
     if (treesClinic) treesClinic.addEventListener("change", () => loadTrees());
+    const visualsClinic = document.getElementById("visualsFilterClinic");
+    if (visualsClinic) visualsClinic.addEventListener("change", () => loadVisuals());
     document.getElementById("btnClinicCreateCancel").addEventListener("click", closeClinicCreateModal);
     document.getElementById("clinicCreateForm").addEventListener("submit", submitClinicCreate);
     document.getElementById("clinicCreateModal").addEventListener("click", (e) => {
@@ -1616,7 +2147,7 @@ async function loadClinicOptions(preferredId) {
 }
 
 // 審核頁籤的診所篩選：選項為「全部診所」加上已建檔診所，切換時重新載入列表
-const CLINIC_FILTER_IDS = ["reviewFilterClinic", "treesFilterClinic"];
+const CLINIC_FILTER_IDS = ["reviewFilterClinic", "treesFilterClinic", "visualsFilterClinic"];
 
 function populateClinicFilters(list) {
     const header = document.getElementById("headerClinicSelect");
@@ -1677,8 +2208,10 @@ function setGlobalClinic(clinicId) {
     });
     const reviewVisible = !document.getElementById("tab-review").classList.contains("hidden");
     const treesVisible = !document.getElementById("tab-trees").classList.contains("hidden");
+    const visualsVisible = document.getElementById("tab-visuals") && !document.getElementById("tab-visuals").classList.contains("hidden");
     if (reviewVisible) loadReviewFaqs();
     if (treesVisible) loadTrees();
+    if (visualsVisible) loadVisuals();
 }
 
 function openClinicCreateModal() {

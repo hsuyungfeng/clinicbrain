@@ -627,7 +627,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 
 - **定位與使用者決策**：
   - **純一般醫學知識說明**：解說卡僅提供通用醫學與衛教概念圖解，非個人化診斷，亦非特定診所療效承諾。
-  - **合作診所共用資產**：`visual_assets` 資料表刻意不設 `clinic_id` 欄位，屬於跨診所共用的一般醫學圖解資產。
+  - **合作診所共用資產**：`visual_assets` 資料表最初不設 `clinic_id` 欄位（自 Phase 31 起已擴充 `clinic_id` 欄位，支援診所專屬與一般共用並存，見 2.28 節）。
   - **零個資收集**：解說卡與諮詢頁絕不收集姓名、電話、LINE 或任何表單輸入；預約導流維持既有的單一外部連結 `https://doctor-toolbox.com/`。
 
 - **Typed IR 規格與唯一權威驗證 (`src/visual/ir.py`)**：
@@ -741,6 +741,48 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - `tests/test_consult_engine_browser.py`：`consult.html` 整合引擎之真實瀏覽器動畫渲染、手動切換、降級退回與 reduced motion 測試。
   - `tests/test_visual_second_topic.py`：玻尿酸填充第二主題 IR 驗證、Bundle 匯出、瀏覽器邊界與引擎未擴充測試。
 
+### 2.28 由 PageIndex 自動生成動畫草稿、待簽核動畫分頁與診所優先（Phase 31 新增）
+
+為使臨床推理樹（`page_index_trees`）已審核之術前／療程／術後衛教內容能自動轉化為「原理與處置過程」視覺解說動畫，並支援一般醫學共用與診所專屬並存、診所優先選取，自 Phase 31 起完成資料模型擴充、約束生成、管理審核 API 與審核介面分頁：
+
+- **資料庫擴充與唯一鍵無損重建遷移 (`src/db/clinic_schema.sql`, `scripts/migrate_visual_assets.py`)**：
+  - `visual_assets` 資料表擴充 `clinic_id TEXT REFERENCES clinic_info(clinic_id)` 欄位（`NULL` 代表一般醫學跨診所共用資產，有值代表特定診所專屬資產）。
+  - 單一欄位 `topic_key UNIQUE` 重建為複合唯一約束 `UNIQUE(clinic_id, topic_key)`，並搭配 Partial Unique Index `CREATE UNIQUE INDEX idx_visual_assets_general_topic ON visual_assets(topic_key) WHERE clinic_id IS NULL`，以及在 `writer.py`、`review.py` 中以 `WHERE clinic_id IS ? AND topic_key = ?` 正確處理 `NULL` 去重語意。
+  - 遷移腳本偵測舊表缺少 `clinic_id` 或仍為單欄唯一索引時，於單一交易內無損搬移既有資料列（保留原 `id`、`review_status`、`content_version`、`created_at`，既有列 `clinic_id` 設為 `NULL`），支援 `--confirm-prod-backup`、`--dry-run` 與冪等重跑。
+
+- **診所優先比對規則 (`src/visual/match.py:find_visual`, `src/visual/review.py:visible_assets`)**：
+  - 當查詢帶有 `clinic_id`（於 `patient_consult` 由 `resolve_patient_clinic` 解析）時，`visible_assets(conn, clinic_id=clinic_id)` 同時取出該診所已核准專屬資產與 `clinic_id IS NULL` 之一般醫學已核准資產。
+  - `find_visual(conn, query, clinic_id=clinic_id)` 排序鍵為 `(tier, -hits, topic_key)`，其中診所專屬為 `tier = 0`、一般醫學共用為 `tier = 1`：**只要診所有已核准且命中關鍵字之相關服務動畫，永遠優先於一般醫學共用動畫**；若診所無命中才自動降級使用一般醫學動畫。
+  - 當查詢未帶 `clinic_id` 時，僅檢索 `clinic_id IS NULL` 之一般醫學共用解說卡，並於 SQL 與 Python 雙層過濾，嚴禁跨院外洩他院專屬資產。對外回應結構維持 `{"topic_key", "title", "scenes"}`，不暴露 `clinic_id`。
+
+- **PageIndex 推理樹自動草稿生成 (`src/visual/autodraft.py`, `scripts/autodraft_visual_from_trees.py`)**：
+  - **輸入隔離**：`fetch_eligible_trees` 強制套用 `visible_tree_sql`（僅限已核准推理樹），未核准或駁回之樹一律拒絕生成（回傳 `tree_not_approved`）。
+  - **受約束三場景生成 (`autodraft_from_tree`)**：呼叫本地 LLM（`VISUAL_SAMPLING`：`max_tokens=900`、`enable_thinking=False`），受 `GENERATION_LOCK` 與 `nightly_batch_running` 互斥保護，將推理樹轉換為固定三場景（`process_diagram` → `contrast` → `timeline`），`topic_key` 正規化為 `tree-<doc_id>`，繼承 `tree.clinic_id`。
+  - **零預設文字污染與四層合規**：`parse_and_build_tree_ir` 強制模型填寫所有場景 `params` 文字欄位（`source.label`、`container_layers[].label`、`step_labels`、`left/right` 之 `title/note/core_label/footnote`、`milestones`），非脂肪主題若殘留脂肪移植預設字面值、含任何阿拉伯數字、場景 3 缺少「因人而異／醫師評估」收尾語意，或未通過 `validate_ir`，一律拒絕入庫。
+  - **永不自動核准（Human-in-the-Loop）**：透過唯一寫入路徑 `upsert_assets(..., source_type='llm_generated')` 寫入，`review_status` 恆為 `'pending'`，須經執業醫師於審核頁簽核後方可對外生效。
+
+- **管理端動畫審核 API (`src/api/routes/admin.py`, `src/visual/review.py`)**：
+  - 掛載於 `/api/v1/admin` 並受 `verify_admin_key` 保護：
+    * `GET /api/v1/admin/visuals`：支援 `status`（`pending`/`approved`/`rejected`/`all`）、`clinic_id`、`scope`（`all`/`clinic`/`general`）篩選，每筆附帶即時 `validation` 狀態與補齊預設參數後之 `scenes` 供瀏覽器直接合成播放。
+    * `GET /api/v1/admin/visuals/{asset_id}`：取得單筆動畫資產完整詳情。
+    * `PATCH /api/v1/admin/visuals/{asset_id}`：在線修訂標題、關鍵字或場景說明文字，儲存前重跑零數字與 `validate_ir` 檢驗，若有變更自動重置 `review_status='pending'` 並遞增 `content_version`。
+    * `POST /api/v1/admin/visuals/{asset_id}/approve`：核准前強制重跑 `validate_ir`，不合規回 422。
+    * `POST /api/v1/admin/visuals/{asset_id}/reject`：駁回動畫草稿。
+    * `POST /api/v1/admin/visuals/autodraft`：指定已核准 `tree_id` 觸發生成待審動畫草稿。
+    * `GET /api/v1/admin/review/summary`：新增 `visuals_pending_total` 與 `visuals_approved_total` 指標。
+
+- **管理審核介面「🎬 待簽核動畫」分頁 (`src/web/static/index.html`, `src/web/static/app.js`, `src/web/static/style.css`)**：
+  - 頂部導覽列完整提供 7 個頁籤：`📊 總覽儀表板`、`📝 待審衛教草稿簽核`、`🌳 臨床推理樹簽核`、`🎬 待簽核動畫`、`📁 文件拖曳上傳中心`、`🩺 臨床 SOAP 紀錄瀏覽`、`💬 向 LLM 提問`。
+  - 以 `<script src="/admin/visual_engine.js"></script>` 外部載入視覺引擎，於審核卡片內透過 `ClinicVisual.mount(svgEl, asset.scenes)` 直接合成播放 SVG 動畫（支援播放／暫停、時間軸滑桿 seek、場景 1/2/3 切換、內聯編輯說明文字、由已核准推理樹一鍵生成草稿、核准與駁回）。
+  - 嚴格遵守前端安全規範：零內嵌 `<script>`，所有動態文字以 `textContent` 寫入，零 `innerHTML`、`eval`、`setInterval`。
+
+- **測試清單**：
+  - `tests/test_migrate_visual_assets.py`：`clinic_id` 欄位與複合唯一索引無損重建遷移、冪等性測試。
+  - `tests/test_visual_writer.py`、`tests/test_visual_match.py`、`tests/test_visual_serving.py`：診所專屬與一般共用隔離、診所優先選取（tier 0 > tier 1）與諮詢端點整合測試。
+  - `tests/test_visual_autodraft.py`：推理樹自動生成草稿、未核准樹拒絕、零範本文字污染、零數字與排程互斥測試。
+  - `tests/test_visual_admin_api.py`：管理端 API 認證、範圍篩選、內聯修訂重置 `pending`、核准重驗與樹轉草稿測試。
+  - `tests/test_visual_review_ui.py`：7 個頁籤與外部腳本靜態安全掃描，以及 Playwright 真實瀏覽器動畫合成播放、修訂、核准與諮詢頁端到端測試。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -838,11 +880,13 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `data/scraper/sources.json`：網址擷取白名單（`www.nu-vendome.com` 的 `/location-detail/`、`/service/`、`/service-detail/`）
 * `tests/test_service_detail.py`、`tests/test_timetable.py`、`tests/test_clinic_selector.py`、`tests/test_url_deps_resolver.py`：上述模組與診所管理相關測試
 * `tests/test_patient_consult_latency.py`、`tests/test_answer_compose.py`、`tests/test_patient_compose.py`、`tests/test_consult_jobs.py`、`tests/test_patient_prefill_plan.py`、`tests/test_patient_prefill_batch.py`、`tests/test_patient_prefill_e2e.py`、`tests/test_probe_patient_thinking.py`、`tests/test_patient_clinic_scope.py`、`tests/test_patient_prefill_special_e2e.py`：Phase 28 病人端對話式諮詢、延遲修復、非同步作業、24 小時預生成與伺服器固定診所範圍測試
-* `src/visual/`：一般醫學視覺解說卡核心模組（`__init__.py`, `ir.py`, `writer.py`, `review.py`, `generator.py`, `match.py`, `stats.py`）
+* `src/visual/`：一般醫學視覺解說卡核心模組（`__init__.py`, `ir.py`, `writer.py`, `review.py`, `generator.py`, `match.py`, `stats.py`, `blueprints.py`, `autodraft.py`）
+  * `src/visual/autodraft.py`：由已核准臨床推理樹自動生成受約束視覺解說卡草稿模組（零預設範本文字污染、永不自動核准）
 * `data/visual/skeletons/autologous-fat-grafting.json`：自體脂肪移植視覺解說卡固定場景骨架定義檔
 * `scripts/migrate_visual_assets.py`：`visual_assets` 與 `visual_stats` 單一來源 DDL 遷移腳本（`--confirm-prod-backup`、`--dry-run`）
 * `scripts/generate_visual_assets.py`：視覺解說卡本地 LLM 預生成 CLI 腳本（寫入狀態恆為 `pending`）
 * `scripts/review_visual.py`：視覺解說卡醫師審核 CLI 工具（`list`/`show`/`approve`/`reject`/`reset`）
+* `scripts/autodraft_visual_from_trees.py`：由已核准推理樹批次生成視覺動畫草稿 CLI 腳本（`--tree-id`／`--all`，狀態恆為 `pending`）
 * `tests/test_migrate_visual_assets.py`、`tests/test_visual_ir.py`、`tests/test_visual_writer.py`、`tests/test_visual_generator.py`、`tests/test_visual_cli.py`、`tests/test_visual_match.py`、`tests/test_visual_serving.py`、`tests/test_visual_stats.py`、`tests/test_consult_visual_ui.py`：Phase 29 一般醫學視覺解說卡資料層、IR 驗證、預生成、審核、比對、事件計數與前端渲染測試
 * `src/visual/blueprints.py`：視覺場景 Blueprint 參數規格單一來源、調色盤代號常數、預設值與合併驗證函式
 * `src/web/static/visual_engine.js`：視覺場景引擎前端純函式主程式（`ClinicVisual`、進度 $u$ 驅動、零被禁 API）
@@ -852,6 +896,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `data/visual/skeletons/hyaluronic-acid-filler.json`：玻尿酸填充原理視覺解說卡固定場景骨架定義檔（第二主題零 JS 改動證明）
 * `docs/visual-blueprints.md`：視覺解說卡 Blueprint 規格與新增實作指南
 * `tests/test_visual_blueprints.py`、`tests/test_visual_engine_static.py`、`tests/test_visual_engine_browser.py`、`tests/test_visual_bundle.py`、`tests/test_visual_player.py`、`tests/test_visual_video.py`、`tests/test_consult_engine_browser.py`、`tests/test_visual_second_topic.py`：Phase 30 視覺場景引擎規格、靜態安全、瀏覽器契約、Bundle 匯出、通用播放器、MP4 匯出與第二主題測試
+* `tests/test_visual_autodraft.py`、`tests/test_visual_admin_api.py`、`tests/test_visual_review_ui.py`：Phase 31 由推理樹自動生成動畫草稿、管理審核 API 與審核介面「🎬 待簽核動畫」分頁測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

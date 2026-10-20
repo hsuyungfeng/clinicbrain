@@ -329,3 +329,60 @@ def test_find_visual_tampered_params_rejected_by_visible_assets(isolated_db_path
     finally:
         conn.close()
 
+
+def test_find_visual_clinic_priority_and_isolation(isolated_db_path: Path):
+    """驗證診所專屬資產優先於一般醫學資產，且他院資產絕不外洩。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        # 1. 一般醫學資產（命中 2 個關鍵字："自體脂肪"、"補脂"）
+        gen_ir = _make_sample_ir(
+            topic_key="general-fat-grafting",
+            title="一般醫學自體脂肪移植",
+            keywords=["自體脂肪", "補脂"],
+        )
+        upsert_assets(
+            conn,
+            [{"clinic_id": None, "topic_key": gen_ir["topic_key"], "title": gen_ir["title"], "keywords": gen_ir["keywords"], "ir": gen_ir}],
+            source_type="manual",
+        )
+        set_review_status(conn, gen_ir["topic_key"], "approved", clinic_id=None)
+
+        # 2. 診所 A (3503190424) 資產（僅命中 1 個關鍵字："自體脂肪"）
+        clinic_a_ir = _make_sample_ir(
+            topic_key="clinic-a-fat-grafting",
+            title="緻妍診所專屬自體脂肪",
+            keywords=["自體脂肪"],
+        )
+        upsert_assets(
+            conn,
+            [{"clinic_id": "3503190424", "topic_key": clinic_a_ir["topic_key"], "title": clinic_a_ir["title"], "keywords": clinic_a_ir["keywords"], "ir": clinic_a_ir}],
+            source_type="manual",
+        )
+        set_review_status(conn, clinic_a_ir["topic_key"], "approved", clinic_id="3503190424")
+
+        q = "請問自體脂肪補脂手術細節？"  # 同時命中 gen_ir(2 hits) 與 clinic_a_ir(1 hit)
+
+        # (a) 帶 clinic_id="3503190424"：即使診所 A 僅命中 1 個關鍵字，診所專屬優先於一般醫學 (2 hits)
+        res_a = find_visual(conn, q, clinic_id="3503190424")
+        assert res_a is not None
+        assert res_a["topic_key"] == "clinic-a-fat-grafting"
+        assert res_a["title"] == "緻妍診所專屬自體脂肪"
+        assert "clinic_id" not in res_a
+
+        # (b) 不帶 clinic_id (None)：必選一般醫學資產
+        res_gen = find_visual(conn, q, clinic_id=None)
+        assert res_gen is not None
+        assert res_gen["topic_key"] == "general-fat-grafting"
+        assert res_gen["title"] == "一般醫學自體脂肪移植"
+        assert "clinic_id" not in res_gen
+
+        # (c) 帶診所 B ("3503264627")：絕不外洩診所 A 資產，安全退回一般醫學資產
+        res_b = find_visual(conn, q, clinic_id="3503264627")
+        assert res_b is not None
+        assert res_b["topic_key"] == "general-fat-grafting"
+        assert res_b["title"] == "一般醫學自體脂肪移植"
+        assert "clinic_id" not in res_b
+    finally:
+        conn.close()
+

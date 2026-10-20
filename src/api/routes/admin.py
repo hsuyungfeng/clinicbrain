@@ -85,6 +85,13 @@ def _local_llm_ask_call(prompt: str) -> str:
     return local_llm_call(prompt, timeout=LLM_ASK_TIMEOUT_SECONDS, sampling=FAITHFUL_SAMPLING)
 
 
+def _visual_llm_call(prompt: str) -> str:
+    """呼叫本地 LLM 生成動畫草稿（使用 VISUAL_SAMPLING 取樣參數；測試時可由 monkeypatch 替換）。"""
+    from ...pageindex.llm_client import VISUAL_SAMPLING, local_llm_call
+
+    return local_llm_call(prompt, timeout=180, sampling=dict(VISUAL_SAMPLING))
+
+
 class BatchReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     action: Literal["approve", "reject"]
@@ -131,6 +138,25 @@ class GenerateAnswerRequest(BaseModel):
 class AutoFillAllRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     clinic_id: Optional[str] = None
+
+
+class VisualSceneUpdateItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: Optional[str] = None
+    caption: Optional[str] = None
+    labels: Optional[list[dict[str, str]]] = None
+
+
+class UpdateVisualAssetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: Optional[str] = None
+    keywords: Optional[list[str]] = None
+    scenes: Optional[list[VisualSceneUpdateItem]] = None
+
+
+class AutodraftVisualRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tree_id: StrictInt
 
 
 router = APIRouter(
@@ -841,6 +867,16 @@ def get_admin_review_summary(
     except Exception:
         pass
 
+    visuals_pending_total = 0
+    visuals_approved_total = 0
+    try:
+        cur.execute("SELECT COUNT(*) FROM visual_assets WHERE review_status = 'pending'")
+        visuals_pending_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM visual_assets WHERE review_status = 'approved'")
+        visuals_approved_total = cur.fetchone()[0]
+    except Exception:
+        pass
+
     return {
         "pending_total": pending_total,
         "pending_special": pending_special,
@@ -851,6 +887,8 @@ def get_admin_review_summary(
         "soap_records_total": soap_records_total,
         "trees_pending_total": trees_pending_total,
         "trees_approved_total": trees_approved_total,
+        "visuals_pending_total": visuals_pending_total,
+        "visuals_approved_total": visuals_approved_total,
     }
 
 
@@ -1328,3 +1366,195 @@ def create_admin_clinic(
             detail=f"診所代碼 {req.clinic_id} 已存在",
         ) from e
     return {"clinic_id": req.clinic_id, "name": name}
+
+
+# ============================================================================
+# Phase 31 P31-API: 視覺解說卡管理審核與自動生成端點
+# ============================================================================
+
+
+@router.get("/visuals", summary="查詢視覺解說卡列表與總數")
+def list_admin_visuals(
+    status: Literal["pending", "approved", "rejected", "all"] = "pending",
+    clinic_id: Optional[str] = Query(None, description="診所代碼篩選"),
+    scope: Literal["all", "clinic", "general"] = "all",
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    from ...visual.review import list_visual_assets
+
+    items, total = list_visual_assets(
+        conn,
+        status=status,
+        clinic_id=clinic_id,
+        scope=scope,
+        limit=limit,
+        offset=offset,
+    )
+    return {
+        "visuals": items,
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get("/visuals/{asset_id}", summary="查詢單一視覺解說卡詳情")
+def get_admin_visual(
+    asset_id: int,
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    from ...visual.review import get_visual_asset_by_id
+
+    asset = get_visual_asset_by_id(conn, asset_id)
+    if asset is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
+    return {"asset": asset, **asset}
+
+
+@router.patch("/visuals/{asset_id}", summary="修訂視覺解說卡內容")
+def patch_admin_visual(
+    asset_id: int,
+    req: UpdateVisualAssetRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...visual.review import update_visual_asset_by_id
+    from ...visual.writer import has_visual_assets_table
+
+    if not has_visual_assets_table(conn):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="資料庫尚未建立 visual_assets 資料表",
+        )
+
+    scenes_data = (
+        [s.model_dump(exclude_unset=True) for s in req.scenes]
+        if req.scenes is not None
+        else None
+    )
+
+    try:
+        updated = update_visual_asset_by_id(
+            conn,
+            asset_id,
+            title=req.title,
+            keywords=req.keywords,
+            scenes=scenes_data,
+        )
+    except ValueError as e:
+        code = str(e)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"動畫內容驗證未通過: {code}",
+        ) from e
+
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
+
+    return {"status": "ok", "asset": updated, **updated}
+
+
+@router.post("/visuals/{asset_id}/approve", summary="醫師簽核核准視覺解說卡")
+def approve_admin_visual(
+    asset_id: int,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...visual.review import set_review_status
+    from ...visual.writer import has_visual_assets_table
+
+    if not has_visual_assets_table(conn):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="資料庫尚未建立 visual_assets 資料表",
+        )
+
+    res = set_review_status(conn, "", "approved", asset_id=asset_id)
+    if res.get("status") == "not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
+    if res.get("status") == "validation_failed":
+        code = res.get("code")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"動畫內容驗證未通過: {code}",
+        )
+
+    return {"status": "ok", "id": asset_id, "review_status": "approved"}
+
+
+@router.post("/visuals/{asset_id}/reject", summary="醫師駁回視覺解說卡")
+def reject_admin_visual(
+    asset_id: int,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...visual.review import set_review_status
+    from ...visual.writer import has_visual_assets_table
+
+    if not has_visual_assets_table(conn):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="資料庫尚未建立 visual_assets 資料表",
+        )
+
+    res = set_review_status(conn, "", "rejected", asset_id=asset_id)
+    if res.get("status") == "not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
+
+    return {"status": "ok", "id": asset_id, "review_status": "rejected"}
+
+
+@router.post("/visuals/autodraft", summary="自已核准臨床推理樹自動生成視覺解說卡草稿")
+def autodraft_admin_visual(
+    req: AutodraftVisualRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...visual.autodraft import autodraft_from_tree
+    from ...visual.review import get_visual_asset_by_id
+
+    res = autodraft_from_tree(
+        conn,
+        req.tree_id,
+        llm_call=_visual_llm_call,
+        db_path=config.db_path,
+    )
+    st = res.get("status")
+    code = res.get("code")
+
+    if st == "not_found" or code == "tree_not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的推理樹")
+    if code == "tree_not_approved":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="該推理樹尚未核准，無法生成動畫草稿",
+        )
+    if st == "busy" or code == "busy":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="系統正忙或夜間批次執行中，請稍後再試",
+        )
+    if code == "llm_unavailable":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="本地 LLM 服務暫不可用",
+        )
+    if st != "ok":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"動畫草稿生成失敗: {code}",
+        )
+
+    # 查回完整格式之資產
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+        (res.get("clinic_id"), res.get("topic_key")),
+    )
+    r = cur.fetchone()
+    if r:
+        asset_id = r[0]
+        full_asset = get_visual_asset_by_id(conn, asset_id)
+        if full_asset:
+            return {"status": "ok", "asset": full_asset, **full_asset}
+
+    return {"status": "ok", "asset": res, **res}

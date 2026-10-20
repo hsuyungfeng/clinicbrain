@@ -63,15 +63,28 @@ def _shape_public_visual(asset: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def find_visual(conn: sqlite3.Connection, query: str) -> dict[str, Any] | None:
+def find_visual(
+    conn: sqlite3.Connection,
+    query: str,
+    clinic_id: str | None = None,
+) -> dict[str, Any] | None:
     """根據病人問句比對已核准之視覺解說卡並回傳對外安全結構。
 
-    比對規則：
+    比對與優先級規則：
+    - 呼叫 visible_assets(conn, clinic_id=clinic_id)。
+    - Python 層再次防護：若 clinic_id is None，只保留 asset.get("clinic_id") is None；
+      若 clinic_id 有值，只保留 asset.get("clinic_id") in (clinic_id, None)。
     - 問句與各資產 keywords 皆做 NFKC 正規化（轉小寫）。
     - 計算問句中包含的關鍵字子字串數量（hit_count）。
-    - hit_count == 0 時回傳 None。
-    - 多筆命中時取 hit_count 最高者；同分時取字典序較小的 topic_key（確定性）。
+    - hit_count <= 0 時略過。
+    - 排序優先序：
+      tier 0: clinic_id 存在且 asset.get("clinic_id") == clinic_id（診所專屬）
+      tier 1: 一般醫學（clinic_id is None）
+      排序鍵：(tier, -hits, topic_key)
+      即：診所專屬永遠優先於一般醫學；同層級比命中關鍵字數（多者優先），再比 topic_key 字典序。
+    - 輸出維持 _shape_public_visual，僅含 {"topic_key", "title", "scenes"}，不含 clinic_id。
     - 缺表或任何資料庫錯誤一律回傳 None（Fail-Closed）。
+    - 純 SELECT、零 logging、零 print。
     """
     if not isinstance(query, str) or not query.strip():
         return None
@@ -81,14 +94,21 @@ def find_visual(conn: sqlite3.Connection, query: str) -> dict[str, Any] | None:
         if not norm_query.strip():
             return None
 
-        assets = visible_assets(conn)
+        assets = visible_assets(conn, clinic_id=clinic_id)
         if not assets:
             return None
 
         best_asset: dict[str, Any] | None = None
-        best_key: tuple[int, str] | None = None
+        best_key: tuple[int, int, str] | None = None
 
         for asset in assets:
+            # Python 層雙重檢查診所範圍
+            asset_clinic = asset.get("clinic_id")
+            if clinic_id is None and asset_clinic is not None:
+                continue
+            if clinic_id is not None and asset_clinic not in (clinic_id, None):
+                continue
+
             keywords = asset.get("keywords")
             if not isinstance(keywords, list):
                 continue
@@ -105,8 +125,10 @@ def find_visual(conn: sqlite3.Connection, query: str) -> dict[str, Any] | None:
                 continue
 
             topic_key = str(asset.get("topic_key", ""))
-            # 排序鍵：(-hits, topic_key) 越小越優先（即 hits 越大越優先，同分取較小 topic_key）
-            candidate_sort_key = (-hits, topic_key)
+            # 優先級：診所專屬 (tier 0) > 一般醫學 (tier 1)；同 tier 比命中數 (-hits)；同分比 topic_key
+            tier = 0 if (clinic_id and asset_clinic == clinic_id) else 1
+            candidate_sort_key = (tier, -hits, topic_key)
+
             if best_key is None or candidate_sort_key < best_key:
                 best_key = candidate_sort_key
                 best_asset = asset

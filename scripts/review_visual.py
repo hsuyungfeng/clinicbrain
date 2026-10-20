@@ -51,19 +51,29 @@ def main(argv: Optional[list[str]] = None) -> int:
         default=False,
         help="確認允許對正式 clinic.db 進行審核狀態變更（正式庫寫入必填旗標）",
     )
+    parser.add_argument(
+        "--clinic-id",
+        type=str,
+        default=None,
+        help="診所代碼（選填，預設 None 針對一般醫學資產）",
+    )
 
     subparsers = parser.add_subparsers(dest="subcommand", help="審核子命令")
 
-    subparsers.add_parser("list", help="列出所有視覺解說卡資產與狀態")
+    p_list = subparsers.add_parser("list", help="列出所有視覺解說卡資產與狀態")
+    p_list.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
 
     p_show = subparsers.add_parser("show", help="檢視指定主題之完整場景內容")
     p_show.add_argument("topic_key", type=str, help="主題識別碼 (topic_key)")
+    p_show.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
 
     p_app = subparsers.add_parser("approve", help="核准指定主題之視覺解說卡")
     p_app.add_argument("topic_key", type=str, help="欲核准之主題識別碼 (topic_key)")
+    p_app.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
 
     p_rej = subparsers.add_parser("reject", help="駁回指定主題之視覺解說卡")
     p_rej.add_argument("topic_key", type=str, help="欲駁回之主題識別碼 (topic_key)")
+    p_rej.add_argument("--clinic-id", type=str, default=None, help="診所代碼（選填）")
 
     args = parser.parse_args(argv)
     if not args.subcommand:
@@ -91,6 +101,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"❌ 錯誤：目標資料庫檔案不存在：{target_path}", file=sys.stderr)
         return 2
 
+    # 支援子命令與主命令的 clinic_id 整合
+    clinic_id = getattr(args, "clinic_id", None)
+
     if args.subcommand == "list":
         conn = _open_ro(target_path)
         try:
@@ -98,17 +111,28 @@ def main(argv: Optional[list[str]] = None) -> int:
                 print("❌ 目標資料庫尚未建立 visual_assets 資料表。", file=sys.stderr)
                 return 2
             cur = conn.cursor()
-            cur.execute(
-                "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at "
-                "FROM visual_assets ORDER BY id ASC"
-            )
+            cur.execute("PRAGMA table_info(visual_assets)")
+            has_clinic_col = "clinic_id" in [r[1] for r in cur.fetchall()]
+
+            if has_clinic_col:
+                cur.execute(
+                    "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at, clinic_id "
+                    "FROM visual_assets WHERE clinic_id IS ? ORDER BY id ASC",
+                    (clinic_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT topic_key, title, review_status, content_version, source_type, reviewed_at "
+                    "FROM visual_assets ORDER BY id ASC"
+                )
             rows = cur.fetchall()
             if not rows:
                 print("（目前無任何視覺解說卡資產）")
                 return 0
             for r in rows:
+                clinic_label = f" | clinic={r[6]}" if (has_clinic_col and r[6]) else ""
                 print(
-                    f"{r[0]} | status={r[2]} | v{r[3]} | source={r[4]} | title={r[1]} | reviewed_at={r[5] or '-'}"
+                    f"{r[0]} | status={r[2]} | v{r[3]} | source={r[4]} | title={r[1]} | reviewed_at={r[5] or '-'}{clinic_label}"
                 )
             return 0
         finally:
@@ -121,11 +145,21 @@ def main(argv: Optional[list[str]] = None) -> int:
                 print("❌ 目標資料庫尚未建立 visual_assets 資料表。", file=sys.stderr)
                 return 2
             cur = conn.cursor()
-            cur.execute(
-                "SELECT topic_key, title, keywords, ir_json, review_status, content_version "
-                "FROM visual_assets WHERE topic_key = ?",
-                (args.topic_key,),
-            )
+            cur.execute("PRAGMA table_info(visual_assets)")
+            has_clinic_col = "clinic_id" in [r[1] for r in cur.fetchall()]
+
+            if has_clinic_col:
+                cur.execute(
+                    "SELECT topic_key, title, keywords, ir_json, review_status, content_version, clinic_id "
+                    "FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+                    (clinic_id, args.topic_key),
+                )
+            else:
+                cur.execute(
+                    "SELECT topic_key, title, keywords, ir_json, review_status, content_version "
+                    "FROM visual_assets WHERE topic_key = ?",
+                    (args.topic_key,),
+                )
             row = cur.fetchone()
             if row is None:
                 print(f"❌ 找不到主題：{args.topic_key}", file=sys.stderr)
@@ -134,7 +168,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             ir = json.loads(row[3])
             print(REVIEW_WARNING_BANNER)
             print("=" * 60)
-            print(f"主題：{row[0]}（{row[1]}）| 狀態：{row[4]} | 版本：v{row[5]}")
+            clinic_text = f" | 診所：{row[6]}" if (has_clinic_col and row[6]) else " | 診所：一般醫學"
+            print(f"主題：{row[0]}（{row[1]}）| 狀態：{row[4]} | 版本：v{row[5]}{clinic_text}")
             print(f"關鍵字：{row[2]}")
             print("-" * 60)
             for idx, sc in enumerate(ir.get("scenes", []), 1):
@@ -156,7 +191,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             return 2
 
         target_status = "approved" if args.subcommand == "approve" else "rejected"
-        res = set_review_status(conn, args.topic_key, target_status)
+        res = set_review_status(conn, args.topic_key, target_status, clinic_id=clinic_id)
         if res["status"] == "not_found":
             print(f"❌ 找不到主題：{args.topic_key}", file=sys.stderr)
             return 1

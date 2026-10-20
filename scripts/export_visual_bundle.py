@@ -49,6 +49,7 @@ def export_bundle(
     out_path: Path,
     allow_pending: bool = False,
     force: bool = False,
+    clinic_id: Optional[str] = None,
 ) -> int:
     resolved_db = db_path.resolve()
 
@@ -79,10 +80,19 @@ def export_bundle(
 
         allowed_statuses = ("approved", "pending") if allow_pending else ("approved",)
         cur = conn.cursor()
-        cur.execute(
-            "SELECT topic_key, title, ir_json, review_status FROM visual_assets WHERE topic_key = ?",
-            (topic_key,),
-        )
+        cur.execute("PRAGMA table_info(visual_assets)")
+        has_clinic_col = "clinic_id" in [r[1] for r in cur.fetchall()]
+
+        if has_clinic_col:
+            cur.execute(
+                "SELECT topic_key, title, ir_json, review_status FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+                (clinic_id, topic_key),
+            )
+        else:
+            cur.execute(
+                "SELECT topic_key, title, ir_json, review_status FROM visual_assets WHERE topic_key = ?",
+                (topic_key,),
+            )
         row = cur.fetchone()
         if not row:
             print(f"錯誤：找不到主題: '{topic_key}'", file=sys.stderr)
@@ -197,6 +207,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         default=False,
         help="若輸出檔案已存在則強制覆寫",
     )
+    parser.add_argument(
+        "--clinic-id",
+        type=str,
+        default=None,
+        help="診所代碼（選填，預設 None 匯出一般醫學資產）",
+    )
 
     args = parser.parse_args(argv)
     return export_bundle(
@@ -205,6 +221,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         out_path=args.out,
         allow_pending=args.allow_pending,
         force=args.force,
+        clinic_id=args.clinic_id,
     )
 
 
