@@ -137,7 +137,7 @@ def test_visual_engine_determinism(playwright_page, tmp_path):
 
     test_u_values = [0.0, 0.25, 0.5, 0.75, 1.0]
 
-    for bp in ("process_diagram", "contrast", "timeline"):
+    for bp in BLUEPRINTS:
         # 掛載測試場景
         playwright_page.evaluate(
             f"""(() => {{
@@ -217,7 +217,7 @@ def test_visual_engine_bounding_boxes_and_safe_zone(playwright_page, tmp_path):
 
     test_u_points = [0.0, 0.5, 1.0]
 
-    for bp in ("process_diagram", "contrast", "timeline"):
+    for bp in BLUEPRINTS:
         playwright_page.evaluate(
             f"""(() => {{
             const svg = document.getElementById('testSvg');
@@ -333,3 +333,182 @@ def test_unit_fill_param_changes_unit_color(playwright_page, tmp_path):
     right_fat = fills("contrast", '{"right":{"unit_fill":"fat"}}')
     right_gel = fills("contrast", '{"right":{"unit_fill":"gel"}}')
     assert right_fat != right_gel
+
+
+_PLAN_32_02_NEW_MODES = [
+    ("contrast", {"left": {"mode": "wide_incision", "core_label": "神經受壓"}}),
+    ("contrast", {"left": {"mode": "thermal_spread"}}),
+    ("contrast", {"right": {"mode": "minimal_incision"}}),
+    ("contrast", {"right": {"mode": "targeted_energy"}}),
+    ("timeline", {"connectors": "wound_healing"}),
+    ("timeline", {"connectors": "collagen_remodeling"}),
+    ("surgical_action", {}),
+]
+
+
+def test_plan_32_02_new_modes_render_without_errors(playwright_page, tmp_path):
+    """Plan 32-02：contrast/timeline 新增模式與 surgical_action 於各進度皆可渲染，無 console 錯誤。"""
+    import json as _json
+
+    console_errors, _ = _setup_page(playwright_page, tmp_path)
+    for bp, overrides in _PLAN_32_02_NEW_MODES:
+        payload = _json.dumps(overrides, ensure_ascii=False)
+        counts = playwright_page.evaluate(
+            f"""(() => {{
+            const svg = document.getElementById('testSvg');
+            svg.innerHTML = '';
+            const m = window.ClinicVisual.mount(svg, [{{ blueprint: '{bp}', title: 't', params: {payload} }}]);
+            const out = [];
+            for (const f of [0, 0.5, 1]) {{
+                m.renderAt(f * m.totalDuration);
+                out.push(svg.children.length);
+            }}
+            return out;
+        }})()"""
+        )
+        assert all(c > 0 for c in counts), (bp, overrides, counts)
+
+    assert console_errors == []
+
+
+def test_wide_incision_shows_nerve_label_at_full_progress(playwright_page, tmp_path):
+    """wide_incision 於完成時應顯示神經壓迫標籤（來自 params.core_label，非寫死文字）。"""
+    _setup_page(playwright_page, tmp_path)
+    texts = playwright_page.evaluate(
+        """(() => {
+        const svg = document.getElementById('testSvg');
+        const m = window.ClinicVisual.mount(svg, [{ blueprint: 'contrast', title: 't',
+            params: { left: { mode: 'wide_incision', core_label: '神經受壓' } } }]);
+        m.renderAt(m.totalDuration);
+        return Array.from(svg.querySelectorAll('text')).map(e => e.textContent);
+    })()"""
+    )
+    assert "神經受壓" in texts
+
+
+def test_plan_32_02_enum_values_survive_sanitizer(playwright_page, tmp_path):
+    """回歸：JS 正規化白名單必須與 Python 列舉一致，否則新模式會被靜默退回預設（2026-10-21 實機發現）。"""
+    _setup_page(playwright_page, tmp_path)
+    pairs = [
+        ("contrast", "left", "mode", "wide_incision"),
+        ("contrast", "left", "mode", "thermal_spread"),
+        ("contrast", "right", "mode", "minimal_incision"),
+        ("contrast", "right", "mode", "targeted_energy"),
+        ("timeline", None, "connectors", "wound_healing"),
+        ("timeline", None, "connectors", "collagen_remodeling"),
+    ]
+    for bp, side, key, value in pairs:
+        inp = {side: {key: value}} if side else {key: value}
+        got = playwright_page.evaluate(
+            "([bp, inp]) => window.ClinicVisual.resolveParams(bp, inp)",
+            [bp, inp],
+        )
+        actual = got[side][key] if side else got[key]
+        assert actual == value, (bp, side, key, value, actual)
+
+
+_PHASE33_BOUNDS_SCRIPT = """(function() {
+    const svgEl = document.getElementById('testSvg');
+    const svgRect = svgEl.getBoundingClientRect();
+    const scaleX = 800 / svgRect.width;
+    const scaleY = 510 / svgRect.height;
+    const violations = [];
+    for (const el of svgEl.querySelectorAll('*')) {
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'defs' || tag === 'clippath' || tag === 'g' || tag === 'svg') continue;
+        if (el.closest('defs') || el.closest('clipPath')) continue;
+        if (el.getAttribute('data-bg') === '1') continue;
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') continue;
+        const op = parseFloat(style.opacity);
+        if (Number.isFinite(op) && op <= 0.01) continue;
+        const attrOp = parseFloat(el.getAttribute('opacity'));
+        if (Number.isFinite(attrOp) && attrOp <= 0.01) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0.1 || rect.height <= 0.1) continue;
+        const vx1 = (rect.left - svgRect.left) * scaleX;
+        const vy1 = (rect.top - svgRect.top) * scaleY;
+        const vx2 = (rect.right - svgRect.left) * scaleX;
+        const vy2 = (rect.bottom - svgRect.top) * scaleY;
+        if (vx1 < 5 || vx2 > 795 || vy1 < 5 || vy2 > 505) {
+            violations.push({ tag, text: el.textContent, vx1, vy1, vx2, vy2, type: 'out_of_bounds' });
+        }
+        if (tag === 'text' && vy2 > 411) {
+            violations.push({ tag, text: el.textContent, vy2, type: 'subtitle_overlap' });
+        }
+    }
+    return violations;
+})()"""
+
+# Phase 33：5 組 contrast 專科 + glow_restored + 5 組 timeline 修復歷程
+_PHASE33_CASES = [
+    ("contrast", {"left": {"mode": "tissue_trauma_torn_vessel"}, "right": {"mode": "ultrasonic_emulsification"}}),
+    ("contrast", {"left": {"mode": "scar_contracture_ectropion"}, "right": {"mode": "transconjunctival_fat_reposition"}}),
+    ("contrast", {"left": {"mode": "silicone_extrusion_erythema"}, "right": {"mode": "cartilage_triangular_strut"}}),
+    ("contrast", {"left": {"mode": "capsular_contracture_ball"}, "right": {"mode": "dual_plane_natural_teardrop"}}),
+    ("contrast", {"left": {"mode": "nodule_clumping"}, "right": {"mode": "micro_droplet_diffusion"}}),
+    ("timeline", {"connectors": "bone_healing"}),
+    ("timeline", {"connectors": "bruise_metabolism"}),
+    ("timeline", {"connectors": "scar_maturation"}),
+    ("timeline", {"connectors": "nerve_regeneration"}),
+    ("timeline", {"connectors": "skin_retraction"}),
+    ("timeline", {"connectors": "skin_retraction", "unit_effect": "glow_restored"}),
+]
+
+
+def _mount_phase33(page, bp, overrides):
+    import json as _json
+    payload = _json.dumps(overrides, ensure_ascii=False)
+    page.evaluate(
+        f"""(() => {{
+        const svg = document.getElementById('testSvg');
+        svg.innerHTML = '';
+        window.__mounted = window.ClinicVisual.mount(svg, [{{ blueprint: '{bp}', title: 't', params: {payload} }}]);
+    }})()"""
+    )
+
+
+def test_phase33_determinism_forward_and_reverse_seek(playwright_page, tmp_path):
+    """Phase 33：每個新模式正向與倒退 seek 的 outerHTML 必須完全一致（確定性）。"""
+    _setup_page(playwright_page, tmp_path)
+    for bp, overrides in _PHASE33_CASES:
+        _mount_phase33(playwright_page, bp, overrides)
+        total = playwright_page.evaluate("window.__mounted.totalDuration")
+        forward = {}
+        for u in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            forward[u] = playwright_page.evaluate(
+                f"window.__mounted.renderAt({u} * {total}); document.getElementById('testSvg').outerHTML"
+            )
+        for u in [1.0, 0.5, 0.0, 0.75, 0.25, 0.5]:
+            html = playwright_page.evaluate(
+                f"window.__mounted.renderAt({u} * {total}); document.getElementById('testSvg').outerHTML"
+            )
+            assert html == forward[u], (bp, overrides, u)
+
+
+def test_phase33_bounds_and_subtitle_safe_zone(playwright_page, tmp_path):
+    """Phase 33：每個新模式在 u=0/0.5/1 的所有圖元都在安全邊界內，文字 y<=411。"""
+    _setup_page(playwright_page, tmp_path)
+    for bp, overrides in _PHASE33_CASES:
+        _mount_phase33(playwright_page, bp, overrides)
+        total = playwright_page.evaluate("window.__mounted.totalDuration")
+        for u in [0.0, 0.5, 1.0]:
+            playwright_page.evaluate(f"window.__mounted.renderAt({u} * {total})")
+            violations = playwright_page.evaluate(_PHASE33_BOUNDS_SCRIPT)
+            assert violations == [], (bp, overrides, u, violations)
+
+
+def test_phase33_enum_whitelist_matches_python_spec(playwright_page, tmp_path):
+    """Phase 33：JS 白名單必須保留所有新列舉值（與 Python 規格一致，否則會被靜默退回預設）。"""
+    _setup_page(playwright_page, tmp_path)
+    for bp, overrides in _PHASE33_CASES:
+        got = playwright_page.evaluate(
+            "([bp, inp]) => window.ClinicVisual.resolveParams(bp, inp)", [bp, overrides]
+        )
+        for side in ("left", "right"):
+            if side in overrides:
+                assert got[side]["mode"] == overrides[side]["mode"], (bp, side, got[side]["mode"])
+        if "connectors" in overrides:
+            assert got["connectors"] == overrides["connectors"]
+        if "unit_effect" in overrides:
+            assert got["unit_effect"] == overrides["unit_effect"]

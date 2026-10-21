@@ -1579,6 +1579,12 @@ function openTreeEditModal(tree) {
 // Phase 31: 待簽核視覺解說動畫審核與管理前端邏輯
 // =============================================================================
 
+const visualState = {
+    selected: new Set(),
+    cards: new Map(),
+    busy: false,
+};
+
 function initVisualsSection() {
     const btnRefresh = document.getElementById("btnRefreshVisuals");
     if (btnRefresh) btnRefresh.addEventListener("click", loadVisuals);
@@ -1591,7 +1597,89 @@ function initVisualsSection() {
 
     const btnAutodraft = document.getElementById("btnAutodraftVisual");
     if (btnAutodraft) btnAutodraft.addEventListener("click", handleAutodraftVisual);
+
+    document.getElementById("btnVisualSelectAll")?.addEventListener("click", () => {
+        visualState.cards.forEach((entry, id) => {
+            visualState.selected.add(id);
+        });
+        syncVisualSelectionUi();
+    });
+
+    document.getElementById("btnVisualInvertSelect")?.addEventListener("click", () => {
+        visualState.cards.forEach((entry, id) => {
+            if (visualState.selected.has(id)) visualState.selected.delete(id);
+            else visualState.selected.add(id);
+        });
+        syncVisualSelectionUi();
+    });
+
+    document.getElementById("btnVisualClearSelect")?.addEventListener("click", () => {
+        visualState.selected.clear();
+        syncVisualSelectionUi();
+    });
+
+    document.getElementById("btnVisualBatchApprove")?.addEventListener("click", () => runVisualBatch("approve"));
+    document.getElementById("btnVisualBatchReject")?.addEventListener("click", () => runVisualBatch("reject"));
 }
+
+function syncVisualSelectionUi() {
+    visualState.cards.forEach(({ card, checkbox }, id) => {
+        const on = visualState.selected.has(id);
+        if (checkbox) checkbox.checked = on;
+        if (card) card.classList.toggle("selected", on);
+    });
+    const n = visualState.selected.size;
+    const total = visualState.cards.size;
+    const counterEl = document.getElementById("visualSelectionCounter");
+    if (counterEl) counterEl.textContent = `已選取 ${n} / ${total} 筆`;
+    const btnApprove = document.getElementById("btnVisualBatchApprove");
+    if (btnApprove) {
+        btnApprove.textContent = `✅ 批量核准 (${n})`;
+        btnApprove.disabled = n === 0 || visualState.busy;
+    }
+    const btnReject = document.getElementById("btnVisualBatchReject");
+    if (btnReject) {
+        btnReject.textContent = `❌ 批量駁回 (${n})`;
+        btnReject.disabled = n === 0 || visualState.busy;
+    }
+}
+
+async function runVisualBatch(action) {
+    if (visualState.busy) return;
+    const ids = Array.from(visualState.selected);
+    if (ids.length === 0) return;
+    const label = action === "approve" ? "核准發布" : "駁回";
+    if (!window.confirm(`確定要批量${label}所選的 ${ids.length} 筆視覺解說動畫嗎？`)) return;
+    visualState.busy = true;
+    syncVisualSelectionUi();
+    let ok = 0;
+    let failed = 0;
+    try {
+        for (const id of ids) {
+            try {
+                const resp = await fetch(`/api/v1/admin/visuals/${id}/${action}`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                });
+                if (resp.ok) ok++;
+                else failed++;
+            } catch (e) {
+                failed++;
+            }
+        }
+        if (ok > 0) {
+            showToast(`已成功批量${label} ${ok} 筆動畫${failed > 0 ? `（${failed} 筆失敗）` : ""}`, "success");
+        } else {
+            showToast(`批量${label}失敗`, "error");
+        }
+        await loadVisuals();
+        loadDashboardSummary();
+    } finally {
+        visualState.busy = false;
+        syncVisualSelectionUi();
+    }
+}
+
 
 async function loadApprovedTreesForVisualSelect() {
     const sel = document.getElementById("visualsTreeSelect");
@@ -1666,6 +1754,9 @@ async function handleAutodraftVisual() {
 async function loadVisuals() {
     const container = document.getElementById("visualsContainer");
     if (!container) return;
+    visualState.selected.clear();
+    visualState.cards.clear();
+    syncVisualSelectionUi();
     container.replaceChildren(el("div", "skeleton"), el("div", "skeleton"));
 
     const status = document.getElementById("visualsFilterStatus")?.value || "pending";
@@ -1695,6 +1786,7 @@ async function loadVisuals() {
             const card = createVisualReviewCard(item);
             container.appendChild(card);
         });
+        syncVisualSelectionUi();
     } catch (e) {
         setStatusBox(container, "連線失敗，無法取得動畫列表", "error");
     }
@@ -1708,6 +1800,20 @@ function createVisualReviewCard(asset) {
     const metaLeft = el("div", "space-y-1");
 
     const badgesRow = el("div", "flex flex-wrap items-center gap-1.5");
+    const checkLabel = el("label", "flex items-center cursor-pointer mr-1");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "visual-card-checkbox";
+    checkbox.checked = visualState.selected.has(asset.id);
+    checkbox.addEventListener("change", (e) => {
+        e.stopPropagation();
+        if (checkbox.checked) visualState.selected.add(asset.id);
+        else visualState.selected.delete(asset.id);
+        syncVisualSelectionUi();
+    });
+    checkLabel.appendChild(checkbox);
+    badgesRow.appendChild(checkLabel);
+
     const idBadge = el("span", "text-xs font-mono font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded", `#${asset.id}`);
     const keyBadge = el("span", "text-xs font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded", asset.topic_key || "");
     badgesRow.appendChild(idBadge);
@@ -2093,6 +2199,7 @@ function createVisualReviewCard(asset) {
         });
     });
 
+    visualState.cards.set(asset.id, { card, checkbox, asset });
     return card;
 }
 

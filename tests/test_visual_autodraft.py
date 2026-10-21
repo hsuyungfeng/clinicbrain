@@ -193,7 +193,7 @@ def test_fetch_eligible_trees_filters_unapproved(isolated_db_path: Path):
 
 
 def test_build_tree_visual_prompt():
-    """驗證提示詞正確帶入推理樹資訊與禁止規則。"""
+    """驗證提示詞正確帶入推理樹資訊、推斷契合之解剖機轉模板與禁止規則。"""
     tree = {
         "title": "海芙音波拉提",
         "doc_id": "hifu-lifting",
@@ -207,10 +207,15 @@ def test_build_tree_visual_prompt():
     assert "海芙音波拉提" in prompt
     assert "聚焦超音波緊緻拉提技術" in prompt
     assert "零數字原則" in prompt
-    assert "process_diagram" in prompt
+    assert "skin_energy" in prompt
     assert "contrast" in prompt
     assert "timeline" in prompt
     assert "因人而異" in prompt
+
+    # 驗證脂肪移植主題仍推斷 process_diagram
+    fat_tree = {"title": "自體脂肪補臉", "doc_id": "fat-grafting", "summary_text": "抽取純化自體脂肪"}
+    fat_prompt = build_tree_visual_prompt(fat_tree)
+    assert "process_diagram" in fat_prompt
 
 
 def test_parse_and_build_tree_ir_success():
@@ -367,3 +372,266 @@ def test_autodraft_cli(isolated_db_path: Path, capsys: pytest.CaptureFixture):
     # 3. 指定不存在的 --doc-id：結束碼 1
     exit_code_none = cli_main(["--db", str(isolated_db_path), "--dry-run", "--doc-id", "non-existent"])
     assert exit_code_none == 1
+
+
+def test_infer_scene1_blueprint_all_topics():
+    """驗證 5 大解剖機轉與常見療程推斷正確性。"""
+    from src.visual.autodraft import infer_scene1_blueprint
+
+    # 1. 皮秒雷射 -> laser_action (shatter)
+    bp, info = infer_scene1_blueprint({"title": "皮秒雷射", "doc_id": "laser-skin-resurfacing", "summary_text": "黑色素沉著改善"})
+    assert bp == "laser_action"
+    assert info["params_template"]["mode"] == "shatter"
+
+    # 2. 飛梭雷射 -> laser_action (fractional)
+    bp, info = infer_scene1_blueprint({"title": "飛梭雷射", "doc_id": "fractional-laser", "summary_text": "毛孔凹疤修復"})
+    assert bp == "laser_action"
+    assert info["params_template"]["mode"] == "fractional"
+
+    # 3. 音波拉提 -> skin_energy (focused)
+    bp, info = infer_scene1_blueprint({"title": "音波拉提", "doc_id": "hifu-lifting", "summary_text": "聚焦超音波SMAS筋膜層"})
+    assert bp == "skin_energy"
+    assert info["params_template"]["mode"] == "focused"
+
+    # 4. 電波拉皮 -> skin_energy (volumetric)
+    bp, info = infer_scene1_blueprint({"title": "電波拉皮", "doc_id": "electrowave-facelift", "summary_text": "容積式真皮層加熱緊緻"})
+    assert bp == "skin_energy"
+    assert info["params_template"]["mode"] == "volumetric"
+
+    # 5. 肉毒桿菌素 -> neuromuscular
+    bp, info = infer_scene1_blueprint({"title": "肉毒桿菌素注射", "doc_id": "botox-injection", "summary_text": "改善動態表情紋"})
+    assert bp == "neuromuscular"
+
+    # 6. 玻尿酸 -> dermal_support
+    bp, info = infer_scene1_blueprint({"title": "玻尿酸填充", "doc_id": "hyaluronic-acid-filler", "summary_text": "凹陷部位立體支撐"})
+    assert bp == "dermal_support"
+
+    # 7. 自體脂肪 -> process_diagram
+    bp, info = infer_scene1_blueprint({"title": "自體脂肪移植", "doc_id": "fat-grafting", "summary_text": "脂肪純化與分層移植"})
+    assert bp == "process_diagram"
+
+    # 8. 中下臉 SMAS 筋膜深層拉皮 -> deep_plane_facelift
+    bp, info = infer_scene1_blueprint({"title": "中下臉 SMAS 筋膜深層拉皮手術", "doc_id": "mid-lower-smas-facelift", "summary_text": "深層間隙解離維持韌帶與骨膜錨定"})
+    assert bp == "deep_plane_facelift"
+    assert info["params_template"]["smas_label"] == "SMAS筋膜瓣"
+
+    # 9. 天鵝頸闊頸肌縫合拉皮術 -> corset_platysmaplasty
+    bp, info = infer_scene1_blueprint({"title": "天鵝頸闊頸肌縫合拉皮術", "doc_id": "swan-neck-cervicoplasty", "summary_text": "下巴天然皮摺微創切口與闊頸肌馬甲對縫"})
+    assert bp == "corset_platysmaplasty"
+    assert info["params_template"]["muscle_label"] == "兩側闊頸肌"
+
+
+def test_parse_and_build_tree_ir_with_new_blueprints():
+    """驗證以新解剖機轉模板（如 neuromuscular、dermal_support、laser_action、skin_energy）組裝之 IR 合法解析。"""
+    neuromuscular_json = """
+    {
+      "title": "肉毒桿菌素除皺原理",
+      "keywords": ["肉毒桿菌", "動態紋", "除皺放鬆"],
+      "scenes": [
+        {
+          "blueprint": "neuromuscular",
+          "title": "神經訊號傳導調節",
+          "caption": "透過微量作用於神經肌肉接合處，暫時阻斷乙醯膽鹼釋放，使過度緊繃的肌肉放鬆以撫平動態摺痕。",
+          "labels": [
+            {"text": "神經末梢", "tone": "neutral"},
+            {"text": "肌肉放鬆", "tone": "optimal"}
+          ],
+          "params": {
+            "nerve_label": "運動神經末梢",
+            "muscle_label": "過度收縮肌肉",
+            "surface_label": "動態表情皺紋",
+            "blocker_fill": "ok",
+            "step_labels": ["精準微量注射", "調節神經訊號", "肌肉放鬆撫平"]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "劑量與分點比較",
+          "caption": "由專業醫師評估採微量多點放置，保留自然表情靈活度，避免單點集中過量造成僵硬感。",
+          "labels": [
+            {"text": "單點過量", "tone": "warning"},
+            {"text": "微量多點", "tone": "optimal"}
+          ],
+          "params": {
+            "left": {
+              "title": "單點過量",
+              "note": "過度集中擴散",
+              "mode": "mass",
+              "core_effect": "dim",
+              "core_label": "表情僵硬",
+              "footnote": "單點注射過量易擴散影響周圍表情",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "微量多點",
+              "note": "精準分層控制",
+              "mode": "layered",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "精準劑量分佈能維持自然面部神韻",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "舒張與維持時程",
+          "caption": "注射後數日逐漸發揮舒張放鬆作用，平滑表情細紋，整體維持時程因人而異需由醫師評估。",
+          "labels": [
+            {"text": "注射初期", "tone": "neutral"},
+            {"text": "平穩撫平", "tone": "optimal"}
+          ],
+          "params": {
+            "milestones": ["初期放鬆", "平滑穩定", "定期保養"],
+            "unit_effect": "steady",
+            "connectors": "none",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    }
+    """
+    ir, code = parse_and_build_tree_ir(neuromuscular_json, topic_key="tree-botox-injection", fallback_title="肉毒桿菌素注射")
+    assert code == "ok"
+    assert ir is not None
+    assert ir["scenes"][0]["blueprint"] == "neuromuscular"
+    assert ir["scenes"][2]["params"]["connectors"] == "none"
+
+
+def test_surgical_procedures_infer_surgical_action_blueprint():
+    """Plan 32-02：截骨、正顎、削骨、隆鼻、眼袋優先匹配 surgical_action；一般脂肪處置不受影響。"""
+    from src.visual.autodraft import infer_scene1_blueprint
+    from src.visual.blueprints import validate_params
+
+    cases = {
+        "下巴美型手術（3D客製人工骨植入與下巴截骨成型術）": "mandible",
+        "3D 數位導航正顎手術（雙顎 LeFort I 與下顎枝截骨成型術）": "mandible",
+        # 標題同時含顴骨與下顎骨角，依規則先命中下顎（單一場景僅能呈現一個解剖目標）
+        "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）": "mandible",
+        "顴骨內推削骨手術": "malar_bone",
+        "結構式自體軟骨全方位隆鼻手術": "general_surgery",
+        "全方位美眸眼整形手術（無痕內開眼袋移位）": "general_surgery",
+    }
+    for title, expected_target in cases.items():
+        bp, info = infer_scene1_blueprint({"doc_id": "x", "title": title, "summary_text": ""})
+        assert bp == "surgical_action", title
+        params = info["params_template"]
+        assert params["anatomy_target"] == expected_target, title
+        ok, code = validate_params("surgical_action", params)
+        assert ok is True, (title, code)
+
+    bp, _ = infer_scene1_blueprint({"doc_id": "autologous", "title": "自體脂肪移植", "summary_text": ""})
+    assert bp == "process_diagram"
+
+
+# ---- Phase 33 Plan 33-01：專科對照與修復歷程推斷 ----
+
+_CONTRAST_TREES = {
+    "抽脂": ("tissue_trauma_torn_vessel", "ultrasonic_emulsification", "全方位抽脂體雕手術"),
+    "眼": ("scar_contracture_ectropion", "transconjunctival_fat_reposition", "全方位美眸眼整形手術（無痕內開眼袋移位）"),
+    "鼻": ("silicone_extrusion_erythema", "cartilage_triangular_strut", "結構式自體軟骨全方位隆鼻手術"),
+    "隆乳": ("capsular_contracture_ball", "dual_plane_natural_teardrop", "假體隆乳雕塑手術"),
+    "微整": ("nodule_clumping", "micro_droplet_diffusion", "玻尿酸皮下填充微整形雕塑"),
+}
+
+_TIMELINE_TREES = {
+    "bone_healing": "3D 數位導航正顎手術（下顎枝截骨成型術）",
+    "nerve_regeneration": "中下臉 SMAS 深層拉皮手術",
+    "bruise_metabolism": "肉毒桿菌素注射與微整療程",
+    "scar_maturation": "雙眼皮與隆鼻手術切口",
+    "skin_retraction": "非侵入音波拉提療程",
+}
+
+
+def test_contrast_specialties_select_symmetric_modes_and_validate():
+    from src.visual.autodraft import infer_scene2_contrast, select_contrast_modes
+    from src.visual.blueprints import enum_values, validate_params
+
+    for label, (left, right, title) in _CONTRAST_TREES.items():
+        tree = {"doc_id": f"x-{label}", "title": title, "summary_text": "", "procedure": ""}
+        picked = select_contrast_modes(tree)
+        assert picked is not None, label
+        assert (picked[0], picked[1]) == (left, right), label
+        assert left in enum_values("contrast", "mode", "left")
+        assert right in enum_values("contrast", "mode", "right")
+        info = infer_scene2_contrast(tree)
+        assert info["params"]["left"]["mode"] == left
+        assert info["params"]["right"]["mode"] == right
+        ok, code = validate_params("contrast", info["params"])
+        assert ok is True, (label, code)
+        assert 20 <= len(info["caption"]) <= 120
+        assert not any(ch.isdigit() for ch in info["caption"])
+
+
+def test_contrast_general_fallback_unchanged():
+    from src.visual.autodraft import infer_scene2_contrast
+
+    tree = {"doc_id": "autologous-fat-grafting", "title": "自體脂肪移植", "summary_text": "", "procedure": ""}
+    info = infer_scene2_contrast(tree)
+    assert info["params"]["left"]["mode"] == "mass"
+    assert info["params"]["right"]["mode"] == "layered"
+
+
+def test_timeline_specialties_select_connectors_and_validate():
+    from src.visual.autodraft import infer_scene3_timeline
+    from src.visual.blueprints import validate_params
+
+    cases = {
+        "bone_healing": "3D 數位導航正顎手術（下顎枝截骨成型術）",
+        "nerve_regeneration": "中下臉 SMAS 深層拉皮手術",
+        "bruise_metabolism": "肉毒桿菌素注射與微整療程",
+        "scar_maturation": "雙眼皮與隆鼻手術切口",
+        "skin_retraction": "非侵入音波拉提療程",
+    }
+    for connector, title in cases.items():
+        tree = {"doc_id": f"t-{connector}", "title": title, "summary_text": "", "procedure": ""}
+        info = infer_scene3_timeline(tree)
+        assert info["params"]["connectors"] == connector, (connector, info["params"]["connectors"])
+        assert len(info["params"]["milestones"]) == 3
+        assert all(len(m) <= 8 and not any(ch.isdigit() for ch in m) for m in info["params"]["milestones"])
+        assert "因人而異" in info["caption"] and 20 <= len(info["caption"]) <= 120
+        ok, code = validate_params("timeline", info["params"])
+        assert ok is True, (connector, code)
+
+
+def test_prompt_carries_specialty_mode_recommendations():
+    from src.visual.autodraft import build_tree_visual_prompt
+
+    tree = {"doc_id": "x", "title": "全方位抽脂體雕手術", "summary_text": "", "procedure": "", "pre_op": "", "post_op_short": "", "maintenance": ""}
+    prompt = build_tree_visual_prompt(tree)
+    assert "tissue_trauma_torn_vessel" in prompt
+    assert "ultrasonic_emulsification" in prompt
+    assert "8. 對照與歷程列舉" in prompt
+
+
+def test_parser_keeps_new_modes_instead_of_resetting_to_defaults():
+    """自癒整形器：新列舉值必須被保留（白名單來自規格，不再硬編碼舊值）。"""
+    import json as _json
+    from src.visual.autodraft import (
+        infer_scene1_blueprint, infer_scene2_contrast, infer_scene3_timeline, parse_and_build_tree_ir,
+    )
+
+    tree = {"doc_id": "x", "title": "全方位抽脂體雕手術", "summary_text": "", "procedure": ""}
+    s1_bp, s1 = infer_scene1_blueprint(tree)
+    s2 = infer_scene2_contrast(tree)
+    s3 = infer_scene3_timeline(tree)
+
+    def _scene(bp, title, caption, labels, params):
+        return {"blueprint": bp, "title": title, "caption": caption, "labels": labels, "params": params}
+
+    ir_json = _json.dumps({
+        "title": "抽脂體雕原理圖解",
+        "keywords": ["抽脂", "體雕"],
+        "scenes": [
+            _scene(s1_bp, s1["title"], "抽吸與處置機轉的說明文字，用於測試解析器保留既有模式。", [{"text": "抽吸", "tone": "neutral"}], s1["params_template"]),
+            _scene("contrast", s2["title"], s2["caption"], s2["labels"], s2["params"]),
+            _scene("timeline", s3["title"], s3["caption"], s3["labels"], s3["params"]),
+        ],
+    }, ensure_ascii=False)
+
+    ir, code = parse_and_build_tree_ir(ir_json, topic_key="tree-test-liposuction", fallback_title="全方位抽脂體雕手術")
+    assert code == "ok", code
+    assert ir["scenes"][1]["params"]["left"]["mode"] == "tissue_trauma_torn_vessel"
+    assert ir["scenes"][1]["params"]["right"]["mode"] == "ultrasonic_emulsification"
+    assert ir["scenes"][2]["params"]["connectors"] == "skin_retraction"

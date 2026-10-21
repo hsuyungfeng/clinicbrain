@@ -44,7 +44,7 @@ def test_blueprints_registry_completeness():
 
 def test_default_params_self_validation():
     """驗證各 blueprint 的預設參數自身皆完全通過驗證。"""
-    for bp in ("process_diagram", "contrast", "timeline"):
+    for bp in BLUEPRINTS:
         dp = default_params(bp)
         ok, code = validate_params(bp, dp)
         assert ok is True, f"Blueprint {bp} default params 驗證失敗: {code}"
@@ -159,14 +159,18 @@ def test_validate_params_process_diagram_bounds():
 
 def test_validate_params_contrast_bounds():
     """驗證 contrast 各欄位邊界、列舉與型別。"""
-    # left.mode: enum[mass, scattered]
+    # left.mode: enum[mass, scattered, wide_incision, thermal_spread]
     assert validate_params("contrast", {"left": {"mode": "mass"}}) == (True, "ok")
     assert validate_params("contrast", {"left": {"mode": "scattered"}}) == (True, "ok")
+    assert validate_params("contrast", {"left": {"mode": "wide_incision"}}) == (True, "ok")
+    assert validate_params("contrast", {"left": {"mode": "thermal_spread"}}) == (True, "ok")
     assert validate_params("contrast", {"left": {"mode": "layered"}}) == (False, "param_error")
 
-    # right.mode: enum[layered, mass]
+    # right.mode: enum[layered, mass, minimal_incision, targeted_energy]
     assert validate_params("contrast", {"right": {"mode": "layered"}}) == (True, "ok")
     assert validate_params("contrast", {"right": {"mode": "mass"}}) == (True, "ok")
+    assert validate_params("contrast", {"right": {"mode": "minimal_incision"}}) == (True, "ok")
+    assert validate_params("contrast", {"right": {"mode": "targeted_energy"}}) == (True, "ok")
     assert validate_params("contrast", {"right": {"mode": "scattered"}}) == (False, "param_error")
 
     # right.rows 1..4
@@ -202,9 +206,11 @@ def test_validate_params_timeline_bounds():
     assert validate_params("timeline", {"unit_effect": "steady"}) == (True, "ok")
     assert validate_params("timeline", {"unit_effect": "glow"}) == (False, "param_error")
 
-    # connectors enum[vessels, none]
+    # connectors enum[vessels, none, wound_healing, collagen_remodeling]
     assert validate_params("timeline", {"connectors": "vessels"}) == (True, "ok")
     assert validate_params("timeline", {"connectors": "none"}) == (True, "ok")
+    assert validate_params("timeline", {"connectors": "wound_healing"}) == (True, "ok")
+    assert validate_params("timeline", {"connectors": "collagen_remodeling"}) == (True, "ok")
     assert validate_params("timeline", {"connectors": "lines"}) == (False, "param_error")
 
     # units 2..5
@@ -275,3 +281,23 @@ def test_new_topic_params_reject_unsafe_values(bp, params):
     ok, code = validate_params(bp, params)
     assert ok is False
     assert code in {"param_error", "text_unsafe", "forbidden_phrase", "schema_error"}
+
+
+def test_surgical_facelift_and_platysmaplasty_blueprints():
+    """驗證 SMAS 深層拉皮與天鵝頸闊頸肌馬甲縫合專屬外科藍圖。"""
+    assert "deep_plane_facelift" in BLUEPRINTS
+    assert "corset_platysmaplasty" in BLUEPRINTS
+
+    dp_face = default_params("deep_plane_facelift")
+    assert dp_face["smas_label"] == "SMAS筋膜瓣"
+    assert dp_face["anchor_label"] == "骨膜錨定點"
+    assert len(dp_face["layer_labels"]) == 3
+    ok1, code1 = validate_params("deep_plane_facelift", dp_face)
+    assert ok1 is True, code1
+
+    dp_plat = default_params("corset_platysmaplasty")
+    assert dp_plat["muscle_label"] == "兩側闊頸肌"
+    assert dp_plat["suture_label"] == "馬甲式對縫"
+    assert len(dp_plat["layer_labels"]) == 3
+    ok2, code2 = validate_params("corset_platysmaplasty", dp_plat)
+    assert ok2 is True, code2

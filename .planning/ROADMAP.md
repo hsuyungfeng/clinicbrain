@@ -36,6 +36,8 @@
 | 29. 一般醫學視覺解說卡（MVP） | 5/5 | Complete | 2026-10-19 |
 | 30. 資料驅動的視覺場景引擎 | 6/6 | Complete | 2026-10-20 |
 | 31. 由 PageIndex 自動生成動畫草稿、待簽核動畫分頁、診所優先 | 5/5 | Complete | 2026-10-20 |
+| 32. 診所核准資產自動昇華一般醫學與語意動作繪圖引擎升級 | 2/2 | Complete | 2026-10-21 |
+| 33. 專科解剖對照與修復歷程語意繪圖全面升級 | 2/2 | Complete | 2026-10-21 |
 
 ## Phase Details
 
@@ -248,3 +250,27 @@ Plans:
 - [x] 31-03-PLAN.md — 管理端動畫審核 API（Wave 2）
 - [x] 31-04-PLAN.md — 審核頁「🎬 待簽核動畫」分頁（Wave 3）
 - [x] 31-05-PLAN.md — AGENTS 2.28 文件（Wave 4）
+
+### Phase 32: 診所核准即昇華一般醫學與語意動作繪圖引擎升級 (已完成)
+
+**Goal**: 實作用戶指示：1. 各診所審核後就准許進入一般醫學不須再核准（自動昇華入庫與聯邦查詢）；2. 場景 1/2/3 根據文字意義使用專科解剖圖元與 DSL 代碼表現（Surgical Action DSL、剛性固定、神經保護光暈、加壓冰敷雪花、水腫消退與組織重塑），徹底根除圖文不符問題。
+**Status**: Complete（32-01~32-02 全部實作完成，155 項全套視覺與自動昇華測試通過、Playwright 契約與全 13 藍圖確定性驗證通過）
+**Depends on**: Phase 31（由 PageIndex 自動生成動畫草稿、待簽核動畫分頁、診所優先）
+**Requirements**: P32-AUTO-PROMOTION, P32-FEDERATED-QUERY, P32-SEMANTIC-ENGINE, P32-SURGICAL-ACTION
+**Plans**: 2 plans
+Plans:
+- [x] 32-01-PLAN.md — 診所核准即昇華一般醫學與聯邦查詢放寬（Wave 1）
+- [x] 32-02-PLAN.md — 語意動作繪圖引擎升級與外科專科解剖圖元擴充（Wave 2）
+
+### Phase 33: 專科解剖對照與修復歷程語意繪圖全面升級 (已完成)
+
+**Goal**: 延續文字意圖轉 Code 繪圖架構，全面升級場景 2（對照組 Contrast）與場景 3（歷程組 Timeline）之專科解剖與活體生理動態表現，涵蓋體雕、眼整、鼻整、隆乳、微整等專科病理對照，以及骨質癒合、退瘀色譜、疤痕隱痕重塑、神經重生等生理修復歷程，徹底達成 100% 依文字意義轉寫動態 Code 表現。
+**Status**: Complete (2/2 計畫完成，通過 167 項視覺測試、瀏覽器確定性驗證、MP4 動畫匯出與 Hermes 視覺審計)
+**Depends on**: Phase 32（語意動作繪圖引擎 2.0 與自動昇華）
+**Requirements**: P33-CONTRAST-DSL, P33-TIMELINE-DSL, P33-AUTODRAFT-INFER, P33-CONTRAST-ENGINE, P33-TIMELINE-ENGINE, P33-BROWSER-VERIFY
+**Plans**: 2 plans
+Plans:
+- [x] 33-01-PLAN.md — Contrast 與 Timeline 專科架構規格與 Autodraft 語意推斷升級（Wave 1）
+- [x] 33-02-PLAN.md — 前端繪圖引擎專科向量動態實作與瀏覽器截圖驗收（Wave 2）
+
+

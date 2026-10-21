@@ -29,6 +29,7 @@ from src.visual.autodraft import (
     autodraft_from_tree,
     build_tree_visual_prompt,
     fetch_eligible_trees,
+    normalize_tree_topic_key,
 )
 from src.visual.writer import has_visual_assets_table
 
@@ -73,6 +74,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         action="store_true",
         default=False,
         help="確認允許對正式 clinic.db 進行草稿寫入（正式庫寫入必填旗標）",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help="強制重新生成已存在之視覺解說卡（預設跳過已存在項目）",
     )
 
     args = parser.parse_args(argv)
@@ -141,20 +148,37 @@ def main(argv: Optional[list[str]] = None) -> int:
             print("（目前無符合資格之已核准推理樹）")
             return 0
 
+        # 查詢已存在之視覺資產鍵值，預設跳過已存在項目
+        cur = conn.cursor()
+        cur.execute("SELECT topic_key FROM visual_assets")
+        existing_keys = {row[0] for row in cur.fetchall()}
+
         success_count = 0
+        skipped_count = 0
         for tree in trees:
             doc_id = tree["doc_id"]
+            try:
+                norm_key = normalize_tree_topic_key(doc_id)
+            except Exception:
+                norm_key = f"tree-{doc_id}"
+
+            if not args.force and (norm_key in existing_keys or f"tree-{doc_id}" in existing_keys):
+                print(f"⏭️ 跳過已存在之視覺資產：doc_id='{doc_id}'（如欲覆寫請加上 --force）")
+                skipped_count += 1
+                continue
+
             print(f"⏳ 正在生成動畫草稿：doc_id='{doc_id}' ...")
             res = autodraft_from_tree(conn, tree, db_path=target_path)
             if res.get("status") == "ok":
                 print(f"✅ 成功生成並寫入草稿：topic_key='{res['topic_key']}'（狀態：{res['review_status']}）")
                 success_count += 1
+                existing_keys.add(res['topic_key'])
             else:
                 print(f"❌ 生成失敗：doc_id='{doc_id}', 錯誤碼={res.get('code')}", file=sys.stderr)
                 if args.doc_id:
                     return 1
 
-        print(f"🎉 處理完成：共成功生成 {success_count}/{len(trees)} 筆視覺解說卡草稿。")
+        print(f"🎉 處理完成：本次新生成 {success_count} 筆、跳過已存在 {skipped_count} 筆（目標候選共 {len(trees)} 筆）。")
         return 0
     finally:
         conn.close()

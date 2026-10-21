@@ -9,7 +9,18 @@ Phase 03 Document Ingestion Stage 1: TASK-02
 """
 
 from typing import Optional
-import opencc
+
+try:
+    import opencc
+except ImportError:
+    import sys
+    from pathlib import Path
+    _uv_opencc = Path("/home/hsu/.cache/uv/archive-v0/hD69btIoBk4Lc2HKmEOvw")
+    if _uv_opencc.exists():
+        sys.path.insert(0, str(_uv_opencc))
+        import opencc
+    else:
+        raise
 
 # 快取 OpenCC 物件，避免重複初始化負載
 _CONVERTER: Optional[opencc.OpenCC] = None

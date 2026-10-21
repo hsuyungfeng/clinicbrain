@@ -783,6 +783,44 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - `tests/test_visual_admin_api.py`：管理端 API 認證、範圍篩選、內聯修訂重置 `pending`、核准重驗與樹轉草稿測試。
   - `tests/test_visual_review_ui.py`：7 個頁籤與外部腳本靜態安全掃描，以及 Playwright 真實瀏覽器動畫合成播放、修訂、核准與諮詢頁端到端測試。
 
+### 2.29 診所核准即昇華一般醫學與語意動作繪圖引擎 2.0（Phase 32 新增）
+
+為貫徹使用者指示：「各診所審核後就准許進入一般醫學不須再核准」，並徹底根除「圖文不符」、根據文字意義轉寫動態 Code 表現，自 Phase 32 起建立自動昇華機制與 Surgical Action 外科專科繪圖引擎：
+
+- **診所核准即自動昇華機制 (`src/visual/auto_promotion.py`)**：
+  - 當專科醫師在管理後台（`/admin`）核准特定診所專屬之視覺資產（`clinic_id IS NOT NULL`）時，系統自動觸發昇華引擎。
+  - 昇華引擎將該資產複製一份，並將其 `clinic_id` 設為 `NULL`（代表一般醫學共用資產），同時自動過濾或泛化診所特異性資訊，寫入資料庫作為一般醫學已核准（`review_status = 'approved'`）資產。
+  - 全院跨診所與匿名病人端（`/consult`）在未指定診所時，能直接檢索引用該昇華資產，**徹底免除人工二次重複審核的行政負擔**。
+  - 複合唯一鍵 `UNIQUE(clinic_id, topic_key)` 保證診所專屬列與一般醫學列和諧並存，增量更新冪等安全。
+- **語意動作繪圖引擎升級 (Surgical Action DSL)**：
+  - 場景 1 擴充支援 `surgical_action`（專科骨骼手術機轉）：包含下顎骨/頦骨滑移重塑動態（0~15mm）、純鈦板釘剛性旋入鎖定、頦神經解剖孔與彈性保護光暈，以及微創黏膜切開牽引箭頭。
+  - 擴充開放外科拉皮 `deep_plane_facelift`（SMAS 筋膜下剝離、維持韌帶鬆解、向量懸吊固定）與頸部馬甲縫合 `corset_platysmaplasty`（闊頸肌前緣靠攏、雙排倒刺線縫合、雙下巴輪廓收緊）。
+- **測試清單**：
+  - `tests/test_auto_promotion.py`：診所核准即昇華、去診所化清洗、唯一鍵相容、冪等增量與回滾保護測試。
+  - `tests/test_visual_engine_browser.py`：`surgical_action` 60fps 向量確定性渲染、骨骼滑移計算、神經保護光暈與純鈦固定測試。
+
+### 2.30 專科解剖對照與修復歷程語意繪圖全面升級（Phase 33 新增）
+
+為落實場景 2（Contrast 對照組）與場景 3（Timeline 歷程組）100% 依臨床文本意義轉寫 Code 動態表現，自 Phase 33 起擴充 5 大專科病理對照、5 大活體修復歷程，並徹底解決場景 3「無圖文變化」之視覺瓶頸：
+
+- **五大專科病理對照模式 (`drawContrast`)**：
+  - 體雕抽脂：`tissue_trauma_torn_vessel`（粗鈍抽吸撕裂血管出血凹凸）vs `ultrasonic_emulsification`（超音波乳化保護結締組織網）。
+  - 眼袋眼整：`scar_contracture_ectropion`（傳統外切疤痕攣縮下瞼下翻）vs `transconjunctival_fat_reposition`（經結膜內切無外疤平順轉位至淚溝）。
+  - 結構隆鼻：`silicone_extrusion_erythema`（矽膠假體重力壓迫鼻尖發紅穿出短鼻）vs `cartilage_triangular_strut`（自體軟骨力學三角支架穩固零穿出）。
+  - 假體隆乳：`capsular_contracture_ball`（纖維包膜攣縮變硬球形）vs `dual_plane_natural_teardrop`（雙平面筋膜覆蓋自然水滴垂墜）。
+  - 微整針劑：`nodule_clumping`（單點過量結節硬塊表情受阻）vs `micro_droplet_diffusion`（微滴散佈均勻與組織平滑交融）。
+- **五大活體生理修復歷程與動態圖文看板 (`drawTimeline`)**：
+  - 5 大專科修復模式：`bone_healing`（骨痂形成 ➔ 骨小樑緻密 ➔ 咬合穩固）、`bruise_metabolism`（暗紫血腫 ➔ 膽綠素/膽紅素 ➔ 膚色復原）、`scar_maturation`（切口微凸潮紅 ➔ 水合加壓褪紅 ➔ 隱痕平整細白線）、`nerve_regeneration`（暫時麻木遲滯 ➔ 軸突萌發延伸 ➔ 感覺受體完全接合）、`skin_retraction`（水腫鬆弛 ➔ 垂直纖維隔膜收縮 ➔ 平整回彈貼合）。
+  - **場景 3 圖文動態演進看板**：徹底移除預設脂肪球遮蔽，頂部動態階段色彩徽章（`【階段一·初期防護】` ➔ `【階段二·修復重塑】` ➔ `【階段三·穩定隱痕】`），即時專科動態解說文字切換，大畫布專科解剖演繹，底部時間軸活躍節點脈動光環與時程標籤。
+  - 輔助光環：`glow_restored`（金色立體組織活力復原光芒）。
+- **Local LLM 批次生成與 Hermes 監控規範 (`clinic-visual-batch` Skill)**：
+  - 建立 `.agents/skills/clinic-visual-batch/SKILL.md`，定義本地大模型（Qwen3.8-27B-FP8）批次生成、IR 長度約束、零阿拉伯數字與 Hermes Agent 自動自癒、無頭測試之標準作業手冊。
+  - 批次生成入口腳本：`scripts/run_hermes_batch_49.py` 支援 49 筆已核准推理樹之全自動自治批次重生成與報告輸出。
+- **測試清單**：
+  - `tests/test_visual_blueprints.py`：新增 5 組 contrast 模式、5 組 timeline 模式、glow_restored 列舉與參數合併測試。
+  - `tests/test_visual_autodraft.py`：專科推理樹對照模式推斷、修復歷程推斷與規則 8 提示詞約束測試。
+  - `tests/test_visual_engine_browser.py`：確定性 seek 正向/反向完全一致、邊界與字幕安全區（u=0/0.5/1）、白名單對齊測試。
+
 ---
 
 ## 3. ⚠️ 嚴格安全與合規規則
@@ -897,6 +935,13 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `docs/visual-blueprints.md`：視覺解說卡 Blueprint 規格與新增實作指南
 * `tests/test_visual_blueprints.py`、`tests/test_visual_engine_static.py`、`tests/test_visual_engine_browser.py`、`tests/test_visual_bundle.py`、`tests/test_visual_player.py`、`tests/test_visual_video.py`、`tests/test_consult_engine_browser.py`、`tests/test_visual_second_topic.py`：Phase 30 視覺場景引擎規格、靜態安全、瀏覽器契約、Bundle 匯出、通用播放器、MP4 匯出與第二主題測試
 * `tests/test_visual_autodraft.py`、`tests/test_visual_admin_api.py`、`tests/test_visual_review_ui.py`：Phase 31 由推理樹自動生成動畫草稿、管理審核 API 與審核介面「🎬 待簽核動畫」分頁測試
+* `src/visual/auto_promotion.py`：診所核准資產自動昇華一般醫學核心模組（去診所化、複合唯一鍵無損共存）
+* `scripts/promote_clinic_assets_to_general.py`：診所核准資產手動與批次自動昇華 CLI 工具
+* `scripts/run_hermes_batch_49.py`：49 筆已核准推理樹專科動畫全自動批次生成與總結報告腳本
+* `scripts/capture_plan32_scenes.py`、`scripts/capture_plan33_scenes.py`、`scripts/capture_scene3_evolution.py`：專科解剖圖元與三階段修復歷程無頭瀏覽器抽幀截圖工具
+* `plan32_gallery.html`、`plan33_gallery.html`：專科動作、病理對照與修復歷程整合展示藝廊（含 HTML5 MP4 播放器）
+* `.agents/skills/clinic-visual-batch/SKILL.md`：本地大模型批次生成與 Hermes Agent 自動化監控規範
+* `tests/test_auto_promotion.py`：Phase 32 診所核准即自動昇華一般醫學資料層與邏輯測試
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

@@ -284,6 +284,18 @@ header.bg-indigo-900 { background: linear-gradient(90deg, var(--navy), #1e293b);
 .text-rose-700 { color: #be123c; }
 .text-\[10px\] { font-size: 0.68rem; }
 .text-\[11px\] { font-size: 0.72rem; }
+.visual-review-card.selected {
+    border-color: #6366f1;
+    background: #f8faff;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+.visual-card-checkbox {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: #6366f1;
+    cursor: pointer;
+}
+
 
 
 

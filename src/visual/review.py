@@ -20,7 +20,7 @@ from typing import Any, Optional
 
 from .blueprints import BLUEPRINTS, merge_defaults
 from .ir import validate_ir
-from .writer import has_visual_assets_table
+from .writer import has_visual_assets_table, upsert_assets
 
 VALID_REVIEW_STATUSES = ("pending", "approved", "rejected")
 
@@ -28,7 +28,90 @@ DEFAULT_DURATIONS = {
     "process_diagram": 8,
     "contrast": 9,
     "timeline": 7,
+    "skin_energy": 8,
+    "laser_action": 8,
+    "neuromuscular": 8,
+    "dermal_support": 8,
 }
+
+
+def visual_general_topic_key(clinic_id: str, topic_key: str) -> str:
+    """計算診所專屬 topic_key 昇華為一般醫學共用 topic_key 時的去前綴結果。
+
+    'tree-<clinic>-<slug>' -> 'tree-<slug>'；'<clinic>-<slug>' -> '<slug>'；其餘原樣保留。
+    """
+    for prefix, head in ((f"tree-{clinic_id}-", "tree-"), (f"{clinic_id}-", "")):
+        if topic_key.startswith(prefix) and len(topic_key) > len(prefix):
+            return head + topic_key[len(prefix):]
+    return topic_key
+
+
+def promote_visual_row(
+    conn: sqlite3.Connection,
+    *,
+    clinic_id: str,
+    topic_key: str,
+    title: str,
+    keywords_json: str,
+    ir_json: str,
+    source_type: str,
+    metadata: Optional[str],
+) -> dict[str, Any]:
+    """將已核准之診所專屬視覺資產昇華為一般醫學共用資產（clinic_id IS NULL，approved）。
+
+    占位規則（只新增或更新同一診所先前昇華的列，絕不覆寫他人內容）：
+    - 一般醫學列不存在：新增。
+    - 一般醫學列存在，且其 metadata.promoted_from_clinic_id 等於本診所：增量更新。
+    - 其餘（一般醫學原生內容，或他診所已佔用）：略過並回報 general_slot_occupied。
+
+    內容變更時 upsert_assets 會先重置為 pending，本函式隨即將其核准。
+    驗證失敗時 upsert_assets 拋出 ValueError，由呼叫端決定整體回滾（Fail-Closed）。
+    """
+    general_key = visual_general_topic_key(clinic_id, topic_key)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT metadata FROM visual_assets WHERE clinic_id IS NULL AND topic_key = ?",
+        (general_key,),
+    )
+    existing = cur.fetchone()
+    if existing is not None:
+        try:
+            occ_meta = json.loads(existing[0]) if existing[0] else {}
+        except Exception:
+            occ_meta = {}
+        occupant = occ_meta.get("promoted_from_clinic_id") if isinstance(occ_meta, dict) else None
+        if occupant != clinic_id:
+            return {"status": "skipped", "reason": "general_slot_occupied", "topic_key": general_key}
+
+    ir = json.loads(ir_json)
+    ir["topic_key"] = general_key
+    keywords = json.loads(keywords_json)
+
+    meta: dict[str, Any] = {}
+    try:
+        parsed = json.loads(metadata) if metadata else {}
+        if isinstance(parsed, dict):
+            meta.update(parsed)
+    except Exception:
+        pass
+    meta["promoted_from_clinic_id"] = clinic_id
+
+    upsert_assets(
+        conn,
+        [{
+            "clinic_id": None,
+            "topic_key": general_key,
+            "title": title,
+            "keywords": keywords,
+            "ir": ir,
+            "metadata": meta,
+        }],
+        source_type=source_type,
+        commit=False,
+    )
+    # 診所已核准即視為一般醫學已核准（不再重複審核）；呼叫的是一般醫學列，不會遞迴昇華
+    set_review_status(conn, general_key, "approved", commit=False, clinic_id=None)
+    return {"status": "inserted" if existing is None else "updated", "topic_key": general_key}
 
 
 def set_review_status(
@@ -136,10 +219,33 @@ def set_review_status(
             where_params,
         )
 
+    # 診所專屬資產核准時，自動昇華為一般醫學共用資產（同一交易，失敗則整體回滾）
+    promotion: Optional[dict[str, Any]] = None
+    if status == "approved" and has_clinic_col:
+        cur.execute(
+            f"SELECT clinic_id, topic_key, title, keywords, ir_json, source_type, metadata FROM visual_assets {where_clause}",
+            where_params,
+        )
+        srow = cur.fetchone()
+        if srow is not None and srow[0] is not None:
+            promotion = promote_visual_row(
+                conn,
+                clinic_id=srow[0],
+                topic_key=srow[1],
+                title=srow[2],
+                keywords_json=srow[3],
+                ir_json=srow[4],
+                source_type=srow[5],
+                metadata=srow[6],
+            )
+
     if commit:
         conn.commit()
 
-    return {"status": "ok", "review_status": status}
+    result: dict[str, Any] = {"status": "ok", "review_status": status}
+    if promotion is not None:
+        result["promotion"] = promotion
+    return result
 
 
 def visible_assets(
@@ -150,13 +256,14 @@ def visible_assets(
 
     參數：
         conn: SQLite 資料庫連線
-        clinic_id: 診所代碼。若為 None，只查 clinic_id IS NULL 之一般醫學資產；
-                   若有值，查該診所專屬及一般醫學資產。
+        clinic_id: 診所代碼。若為 None（一般醫學模式），回傳所有已核准資產（一般醫學共用
+                   與各診所已核准資產，Phase 32 聯邦保底）；若有值，只回傳該診所專屬
+                   與一般醫學已核准資產，絕不外洩他院專屬資產。
 
     安全防護：
     - 缺表時安全回傳空清單（Fail-Closed）。
     - 輸出前逐筆由 Python 執行 validate_ir 檢驗，遭竄改之非法資產自動略過不外露。
-    - Python 層再次檢查 row_clinic_id in (clinic_id, None)，絕不外洩他院資產。
+    - 指定 clinic_id 時，Python 層再次檢查 row_clinic_id in (clinic_id, None)。
     """
     if not has_visual_assets_table(conn):
         return []
@@ -174,7 +281,7 @@ def visible_assets(
                        review_status, reviewed_at, content_version, metadata,
                        created_at, updated_at, clinic_id
                 FROM visual_assets
-                WHERE review_status = 'approved' AND clinic_id IS NULL
+                WHERE review_status = 'approved'
                 ORDER BY id ASC
                 """
             )
@@ -208,9 +315,9 @@ def visible_assets(
     for r in rows:
         row_clinic_id = r[12] if has_clinic_col else None
 
-        # Python 層再次檢核診所範圍隔離防護
-        if clinic_id is None and row_clinic_id is not None:
-            continue
+        # Python 層檢核診所範圍防護：
+        # - 一般醫學 (clinic_id is None)：所有已核准資產（含一般醫學與各診所昇華資產）皆可見
+        # - 診所專屬 (clinic_id is not None)：僅該診所專屬及一般醫學資產可見，絕不外洩他院資產
         if clinic_id is not None and row_clinic_id not in (clinic_id, None):
             continue
 

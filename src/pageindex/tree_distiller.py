@@ -16,9 +16,23 @@ import sqlite3
 from typing import Callable, Optional
 
 try:
-    from ..api.routes.query import deep_mask_prices
-except (ImportError, ValueError):
     from src.api.routes.query import deep_mask_prices
+except Exception:
+    try:
+        from src.query.router import mask_prices
+    except Exception:
+        from ..query.router import mask_prices
+
+    def deep_mask_prices(obj):
+        if isinstance(obj, str):
+            return mask_prices(obj)
+        elif isinstance(obj, dict):
+            return {k: deep_mask_prices(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [deep_mask_prices(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return tuple(deep_mask_prices(item) for item in obj)
+        return obj
 from .db_writer import upsert_trees
 from .prompt_template import (
     _FORBIDDEN_PHRASES,

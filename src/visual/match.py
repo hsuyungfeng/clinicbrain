@@ -102,10 +102,10 @@ def find_visual(
         best_key: tuple[int, int, str] | None = None
 
         for asset in assets:
-            # Python 層雙重檢查診所範圍
+            # Python 層雙重檢查診所範圍：
+            # - 一般醫學 (clinic_id is None)：所有已核准資產皆可比對調用
+            # - 診所專屬 (clinic_id is not None)：僅限該診所專屬或一般醫學共用資產
             asset_clinic = asset.get("clinic_id")
-            if clinic_id is None and asset_clinic is not None:
-                continue
             if clinic_id is not None and asset_clinic not in (clinic_id, None):
                 continue
 
@@ -125,8 +125,14 @@ def find_visual(
                 continue
 
             topic_key = str(asset.get("topic_key", ""))
-            # 優先級：診所專屬 (tier 0) > 一般醫學 (tier 1)；同 tier 比命中數 (-hits)；同分比 topic_key
-            tier = 0 if (clinic_id and asset_clinic == clinic_id) else 1
+            # 優先級：
+            # 若為診所查詢：該診所專屬 (tier 0) > 原生一般醫學 (tier 1)
+            # 若為一般醫學查詢：原生一般醫學 (tier 0) > 診所昇華資產 (tier 1)
+            # 同 tier 比命中數 (-hits)；同分比 topic_key 字典序
+            if clinic_id:
+                tier = 0 if asset_clinic == clinic_id else 1
+            else:
+                tier = 0 if asset_clinic is None else 1
             candidate_sort_key = (tier, -hits, topic_key)
 
             if best_key is None or candidate_sort_key < best_key:

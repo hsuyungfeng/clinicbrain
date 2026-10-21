@@ -337,10 +337,11 @@ def test_upsert_and_review_with_clinic_id(isolated_db_path):
     rev2 = set_review_status(conn, SAMPLE_IR["topic_key"], "approved", clinic_id="3503190424")
     assert rev2["status"] == "ok"
 
-    # clinic_id=None 仍只查到 1 筆一般醫學資產（不外洩診所專屬）
+    # Phase 32 (P32-AUTO-PROMOTE & P32-FEDERATED-QUERY):
+    # clinic_id=None 可查到所有已通過審核之資產（包含一般醫學與各診所通過之資產）
     vis_gen_after = visible_assets(conn, clinic_id=None)
-    assert len(vis_gen_after) == 1
-    assert vis_gen_after[0]["clinic_id"] is None
+    assert len(vis_gen_after) == 2
+    assert {item["clinic_id"] for item in vis_gen_after} == {None, "3503190424"}
 
     # clinic_id="3503190424" 查到 2 筆（一般醫學與診所專屬）
     vis_c1_after = visible_assets(conn, clinic_id="3503190424")

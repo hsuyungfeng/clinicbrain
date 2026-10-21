@@ -179,7 +179,7 @@ def search_page_index_trees(
     審核隔離（Phase 21 Plan 21-01）：
     未核准之 llm_generated 或 web_upload 草稿絕對不可見（AND visible_tree_sql）。
     """
-    from ..pageindex.tree_review import visible_tree_sql
+    from ..pageindex.tree_review import has_tree_review_status, visible_tree_sql
 
     conditions = []
     params = []
@@ -187,6 +187,9 @@ def search_page_index_trees(
     if clinic_id:
         conditions.append("clinic_id = ?")
         params.append(clinic_id)
+    elif has_tree_review_status(conn):
+        # 一般醫學模式（未指定診所）：所有已核准之推理樹（含診所昇華後之一般醫學共用樹）
+        conditions.append("review_status = 'approved'")
 
     # 審核可見性過濾（Fail-Closed 隔離）
     conditions.append(visible_tree_sql(conn))
@@ -203,6 +206,7 @@ def search_page_index_trees(
             "id",
             "doc_id",
             "clinic_id",
+            "title",
             "category",
             "pre_op",
             "procedure",

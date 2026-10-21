@@ -16,7 +16,21 @@ from typing import Any, Tuple
 from src.ingestion.generate_faq import validate_single_faq
 
 # IR 規格列舉常數
-VALID_BLUEPRINTS: tuple[str, ...] = ("process_diagram", "contrast", "timeline")
+VALID_BLUEPRINTS: tuple[str, ...] = (
+    "process_diagram",
+    "contrast",
+    "timeline",
+    "skin_energy",
+    "laser_action",
+    "neuromuscular",
+    "dermal_support",
+    "cyst_excision",
+    "nail_matrix",
+    "subdermal_curettage",
+    "deep_plane_facelift",
+    "corset_platysmaplasty",
+    "surgical_action",
+)
 VALID_TONES: tuple[str, ...] = ("neutral", "warning", "optimal")
 
 # 視覺解說卡專屬額外禁詞（不含單獨「一定」，防止誤殺「一定程度」「不一定」「一定時間」）
@@ -65,7 +79,10 @@ def validate_visual_text(text: str) -> Tuple[bool, str]:
         return False, "text_unsafe"
 
     # 2. 價格洩漏檢驗（延遲匯入避免與 src.api.__init__ 產生循環匯入）
-    from src.api.routes.query import deep_mask_prices
+    try:
+        from src.api.routes.query import deep_mask_prices
+    except ImportError:
+        from src.query.router import mask_prices as deep_mask_prices
 
     if deep_mask_prices(t) != t:
         return False, "price_leak"

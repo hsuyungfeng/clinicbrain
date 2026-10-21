@@ -50,6 +50,104 @@ def visible_tree_sql(conn: sqlite3.Connection) -> str:
     return f"(source_type IS NULL OR source_type NOT IN ({_TREE_GATED_SQL_LIST}))"
 
 
+TREE_PROMOTION_MARKER = "auto-promotion"
+_PROMOTED_CONTENT_FIELDS = (
+    "title", "category",
+    "pre_op", "pre_op_physician_notes",
+    "procedure", "procedure_physician_notes",
+    "post_op_short", "post_op_short_physician_notes",
+    "maintenance", "maintenance_physician_notes",
+    "summary_text",
+)
+
+
+def tree_general_doc_id(clinic_id: str, doc_id: str) -> str:
+    """計算診所推理樹昇華為一般醫學樹時的 doc_id。
+
+    doc_id 在 page_index_trees 為全域 UNIQUE，且緻妍的 doc_id 原本就沒有診所前綴，
+    單純去前綴會與來源列自身衝突，因此一律加上 'general-' 前綴：
+    '3503264627-mid-lower-smas-facelift' -> 'general-mid-lower-smas-facelift'；
+    'laser-skin-resurfacing'（無前綴）     -> 'general-laser-skin-resurfacing'。
+    """
+    prefix = f"{clinic_id}-"
+    slug = doc_id[len(prefix):] if doc_id.startswith(prefix) and len(doc_id) > len(prefix) else doc_id
+    return f"general-{slug}"
+
+
+def promote_tree(conn: sqlite3.Connection, tree_id: int) -> dict[str, Any]:
+    """將已核准之診所推理樹昇華為一般醫學共用樹（clinic_id IS NULL，approved）。
+
+    占位規則（只新增或更新同一診所先前昇華的列，絕不覆寫他人內容）：
+    - 一般醫學列不存在：新增。
+    - 一般醫學列存在，且其 reviewed_by 為本診所的昇華標記：增量更新。
+    - 其餘（一般醫學原生內容，或他診所已佔用）：略過並回報 general_slot_occupied。
+
+    此函式不 commit，由呼叫端決定交易邊界（approve_tree 與 CLI 皆為單一交易）。
+    """
+    tree = get_tree(conn, tree_id)
+    if tree is None:
+        return {"status": "skipped", "reason": "not_found"}
+    clinic_id = tree.get("clinic_id")
+    if not clinic_id:
+        return {"status": "skipped", "reason": "already_general"}
+
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(page_index_trees)")
+    if "reviewed_by" not in {row[1] for row in cur.fetchall()}:
+        return {"status": "skipped", "reason": "schema_missing"}
+
+    general_doc = tree_general_doc_id(clinic_id, tree["doc_id"])
+    marker = f"{TREE_PROMOTION_MARKER}:{clinic_id}"
+
+    cur.execute(
+        "SELECT id, clinic_id, reviewed_by FROM page_index_trees WHERE doc_id = ?",
+        (general_doc,),
+    )
+    existing = cur.fetchone()
+    if existing is not None and (existing[1] is not None or existing[2] != marker):
+        return {"status": "skipped", "reason": "general_slot_occupied", "doc_id": general_doc}
+
+    values = {f: tree.get(f) for f in _PROMOTED_CONTENT_FIELDS}
+
+    if existing is None:
+        cols = ["doc_id", "clinic_id", *_PROMOTED_CONTENT_FIELDS, "source_type", "content_version",
+                "needs_regeneration", "review_status", "reviewed_at", "reviewed_by"]
+        # reviewed_at 使用 SQL 運算式 CURRENT_TIMESTAMP，不可當作綁定參數
+        placeholders = ", ".join("?" for _ in cols[:-3]) + ", 'approved', CURRENT_TIMESTAMP, ?"
+        cur.execute(
+            f"""
+            INSERT INTO page_index_trees ({', '.join(cols)})
+            VALUES ({placeholders})
+            """,
+            (general_doc, None, *(values[f] for f in _PROMOTED_CONTENT_FIELDS),
+             "clinic_upload", 1, 0, marker),
+        )
+        return {"status": "inserted", "doc_id": general_doc}
+
+    cur.execute(
+        f"SELECT {', '.join(_PROMOTED_CONTENT_FIELDS)} FROM page_index_trees WHERE id = ?",
+        (existing[0],),
+    )
+    old = dict(zip(_PROMOTED_CONTENT_FIELDS, cur.fetchone()))
+    changed = any(old[f] != values[f] for f in _PROMOTED_CONTENT_FIELDS)
+    set_sql = ", ".join(f"{f} = ?" for f in _PROMOTED_CONTENT_FIELDS)
+    cur.execute(
+        f"""
+        UPDATE page_index_trees
+        SET {set_sql},
+            source_type = 'clinic_upload',
+            review_status = 'approved',
+            reviewed_at = CURRENT_TIMESTAMP,
+            reviewed_by = ?,
+            content_version = content_version + ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (*(values[f] for f in _PROMOTED_CONTENT_FIELDS), marker, 1 if changed else 0, existing[0]),
+    )
+    return {"status": "updated" if changed else "unchanged", "doc_id": general_doc}
+
+
 def count_trees_by_status(conn: sqlite3.Connection, clinic_id: Optional[str] = None) -> dict[str, int]:
     """統計各 review_status 的決策樹筆數。若未遷移則回傳空字典。"""
     if not has_tree_review_status(conn):
@@ -236,8 +334,12 @@ def approve_tree(
         """,
         (reviewer, tree_id),
     )
+    ok = cur.rowcount > 0
+    # 診所專屬推理樹核准時自動昇華為一般醫學共用樹（同一交易，失敗則整體回滾）
+    if ok:
+        promote_tree(conn, tree_id)
     conn.commit()
-    return cur.rowcount > 0
+    return ok
 
 
 def reject_tree(

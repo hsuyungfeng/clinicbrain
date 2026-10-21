@@ -258,6 +258,19 @@
                 </button>
             </div>
 
+            <!-- 勾選操作工具列 (全選 / 反選 / 清除 / 批量核准 / 批量駁回) -->
+            <div class="selection-toolbar visual-selection-toolbar flex items-center gap-2 mb-4 bg-white p-3 rounded-lg border border-gray-200 flex-wrap">
+                <button id="btnVisualSelectAll" class="btn btn-ghost text-xs px-2.5 py-1">☑️ 全選</button>
+                <button id="btnVisualInvertSelect" class="btn btn-ghost text-xs px-2.5 py-1">🔄 反選</button>
+                <button id="btnVisualClearSelect" class="btn btn-ghost text-xs px-2.5 py-1">⏹️ 清除</button>
+                <span class="toolbar-sep text-gray-300">|</span>
+                <span id="visualSelectionCounter" class="text-xs text-gray-500 font-medium">已選取 0 / 0 筆</span>
+                <div class="ml-auto flex items-center gap-2">
+                    <button id="btnVisualBatchReject" class="btn btn-danger-soft text-xs px-3 py-1.5" disabled>❌ 批量駁回 (0)</button>
+                    <button id="btnVisualBatchApprove" class="btn btn-success text-xs px-3 py-1.5" disabled>✅ 批量核准 (0)</button>
+                </div>
+            </div>
+
             <div id="visualsContainer" class="space-y-6">
                 <!-- 動畫審核卡片動態載入 -->
             </div>

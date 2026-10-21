@@ -109,7 +109,8 @@
 
     function buildBlueprintSvg(scene) {
         var bp = scene && scene.blueprint ? String(scene.blueprint) : "";
-        if (bp !== "process_diagram" && bp !== "contrast" && bp !== "timeline") {
+        var validBps = ["process_diagram", "contrast", "timeline", "skin_energy", "laser_action", "neuromuscular", "dermal_support"];
+        if (validBps.indexOf(bp) === -1) {
             return null;
         }
 
