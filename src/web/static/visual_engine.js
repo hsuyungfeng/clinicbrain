@@ -1143,8 +1143,12 @@
     for (let i = 0; i < 5; i++) {
       const sx = 330 + i * 35;
       if (u < 0.45) {
-        const dropY = 205 + ((u * 3 + i * 0.2) % 1) * 45;
-        ctx.circle({ cx: sx, cy: dropY, r: 5, fill: PALETTE.warn, opacity: 1 - relaxP * 0.7 });
+        const phase = (u * 3 + i * 0.2) % 1;
+        const dropY = 205 + phase * 45;
+        // 回繞時訊號點在底部淡出、頂部淡入，不再瞬間跳回頂端
+        // 三次方包絡：回繞前後一影格內透明度已低於 0.05，視覺上不可見
+        const wrapEnv = Math.pow(Math.min(1, phase / 0.3), 3) * Math.pow(Math.min(1, (1 - phase) / 0.3), 3);
+        ctx.circle({ cx: sx, cy: dropY, r: 5, fill: PALETTE.warn, opacity: (1 - relaxP * 0.7) * wrapEnv, "data-id": "signal-" + i });
       }
       if (u >= 0.25) {
         const shieldP = Math.min(1, (u - 0.25) / 0.3);
@@ -1380,7 +1384,7 @@
 
       // 發炎紅腫縮小
       ctx.circle({ cx: 282, cy: 260, r: 16 * (1 - p2 * 0.5), fill: PALETTE.blood, opacity: 0.4 });
-      ctx.text({ x: 300, y: 200, "text-anchor": "middle", "font-size": 11, fill: "#38bdf8" }, "縱向側切");
+      ctx.text({ x: 300, y: 178, "text-anchor": "middle", "font-size": 11, fill: "#38bdf8" }, "縱向側切");
     } else {
       // 階段 3：甲根基質破壞重整 (Matrixectomy)，避免復發，甲溝平復
       const p3 = (u - 0.70) / 0.30;
@@ -1520,7 +1524,7 @@
 
     // 耳屏前天然輪廓隱痕切口線
     ctx.line({ x1: 512, y1: 170, x2: 512, y2: 270, stroke: PALETTE.accent, "stroke-width": 2.5, "stroke-dasharray": "4 3" });
-    ctx.text({ x: 512, y: 160, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: PALETTE.accent }, "微創隱痕切口");
+    ctx.text({ x: 519, y: 176, "text-anchor": "start", "font-size": 11, "font-weight": "bold", fill: PALETTE.accent }, "微創隱痕切口");
 
     // 計算筋膜上提與緊實位移 (45度向量提拉)
     let liftX = 0;

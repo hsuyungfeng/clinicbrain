@@ -512,3 +512,225 @@ def test_phase33_enum_whitelist_matches_python_spec(playwright_page, tmp_path):
             assert got["connectors"] == overrides["connectors"]
         if "unit_effect" in overrides:
             assert got["unit_effect"] == overrides["unit_effect"]
+
+
+# ============================================================================
+# 幾何審計與相鄰影格跳變檢查（Phase 35）
+#
+# 對每個 blueprint 的預設參數與每個列舉參數的每個值，沿時間軸密集取樣，
+# 在瀏覽器內量測每個繪圖元素的實際位置：
+# - 幾何審計：座標有限（無 NaN／Infinity／undefined）、所有元素落在
+#   [5, 795] x [5, 505] 內、字幕安全區（text y <= 411）、文字與文字不得大面積重疊。
+# - 跳變檢查：相鄰影格之間，同一元素的邊界不得瞬間位移超過 POP_JUMP_UNITS，
+#   元素數量在影格之間不得突然增減（視覺 pop）。
+# ============================================================================
+
+# 取樣影格數與跳變門檻（viewBox 單位）。總時長 / 影格數 ≈ 0.05~0.1 秒/影格。
+POP_SAMPLE_FRAMES = 160
+POP_JUMP_UNITS = 25.0
+TEXT_OVERLAP_RATIO = 0.3
+
+
+# 引擎宣告的硬切換點：timeline（drawTimeline 的 stageIdx）、surgical_action
+# （drawSurgicalAction）與 cyst_excision（drawCystExcision）皆在 u=0.35 與 u=0.70 切換階段。
+# 這些瞬間變化是設計內容，僅允許落在這兩個 u 的那一影格上；其他位置一律視為 pop。
+DECLARED_STAGE_CUTS = {
+    "timeline": (0.35, 0.70),
+    "surgical_action": (0.35, 0.70),
+    "cyst_excision": (0.35, 0.70),
+}
+
+
+def _is_declared_cut(bp: str, frame: int, n: int) -> bool:
+    cuts = DECLARED_STAGE_CUTS.get(bp, ())
+    u = frame / n
+    return any(abs(u - c) < 1.0 / n / 2 for c in cuts)
+
+
+def _variants_for_sweep() -> list[tuple[str, dict | None]]:
+    """每個 blueprint 的預設參數，加上每個列舉參數的每個值（一次只變一個參數）。"""
+    out: list[tuple[str, dict | None]] = []
+    for bp, spec in BLUEPRINTS.items():
+        out.append((bp, None))
+        for pname, pspec in spec["params"].items():
+            if pspec.get("type") == "enum":
+                for value in pspec["values"]:
+                    out.append((bp, {pname: value}))
+    return out
+
+
+_SWEEP_JS = """(function (bp, params, N, jump, overlapRatio) {
+    const MATCH_R = 60;
+    const MIN_SIZE = 4;
+    const svg = document.getElementById('testSvg');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const mounted = window.ClinicVisual.mount(svg, [{ blueprint: bp, title: '審計', params: params }]);
+    const total = mounted.totalDuration;
+    const svgRect = svg.getBoundingClientRect();
+    const sx = 800 / svgRect.width;
+    const sy = 510 / svgRect.height;
+
+    function snap() {
+        const out = [];
+        svg.querySelectorAll('*').forEach(function (el) {
+            const tag = el.tagName.toLowerCase();
+            if (tag === 'defs' || tag === 'clippath' || tag === 'svg' || tag === 'g') return;
+            if (el.closest('defs') || el.closest('clipPath')) return;
+            if (el.getAttribute('data-bg') === '1') return;
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0.1 || r.height <= 0.1) return;
+            const op = parseFloat(window.getComputedStyle(el).opacity);
+            out.push({
+                tag: tag,
+                id: el.getAttribute('data-id') || '',
+                text: tag === 'text' ? el.textContent : '',
+                op: Number.isFinite(op) ? op : 1,
+                x1: (r.left - svgRect.left) * sx,
+                y1: (r.top - svgRect.top) * sy,
+                x2: (r.right - svgRect.left) * sx,
+                y2: (r.bottom - svgRect.top) * sy,
+            });
+        });
+        return out;
+    }
+
+    function center(e) { return [(e.x1 + e.x2) / 2, (e.y1 + e.y2) / 2]; }
+
+    // 以同標籤最近鄰做身分配對；回傳 {pairs, appeared, vanished}
+    function match(prev, cur) {
+        const used = new Array(prev.length).fill(false);
+        const pairs = [];
+        const appeared = [];
+        // 第一輪：引擎提供 data-id 的元素以身分直接配對（如 neuromuscular 的 signal-0..4）
+        const byId = {};
+        prev.forEach(function (p, pi) { if (p.id) byId[p.id] = pi; });
+        const idMatched = new Array(cur.length).fill(false);
+        cur.forEach(function (c, ci) {
+            if (c.id && byId[c.id] !== undefined && !used[byId[c.id]]) {
+                used[byId[c.id]] = true;
+                idMatched[ci] = true;
+                pairs.push([byId[c.id], ci]);
+            }
+        });
+        // 第二輪：其餘元素以同標籤最近鄰配對
+        cur.forEach(function (c, ci) {
+            if (idMatched[ci]) return;
+            const [cx, cy] = center(c);
+            let best = -1, bestD = Infinity;
+            prev.forEach(function (p, pi) {
+                if (used[pi] || p.tag !== c.tag) return;
+                const pw = p.x2 - p.x1, ph = p.y2 - p.y1;
+                const cw = c.x2 - c.x1, ch = c.y2 - c.y1;
+                if (Math.abs(pw - cw) > 0.25 * Math.max(pw, cw, 1) || Math.abs(ph - ch) > 0.25 * Math.max(ph, ch, 1)) return;
+                const [px, py] = center(p);
+                const d = Math.hypot(px - cx, py - cy);
+                if (d < bestD) { bestD = d; best = pi; }
+            });
+            if (best >= 0 && bestD <= MATCH_R) {
+                used[best] = true;
+                pairs.push([best, ci]);
+            } else if (c.op >= 0.5 && Math.min(c.x2 - c.x1, c.y2 - c.y1) >= MIN_SIZE) {
+                appeared.push(c);
+            }
+        });
+        const vanished = prev.filter(function (p, pi) {
+            return !used[pi] && p.op >= 0.5 && Math.min(p.x2 - p.x1, p.y2 - p.y1) >= MIN_SIZE;
+        });
+        return { pairs: pairs, appeared: appeared, vanished: vanished };
+    }
+
+    const audit = { bounds: [], subtitle: [], finite: [], labelOverlap: [] };
+    const pops = { appear: [], vanish: [], jumps: [] };
+    let maxJump = 0;
+    let prev = null;
+
+    for (let i = 0; i < N; i++) {
+        const t = (i / N) * total;
+        mounted.renderAt(t);
+        if (/NaN|Infinity|undefined/.test(svg.outerHTML)) audit.finite.push({ frame: i });
+
+        const cur = snap();
+        cur.forEach(function (e) {
+            if (e.x1 < 5 || e.x2 > 795 || e.y1 < 5 || e.y2 > 505) {
+                audit.bounds.push({ frame: i, tag: e.tag, text: e.text, box: [e.x1, e.y1, e.x2, e.y2] });
+            }
+            if (e.tag === 'text' && e.y2 > 411) {
+                audit.subtitle.push({ frame: i, text: e.text, y2: e.y2 });
+            }
+        });
+
+        const texts = cur.filter(function (e) { return e.tag === 'text' && e.op > 0.05; });
+        for (let a = 0; a < texts.length; a++) {
+            for (let b = a + 1; b < texts.length; b++) {
+                const A = texts[a], B = texts[b];
+                const iw = Math.min(A.x2, B.x2) - Math.max(A.x1, B.x1);
+                const ih = Math.min(A.y2, B.y2) - Math.max(A.y1, B.y1);
+                if (iw <= 0 || ih <= 0) continue;
+                const minArea = Math.min((A.x2 - A.x1) * (A.y2 - A.y1), (B.x2 - B.x1) * (B.y2 - B.y1));
+                if (minArea > 0 && (iw * ih) / minArea > overlapRatio) {
+                    audit.labelOverlap.push({ frame: i, a: A.text, b: B.text });
+                }
+            }
+        }
+
+        if (prev !== null) {
+            const m = match(prev, cur);
+            m.appeared.forEach(function (c) { pops.appear.push({ frame: i, tag: c.tag, text: c.text, op: c.op }); });
+            m.vanished.forEach(function (p) { pops.vanish.push({ frame: i, tag: p.tag, text: p.text, op: p.op }); });
+            m.pairs.forEach(function (pr) {
+                const p = prev[pr[0]], c = cur[pr[1]];
+                const d = Math.max(
+                    Math.abs(c.x1 - p.x1), Math.abs(c.y1 - p.y1),
+                    Math.abs(c.x2 - p.x2), Math.abs(c.y2 - p.y2)
+                );
+                if (d > maxJump) maxJump = d;
+                // 兩影格皆不可見（透明度 < 0.05）的位移不構成視覺跳變
+                if (d > jump && Math.max(p.op, c.op) >= 0.05) pops.jumps.push({ frame: i, tag: c.tag, text: c.text, delta: d });
+            });
+        }
+        prev = cur;
+    }
+    return { total: total, maxJump: maxJump, audit: audit, pops: pops };
+})"""
+
+
+def test_visual_engine_geometry_audit_and_frame_pop_check(playwright_page, tmp_path):
+    """幾何審計與相鄰影格跳變檢查：所有 blueprint 變體、所有影格。"""
+    _setup_page(playwright_page, tmp_path)
+
+    failures: list[str] = []
+    summary: list[str] = []
+    info_births: list[str] = []
+    for bp, params in _variants_for_sweep():
+        result = playwright_page.evaluate(
+            "(args) => (" + _SWEEP_JS + ")(args.bp, args.params, args.n, args.jump, args.ratio)",
+            {"bp": bp, "params": params, "n": POP_SAMPLE_FRAMES, "jump": POP_JUMP_UNITS, "ratio": TEXT_OVERLAP_RATIO},
+        )
+        label = f"{bp}{'' if params is None else ' ' + json.dumps(params, ensure_ascii=False)}"
+        summary.append(f"{label}: 最大單幀位移 {result['maxJump']:.1f}")
+
+        audit = result["audit"]
+        for key, msg in (
+            ("finite", "出現 NaN／Infinity／undefined"),
+            ("bounds", "元素超出 [5,795]x[5,505]"),
+            ("subtitle", "文字侵入字幕安全區（y>411）"),
+            ("labelOverlap", "文字與文字大面積重疊"),
+        ):
+            items = audit[key]
+            if items:
+                failures.append(f"[{label}] {msg}：{len(items)} 處，例 {items[:2]}")
+
+        pops = result["pops"]
+        # 硬性檢查：連續元素的相鄰影格位移（已排除宣告的階段切換）
+        jumps = [it for it in pops["jumps"] if not _is_declared_cut(bp, it["frame"], POP_SAMPLE_FRAMES)]
+        if jumps:
+            failures.append(f"[{label}] 相鄰影格跳變 > {POP_JUMP_UNITS}：{len(jumps)} 處，例 {jumps[:2]}")
+        # 資訊性統計：粒子系統會在同一影格生成全不透明元素，幾何上無法與 pop 區分，
+        # 待引擎提供元素身分後再升為硬性檢查。
+        births = [it for it in pops["appear"] + pops["vanish"] if not _is_declared_cut(bp, it["frame"], POP_SAMPLE_FRAMES)]
+        if births:
+            info_births.append(f"{label}: {len(births)}")
+
+    print("\n".join(summary))
+    print("資訊性：可見元素瞬間出現／消失（粒子生成，未計入失敗）→ " + "; ".join(info_births))
+    assert failures == [], "幾何審計／跳變檢查失敗：\n" + "\n".join(failures)
