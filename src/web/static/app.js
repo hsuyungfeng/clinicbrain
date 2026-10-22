@@ -1792,6 +1792,63 @@ async function loadVisuals() {
     }
 }
 
+let visualBlueprintsCache = null;
+
+async function loadVisualBlueprints() {
+    if (visualBlueprintsCache) return visualBlueprintsCache;
+    const resp = await fetch("/api/v1/admin/visual-blueprints", { headers: getAuthHeaders() });
+    if (!resp.ok) throw new Error(`模板清單載入失敗（HTTP ${resp.status}）`);
+    const data = await resp.json();
+    visualBlueprintsCache = Array.isArray(data.blueprints) ? data.blueprints : [];
+    return visualBlueprintsCache;
+}
+
+// 場景 1 模板下拉：醫師可指定模板，覆寫值優先於關鍵字推斷；變更後需重新生成並簽核
+function buildTemplateOverrideRow(asset) {
+    const row = el("div", "flex flex-wrap items-center gap-2 text-xs text-slate-600");
+    row.appendChild(el("span", "", "場景 1 模板："));
+    const select = document.createElement("select");
+    select.className = "text-xs border border-slate-300 rounded px-1 py-0.5";
+    select.appendChild(new Option("（沿用關鍵字推斷）", ""));
+    select.value = "";
+    select.disabled = true;
+    row.appendChild(select);
+    const note = el("span", "text-slate-500", "");
+    row.appendChild(note);
+
+    loadVisualBlueprints()
+        .then((list) => {
+            list.forEach((bp) => select.appendChild(new Option(bp, bp)));
+            select.value = asset.template_override || "";
+            select.disabled = false;
+        })
+        .catch((err) => {
+            note.textContent = err.message;
+        });
+
+    select.addEventListener("change", async () => {
+        select.disabled = true;
+        note.textContent = "儲存中...";
+        try {
+            const resp = await fetch(`/api/v1/admin/visuals/${asset.id}/template-override`, {
+                method: "PUT",
+                headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeaders()),
+                body: JSON.stringify({ template: select.value || null }),
+            });
+            if (!resp.ok) {
+                const data = await resp.json().catch(() => ({}));
+                throw new Error(data.detail || `儲存失敗（HTTP ${resp.status}）`);
+            }
+            note.textContent = "已儲存：草稿已回到待審，請重新生成以套用新模板";
+            await loadVisuals();
+        } catch (err) {
+            note.textContent = err.message;
+            select.disabled = false;
+        }
+    });
+    return row;
+}
+
 function createVisualReviewCard(asset) {
     const card = el("div", "visual-review-card");
 
@@ -1863,6 +1920,7 @@ function createVisualReviewCard(asset) {
     }
     header.appendChild(metaLeft);
 
+    metaLeft.appendChild(buildTemplateOverrideRow(asset));
     card.appendChild(header);
 
     // 2. 播放器區塊

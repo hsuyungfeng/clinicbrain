@@ -454,7 +454,69 @@ def get_visual_asset_by_id(
     if row is None:
         return None
 
-    return _format_visual_asset_row(row, has_clinic_col)
+    detail = _format_visual_asset_row(row, has_clinic_col)
+    detail["template_override"] = _template_overrides(conn, [asset_id]).get(asset_id)
+    return detail
+
+
+def _template_overrides(conn: sqlite3.Connection, ids: list[int]) -> dict[int, Optional[str]]:
+    """讀取草稿的醫師指定模板；欄位尚未遷移或無列時回傳空對應（向後相容）。"""
+    if not ids:
+        return {}
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(visual_assets)")}
+    if "template_override" not in cols:
+        return {}
+    placeholders = ",".join("?" for _ in ids)
+    rows = conn.execute(
+        f"SELECT id, template_override FROM visual_assets WHERE id IN ({placeholders})", list(ids)
+    ).fetchall()
+    return {r[0]: r[1] for r in rows}
+
+
+def set_template_override(
+    conn: sqlite3.Connection,
+    asset_id: int,
+    template: Optional[str],
+    commit: bool = True,
+) -> dict[str, Any]:
+    """設定草稿的醫師指定場景 1 模板（None 代表沿用關鍵字推斷）。
+
+    - 模板必須為已註冊的 BLUEPRINTS，否則拋出 ValueError("unknown_blueprint")。
+    - 值改變時，已核准草稿回到 pending（Fail-Closed）：新模板須重新生成並簽核。
+    - 欄位未遷移時拋出 RuntimeError（不自動 ALTER）。
+    """
+    if template is not None and template not in BLUEPRINTS:
+        raise ValueError("unknown_blueprint")
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(visual_assets)")}
+    if "template_override" not in cols:
+        raise RuntimeError("visual_assets 尚未遷移 template_override 欄位，請先執行 scripts/migrate_visual_template_override.py")
+    cur = conn.cursor()
+    cur.execute("SELECT template_override, review_status FROM visual_assets WHERE id = ?", (asset_id,))
+    row = cur.fetchone()
+    if row is None:
+        return {"status": "not_found"}
+    old_template, status = row
+    if old_template == template:
+        return {"status": "unchanged", "template_override": template, "review_status": status}
+    if status == "approved":
+        cur.execute(
+            """
+            UPDATE visual_assets
+            SET template_override = ?, review_status = 'pending', reviewed_at = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (template, asset_id),
+        )
+        new_status = "pending"
+    else:
+        cur.execute(
+            "UPDATE visual_assets SET template_override = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (template, asset_id),
+        )
+        new_status = status
+    if commit:
+        conn.commit()
+    return {"status": "ok", "template_override": template, "review_status": new_status}
 
 
 def list_visual_assets(
@@ -523,6 +585,9 @@ def list_visual_assets(
     rows = cur.fetchall()
 
     items = [_format_visual_asset_row(r, has_clinic_col) for r in rows]
+    overrides = _template_overrides(conn, [it["id"] for it in items])
+    for it in items:
+        it["template_override"] = overrides.get(it["id"])
     return items, total
 
 

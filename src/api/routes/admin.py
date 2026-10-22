@@ -156,6 +156,11 @@ class UpdateVisualAssetRequest(BaseModel):
     scenes: Optional[list[VisualSceneUpdateItem]] = None
 
 
+class TemplateOverrideRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    template: Optional[str] = None
+
+
 class AutodraftVisualRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     tree_id: StrictInt
@@ -1456,6 +1461,35 @@ def patch_admin_visual(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
 
     return {"status": "ok", "asset": updated, **updated}
+
+
+@router.get("/visual-blueprints", summary="列出可指定為草稿場景 1 模板的已註冊模板")
+def list_visual_blueprints():
+    from ...visual.blueprints import BLUEPRINTS
+
+    return {"blueprints": sorted(BLUEPRINTS.keys())}
+
+
+@router.put("/visuals/{asset_id}/template-override", summary="設定草稿的醫師指定場景 1 模板")
+def put_visual_template_override(
+    asset_id: int,
+    req: TemplateOverrideRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    from ...visual.review import set_template_override
+    from ...visual.writer import has_visual_assets_table
+
+    if not has_visual_assets_table(conn):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="資料庫尚未建立 visual_assets 資料表")
+    try:
+        res = set_template_override(conn, asset_id, req.template)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"模板不合法: {e}") from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+    if res["status"] == "not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
+    return res
 
 
 @router.post("/visuals/{asset_id}/approve", summary="醫師簽核核准視覺解說卡")
