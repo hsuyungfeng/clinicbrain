@@ -830,6 +830,14 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **模板覆寫**：`visual_assets.template_override`（預設 NULL）由 `scripts/migrate_visual_template_override.py` 遷移（冪等、交易性）。有值時場景 1 以覆寫值為準，非法值回傳 `unknown_blueprint` 且不呼叫 LLM。正式庫遷移與覆寫寫入須經使用者明確核准。
 - **審核排序**：`scripts/review_visual.py list --risk-order` 依風險分數排序（外科骨骼 +3、對照 +2、跨診所同名療程 +1）。排序只影響顯示，不改變任何審核狀態。
 
+### 2.32 動畫連結引用來源與內容歸屬（Phase 34 第二輪）
+
+- **動畫跟著引用的推理樹走**：`src/visual/match.py:visuals_for_tree_sources` 依回答引用的推理樹（T 編號）取得已核准的視覺解說卡，而非只靠關鍵字。`rag_ask` 的回答結果附上 `visuals`。
+- **顯示規則**：診所上下文 → 該診所專屬版優先，其次一般醫學共用版（不回傳他院版本）；一般醫學上下文 → 共用版優先。同一療程只回一筆。
+- **內容歸屬**：動畫（視覺解說卡）核准後自動昇華為一般醫學共用，對所有診所可用（Phase 32）。**衛教 FAQ 不昇華**，保持每家診所專屬；核准診所 FAQ 不會在一般醫學池新增列（測試：`tests/test_visual_visuals_for_sources.py`）。
+- **提示詞**：模型不得自行宣稱資料中沒有圖解或動畫；已核准的動畫由系統另行附上。
+- **尚未完成**：病患端諮詢（`patient_consult`）仍以關鍵字比對動畫；管理端問答頁尚未播放附上的動畫（目前只回傳 `visuals`）。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：

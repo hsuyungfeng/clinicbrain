@@ -13,6 +13,7 @@ Phase 29: P29-SERVE
 
 from __future__ import annotations
 
+import re
 import sqlite3
 import unicodedata
 from typing import Any
@@ -145,3 +146,52 @@ def find_visual(
         return _shape_public_visual(best_asset)
     except Exception:
         return None
+
+
+_GENERAL_TOPIC_RE = re.compile(r"^tree-\d{10}-")
+
+
+def visuals_for_tree_sources(
+    conn: sqlite3.Connection,
+    doc_ids: list[str],
+    clinic_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """依引用之推理樹 doc_id 取得已核准的視覺解說卡（每個療程最多一筆）。
+
+    排序規則（Phase 34 / 2.32）：
+    - 診所上下文：該診所專屬版優先，其次一般醫學共用版（不回傳他院版本）。
+    - 一般醫學上下文：一般醫學共用版優先，其次任一已核准診所版。
+    同一療程的診所版與共用版只回一筆，避免重複。純讀取；任何錯誤回傳空清單（Fail-Closed）。
+    """
+    from .autodraft import normalize_tree_topic_key
+
+    try:
+        assets = visible_assets(conn, clinic_id=clinic_id)
+    except Exception:
+        return []
+
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for doc in dict.fromkeys(d for d in doc_ids if isinstance(d, str) and d):
+        try:
+            tk = normalize_tree_topic_key(doc)
+        except ValueError:
+            continue
+        general = _GENERAL_TOPIC_RE.sub("tree-", tk)
+        candidates = [a for a in assets if a.get("topic_key") in (tk, general)]
+        if not candidates:
+            continue
+
+        def _rank(a: dict[str, Any]) -> tuple[int, int]:
+            is_clinic = a.get("clinic_id") is not None
+            exact = 0 if a.get("topic_key") == (tk if clinic_id is not None else general) else 1
+            if clinic_id is not None:
+                return (0 if a.get("clinic_id") == clinic_id else 1, exact)
+            return (1 if is_clinic else 0, exact)
+
+        best = min(candidates, key=_rank)
+        if general in seen:
+            continue
+        seen.add(general)
+        out.append(_shape_public_visual(best))
+    return out

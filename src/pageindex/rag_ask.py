@@ -82,6 +82,7 @@ def _render_evidence(
                 "id": h.row_id,
                 "level": "診所",
                 "title": str(f.get("doc_id")),
+                "doc_id": str(f.get("doc_id") or ""),
             })
 
     for i, (section, note) in enumerate(notes, 1):
@@ -145,7 +146,8 @@ def build_ask_prompt(question: str, context: str) -> str:
         "5. 嚴格禁止出現具體藥品名稱與劑量，不下診斷、不開處方。\n"
         "6. 嚴格禁止使用「保證」「根治」「百分之百」等療效保證用語。\n"
         "7. 若問題涉及身體不適，結尾必須以具體症狀警訊提醒何時應儘速就醫。\n"
-        "8. 只輸出答案本文，不輸出多餘開場白或問候語。\n\n"
+        "8. 只輸出答案本文，不輸出多餘開場白或問候語。\n"
+        "9. 不得自行宣稱資料中沒有圖解、動畫或影片；已核准的動畫由系統另行附上。\n\n"
         f"資料：\n{context}\n\n問題：{question}\n"
     )
 
@@ -170,20 +172,26 @@ def ask_with_data(
     if rf is not None:
         return {
             "mode": "red_flag", "answer": message_for_red_flag(rf.level, rf.rule_id), "sources": [],
-            "red_flag_level": rf.level, "used_llm": False, "compliance": {"ok": True, "reason": ""},
+            "red_flag_level": rf.level, "used_llm": False, "compliance": {"ok": True, "reason": ""}, "visuals": [],
         }
 
     context, sources = retrieve_evidence(conn, q, clinic_id)
     if not sources:
         return {
             "mode": "no_evidence", "answer": NO_EVIDENCE_MESSAGE, "sources": [],
-            "red_flag_level": None, "used_llm": False, "compliance": {"ok": True, "reason": ""},
+            "red_flag_level": None, "used_llm": False, "compliance": {"ok": True, "reason": ""}, "visuals": [],
         }
 
     raw = llm_call(build_ask_prompt(q, context))
     answer = sanitize_faq_text(_clean_llm_output(raw))
     ok, reason = validate_single_faq({"question": q, "answer": answer}, check_dosage=True)
+    from ..visual.match import visuals_for_tree_sources
+
+    visuals = visuals_for_tree_sources(
+        conn, [src["doc_id"] for src in sources if src.get("type") == "tree"], clinic_id=clinic_id,
+    )
     return {
         "mode": "answered", "answer": answer, "sources": sources, "red_flag_level": None,
         "used_llm": True, "compliance": {"ok": bool(ok), "reason": "" if ok else str(reason)},
+        "visuals": visuals,
     }
