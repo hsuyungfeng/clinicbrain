@@ -304,3 +304,30 @@ def test_default_contact_url():
     assert DEFAULT_CONTACT_URL == "https://doctor-toolbox.com/clinicBot"
     assert "@" not in DEFAULT_CONTACT_URL
     assert DEFAULT_CONTACT_URL.startswith("https://")
+
+
+def test_open_access_allows_unlisted_public_https_but_keeps_other_guards():
+    """open_access=true：未列白名單的公開 https 網域可通過；scheme、憑證、連接埠檢查仍生效。"""
+    from src.scraper.policy import PolicyError, check_url_allowed, check_host_allowed
+
+    open_list = {"allowed_domains": [], "by_host": {}, "open": True}
+    check_url_allowed("https://www.eyedoctor.com.tw/taichung/", open_list)
+    check_host_allowed("www.eyedoctor.com.tw", open_list)
+    with pytest.raises(PolicyError) as e1:
+        check_url_allowed("http://www.eyedoctor.com.tw/", open_list)
+    assert e1.value.reason == "scheme"
+    with pytest.raises(PolicyError) as e2:
+        check_url_allowed("https://user:pw@www.eyedoctor.com.tw/", open_list)
+    assert e2.value.reason == "credentials"
+    with pytest.raises(PolicyError) as e3:
+        check_url_allowed("https://www.eyedoctor.com.tw:8443/", open_list)
+    assert e3.value.reason == "port"
+
+
+def test_closed_mode_still_rejects_unlisted_host():
+    from src.scraper.policy import PolicyError, check_url_allowed
+
+    closed = {"allowed_domains": [], "by_host": {}, "open": False}
+    with pytest.raises(PolicyError) as exc:
+        check_url_allowed("https://www.eyedoctor.com.tw/taichung/", closed)
+    assert exc.value.reason == "not_allowlisted"

@@ -50,9 +50,11 @@ def load_allowlist(path: str | Path) -> dict:
             prefixes = ["/"]
         by_host[host] = prefixes
 
+    # open_access=true：不要求網域列入白名單（仍強制 https、443、無憑證、SSRF 公網檢查與 robots.txt）
     return {
         "allowed_domains": data["allowed_domains"],
         "by_host": by_host,
+        "open": data.get("open_access") is True,
     }
 
 
@@ -83,6 +85,9 @@ def check_url_allowed(url: str, allowlist: dict) -> None:
     if port is not None and port != 443:
         raise PolicyError(reason="port", message="僅允許 443 連接埠")
 
+    if allowlist.get("open") is True:
+        return
+
     host = (parsed.hostname or "").lower()
     by_host: dict[str, list[str]] = allowlist.get("by_host", {})
     if host not in by_host:
@@ -99,6 +104,8 @@ def check_host_allowed(host: str, allowlist: dict) -> None:
     """僅檢查 host 是否在白名單內（供 robots.txt 判定）。"""
     if not isinstance(host, str) or not host.strip():
         raise PolicyError(reason="not_allowlisted", message="主機名稱為空")
+    if allowlist.get("open") is True:
+        return
     clean_host = host.strip().lower()
     by_host: dict[str, list[str]] = allowlist.get("by_host", {})
     if clean_host not in by_host:
