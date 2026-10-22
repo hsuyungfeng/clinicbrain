@@ -823,6 +823,13 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 
 ---
 
+### 2.31 推理樹動畫草稿品質強化（Phase 34）
+
+- **黃金測試集**：`data/visual/golden/tree_blueprints_49.json` 記錄 49 筆已核准推理樹的預期場景 1 模板，由 `scripts/export_golden_tree_blueprints.py` 以唯讀連線產生。`tests/test_visual_golden_49.py` 比對 `infer_scene1_blueprint` 的結果；推斷規則改動若改變任一筆，測試失敗並指出 doc_id。黃金測試不連線資料庫。
+- **逐筆渲染驗收**：`scripts/check_draft_renders.py` 以唯讀連線讀取草稿，對每個場景於 u=0/0.5/1 檢查圖元邊界、字幕安全區與確定性，產生接觸表與 `REPORT.md`／`report.json`（每次執行覆寫，不沿用過時報告）。輸出位於 `demo/visual/out/batch_49/`，不進版控。
+- **模板覆寫**：`visual_assets.template_override`（預設 NULL）由 `scripts/migrate_visual_template_override.py` 遷移（冪等、交易性）。有值時場景 1 以覆寫值為準，非法值回傳 `unknown_blueprint` 且不呼叫 LLM。正式庫遷移與覆寫寫入須經使用者明確核准。
+- **審核排序**：`scripts/review_visual.py list --risk-order` 依風險分數排序（外科骨骼 +3、對照 +2、跨診所同名療程 +1）。排序只影響顯示，不改變任何審核狀態。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：

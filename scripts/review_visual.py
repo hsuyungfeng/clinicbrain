@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 import sqlite3
 import sys
@@ -32,6 +33,32 @@ REVIEW_WARNING_BANNER = "⚠️ 【醫師審核提醒】請逐句確認醫學敘
 
 def _open_ro(db_path: Path) -> sqlite3.Connection:
     return sqlite3.connect(f"file:{db_path.resolve()}?mode=ro", uri=True)
+
+
+def _slug(topic_key: str) -> str:
+    """去除 tree- 與診所代碼前綴，取得療程 slug（用於跨診所同名偵測）。"""
+    base = re.sub(r"^tree-", "", topic_key)
+    return re.sub(r"^\d{10}-", "", base)
+
+
+def _risk_scores(conn: sqlite3.Connection) -> dict[tuple, int]:
+    """計算每筆草稿的審核風險分數；只讀取，不改變任何審核狀態。"""
+    rows = conn.execute("SELECT topic_key, clinic_id, ir_json FROM visual_assets").fetchall()
+    slug_clinics: dict[str, set] = {}
+    for tk, cid, _ in rows:
+        slug_clinics.setdefault(_slug(tk), set()).add(cid)
+    scores: dict[tuple, int] = {}
+    for tk, cid, ir in rows:
+        try:
+            scenes = json.loads(ir).get("scenes", [])
+        except Exception:
+            scenes = []
+        blueprints = {sc.get("blueprint") for sc in scenes if isinstance(sc, dict)}
+        score = 3 if "surgical_action" in blueprints else (2 if "contrast" in blueprints else 0)
+        if len(slug_clinics.get(_slug(tk), set())) > 1:
+            score += 1
+        scores[(tk, cid)] = score
+    return scores
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -62,6 +89,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     p_list = subparsers.add_parser("list", help="列出所有視覺解說卡資產與狀態")
     p_list.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
+    p_list.add_argument("--risk-order", action="store_true", help="依風險分數排序（外科 +3、對照 +2、跨診所同名 +1），只影響顯示順序")
 
     p_show = subparsers.add_parser("show", help="檢視指定主題之完整場景內容")
     p_show.add_argument("topic_key", type=str, help="主題識別碼 (topic_key)")
@@ -135,6 +163,12 @@ def main(argv: Optional[list[str]] = None) -> int:
             if not rows:
                 print("（目前無任何視覺解說卡資產）")
                 return 0
+            if getattr(args, "risk_order", False):
+                scores = _risk_scores(conn)
+                rows = sorted(
+                    rows,
+                    key=lambda r: (-scores.get((r[0], r[6] if has_clinic_col else None), 0), r[0]),
+                )
             for r in rows:
                 clinic_label = f" | clinic={r[6]}" if (has_clinic_col and r[6]) else ""
                 print(

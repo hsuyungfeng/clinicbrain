@@ -35,7 +35,7 @@ from src.pageindex.llm_client import (
 )
 from src.pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
 from src.pageindex.tree_review import visible_tree_sql
-from .blueprints import BLUEPRINTS, PALETTE_TOKENS, enum_values, validate_params
+from .blueprints import BLUEPRINTS, PALETTE_TOKENS, default_params, enum_values, validate_params
 from .ir import (
     VISUAL_EXTRA_FORBIDDEN,
     validate_ir,
@@ -153,6 +153,10 @@ def _resolve_tree_title(tree: dict[str, Any]) -> str:
 
 
 def infer_scene1_blueprint(tree: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """（Phase 34）若草稿有 template_override 且為已註冊模板，直接採用，不做關鍵字推斷。"""
+    override = tree.get("template_override")
+    if isinstance(override, str) and override in BLUEPRINTS:
+        return override, {"blueprint": override, "title": "依醫師指定模板", "params_template": default_params(override)}
     """根據推理樹主題關鍵字與內容，推斷最契合之解剖機轉視覺模板與參數結構。
 
     支援臨床機轉：
@@ -1441,6 +1445,21 @@ def _default_visual_llm(prompt: str) -> str:
     return local_llm_call(prompt, timeout=240, sampling=sampling)
 
 
+def _lookup_template_override(conn: sqlite3.Connection, clinic_id: Any, topic_key: str) -> Optional[str]:
+    """讀取既有草稿的醫師覆寫模板；欄位或列不存在時回傳 None（向後相容）。"""
+    try:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(visual_assets)")}
+        if "template_override" not in cols:
+            return None
+        row = conn.execute(
+            "SELECT template_override FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+            (clinic_id, topic_key),
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    return row[0] if row and row[0] else None
+
+
 def autodraft_from_tree(
     conn: sqlite3.Connection,
     tree_id_or_dict: int | dict[str, Any],
@@ -1481,6 +1500,13 @@ def autodraft_from_tree(
         topic_key = normalize_tree_topic_key(doc_id)
     except ValueError:
         return {"status": "error", "code": "schema_error"}
+
+    # Phase 34：醫師覆寫模板（visual_assets.template_override）優先於關鍵字推斷；非法值直接拒絕，不呼叫 LLM
+    override = _lookup_template_override(conn, tree.get("clinic_id"), topic_key)
+    if override is not None:
+        if override not in BLUEPRINTS:
+            return {"status": "error", "code": "unknown_blueprint"}
+        tree = {**tree, "template_override": override}
 
     # 排程互斥：確認非夜間批次與行程內鎖
     if nightly_batch_running(db_path):

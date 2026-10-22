@@ -136,3 +136,43 @@ def test_generate_cli_failure_does_not_leak_raw_output(isolated_db_path, capsys)
     combined = captured.out + captured.err
     assert "forbidden_phrase" in combined
     assert "SECRET_LEAK_TOKEN_ABC" not in combined
+
+
+def test_list_risk_order_puts_surgical_and_contrast_first(tmp_path, capsys):
+    """Phase 34 Plan 04：--risk-order 依風險排序，且不改變任何 review_status。"""
+    import json as _json
+    import sqlite3 as _sqlite3
+    from scripts.review_visual import main as review_main
+
+    db = tmp_path / "risk.db"
+    conn = _sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE visual_assets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, clinic_id TEXT, topic_key TEXT NOT NULL,
+            title TEXT, keywords TEXT, ir_json TEXT, source_type TEXT, review_status TEXT,
+            reviewed_at TEXT, content_version INTEGER DEFAULT 1, metadata TEXT
+        );
+        """
+    )
+    def ins(cid, tk, bps):
+        ir = _json.dumps({"scenes": [{"blueprint": b} for b in bps]}, ensure_ascii=False)
+        conn.execute(
+            "INSERT INTO visual_assets (clinic_id, topic_key, title, keywords, ir_json, source_type, review_status) "
+            "VALUES (?, ?, ?, '[]', ?, 'llm_generated', 'pending')", (cid, tk, tk, ir))
+    ins("3503190424", "tree-3503190424-plain", ["process_diagram"])
+    ins("3503190424", "tree-3503190424-surg", ["surgical_action"])
+    ins("3503264627", "tree-3503264627-contr", ["contrast"])
+    conn.commit()
+    before = conn.execute("SELECT review_status FROM visual_assets").fetchall()
+    conn.close()
+
+    assert review_main(["--db", str(db), "list", "--risk-order"]) == 0
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if "|" in ln]
+    order = [ln.split(" | ")[0] for ln in lines]
+    # 輸出第一欄為 topic_key：surg(3) > contr(2) > plain(0)
+    assert order.index("tree-3503190424-surg") < order.index("tree-3503264627-contr") < order.index("tree-3503190424-plain")
+
+    conn = _sqlite3.connect(str(db))
+    assert conn.execute("SELECT review_status FROM visual_assets").fetchall() == before
+    conn.close()

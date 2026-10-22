@@ -1,0 +1,296 @@
+[
+  {
+    "doc_id": "3503264627-asce-rose-exosome-regeneration",
+    "clinic_id": "3503264627",
+    "title": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法",
+    "blueprint": "process_diagram"
+  },
+  {
+    "doc_id": "3503264627-bbl-broadband-light",
+    "clinic_id": "3503264627",
+    "title": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）",
+    "blueprint": "process_diagram"
+  },
+  {
+    "doc_id": "3503264627-blepharoplasty-eye-contouring",
+    "clinic_id": "3503264627",
+    "title": "全方位美眸眼整形手術（客製雙眼皮、無痕內開眼袋移位與提眼瞼肌矯正）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-bromhidrosis-rotary-cutter",
+    "clinic_id": "3503264627",
+    "title": "微創螺旋刀頂漿腺狐臭手術",
+    "blueprint": "subdermal_curettage"
+  },
+  {
+    "doc_id": "3503264627-bulbous-nose-rhinoplasty",
+    "clinic_id": "3503264627",
+    "title": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術（軟骨縫合重塑與軟組織精細減容）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-chin-augmentation-genioplasty",
+    "clinic_id": "3503264627",
+    "title": "下巴美型手術（3D客製人工骨植入與下巴截骨成型術）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-chronic-migraine-botox-decompression",
+    "clinic_id": "3503264627",
+    "title": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療",
+    "blueprint": "neuromuscular"
+  },
+  {
+    "doc_id": "3503264627-endolift-laser",
+    "clinic_id": "3503264627",
+    "title": "Endolift 光纖內提拉手術",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "3503264627-epidermal-cyst-excision",
+    "clinic_id": "3503264627",
+    "title": "未感染粉瘤微創旋轉吸引切除手術",
+    "blueprint": "cyst_excision"
+  },
+  {
+    "doc_id": "3503264627-facial-bone-contouring",
+    "clinic_id": "3503264627",
+    "title": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-fue-hair-transplantation",
+    "clinic_id": "3503264627",
+    "title": "FUE 微創毛囊單位精準植髮手術",
+    "blueprint": "subdermal_curettage"
+  },
+  {
+    "doc_id": "3503264627-full-deep-plane-facelift",
+    "clinic_id": "3503264627",
+    "title": "高位深層筋膜全臉拉皮手術（Full Deep Plane Facelift）",
+    "blueprint": "deep_plane_facelift"
+  },
+  {
+    "doc_id": "3503264627-hyaluronic-acid-dermal-filler",
+    "clinic_id": "3503264627",
+    "title": "玻尿酸皮下填充微整形雕塑（深層容積支撐與中軸立體塑型）",
+    "blueprint": "dermal_support"
+  },
+  {
+    "doc_id": "3503264627-hydrafacial-deep-cleansing",
+    "clinic_id": "3503264627",
+    "title": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚",
+    "blueprint": "process_diagram"
+  },
+  {
+    "doc_id": "3503264627-lipoma-aspiration",
+    "clinic_id": "3503264627",
+    "title": "微創脂肪瘤抽吸切除手術",
+    "blueprint": "subdermal_curettage"
+  },
+  {
+    "doc_id": "3503264627-microneedle-rf",
+    "clinic_id": "3503264627",
+    "title": "黃金微針電波拉提",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "3503264627-mid-lower-smas-facelift",
+    "clinic_id": "3503264627",
+    "title": "中下臉 SMAS 筋膜深層拉皮手術（展延式深層提拉與骨膜固定）",
+    "blueprint": "deep_plane_facelift"
+  },
+  {
+    "doc_id": "3503264627-mommy-makeover-reconstruction",
+    "clinic_id": "3503264627",
+    "title": "產後媽媽身形修復手術（腹直肌閉合、腹部拉皮與複合自體脂肪隆乳）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-nd-yag-laser-toning",
+    "clinic_id": "3503264627",
+    "title": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "3503264627-orthognathic-surgery",
+    "clinic_id": "3503264627",
+    "title": "3D 數位導航正顎手術（雙顎 LeFort I 與下顎枝截骨成型術）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-overfilled-face-syndrome-correction",
+    "clinic_id": "3503264627",
+    "title": "饅化臉過度填充修復綜合治療（精準降解酶、微創減容與深層組織解離）",
+    "blueprint": "dermal_support"
+  },
+  {
+    "doc_id": "3503264627-paronychia-matrixectomy",
+    "clinic_id": "3503264627",
+    "title": "甲溝炎嵌甲甲床重整手術",
+    "blueprint": "nail_matrix"
+  },
+  {
+    "doc_id": "3503264627-picosecond-laser-rejuvenation",
+    "clinic_id": "3503264627",
+    "title": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "3503264627-plasma-pen-electrocautery",
+    "clinic_id": "3503264627",
+    "title": "等離子筆與電灼贅疣治療",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "3503264627-qray-frx-fractional-laser",
+    "clinic_id": "3503264627",
+    "title": "QRAY FRX 雙波長微創飛梭雷射",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "3503264627-rejuran-pdrn-skin-healer",
+    "clinic_id": "3503264627",
+    "title": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PDRN）再生逆齡水光注射",
+    "blueprint": "process_diagram"
+  },
+  {
+    "doc_id": "3503264627-renuvion-helium-plasma",
+    "clinic_id": "3503264627",
+    "title": "Renuvion 超能電漿微創皮下縮皮緊緻術",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "3503264627-scar-subcision",
+    "clinic_id": "3503264627",
+    "title": "疤痕與蟹足腫光纖皮下切割治療",
+    "blueprint": "subdermal_curettage"
+  },
+  {
+    "doc_id": "3503264627-structural-autologous-rhinoplasty",
+    "clinic_id": "3503264627",
+    "title": "結構式自體軟骨全方位隆鼻手術（鼻中膈延長與精雕立體鼻型）",
+    "blueprint": "surgical_action"
+  },
+  {
+    "doc_id": "3503264627-swan-neck-cervicoplasty",
+    "clinic_id": "3503264627",
+    "title": "天鵝頸闊頸肌縫合拉皮術（下巴微創隱痕與下顎輪廓線雕塑）",
+    "blueprint": "corset_platysmaplasty"
+  },
+  {
+    "doc_id": "3503264627-thermage-flx-rf",
+    "clinic_id": "3503264627",
+    "title": "Thermage FLX 鳳凰電波單極緊膚療程",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "3503264627-triton-laser-hair-removal",
+    "clinic_id": "3503264627",
+    "title": "Triton 海神雙波長雷射除毛療程",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "3503264627-ultherapy-focused-ultrasound",
+    "clinic_id": "3503264627",
+    "title": "Ultherapy 美國音波深層極線音波拉提療程",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "3503264627-ultraformer-mpt-hifu",
+    "clinic_id": "3503264627",
+    "title": "Ultraformer MPT 媚必提微脈衝音波拉提療程",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "3503264627-varicose-vein-evlt-sclerotherapy",
+    "clinic_id": "3503264627",
+    "title": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "botox-injection",
+    "clinic_id": "3503190424",
+    "title": "肉毒桿菌素注射",
+    "blueprint": "neuromuscular"
+  },
+  {
+    "doc_id": "bromhidrosis-rotary-cutter",
+    "clinic_id": "3503190424",
+    "title": "微創螺旋刀頂漿腺狐臭手術",
+    "blueprint": "subdermal_curettage"
+  },
+  {
+    "doc_id": "electrowave-facelift",
+    "clinic_id": "3503190424",
+    "title": "電波拉皮",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "endolift-laser",
+    "clinic_id": "3503190424",
+    "title": "Endolift 光纖內提拉手術",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "epidermal-cyst-excision",
+    "clinic_id": "3503190424",
+    "title": "未感染粉瘤微創旋轉吸引切除手術",
+    "blueprint": "cyst_excision"
+  },
+  {
+    "doc_id": "fractional-laser",
+    "clinic_id": "3503190424",
+    "title": "飛梭雷射",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "hifu-lifting",
+    "clinic_id": "3503190424",
+    "title": null,
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "hyaluronic-acid-filler",
+    "clinic_id": "3503190424",
+    "title": null,
+    "blueprint": "dermal_support"
+  },
+  {
+    "doc_id": "laser-skin-resurfacing",
+    "clinic_id": "3503190424",
+    "title": "皮秒雷射",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "lipoma-aspiration",
+    "clinic_id": "3503190424",
+    "title": "微創脂肪瘤抽吸切除手術",
+    "blueprint": "subdermal_curettage"
+  },
+  {
+    "doc_id": "microneedle-rf",
+    "clinic_id": "3503190424",
+    "title": "黃金微針電波拉提",
+    "blueprint": "skin_energy"
+  },
+  {
+    "doc_id": "paronychia-matrixectomy",
+    "clinic_id": "3503190424",
+    "title": "甲溝炎嵌甲甲床重整手術",
+    "blueprint": "nail_matrix"
+  },
+  {
+    "doc_id": "plasma-pen-electrocautery",
+    "clinic_id": "3503190424",
+    "title": "等離子筆與電灼贅疣治療",
+    "blueprint": "laser_action"
+  },
+  {
+    "doc_id": "scar-subcision",
+    "clinic_id": "3503190424",
+    "title": "疤痕與蟹足腫光纖皮下切割治療",
+    "blueprint": "subdermal_curettage"
+  }
+]
