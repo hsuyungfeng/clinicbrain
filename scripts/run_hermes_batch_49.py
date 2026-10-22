@@ -36,6 +36,7 @@ LOG_DIR = PROJECT_ROOT / "demo" / "visual" / "out" / "batch_49"
 def main() -> int:
     parser = argparse.ArgumentParser(description="Hermes Agent 49 筆推理樹動畫全自動批次重新生成")
     parser.add_argument("--limit", type=int, default=None, help="限制生成筆數（測試用）")
+    parser.add_argument("--force", action="store_true", help="強制重新生成所有項目（忽略既有合格資產）")
     args = parser.parse_args()
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -67,11 +68,42 @@ def main() -> int:
         for idx, tree in enumerate(trees, 1):
             doc_id = tree.get("doc_id", f"tree_{idx}")
             title = tree.get("title") or doc_id
+            topic_key = normalize_tree_topic_key(doc_id)
+            cid = tree.get("clinic_id")
+
+            # 檢查是否已存在合格的 Phase 32/33 三幕動畫草稿
+            if not args.force:
+                cur = conn.cursor()
+                row = cur.execute(
+                    "SELECT ir_json FROM visual_assets WHERE topic_key = ? AND (clinic_id = ? OR (clinic_id IS NULL AND ? IS NULL))",
+                    (topic_key, cid, cid),
+                ).fetchone()
+                if row and row[0]:
+                    try:
+                        ir_obj = json.loads(row[0])
+                        scenes = ir_obj.get("scenes", [])
+                        bps = [s.get("blueprint") for s in scenes]
+                        if len(bps) == 3 and bps[1] == "contrast" and bps[2] == "timeline":
+                            success_count += 1
+                            print(f"\n[{idx}/{len(trees)}] 正在檢查：{title} ({doc_id}) ...")
+                            print(f"  ⏩ 已存在合格動畫草稿：topic_key='{topic_key}' ({' ➔ '.join(bps)})")
+                            results.append({
+                                "idx": idx,
+                                "doc_id": doc_id,
+                                "title": title,
+                                "topic_key": topic_key,
+                                "status": "ok",
+                                "cost_sec": 0.0,
+                                "scenes": bps,
+                            })
+                            continue
+                    except Exception:
+                        pass
+
             print(f"\n[{idx}/{len(trees)}] 正在處理：{title} ({doc_id}) ...")
             t0 = time.time()
 
             try:
-                # 重新強制生成 (force=True)
                 res = autodraft_from_tree(conn, tree, db_path=PROD_DB_PATH)
                 cost = time.time() - t0
 

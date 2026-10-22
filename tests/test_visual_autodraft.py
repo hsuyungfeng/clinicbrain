@@ -635,3 +635,88 @@ def test_parser_keeps_new_modes_instead_of_resetting_to_defaults():
     assert ir["scenes"][1]["params"]["left"]["mode"] == "tissue_trauma_torn_vessel"
     assert ir["scenes"][1]["params"]["right"]["mode"] == "ultrasonic_emulsification"
     assert ir["scenes"][2]["params"]["connectors"] == "skin_retraction"
+
+
+def test_parse_and_build_tree_ir_surgical_action():
+    """驗證 surgical_action 專科動作圖元在解析器中能正確整形並保留骨骼神經參數。"""
+    import json as _json
+    from src.visual.autodraft import parse_and_build_tree_ir, infer_scene1_blueprint
+
+    tree = {"doc_id": "test-genioplasty", "title": "下巴截骨美型手術", "summary_text": "下顎骨截骨滑移並以純鈦剛性固定"}
+    s1_bp, s1_info = infer_scene1_blueprint(tree)
+    assert s1_bp == "surgical_action"
+    assert s1_info["params_template"]["anatomy_target"] == "mandible"
+
+    raw_json = _json.dumps({
+        "title": "下巴截骨成型原理圖解",
+        "keywords": ["下顎截骨", "神經保護", "純鈦板釘"],
+        "scenes": [
+            {
+                "blueprint": "surgical_action",
+                "title": "外科機轉與骨骼處置",
+                "caption": "手術自口內切口進入並在骨膜下精密剝離，全程保護頦神經並完成截骨滑移與純鈦板釘剛性固定。",
+                "labels": [{"text": "頦神經保護", "tone": "neutral"}, {"text": "口內隱痕", "tone": "optimal"}],
+                "params": {
+                    "anatomy_target": "mandible",
+                    "bone_label": "下顎骨端",
+                    "nerve_label": "頦神經",
+                    "nerve_status": "protected",
+                    "incision_label": "口內隱痕",
+                    "fixation_label": "純鈦板釘",
+                    "bone_shift_mm": 6,
+                    "protect_nerve": True,
+                    "step_labels": ["口內切口進入", "神經保護處置", "穩定固定完成"],
+                },
+            },
+            {
+                "blueprint": "contrast",
+                "title": "手術方式對比說明",
+                "caption": "相較於傳統大切口拉扯組織與明顯痕跡，口內微創小孔徑能減輕組織張力並促進癒合。",
+                "labels": [{"text": "傳統切開", "tone": "warning"}, {"text": "微創精準", "tone": "optimal"}],
+                "params": {
+                    "left": {
+                        "title": "傳統大切口",
+                        "note": "切口大張力大",
+                        "mode": "wide_incision",
+                        "core_effect": "dim",
+                        "core_label": "張力大易留疤",
+                        "footnote": "切口較長且恢復期組織張力大",
+                        "unit_fill": "warn",
+                    },
+                    "right": {
+                        "title": "微創小孔徑",
+                        "note": "切口小癒合佳",
+                        "mode": "minimal_incision",
+                        "rows": 3,
+                        "per_row": 5,
+                        "footnote": "微小切口減輕組織張力與疤痕",
+                        "unit_fill": "ok",
+                    },
+                },
+            },
+            {
+                "blueprint": "timeline",
+                "title": "骨骼修復歷程",
+                "caption": "術後初期骨痂形成，隨後骨小樑緻密並達到咬合穩固，恢復狀況因人而異需由醫師當面評估。",
+                "labels": [{"text": "骨痂形成", "tone": "neutral"}, {"text": "咬合穩固", "tone": "optimal"}],
+                "params": {
+                    "milestones": ["骨痂形成", "骨小樑緻密", "咬合穩固"],
+                    "unit_effect": "mature",
+                    "connectors": "bone_healing",
+                    "units": 3,
+                    "unit_fill": "accent",
+                },
+            },
+        ],
+    }, ensure_ascii=False)
+
+    ir, code = parse_and_build_tree_ir(raw_json, topic_key="tree-test-genioplasty", fallback_title="下巴截骨美型手術")
+    assert code == "ok", code
+    assert ir is not None
+    assert ir["scenes"][0]["blueprint"] == "surgical_action"
+    assert ir["scenes"][0]["params"]["anatomy_target"] == "mandible"
+    assert ir["scenes"][0]["params"]["bone_shift_mm"] == 6
+    assert ir["scenes"][0]["params"]["protect_nerve"] is True
+    assert ir["scenes"][1]["blueprint"] == "contrast"
+    assert ir["scenes"][2]["blueprint"] == "timeline"
+    assert ir["scenes"][2]["params"]["connectors"] == "bone_healing"

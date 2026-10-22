@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import copy
 import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import sqlite3
@@ -297,107 +299,20 @@ def infer_scene1_blueprint(tree: dict[str, Any]) -> tuple[str, dict[str, Any]]:
             },
         }
 
-    # 8. 音波 / 電波能量拉提
-    if any(k in full_text for k in ("音波", "電波", "hifu", "electrowave", "rf", "能量拉提", "非侵入拉提", "拉提", "拉皮")):
-        is_volumetric = any(k in full_text for k in ("電波", "electrowave", "rf", "容積", "真皮加熱"))
-        mode = "volumetric" if is_volumetric else "focused"
-        p_label = "電波探頭" if is_volumetric else "音波探頭"
-        s_labels = ["電波能量傳導", "真皮均勻溫熱", "膠原收縮緊緻"] if is_volumetric else ["能量精準傳遞", "深層熱凝結點", "膠原緊縮拉提"]
-        return "skin_energy", {
-            "blueprint": "skin_energy",
-            "title": "真皮立體容積加熱" if is_volumetric else "聚焦音波能量傳遞",
-            "params_template": {
-                "mode": mode,
-                "probe_label": p_label,
-                "layer_labels": ["表皮層", "真皮膠原層", "筋膜層"],
-                "focal_points": 5,
-                "energy_fill": "accent",
-                "step_labels": s_labels,
-            },
-        }
-
     # 8. 專屬外科核心解剖處置
-    # 8.1 未感染粉瘤微創旋轉吸引切除手術 (cyst_excision)
-    if any(k in full_text for k in ("粉瘤", "表皮樣囊腫", "epidermal-cyst")):
-        return "cyst_excision", {
-            "blueprint": "cyst_excision",
-            "title": "微創旋轉切除與完整囊袋剝離",
-            "params_template": {
-                "cyst_label": "粉瘤囊腫",
-                "sac_label": "完整包膜",
-                "core_label": "角質分泌物",
-                "layer_labels": ["表皮層", "皮下真皮層"],
-                "sac_fill": "accent",
-                "step_labels": ["微創切口定位", "減壓排空引流", "完整囊袋剝離"],
-            },
-        }
-
-    # 8.2 甲溝炎嵌甲甲床重整手術 (nail_matrix)
-    if any(k in full_text for k in ("甲溝炎", "嵌甲", "paronychia", "甲床")):
-        return "nail_matrix", {
-            "blueprint": "nail_matrix",
-            "title": "嵌甲側切與甲床基質重整",
-            "params_template": {
-                "nail_label": "趾甲板",
-                "fold_label": "側甲襞",
-                "spicule_label": "嵌甲尖刺",
-                "matrix_label": "甲基質生長板",
-                "matrix_fill": "warn",
-                "step_labels": ["嵌甲邊緣游離", "縱向側切移除", "甲床基質重整"],
-            },
-        }
-
-    # 8.3 頂漿腺狐臭手術 (subdermal_curettage)
-    if any(k in full_text for k in ("狐臭", "頂漿腺", "bromhidrosis", "螺旋刀")):
-        return "subdermal_curettage", {
-            "blueprint": "subdermal_curettage",
-            "title": "螺旋刀微創刮除抽吸",
-            "params_template": {
-                "target_label": "頂漿腺體",
-                "shaver_label": "微創旋轉刀",
-                "layer_labels": ["真皮深層", "皮下脂肪層"],
-                "tool_fill": "accent",
-                "step_labels": ["微創切口定位", "旋轉刮除分離", "負壓即時抽吸"],
-            },
-        }
-
-    # 8.4 微創脂肪瘤抽吸切除手術 (subdermal_curettage)
-    if any(k in full_text for k in ("脂肪瘤", "lipoma")):
-        return "subdermal_curettage", {
-            "blueprint": "subdermal_curettage",
-            "title": "微創抽吸輔助切除",
-            "params_template": {
-                "target_label": "脂肪瘤塊",
-                "shaver_label": "負壓抽吸管",
-                "layer_labels": ["表皮皮下", "深層筋膜層"],
-                "tool_fill": "fat",
-                "step_labels": ["微創切口入路", "負壓分層抽吸", "完整取出包膜"],
-            },
-        }
-
-    # 8.5 疤痕與蟹足腫皮下切割治療 (subdermal_curettage)
-    if any(k in full_text for k in ("subcision", "蟹足腫", "皮下切割", "皮下剝離")):
-        return "subdermal_curettage", {
-            "blueprint": "subdermal_curettage",
-            "title": "皮下牽引纖維鬆解",
-            "params_template": {
-                "target_label": "牽引纖維",
-                "shaver_label": "微型皮下針刀",
-                "layer_labels": ["凹陷表皮", "深層基底層"],
-                "tool_fill": "accent",
-                "step_labels": ["微創導入定位", "扇形切割沾黏", "促進組織回彈"],
-            },
-        }
-
-    # 8.6 外科骨骼與軟組織處置 (surgical_action)：截骨滑移、削骨、正顎、隆鼻、眼袋
-    # 外科程序優先於通用處置匹配，讓場景 1 具象呈現切口、神經保護、骨段位移與鈦板固定
+    # 8.1 外科骨骼與軟組織處置 (surgical_action)：截骨滑移、削骨、正顎、隆鼻、眼袋
+    # 外科程序優先於通用能量處置匹配，讓場景 1 具象呈現切口、神經保護、骨段位移與鈦板固定
     surgical_profile = None
-    if any(k in full_text for k in ("正顎", "orthognathic", "下巴", "下顎", "mandib", "genioplasty", "截骨")):
+    # 非侵入能量儀器（音波／電波）內文常提及「下顎線」等部位詞，不得誤判為外科骨骼處置
+    is_energy_device = any(k in full_text for k in ("音波", "電波", "hifu", "ultherapy", "ultraformer", "thermage"))
+    if is_energy_device:
+        pass
+    elif any(k in full_text for k in ("正顎", "orthognathic", "下巴", "下顎", "mandib", "genioplasty", "截骨")):
         surgical_profile = ("mandible", "下顎骨端", "頦神經", "口內隱痕", 6, "protected", "純鈦板釘")
     elif any(k in full_text for k in ("削骨", "顴骨", "malar", "bone contouring")):
         surgical_profile = ("malar_bone", "顴骨弓", "顏面神經分支", "耳前隱痕", 3, "protected", "純鈦板釘")
-    elif any(k in full_text for k in ("隆鼻", "rhinoplasty", "眼袋", "blepharoplasty", "眼整形")):
-        surgical_profile = ("general_surgery", "鼻骨或眼窩骨緣", "周邊神經分支", "微創隱痕", 0, "normal", "精準縫合")
+    elif any(k in full_text for k in ("隆鼻", "rhinoplasty", "眼袋", "blepharoplasty", "眼整形", "雙眼皮", "產後媽媽", "腹直肌", "身形修復")):
+        surgical_profile = ("general_surgery", "筋膜組織與骨架", "周邊感覺神經", "隱痕切口", 0, "normal", "分層精密縫合")
     if surgical_profile is not None:
         target, bone, nerve, incision, shift_mm, nerve_status, fixation = surgical_profile
         return "surgical_action", {
@@ -413,6 +328,111 @@ def infer_scene1_blueprint(tree: dict[str, Any]) -> tuple[str, dict[str, Any]]:
                 "bone_shift_mm": shift_mm,
                 "protect_nerve": nerve_status == "protected",
                 "step_labels": ["隱密切口進入", "保護神經後處置", "穩定固定完成"],
+            },
+        }
+
+    # 8.2 未感染粉瘤微創旋轉吸引切除手術 (cyst_excision)
+    if any(k in full_text for k in ("粉瘤", "表皮樣囊腫", "epidermal-cyst")):
+        return "cyst_excision", {
+            "blueprint": "cyst_excision",
+            "title": "微創旋轉切除與完整囊袋剝離",
+            "params_template": {
+                "cyst_label": "粉瘤囊腫",
+                "sac_label": "完整包膜",
+                "core_label": "角質分泌物",
+                "layer_labels": ["表皮層", "皮下真皮層"],
+                "sac_fill": "accent",
+                "step_labels": ["微創切口定位", "減壓排空引流", "完整囊袋剝離"],
+            },
+        }
+
+    # 8.3 甲溝炎嵌甲甲床重整手術 (nail_matrix)
+    if any(k in full_text for k in ("甲溝炎", "嵌甲", "paronychia", "甲床")):
+        return "nail_matrix", {
+            "blueprint": "nail_matrix",
+            "title": "嵌甲側切與甲床基質重整",
+            "params_template": {
+                "nail_label": "趾甲板",
+                "fold_label": "側甲襞",
+                "spicule_label": "嵌甲尖刺",
+                "matrix_label": "甲基質生長板",
+                "matrix_fill": "warn",
+                "step_labels": ["嵌甲邊緣游離", "縱向側切移除", "甲床基質重整"],
+            },
+        }
+
+    # 8.4 頂漿腺狐臭手術 (subdermal_curettage)
+    if any(k in full_text for k in ("狐臭", "頂漿腺", "bromhidrosis", "螺旋刀")):
+        return "subdermal_curettage", {
+            "blueprint": "subdermal_curettage",
+            "title": "螺旋刀微創刮除抽吸",
+            "params_template": {
+                "target_label": "頂漿腺體",
+                "shaver_label": "微創旋轉刀",
+                "layer_labels": ["真皮深層", "皮下脂肪層"],
+                "tool_fill": "accent",
+                "step_labels": ["微創切口定位", "旋轉刮除分離", "負壓即時抽吸"],
+            },
+        }
+
+    # 8.5 微創脂肪瘤抽吸切除手術 (subdermal_curettage)
+    if any(k in full_text for k in ("脂肪瘤", "lipoma")):
+        return "subdermal_curettage", {
+            "blueprint": "subdermal_curettage",
+            "title": "微創抽吸輔助切除",
+            "params_template": {
+                "target_label": "脂肪瘤塊",
+                "shaver_label": "負壓抽吸管",
+                "layer_labels": ["表皮皮下", "深層筋膜層"],
+                "tool_fill": "fat",
+                "step_labels": ["微創切口入路", "負壓分層抽吸", "完整取出包膜"],
+            },
+        }
+
+    # 8.6 疤痕與蟹足腫皮下切割治療 (subdermal_curettage)
+    if any(k in full_text for k in ("subcision", "蟹足腫", "皮下切割", "皮下剝離")):
+        return "subdermal_curettage", {
+            "blueprint": "subdermal_curettage",
+            "title": "皮下牽引纖維鬆解",
+            "params_template": {
+                "target_label": "牽引纖維",
+                "shaver_label": "微型皮下針刀",
+                "layer_labels": ["凹陷表皮", "深層基底層"],
+                "tool_fill": "accent",
+                "step_labels": ["微創導入定位", "扇形切割沾黏", "促進組織回彈"],
+            },
+        }
+
+    # 8.7 FUE 微創毛囊單位精準植髮 (subdermal_curettage)
+    if any(k in full_text for k in ("植髮", "毛囊", "fue", "hair-transplantation")):
+        return "subdermal_curettage", {
+            "blueprint": "subdermal_curettage",
+            "title": "微創鑽取與顯微毛囊移植",
+            "params_template": {
+                "target_label": "毛囊單位",
+                "shaver_label": "微創鑽取針",
+                "layer_labels": ["頭皮表層", "深層毛囊層"],
+                "tool_fill": "accent",
+                "step_labels": ["顯微環鑽提取", "精細分株修整", "依毛流角植入"],
+            },
+        }
+
+    # 8.8 音波 / 電波能量拉提
+    if any(k in full_text for k in ("音波", "電波", "hifu", "electrowave", "rf", "能量拉提", "非侵入拉提", "拉提", "拉皮")):
+        is_volumetric = any(k in full_text for k in ("電波", "electrowave", "rf", "容積", "真皮加熱"))
+        mode = "volumetric" if is_volumetric else "focused"
+        p_label = "電波探頭" if is_volumetric else "音波探頭"
+        s_labels = ["電波能量傳導", "真皮均勻溫熱", "膠原收縮緊緻"] if is_volumetric else ["能量精準傳遞", "深層熱凝結點", "膠原緊縮拉提"]
+        return "skin_energy", {
+            "blueprint": "skin_energy",
+            "title": "真皮立體容積加熱" if is_volumetric else "聚焦音波能量傳遞",
+            "params_template": {
+                "mode": mode,
+                "probe_label": p_label,
+                "layer_labels": ["表皮層", "真皮膠原層", "筋膜層"],
+                "focal_points": 5,
+                "energy_fill": "accent",
+                "step_labels": s_labels,
             },
         }
 
@@ -933,6 +953,7 @@ def parse_and_build_tree_ir(
         "subdermal_curettage",
         "deep_plane_facelift",
         "corset_platysmaplasty",
+        "surgical_action",
     )
     shaped_scenes = []
 
@@ -1169,6 +1190,37 @@ def parse_and_build_tree_ir(
                 "layer_labels": [ly.strip()[:8] for ly in layers],
                 "suture_fill": raw_params.get("suture_fill", "accent"),
                 "step_labels": [sl.strip()[:10] for sl in step_lbls],
+            }
+
+        elif bp == "surgical_action":
+            anat = raw_params.get("anatomy_target", "mandible")
+            if anat not in enum_values("surgical_action", "anatomy_target"):
+                anat = "mandible"
+            bone_lbl = raw_params.get("bone_label", "下顎骨端")
+            nerve_lbl = raw_params.get("nerve_label", "頦神經")
+            n_status = raw_params.get("nerve_status", "protected")
+            if n_status not in enum_values("surgical_action", "nerve_status"):
+                n_status = "protected"
+            inc_lbl = raw_params.get("incision_label", "口內隱痕")
+            fix_lbl = raw_params.get("fixation_label", "純鈦板釘")
+            shift_mm = _parse_int_val(raw_params.get("bone_shift_mm"), default=6, min_v=0, max_v=15)
+            prot_nerve = bool(raw_params.get("protect_nerve", True))
+            step_lbls = raw_params.get("step_labels")
+            if isinstance(step_lbls, list) and len(step_lbls) == 3 and all(isinstance(x, str) and x.strip() for x in step_lbls):
+                clean_steps = [x.strip()[:10] for x in step_lbls]
+            else:
+                clean_steps = ["切口進入", "神經保護處置", "穩定固定完成"]
+
+            shaped_params = {
+                "anatomy_target": anat,
+                "bone_label": str(bone_lbl).strip()[:8] if bone_lbl else "骨端結構",
+                "nerve_label": str(nerve_lbl).strip()[:8] if nerve_lbl else "周邊神經",
+                "nerve_status": n_status,
+                "incision_label": str(inc_lbl).strip()[:8] if inc_lbl else "微創切口",
+                "fixation_label": str(fix_lbl).strip()[:8] if fix_lbl else "剛性固定",
+                "bone_shift_mm": shift_mm,
+                "protect_nerve": prot_nerve,
+                "step_labels": clean_steps,
             }
 
         elif bp == "laser_action":
@@ -1473,6 +1525,9 @@ def autodraft_from_tree(
                     "tree_id": tree.get("id"),
                     "doc_id": doc_id,
                     "tree_version": tree.get("content_version", 1),
+                    # 追溯用：產生時間（UTC）與產生程序 PID，供日後查明草稿由哪次執行寫入
+                    "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "generator_pid": os.getpid(),
                 },
             }
 
