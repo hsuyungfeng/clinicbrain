@@ -111,8 +111,8 @@ def _seed_approved_general_faq(conn: sqlite3.Connection, q: str) -> None:
     )
 
 
-def test_answered_attaches_approved_visual(isolated_db_path: Path):
-    """核准資產 + 問句含關鍵字 -> answered 狀態帶出 visual（含直答與 fallback 兩處）。"""
+def test_answered_faq_without_tree_citation_has_no_visual(isolated_db_path: Path):
+    """2.32：問句含核准資產關鍵字，但回答只引用 FAQ、未引用任何推理樹 -> 不附動畫。"""
     apply_visual_migration(isolated_db_path)
     conn = sqlite3.connect(str(isolated_db_path))
     try:
@@ -122,18 +122,13 @@ def test_answered_attaches_approved_visual(isolated_db_path: Path):
 
         res = pc.patient_consult(conn, q)
         assert res.status == "answered"
-        assert res.visual is not None
-        assert res.visual["topic_key"] == "autologous-fat-grafting"
-        assert len(res.visual["scenes"]) == 3
-        for sc in res.visual["scenes"]:
-            assert "params" in sc
-            assert "duration_sec" in sc
+        assert res.visual is None
     finally:
         conn.close()
 
 
-def test_llm_general_attaches_approved_visual_both_new_and_reused(isolated_db_path: Path):
-    """llm_general 狀態（新生成與同題草稿重用）在問句含核准資產關鍵字時皆帶出 visual。"""
+def test_llm_general_never_attaches_visual_both_new_and_reused(isolated_db_path: Path):
+    """2.32：llm_general（新生成與同題草稿重用）不引用推理樹，即使問句含關鍵字也不附動畫。"""
     apply_visual_migration(isolated_db_path)
     conn = sqlite3.connect(str(isolated_db_path))
     try:
@@ -154,8 +149,7 @@ def test_llm_general_attaches_approved_visual_both_new_and_reused(isolated_db_pa
         # 1. 新生成 llm_general
         res1 = pc.patient_consult(conn, q, llm_call=_fake_llm)
         assert res1.status == "llm_general"
-        assert res1.visual is not None
-        assert res1.visual["topic_key"] == "autologous-fat-grafting"
+        assert res1.visual is None
 
         # 2. 同題重用 pending 草稿 llm_general
         def _boom(prompt: str) -> str:
@@ -163,8 +157,7 @@ def test_llm_general_attaches_approved_visual_both_new_and_reused(isolated_db_pa
 
         res2 = pc.patient_consult(conn, q, llm_call=_boom)
         assert res2.status == "llm_general"
-        assert res2.visual is not None
-        assert res2.visual["topic_key"] == "autologous-fat-grafting"
+        assert res2.visual is None
     finally:
         conn.close()
 
@@ -259,9 +252,9 @@ def test_api_consult_and_jobs_serve_visual_and_preserve_poll_privacy(
         assert r_sync.status_code == 200
         d_sync = r_sync.json()
         assert d_sync["status"] == "answered"
+        # FAQ-only 回答未引用推理樹，欄位存在但為 None（2.32）
         assert "visual" in d_sync
-        assert d_sync["visual"] is not None
-        assert d_sync["visual"]["topic_key"] == "autologous-fat-grafting"
+        assert d_sync["visual"] is None
 
         # 2. 非同步 /api/v1/general/consult/jobs
         r_job = client.post("/api/v1/general/consult/jobs", json={"query": q})
@@ -290,8 +283,7 @@ def test_api_consult_and_jobs_serve_visual_and_preserve_poll_privacy(
         assert db_connect_calls == 0
         d_poll = r_poll.json()
         assert d_poll["status"] == "answered"
-        assert d_poll["visual"] is not None
-        assert d_poll["visual"]["topic_key"] == "autologous-fat-grafting"
+        assert d_poll["visual"] is None
 
     consult_jobs.reset_for_tests()
 
@@ -340,8 +332,8 @@ def test_consult_endpoint_prioritizes_server_configured_clinic_visual(
         )
         assert res_sync.status_code == 200
         d_sync = res_sync.json()
-        assert d_sync["visual"] is not None
-        assert d_sync["visual"]["topic_key"] == "clinic-fat"
+        # FAQ-only 回答不引用推理樹，不附動畫；診所優先規則由 _cited_visual 單元測試覆蓋
+        assert d_sync["visual"] is None
 
         # (b) 非同步 /consult/jobs，同樣夾帶 X-Clinic-ID: 3503264627 -> 優先回傳 clinic-fat
         res_job = client.post(
@@ -356,7 +348,114 @@ def test_consult_endpoint_prioritizes_server_configured_clinic_visual(
         res_poll = client.get(f"/api/v1/general/consult/jobs/{job_id}")
         assert res_poll.status_code == 200
         d_poll = res_poll.json()
-        assert d_poll["visual"] is not None
-        assert d_poll["visual"]["topic_key"] == "clinic-fat"
+        assert d_poll["visual"] is None
+
+
+# ----------------------------------------------------------------------------
+# 2.32：依引用推理樹附上動畫（_cited_visual）
+# ----------------------------------------------------------------------------
+
+_CLINIC = "3503190424"
+
+
+def _seed_tree_visual(conn: sqlite3.Connection, topic_key: str, clinic_id: str | None, title: str) -> None:
+    ir = _sample_visual_ir(topic_key=topic_key, keywords=["自體脂肪"], title=title)
+    upsert_assets(
+        conn,
+        [{"clinic_id": clinic_id, "topic_key": topic_key, "title": title, "keywords": ir["keywords"], "ir": ir}],
+        source_type="manual",
+    )
+    set_review_status(conn, topic_key, "approved", clinic_id=clinic_id)
+
+
+def test_cited_visual_prefers_clinic_version_then_general(isolated_db_path: Path):
+    """引用同一棵樹時：診所上下文取診所專屬版；一般上下文取一般共用版；回傳不含 clinic_id。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        _seed_tree_visual(conn, "tree-fat-care", None, "一般脂肪照護")
+        _seed_tree_visual(conn, "tree-fat-care", _CLINIC, "緻妍脂肪照護")
+        groups = [[{"doc_id": "fat-care"}]]
+
+        clinic_res = pc._cited_visual(conn, groups, clinic_id=_CLINIC)
+        assert clinic_res is not None
+        assert clinic_res["title"] == "緻妍脂肪照護"
+        assert "clinic_id" not in clinic_res
+
+        general_res = pc._cited_visual(conn, groups, clinic_id=None)
+        assert general_res is not None
+        assert general_res["title"] == "一般脂肪照護"
+    finally:
+        conn.close()
+
+
+def test_cited_visual_none_without_citation_or_unapproved_tree(isolated_db_path: Path):
+    """沒有引用任何樹、或引用的樹尚未核准動畫 -> None（Fail-Closed）。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        _seed_tree_visual(conn, "tree-fat-care", None, "一般脂肪照護")
+        assert pc._cited_visual(conn, [[]], clinic_id=None) is None
+        assert pc._cited_visual(conn, [[{"doc_id": "other-tree"}]], clinic_id=None) is None
+
+        ir = _sample_visual_ir(topic_key="tree-pending-one", keywords=["自體脂肪"], title="待審")
+        upsert_assets(
+            conn,
+            [{"clinic_id": None, "topic_key": "tree-pending-one", "title": "待審", "keywords": ir["keywords"], "ir": ir}],
+            source_type="manual",
+        )
+        assert pc._cited_visual(conn, [[{"doc_id": "pending-one"}]], clinic_id=None) is None
+    finally:
+        conn.close()
+
+
+def test_cited_visual_faq_hits_match_treatment_slug(isolated_db_path: Path):
+    """病患端 FAQ 也對應動畫：FAQ topic_key（療程 slug）引用時附上同療程動畫，且診所版優先。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        _seed_tree_visual(conn, "tree-fat-care", None, "一般脂肪照護")
+        _seed_tree_visual(conn, "tree-fat-care", _CLINIC, "緻妍脂肪照護")
+        faq_hits = [{"topic_key": "fat-care", "question": "q", "answer": "a"}]
+
+        clinic_res = pc._cited_visual(conn, [faq_hits], clinic_id=_CLINIC)
+        assert clinic_res is not None and clinic_res["title"] == "緻妍脂肪照護"
+
+        general_res = pc._cited_visual(conn, [faq_hits], clinic_id=None)
+        assert general_res is not None and general_res["title"] == "一般脂肪照護"
+
+        # 無對應療程 slug 的 FAQ 不附動畫
+        assert pc._cited_visual(conn, [[{"topic_key": "no-such-topic"}]], clinic_id=None) is None
+    finally:
+        conn.close()
+
+
+def test_patient_consult_general_faq_attaches_its_treatment_visual(isolated_db_path: Path):
+    """端到端：回答引用的已核准一般 FAQ，其 topic_key 對應療程時，patient_consult 附上該動畫。"""
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        q = "請問自體脂肪移植術後如何照護？"
+        upsert_faqs(
+            conn,
+            [
+                {
+                    "clinic_id": None,
+                    "topic_key": "autologous-fat-grafting",
+                    "category": "general",
+                    "question": q,
+                    "answer": f"自體脂肪移植術後請保持正常作息並避免按壓。{WARNING}",
+                }
+            ],
+            source_type="manual",
+        )
+        _seed_visual(conn, status="approved")
+
+        res = pc.patient_consult(conn, q)
+        assert res.status == "answered"
+        assert res.visual is not None
+        assert res.visual["topic_key"] == "autologous-fat-grafting"
+    finally:
+        conn.close()
 
     consult_jobs.reset_for_tests()

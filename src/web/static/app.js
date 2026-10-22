@@ -1233,7 +1233,116 @@ function initAskSection() {
     });
 }
 
+// 目前顯示中的提問動畫播放器停止函式；每次重繪前先停掉，避免舊的 rAF 迴圈殘留
+let askVisualStop = null;
+
+// 播放回答所引用的已核准動畫（僅 textContent 寫入；場景資料來自後端已整形的公開結構）
+function buildAskVisualPlayer(visual) {
+    const wrap = el("div", "ask-visual");
+    wrap.appendChild(el("div", "ask-visual-title", `🎬 引用動畫解說：${visual.title || visual.topic_key || ""}`));
+
+    const scenes = Array.isArray(visual.scenes) ? visual.scenes : [];
+    if (scenes.length === 0 || !window.ClinicVisual || typeof window.ClinicVisual.mount !== "function") {
+        wrap.appendChild(el("div", "ask-src-empty", "動畫引擎無法載入，已略過動畫播放。"));
+        return wrap;
+    }
+
+    const playerBox = el("div", "visual-review-player");
+    const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svgEl.setAttribute("viewBox", "0 0 800 510");
+    svgEl.classList.add("visual-review-svg");
+    playerBox.appendChild(svgEl);
+
+    const controls = el("div", "visual-review-controls");
+    const btnPlay = el("button", "btn-visual-play px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition", "▶ 播放");
+    const scrubber = document.createElement("input");
+    scrubber.type = "range";
+    scrubber.min = "0";
+    scrubber.max = "1000";
+    scrubber.value = "0";
+    scrubber.className = "visual-review-scrubber";
+    const timeDisplay = el("span", "text-xs text-gray-300 font-mono select-none", "0.0s / 0.0s");
+    controls.appendChild(btnPlay);
+    controls.appendChild(scrubber);
+    controls.appendChild(timeDisplay);
+    playerBox.appendChild(controls);
+    wrap.appendChild(playerBox);
+
+    const captionEl = el("p", "ask-visual-caption", "");
+    wrap.appendChild(captionEl);
+
+    let ctrl = null;
+    try {
+        ctrl = window.ClinicVisual.mount(svgEl, scenes);
+    } catch (err) {
+        console.error("ClinicVisual.mount 失敗", err);
+    }
+    if (!ctrl) {
+        wrap.appendChild(el("div", "ask-src-empty", "動畫渲染失敗，已略過動畫播放。"));
+        return wrap;
+    }
+
+    const totalDur = ctrl.totalDuration;
+    let isPlaying = false;
+    let animId = null;
+    let lastTs = null;
+    let currentT = 0;
+
+    function stopPlayback() {
+        isPlaying = false;
+        btnPlay.textContent = "▶ 播放";
+        if (animId) cancelAnimationFrame(animId);
+        animId = null;
+        lastTs = null;
+    }
+
+    function renderFrame(t) {
+        currentT = Math.max(0, Math.min(t, totalDur));
+        const safeT = Math.min(currentT, Math.max(0, totalDur - 0.001));
+        ctrl.renderAt(safeT);
+        scrubber.value = String(Math.floor((currentT / Math.max(0.001, totalDur)) * 1000));
+        timeDisplay.textContent = `${currentT.toFixed(1)}s / ${totalDur.toFixed(1)}s`;
+        const idx = ctrl.sceneIndexAt(safeT);
+        const sc = scenes[idx] || {};
+        captionEl.textContent = `場景 ${idx + 1}：${sc.title || ""}｜${sc.caption || ""}`;
+    }
+
+    function animStep(ts) {
+        if (!isPlaying) return;
+        if (lastTs === null) lastTs = ts;
+        currentT += (ts - lastTs) / 1000;
+        lastTs = ts;
+        if (currentT >= totalDur) currentT = 0;
+        renderFrame(currentT);
+        animId = requestAnimationFrame(animStep);
+    }
+
+    btnPlay.addEventListener("click", () => {
+        if (isPlaying) {
+            stopPlayback();
+            return;
+        }
+        isPlaying = true;
+        btnPlay.textContent = "⏸ 暫停";
+        lastTs = null;
+        animId = requestAnimationFrame(animStep);
+    });
+
+    scrubber.addEventListener("input", () => {
+        stopPlayback();
+        renderFrame((parseFloat(scrubber.value) || 0) / 1000 * totalDur);
+    });
+
+    askVisualStop = stopPlayback;
+    renderFrame(0);
+    return wrap;
+}
+
 function renderAskResult(data, container) {
+    if (askVisualStop) {
+        askVisualStop();
+        askVisualStop = null;
+    }
     container.replaceChildren();
     const head = el("div", "ask-head");
     const modeText = { answered: "依據系統資料作答", no_evidence: "資料中沒有相關內容（未呼叫模型）", red_flag: "急重症紅旗（未呼叫模型）" }[data.mode] || data.mode;
@@ -1270,6 +1379,10 @@ function renderAskResult(data, container) {
     if (data.compliance && !data.compliance.ok) {
         container.appendChild(el("div", "ask-warn", `合規檢視原因：${data.compliance.reason}（此為管理端檢視，對外端點不會輸出此內容）`));
     }
+    // 回答所引用推理樹之已核准動畫（後端已依引用來源過濾，無則不顯示）
+    (Array.isArray(data.visuals) ? data.visuals : []).forEach(v => {
+        container.appendChild(buildAskVisualPlayer(v));
+    });
     const srcTitle = el("div", "ask-src-title", `模型可見的資料來源（${(data.sources || []).length} 筆）`);
     container.appendChild(srcTitle);
     if (!data.sources || data.sources.length === 0) {

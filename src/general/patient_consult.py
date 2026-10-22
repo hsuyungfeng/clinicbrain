@@ -27,7 +27,7 @@ from ..pageindex.llm_client import (
     PATIENT_GENERAL_SAMPLING,
 )
 from ..pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
-from ..visual.match import find_visual
+from ..visual.match import visuals_for_tree_sources
 from .consult import GeneralConsultResult, consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
 from .patient_compose import (
@@ -71,12 +71,32 @@ class PatientConsultResult:
     visual: dict | None = None
 
 
-def _safe_find_visual(conn: sqlite3.Connection, query: str, clinic_id: str | None = None) -> dict | None:
-    """安全呼叫 find_visual，任何例外皆視為 None（Fail-Closed）。"""
+def _cited_visual(
+    conn: sqlite3.Connection,
+    cited_hit_groups: list[list[dict]],
+    clinic_id: str | None = None,
+) -> dict | None:
+    """依本次回答實際引用的來源附上已核准動畫（Phase 34 / 2.32）。
+
+    引用來源分兩種，各自以療程 slug 對應動畫：
+    - 推理樹 guide_hits：以 doc_id 比對（doc_id 即療程 slug）。
+    - 衛教 FAQ faq_hits：以 topic_key 比對（faq_cache.topic_key 即療程 slug）。
+    只看回答組稿實際使用、已通過相關度過濾的命中，不以問句關鍵字比對。
+    同一療程只附一筆；取首筆顯示。任何例外皆視為 None（Fail-Closed）。
+    """
+    slugs = []
+    for group in cited_hit_groups:
+        for hit in group:
+            key = hit.get("doc_id") or hit.get("topic_key")
+            if key:
+                slugs.append(str(key))
+    if not slugs:
+        return None
     try:
-        return find_visual(conn, query, clinic_id=clinic_id)
+        items = visuals_for_tree_sources(conn, slugs, clinic_id=clinic_id)
     except Exception:
         return None
+    return items[0] if items else None
 
 
 PATIENT_LLM_TIMEOUT_SECONDS = 240  # 限制單題上限 4 分鐘內，避免公開端點無限懸掛
@@ -155,22 +175,30 @@ def patient_consult(
             has_general_evidence = False
 
         if composed_msg:
+            # 組稿同時引用診所與通用推理樹，動畫依此引用來源附上
+            cited_groups = [
+                (clinic_ev.guide_hits + clinic_ev.faq_hits) if clinic_ev else [],
+                filtered_found.guide_hits + filtered_found.faq_hits,
+            ]
             return PatientConsultResult(
                 status="answered",
                 message=composed_msg,
                 disclaimer=found.disclaimer,
                 label=None,
                 booking_url=BOOKING_URL,
-                visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
+                visual=_cited_visual(conn, cited_groups, clinic_id=clinic_id),
             )
         elif has_general_evidence and filtered_found.message:
+            # 組稿失敗改用通用確定性摘錄，僅引用通用推理樹
             return PatientConsultResult(
                 status="answered",
                 message=filtered_found.message,
                 disclaimer=found.disclaimer,
                 label=None,
                 booking_url=BOOKING_URL,
-                visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
+                visual=_cited_visual(
+                    conn, [filtered_found.guide_hits + filtered_found.faq_hits], clinic_id=clinic_id
+                ),
             )
 
     # 同一題已有一般草稿：直接沿用，不再呼叫模型（待審重用答案，駁回則回固定文字）
@@ -178,13 +206,13 @@ def patient_consult(
     if existing is not None:
         status, answer = existing
         if status == "pending" and answer:
+            # 一般草稿不引用任何推理樹，不附動畫
             return PatientConsultResult(
                 status="llm_general",
                 message=decorate_general_answer(answer, query),
                 disclaimer=LLM_DISCLAIMER,
                 label=LLM_LABEL,
                 booking_url=BOOKING_URL,
-                visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
             )
         return PatientConsultResult(
             status="no_match", message=NO_DATA_TEXT, disclaimer=LLM_DISCLAIMER,
@@ -206,13 +234,13 @@ def patient_consult(
         )
     try:
         draft = generate_general_draft(conn, query, llm_call, retry_on_empty=False)
+        # 未審一般說明未引用推理樹，不附動畫
         return PatientConsultResult(
             status="llm_general",
             message=decorate_general_answer(draft["answer"], query),
             disclaimer=LLM_DISCLAIMER,
             label=LLM_LABEL,
             booking_url=BOOKING_URL,
-            visual=_safe_find_visual(conn, query, clinic_id=clinic_id),
         )
     except (GeneralDraftError, LLMEmptyOutputError, LLMTruncatedError, LocalLLMUnavailableError, RuntimeError):
         # 驗證未通過、輸出截斷、LLM 離線或資料庫未遷移：回固定文字，不外露內部細節

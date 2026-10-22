@@ -178,7 +178,10 @@ def visuals_for_tree_sources(
         except ValueError:
             continue
         general = _GENERAL_TOPIC_RE.sub("tree-", tk)
-        candidates = [a for a in assets if a.get("topic_key") in (tk, general)]
+        # 無 tree- 前綴的既有動畫（如 Phase 29 骨架 autologous-fat-grafting）以療程 slug 對應；
+        # FAQ 的 topic_key 即為裸 slug，必須能對到此類動畫（2.32 病患端 FAQ 對應）
+        bare = tk[len("tree-"):]
+        candidates = [a for a in assets if a.get("topic_key") in (tk, general, bare)]
         if not candidates:
             continue
 

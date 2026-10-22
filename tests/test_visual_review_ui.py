@@ -348,15 +348,86 @@ def test_visual_review_ui_playback_editing_and_approval(playwright_browser, e2e_
         page.goto(f"{e2e_test_server}/admin/consult.html")
         page.wait_for_selector("#consultInput", state="visible", timeout=10000)
         page.fill("#consultInput", "我想諮詢結構式隆鼻手術原理與技術")
+        # 動畫依回答實際引用的來源（推理樹 doc_id 或 FAQ topic_key）之療程 slug 附上（2.32）；此 FAQ 的 topic_key 為 rhino-faq，沒有對應動畫，
+        # 因此回應不得帶出動畫，諮詢頁動畫卡必須維持隱藏。
+        poll_responses: list = []
+        page.on(
+            "response",
+            lambda r: poll_responses.append(r)
+            if "/api/v1/general/consult/jobs/" in r.url and r.request.method == "GET"
+            else None,
+        )
         page.click("#btnSubmit")
-
-        # 等待視覺解說卡出現並驗證以 ClinicVisual 合成播放
-        page.wait_for_selector("#visualCard", state="visible", timeout=10000)
-        consult_svg = page.locator("#visualCard svg.visual-engine-canvas")
-        assert consult_svg.is_visible()
-        assert consult_svg.get_attribute("viewBox") == "0 0 800 510"
+        terminal_states = ("answered", "llm_general", "red_flag", "no_match", "busy")
+        poll_body: dict = {}
+        for _ in range(100):
+            bodies = [r.json() for r in poll_responses]
+            done = [b for b in bodies if b.get("status") in terminal_states]
+            if done:
+                poll_body = done[0]
+                break
+            page.wait_for_timeout(200)
+        assert poll_body, "諮詢作業逾時未回傳終態"
+        assert poll_body["status"] in ("answered", "llm_general")
+        assert poll_body.get("visual") is None
+        page.wait_for_timeout(300)
+        assert page.locator("#visualCard").is_hidden()
 
         # 確認無任何致命的未捕獲錯誤
+        fatal_errors = [e for e in console_errors if "favicon" not in e and "404" not in e]
+        assert len(fatal_errors) == 0, f"瀏覽器執行過程中發生 console 錯誤：{fatal_errors}"
+    finally:
+        page.close()
+
+
+def test_ask_page_renders_cited_visual_player(playwright_browser, e2e_test_server):
+    """Playwright：管理端提問回答附上引用動畫時，以 ClinicVisual 合成 SVG 並可拖曳切換場景說明。"""
+    page = playwright_browser.new_page(viewport={"width": 1200, "height": 900})
+    console_errors: list[str] = []
+    page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
+    page.on("pageerror", lambda err: console_errors.append(str(err)))
+
+    scenes = [
+        {"blueprint": "process_diagram", "title": "第一幕", "caption": "說明一", "labels": [], "params": None, "duration_sec": None},
+        {"blueprint": "contrast", "title": "第二幕", "caption": "說明二", "labels": [], "params": None, "duration_sec": None},
+        {"blueprint": "timeline", "title": "第三幕", "caption": "說明三", "labels": [], "params": None, "duration_sec": None},
+    ]
+    try:
+        page.goto(f"{e2e_test_server}/admin/")
+        page.wait_for_selector('button[data-tab="tab-ask"]', state="visible", timeout=10000)
+        page.click('button[data-tab="tab-ask"]')
+
+        # 以後端回傳結構直接驅動結果渲染（不呼叫真實 LLM）
+        page.evaluate(
+            """(scenes) => {
+                renderAskResult({
+                    question: "測試問題", mode: "answered", answer: "測試回答", sources: [],
+                    used_llm: true, compliance: { ok: true, reason: "" },
+                    visuals: [{ topic_key: "tree-test", title: "測試動畫", scenes: scenes }],
+                }, document.getElementById("askResult"));
+            }""",
+            scenes,
+        )
+
+        svg = page.locator("#askResult .ask-visual svg.visual-review-svg")
+        assert svg.count() == 1
+        assert svg.get_attribute("viewBox") == "0 0 800 510"
+        page.wait_for_timeout(200)
+        children_count = page.evaluate("el => el.querySelectorAll('*').length", svg.element_handle())
+        assert children_count > 5, f"提問動畫 SVG 渲染子節點數不足：{children_count}"
+
+        # 拖曳到中段，說明文字應切到對應場景（第二幕或第三幕，不得停在第一幕）
+        page.locator("#askResult .ask-visual input[type=range]").fill("700")
+        page.wait_for_timeout(200)
+        caption = page.locator("#askResult .ask-visual-caption").text_content() or ""
+        assert "場景" in caption and "第一幕" not in caption, f"拖曳後說明文字未切換：{caption}"
+
+        # 重新渲染新回答時，舊播放器必須已被清理（不殘留於結果區之外）
+        page.evaluate(
+            "() => renderAskResult({question:'q', mode:'no_evidence', answer:'無', sources:[], used_llm:false, compliance:{ok:true, reason:''}, visuals:[]}, document.getElementById('askResult'))"
+        )
+        assert page.locator("#askResult .ask-visual").count() == 0
+
         fatal_errors = [e for e in console_errors if "favicon" not in e and "404" not in e]
         assert len(fatal_errors) == 0, f"瀏覽器執行過程中發生 console 錯誤：{fatal_errors}"
     finally:
