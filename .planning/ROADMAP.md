@@ -177,6 +177,19 @@
 **Depends on**: Phase 26 (`ae55510`)
 **Scope**: 病人頁（不存問句、不收個資）、靜態與行為測試、副本實測、速率限制文件。不含留資表單與 doctor-toolbox 整合。
 
+### Phase 34: 49 筆推理樹動畫草稿品質強化：黃金測試集、逐筆渲染驗收與接觸表、可覆寫模板欄位、自動產生執行報告
+
+**Goal:** 49 筆推理樹動畫草稿的黃金測試、逐筆渲染驗收、可覆寫模板欄位與風險排序審核
+**Requirements**: P34-GOLDEN, P34-RENDER-CHECK, P34-REPORT, P34-TEMPLATE-OVERRIDE, P34-REVIEW-ORDER, P34-DOCS
+**Depends on:** Phase 33
+**Plans:** 4 plans
+
+Plans:
+- [ ] 34-01-PLAN.md — 黃金測試集（Wave 1）
+- [ ] 34-02-PLAN.md — 逐筆渲染驗收、接觸表與報告（Wave 1）
+- [ ] 34-03-PLAN.md — template_override 欄位與覆寫優先序（Wave 2，正式庫遷移需核准）
+- [ ] 34-04-PLAN.md — 風險排序審核與 AGENTS 2.31（Wave 3）
+
 ---
 ### Phase 28: 病人端對話式諮詢與預生成 QA (已完成)
 
