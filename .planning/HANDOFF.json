@@ -1,37 +1,86 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-14T15:52:00+08:00",
-  "phase": "23-24",
-  "phase_name": "web-scraper-and-upload-url-planning",
-  "phase_dir": ".planning/phases",
-  "plan": 3,
-  "task": 0,
-  "total_tasks": 0,
-  "status": "planned",
+  "timestamp": "2026-10-22T10:04:35+08:00",
+  "phase": "33",
+  "phase_name": "semantic-contrast-and-timeline-engine",
+  "phase_dir": ".planning/phases/33-semantic-contrast-and-timeline-engine",
+  "plan": 2,
+  "task": 3,
+  "total_tasks": 3,
+  "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Phase 23 規劃與核對（含解除開發授權限制）", "status": "done"},
-    {"id": 2, "name": "Phase 24 規劃與核對（含 pinned_addresses 介面對齊）", "status": "done"},
-    {"id": 3, "name": "Phase 25 預約資料留存表單依指示刪除", "status": "done"}
+    {
+      "id": 1,
+      "name": "33-01 blueprints 列舉擴充 + enum_values 單一來源 + autodraft 專科推斷與提示詞第 8 條 + 解析器白名單改讀規格",
+      "status": "done",
+      "commit": "adb3ec8 (含於他人 commit，需確認)"
+    },
+    {
+      "id": 2,
+      "name": "33-02 visual_engine.js 5 組 contrast 專科 + 5 組 timeline 修復歷程 + glow_restored + 白名單對齊 Python",
+      "status": "done",
+      "commit": "adb3ec8 (含於他人 commit，需確認)"
+    },
+    {
+      "id": 3,
+      "name": "33-02 截圖驗收、Remotion 包裝 rhinoplasty-strut.mp4、MP4/Hermes 審計",
+      "status": "in_progress",
+      "progress": "截圖與測試已完成；MP4 與 Hermes 審計由其他代理完成（見 33-02-SUMMARY.md），Remotion 包裝已渲染一次並目視檢查"
+    }
   ],
-  "remaining_tasks": [
-    {"id": 4, "name": "Phase 23 實作（/gsd-execute-phase 23）", "status": "not_started"},
-    {"id": 5, "name": "Phase 24 實作（/gsd-execute-phase 24）", "status": "not_started"}
+  "remaining_tasks": [],
+  "blockers": [
+    {
+      "description": "src/visual/autodraft.py 與 tests/test_visual_autodraft.py 有未提交的他人修改（外科推斷加入能量裝置排除、移除 skin_energy 分支、新增 surgical 解析測試）",
+      "type": "human_action",
+      "workaround": "先釐清作者與意圖，再決定 commit 或還原；本次 WIP commit 不納入"
+    },
+    {
+      "description": "clinic.db 與 scripts/run_hermes_batch_49.py 有未提交修改",
+      "type": "human_action",
+      "workaround": "clinic.db 為正式資料，需使用者明確決定是否納入版控；不得由代理自行 commit"
+    }
   ],
-  "blockers": [],
-  "human_actions_pending": [],
+  "human_actions_pending": [
+    {
+      "action": "釐清未提交的 autodraft.py 與測試修改的來源，決定 commit 或捨棄",
+      "context": "避免覆蓋他人工作",
+      "blocking": true
+    },
+    {
+      "action": "決定 clinic.db 是否納入 commit",
+      "context": "正式庫資料，不可由代理代為提交",
+      "blocking": false
+    }
+  ],
   "decisions": [
-    {"decision": "Phase 25 預約資料留存表單依指示完全刪除", "rationale": "使用者指示「del of 增加預約資料留存表單」，不實作預約表單、個資留存或引入 Pillow", "phase": "25"},
-    {"decision": "Phase 23 開發軟體階段暫不需要授權限制", "rationale": "使用者指示：目前只是要做軟體先不需要授權限制，解除開發阻擋並建立 ownership_confirmation.json", "phase": "23"},
-    {"decision": "Phase 23 與 Phase 24 介面對齊 CR-23-1", "rationale": "fetch_page 支援 pinned_addresses 杜絕 DNS rebinding", "phase": "23-24"}
+    {
+      "decision": "專科 contrast/timeline 以 dict 介面為準，新增 select_* 函式回傳 tuple",
+      "rationale": "保留 build_tree_visual_prompt 與既有呼叫端",
+      "phase": "33"
+    },
+    {
+      "decision": "JS 與 Python 列舉以共用常數/enum_values 為單一來源",
+      "rationale": "Phase 32 發生白名單分歧導致新模式被靜默退回預設",
+      "phase": "33"
+    },
+    {
+      "decision": "Remotion 專案放在 demo/visual/remotion-rhinoplasty，只包裝既有 MP4 加底部免責說明列",
+      "rationale": "使用者要求 try once；不改原影片內容",
+      "phase": "33"
+    },
+    {
+      "decision": "昇華規則：推理樹 doc_id 改用 general-<slug>；同 slug 先到者佔用、不覆寫",
+      "rationale": "doc_id 全域 UNIQUE；使用者已接受",
+      "phase": "32"
+    }
   ],
   "uncommitted_files": [
-    ".planning/ROADMAP.md",
-    ".planning/phases/23-web-scraper/",
-    ".planning/phases/24-upload-center-url/",
-    "data/scraper/ownership_confirmation.json",
-    ".continue-here.md",
-    ".planning/HANDOFF.json"
+    "clinic.db (他人/正式庫，不納入)",
+    "scripts/run_hermes_batch_49.py (他人，不納入)",
+    "src/visual/autodraft.py (待釐清，不納入)",
+    "tests/test_visual_autodraft.py (待釐清，不納入)"
   ],
-  "next_action": "執行 /gsd-execute-phase 23 啟動 Phase 23 實作",
-  "context_notes": "Phase 25 已完全刪除；Phase 23 與 Phase 24 規劃完整，阻礙皆已清除，無待決事項。"
+  "next_action": "先確認 autodraft.py 未提交修改的來源；確認後執行 pytest tests/test_visual_autodraft.py tests/test_visual_engine_browser.py 驗證，再決定是否 commit",
+  "context_notes": "Phase 33 的 JS 與後端專科實作已通過靜態、瀏覽器與 Python 單元測試（視覺相關 167 passed、1 既有略過）。已知弱點：結節與微滴在 u=1 偏小；醫學正確性仍需醫師審核。注意：不要把 clinic.db 或他人修改打包進 WIP。"
 }
