@@ -838,6 +838,41 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 - **提示詞**：模型不得自行宣稱資料中沒有圖解或動畫；已核准的動畫由系統另行附上。
 - **尚未完成**：病患端諮詢（`patient_consult`）仍以關鍵字比對動畫；管理端問答頁尚未播放附上的動畫（目前只回傳 `visuals`）。
 
+### 2.33 臺灣基層常見疾病 ICD-10 知識庫與視覺藍圖管線（Phase 35 新增）
+
+為滿足臺灣基層診所 6 大專科（耳鼻喉、家醫、兒科、心臟內科、腸胃內科、新陳代謝科）之日常看診衛教需求，自 Phase 35 起導入標準化 ICD-10-CM 疾病目錄與解剖病理管線：
+- **基層 36 項疾病目錄 (`data/icd10/primary_care_36_catalog.json`)**：
+  - 收錄急性上呼吸道感染（J06.9）、高血壓（I10）、第2型糖尿病（E11.9）、胃食道逆流（K21.9）、急性支氣管炎（J20.9）、急性腸胃炎（A09）、痛風（M10.9）等 36 項常見疾病。
+  - 每筆疾病包含 ICD-10-CM 代碼、英文名稱、繁體中文俗稱、主責專科、器官系統（如 `respiratory_mucosa`、`cardiovascular_artery`、`gi_mucosa` 等）、非手術誘因（飲食、感染、生活習慣）及三階段病程特徵。
+- **病理機制藍圖 (`pathology_mechanism`)**：
+  - 場景 1 突破純外科動作限制，支援發炎紅腫浸潤、血管硬化斑塊、黏膜酸蝕破損等內科常見病理機制向量渲染。
+  - 純本地離線豐富腳本 (`scripts/enrich_icd10_primary_care.py`) 透過本地 Qwen 27B 生成並經過 100% 醫療法規過濾（零價格洩漏、無阿拉伯數字、繁體中文）。
+
+### 2.34 ClinicBrain Native Harness² 雙層遞迴自進化馬具（Phase 36 新增）
+
+借鑒 Google Research Harness²（Recursive Agent Harnessing for an Open World）思想，在不修改底層 LLM 權重前提下，針對臨床醫療文本與視覺 IR 生成導入雙層遞迴優化架構 (`src/visual/harness_optimizer.py`)：
+- **層級一：任務級遞迴 (Task-level Recursion)**：
+  - 支援 `--k` 候選探索預算與 `sequential`（序列批評改進）或 `parallel`（並行探索最佳解）兩種模式。
+  - 透過 `score_ir_alignment()` 進行 0~100 分臨床語意與 IR 結構規範評分。
+- **層級二：治理級遞迴 (Harnessing-level Recursion)**：
+  - 維護跨任務治理記憶庫 (`data/visual/harness_lessons.json`)，將常見缺陷（如遺漏警訊收尾句、器官系統與主題不符、三階段色彩顛倒等）固化為治理經驗。
+  - 於 Prompt 組裝時依器官系統及主題動態注入相關治理規則；當審核通過且品質顯著提升時，自動沉澱並晉升新經驗至治理庫。
+- **自動化治理檢核腳本 (`scripts/harness_check.sh`)**：
+  - 一鍵執行純本地輕量驗證（包含 IR 語意評分、經驗注入、多候選探索與回歸測試），保證自進化機制離線可靠。
+
+### 2.35 36 項基層疾病升格臨床推理樹與 Text Native Harness² 雙層遞迴（Phase 37 新增）
+
+為使基層疾病能全面融入四段式臨床決策樹（`page_index_trees`）架構，並使雙層遞迴拓展至文本問答領域：
+- **36 項基層疾病升格 PageIndex 臨床推理樹**：
+  - `src/pageindex/db_writer.py:upsert_trees()` 支援 `category="general"` 且 `clinic_id=None` 的跨診所共用推理樹，同時對診所專屬類維持嚴格防護。
+  - 由 `src/visual/icd10_catalog.py:entry_to_page_index_tree()` 將基層疾病摘要結構化轉譯為四段式推理樹（`pre_op` 病況評估、`procedure` 治療與用藥指導、`post_op_short` 急性期護理與就醫警訊、`maintenance` 長期慢性調養）。
+  - 全數 36 項疾病經審核通過寫入正式 `clinic.db`，使全庫已簽核推理樹增至 **85 筆**（44 筆 general + 41 筆 special）。
+  - 自然語言檢索全面支援 FTS5 trigram 與 LIKE 混合分流，並可直接由病人諮詢端點 `/api/v1/general/consult` 動態引用。
+- **Text Native Harness² (`src/pageindex/text_harness.py`)**：
+  - 拓展雙層遞迴架構至 FAQ 答案生成 (`answer_generator.py`) 與推理樹四段式濃縮提煉 (`tree_distiller.py`)。
+  - 內建 `score_faq_answer_alignment()` 與 `score_tree_distillation_alignment()`，強制稽核就醫警訊收尾句、禁止保證療效、禁止價格洩漏與四段式結構齊全度。
+  - 提供 `build_faq_critique_prompt()` 與 `build_tree_critique_prompt()` 自我批評機制，支援 `--k` 候選探索與治理經驗動態注入。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：
