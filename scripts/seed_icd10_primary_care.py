@@ -38,6 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dry-run", action="store_true", help="僅離線驗證並印出摘要，不連線資料庫")
     parser.add_argument("--allow-prod-db", action="store_true", help="確認允許寫入正式 clinic.db")
     parser.add_argument("--approve-visuals", action="store_true", help="同時核准視覺卡（預設維持 pending）")
+    parser.add_argument("--approve-trees", action="store_true", help="同時核准 36 棵一般醫學推理樹（預設維持 pending）")
     return parser
 
 
@@ -94,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             conn,
             catalog,
             approve_visuals=args.approve_visuals,
+            approve_trees=args.approve_trees,
             commit=True,
         )
     except RuntimeError as exc:
@@ -109,6 +111,8 @@ def main(argv: list[str] | None = None) -> int:
 
     v = result["visuals"]
     f = result["faqs"]
+    tr = result["trees"]
+    print(f"推理樹（一般醫學）新增 {tr[0]} / 更新 {tr[1]} / 未變 {tr[2]}")
     print(
         f"✅ 完成：視覺卡 新增 {v['inserted']} / 更新 {v['updated']} / 未變 {v['unchanged']}；"
         f"核准 {result['approved']} 筆；"

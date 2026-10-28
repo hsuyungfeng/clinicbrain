@@ -109,7 +109,20 @@ def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str) -
     resp = handle_query(conn, question, clinic_id, limit=MAX_FAQ, cache_shortcut=False)
 
     faq_candidates = list(resp.faq_hits[:MAX_FAQ])
-    tree_candidates = list(resp.page_index_hits[:MAX_TREES])
+    # Phase 37：同時納入一般醫學共用推理樹（clinic_id IS NULL），診所專屬樹優先排在前面
+    from ..query.search import search_page_index_trees
+
+    tree_candidates = list(resp.page_index_hits)
+    seen_tree_ids = {getattr(h, "row_id", None) for h in tree_candidates}
+    try:
+        general_hits = search_page_index_trees(conn, question, limit=MAX_TREES, clinic_id=clinic_id, include_general=True)
+    except sqlite3.OperationalError:
+        general_hits = []
+    for hit in general_hits:
+        if hit.row_id not in seen_tree_ids and hit.fields.get("clinic_id") is None:
+            seen_tree_ids.add(hit.row_id)
+            tree_candidates.append(hit)
+    tree_candidates = tree_candidates[:MAX_TREES]
     note_candidates = list(resp.clinic_custom_notes.items())[:3]
     clinic_info = resp.clinic_info
 

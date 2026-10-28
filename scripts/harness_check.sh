@@ -11,4 +11,5 @@ python3 -m pytest \
   tests/test_icd10_primary_care.py \
   tests/test_visual_autodraft.py \
   tests/test_harness_optimizer.py \
+  tests/test_icd10_trees_and_text_harness.py \
   -q

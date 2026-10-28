@@ -36,7 +36,7 @@ def _has_column(cursor, table: str, col: str) -> bool:
     return col in {row[1] for row in cursor.fetchall()}
 
 
-def upsert_trees(conn, trees, source_type: str, review_status: str | None = None):
+def upsert_trees(conn, trees, source_type: str, review_status: str | None = None, commit: bool = True):
     """增量寫入 PageIndex 樹。
 
     trees: list of dict，每個 dict 必須含 'doc_id' 與 CONTENT_FIELDS 全部欄位（可選含 'title'）。
@@ -48,6 +48,10 @@ def upsert_trees(conn, trees, source_type: str, review_status: str | None = None
     邏輯：新資料 INSERT（content_version=1）；既有資料只有在內容真的
     變更時才 UPDATE 並遞增 content_version、更新 updated_at、清除
     needs_regeneration 標記；內容相同則跳過，避免無意義寫入與 FTS 重建。
+
+    category == 'general'（一般醫學共用樹）允許 clinic_id 為 None；其餘類別仍須提供 clinic_id，
+    缺漏即拋出 ValueError（防止特定診所資料變成無歸屬之共用資料）。
+    commit: 預設 True 於寫入後提交；呼叫端需要單一交易原子性時傳入 False，由外層統一提交。
     """
     cursor = conn.cursor()
     inserted, updated, unchanged = 0, 0, 0
@@ -59,7 +63,8 @@ def upsert_trees(conn, trees, source_type: str, review_status: str | None = None
         default_status = "approved" if source_type in ("manual", "clinic_upload") else "pending"
 
     for tree in trees:
-        if "clinic_id" not in tree or not tree["clinic_id"]:
+        is_general = tree.get("category") == "general"
+        if not is_general and (not tree.get("clinic_id")):
             raise ValueError(f"tree dict (doc_id='{tree.get('doc_id')}') 缺少必要之 'clinic_id' 鍵")
 
         tree_title = tree.get("title")
@@ -76,7 +81,7 @@ def upsert_trees(conn, trees, source_type: str, review_status: str | None = None
 
         if existing is None:
             insert_cols = ["doc_id", "clinic_id", *CONTENT_FIELDS, "version", "source_type", "content_version", "needs_regeneration", "indexed_at"]
-            insert_vals = [tree["doc_id"], tree["clinic_id"], *(tree[field] for field in CONTENT_FIELDS), "2.0", source_type, 1, 0, datetime.now().isoformat()]
+            insert_vals = [tree["doc_id"], tree.get("clinic_id"), *(tree[field] for field in CONTENT_FIELDS), "2.0", source_type, 1, 0, datetime.now().isoformat()]
 
             if has_title:
                 insert_cols.append("title")
@@ -146,7 +151,8 @@ def upsert_trees(conn, trees, source_type: str, review_status: str | None = None
         )
         updated += 1
 
-    conn.commit()
+    if commit:
+        conn.commit()
     print(f"新增 {inserted} 筆、更新 {updated} 筆、內容未變跳過 {unchanged} 筆（source_type={source_type}）")
     return inserted, updated, unchanged
 

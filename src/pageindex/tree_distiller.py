@@ -113,34 +113,74 @@ def distill_tree_from_text(
     llm_call: Callable[[str], str],
     category: str = "special",
     source_type: str = "web_upload",
+    k_candidates: int = 1,
+    recursion_mode: str = "sequential",
 ) -> dict:
-    """自給定長篇文字中提煉臨床推理樹，並以 pending 狀態寫入「新」草稿（不覆寫既有樹）。"""
+    """自給定長篇文字中提煉臨床推理樹，並以 pending 狀態寫入「新」草稿（不覆寫既有樹）。
+
+    Phase 37 Harness²：自動注入命中之治理教訓；k_candidates > 1 時最多探索 k 個通過 JSON 解析與
+    validate_tree_segment 的候選，依 score_tree_distillation_alignment 選最高分者寫入。
+    sequential 於分數未達優異門檻時以批評提示續寫；parallel 每次皆由原始提示詞獨立生成。
+    """
     if conn.execute("SELECT 1 FROM page_index_trees WHERE doc_id = ?", (doc_id,)).fetchone():
         raise TreeConflictError(f"doc_id '{doc_id}' 已存在，提煉僅能建立新草稿，請改用其他識別碼")
+    if recursion_mode not in ("sequential", "parallel") or not isinstance(k_candidates, int) or k_candidates < 1:
+        raise TreeValidationError("遞迴參數不合法（k_candidates 須為正整數，recursion_mode 須為 sequential 或 parallel）")
     from .tree_navigator import condense_long_document_by_toc
+    from .text_harness import (
+        EXCELLENT_THRESHOLD,
+        build_tree_critique_prompt,
+        format_text_lessons_for_prompt,
+        score_tree_distillation_alignment,
+        select_text_lessons,
+    )
 
     condensed_text = condense_long_document_by_toc(text, MAX_SOURCE_CHARS)
-    prompt = TREE_DISTILL_PROMPT_TEMPLATE.format(title=title, text=condensed_text)
-    raw = llm_call(prompt)
-    clean_json = _clean_json_output(raw)
+    base_prompt = TREE_DISTILL_PROMPT_TEMPLATE.format(title=title, text=condensed_text)
+    lessons_block = format_text_lessons_for_prompt(select_text_lessons(f"{title}\n{condensed_text}"))
+    if lessons_block:
+        base_prompt = f"{base_prompt}\n{lessons_block}\n"
 
-    try:
-        data = json.loads(clean_json)
-    except json.JSONDecodeError as e:
-        raise TreeValidationError(f"模型輸出無法解析為 JSON：{e} (原始輸出: {raw[:200]})") from e
-
-    if not isinstance(data, dict):
-        raise TreeValidationError("模型輸出必須為 JSON 物件")
     required_fields = list(TREE_TEXT_FIELDS)
-    missing = [f for f in required_fields if f not in data or not str(data[f]).strip()]
-    if missing:
-        raise TreeValidationError(f"輸出缺少必要段落：{missing}")
 
-    # 合規檢驗與清洗
-    cleaned_data = {}
-    for k in required_fields:
-        # 價格清洗、簡體、禁詞、政治立場（與編輯／簽核共用同一規則）
-        cleaned_data[k] = validate_tree_segment(k, data[k])
+    def _attempt(prompt: str) -> dict:
+        """單一候選：呼叫模型、解析 JSON、四段齊全與合規檢驗；不合格拋 TreeValidationError。"""
+        raw = llm_call(prompt)
+        clean_json = _clean_json_output(raw)
+        try:
+            data = json.loads(clean_json)
+        except json.JSONDecodeError as e:
+            raise TreeValidationError(f"模型輸出無法解析為 JSON：{e} (原始輸出: {raw[:200]})") from e
+        if not isinstance(data, dict):
+            raise TreeValidationError("模型輸出必須為 JSON 物件")
+        missing = [f for f in required_fields if f not in data or not str(data[f]).strip()]
+        if missing:
+            raise TreeValidationError(f"輸出缺少必要段落：{missing}")
+        # 合規檢驗與清洗（與編輯／簽核共用同一規則）
+        return {k: validate_tree_segment(k, data[k]) for k in required_fields}
+
+    if k_candidates == 1:
+        cleaned_data = _attempt(base_prompt)
+        report = score_tree_distillation_alignment(title, condensed_text, cleaned_data)
+    else:
+        candidates: list[tuple[dict, dict]] = []
+        last_err: Optional[TreeValidationError] = None
+        prompt = base_prompt
+        for _round in range(k_candidates):
+            try:
+                cand = _attempt(prompt)
+            except TreeValidationError as e:
+                last_err = e
+                continue
+            rep = score_tree_distillation_alignment(title, condensed_text, cand)
+            candidates.append((cand, rep))
+            if recursion_mode == "sequential":
+                if rep["score"] >= EXCELLENT_THRESHOLD:
+                    break
+                prompt = build_tree_critique_prompt(base_prompt, cand, rep)
+        if not candidates:
+            raise last_err or TreeValidationError("沒有通過合規檢驗的候選推理樹")
+        cleaned_data, report = max(candidates, key=lambda c: c[1]["score"])
 
     # 組裝寫入 row，醫師指令強制留空 None
     tree_row = {
@@ -161,4 +201,9 @@ def distill_tree_from_text(
     }
 
     upsert_trees(conn, [tree_row], source_type=source_type, review_status="pending")
-    return tree_row
+    return {
+        **tree_row,
+        "harness_score": report["score"],
+        "harness_k": k_candidates,
+        "harness_mode": recursion_mode,
+    }

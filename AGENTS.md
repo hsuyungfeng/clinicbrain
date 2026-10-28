@@ -960,6 +960,7 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `src/pageindex/tree_navigator.py`：PageIndex 推理樹節點導航、VectifyAI Schema 無損匯出與長文件依章節 TOC 均衡濃縮模組（`tests/test_tree_navigator.py`）
 * `src/visual/icd10_catalog.py`、`src/visual/icd10_enrichment.py`、`data/icd10/primary_care_36_catalog.json`：Phase 35 臺灣基層診所 6 大專科（36 項 ICD-10-CM 常見疾病）器官病理藍圖（`pathology_mechanism`）、非手術誘因對照、三階段病程與四段式臨床知識管線（`scripts/seed_icd10_primary_care.py`、`scripts/enrich_icd10_primary_care.py`、`tests/test_icd10_primary_care.py`）
 * `src/visual/harness_optimizer.py`、`data/visual/harness_lessons.json`、`scripts/harness_check.sh`：Phase 36 ClinicBrain Native Harness²（雙層遞迴自進化馬具：跨任務治理經驗記憶庫、臨床語意對齊評分器、`--k` 多候選探索與 V2 審核晉升自動沉澱，`tests/test_harness_optimizer.py`）
+* `src/pageindex/text_harness.py`：Phase 37 Text Native Harness²（將雙層遞迴擴展至 FAQ 答案生成與推理樹四段式提煉；支援 36 項基層 ICD-10 疾病升格一般醫學共用推理樹，`tests/test_icd10_trees_and_text_harness.py`）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

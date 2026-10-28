@@ -105,12 +105,17 @@ def _worker(
     grounded_call,
     gen_lock: threading.Lock,
     overwrite: bool = False,
+    k_candidates: int = 1,
+    recursion_mode: str = "sequential",
 ) -> None:
     from .llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     global _db_lock_fd
     try:
-        _run_items(db_path, ids, llm_call, grounded_call, gen_lock, overwrite=overwrite)
+        _run_items(
+            db_path, ids, llm_call, grounded_call, gen_lock,
+            overwrite=overwrite, k_candidates=k_candidates, recursion_mode=recursion_mode,
+        )
     finally:
         with _state_lock:
             fd, _db_lock_fd = _db_lock_fd, None
@@ -124,6 +129,8 @@ def _run_items(
     grounded_call,
     gen_lock: threading.Lock,
     overwrite: bool = False,
+    k_candidates: int = 1,
+    recursion_mode: str = "sequential",
 ) -> None:
     from .llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
@@ -143,7 +150,8 @@ def _run_items(
                 conn = sqlite3.connect(db_path, timeout=30)
                 conn.execute("PRAGMA foreign_keys = ON;")
                 generate_answer_for_faq(
-                    conn, fid, llm_call, overwrite=overwrite, grounded_llm_call=grounded_call
+                    conn, fid, llm_call, overwrite=overwrite, grounded_llm_call=grounded_call,
+                    k_candidates=k_candidates, recursion_mode=recursion_mode,
                 )
                 with _state_lock:
                     _state["ok"] += 1
@@ -192,6 +200,8 @@ def start(
     gen_lock: threading.Lock,
     *,
     overwrite: bool = False,
+    k_candidates: int = 1,
+    recursion_mode: str = "sequential",
 ) -> dict:
     """啟動背景作業；已有作業進行中時拋 RuntimeError。"""
     global _state, _thread, _db_lock_fd
@@ -216,7 +226,7 @@ def start(
     try:
         _thread = threading.Thread(
             target=_worker,
-            args=(str(db_path), ids, llm_call, grounded_call, gen_lock, bool(overwrite)),
+            args=(str(db_path), ids, llm_call, grounded_call, gen_lock, bool(overwrite), int(k_candidates), str(recursion_mode)),
             name="batch-answer-job",
             daemon=True,
         )

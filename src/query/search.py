@@ -168,6 +168,7 @@ def search_page_index_trees(
     query: str,
     limit: int = 10,
     clinic_id: Optional[str] = None,
+    include_general: bool = False,
 ) -> list[SearchHit]:
     """page_index_trees 的 rowid 對應到 id（AUTOINCREMENT 主鍵），不是預設
     rowid 別名以外的欄位，所以這裡直接用 id 當 select 主鍵，語法上與
@@ -184,7 +185,11 @@ def search_page_index_trees(
     conditions = []
     params = []
 
-    if clinic_id:
+    if clinic_id and include_general:
+        # Phase 37：診所專屬樹與一般醫學共用樹（clinic_id IS NULL）並存檢索
+        conditions.append("(clinic_id = ? OR clinic_id IS NULL)")
+        params.append(clinic_id)
+    elif clinic_id:
         conditions.append("clinic_id = ?")
         params.append(clinic_id)
     elif has_tree_review_status(conn):
