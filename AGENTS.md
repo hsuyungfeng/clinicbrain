@@ -873,6 +873,37 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 內建 `score_faq_answer_alignment()` 與 `score_tree_distillation_alignment()`，強制稽核就醫警訊收尾句、禁止保證療效、禁止價格洩漏與四段式結構齊全度。
   - 提供 `build_faq_critique_prompt()` 與 `build_tree_critique_prompt()` 自我批評機制，支援 `--k` 候選探索與治理經驗動態注入。
 
+### 2.36 全自動診所網站爬取與智能知識提煉引擎（Phase 38 新增）
+
+為免除診所人工手動整理衛教素材上傳的負擔，實現輸入任一診所官網一鍵爬取、清洗與提煉結構化知識：
+- **Playwright 動態網頁擷取器 (`src/scraper/playwright_scraper.py`)**：
+  - 採用無頭 Chromium，具備 SPA 渲染支援、`domcontentloaded` + `networkidle` 雙重等待，阻擋追蹤碼與大型多媒體資源以提高擷取效率。
+  - 自動透過 `Readability` 演算法去除導航列、頁尾與側邊欄廣告，轉化為潔淨 Markdown 內文。
+- **同網域廣度探索爬蟲 (`src/scraper/site_crawler.py`)**：
+  - 支援同網域子頁面 BFS 探索（預設深度 2、上限 30 頁），自動解析 `sitemap.xml` 作為探索種子。
+  - 內建路徑優先級排序（衛教、療程與服務說明優先，登入、購物車與法律條款自動跳過）。
+  - 全程經由 `opencc` 轉換為台灣正體中文，並串接 `deep_mask_prices()` 進行零價格洩漏清洗。
+- **智能知識提煉管線 (`src/scraper/distill_pipeline.py`)**：
+  - 將爬取的 Markdown 內文直接串接 `text_harness.py`、`faq_writer.py` 與 `db_writer.py`。
+  - 由本地 Qwen 27B 自動提煉為標準問答對與四段式臨床推理樹，狀態恆為 `pending`（待審核），維護醫療法規安全。
+
+### 2.37 推理樹核准聯動自動生成動畫草稿（Phase 38 增強）
+
+- 醫師在管理後台點選「核准」任一臨床推理樹時，後端透過 FastAPI `BackgroundTasks` 自動非同步觸發 `autodraft_visual_for_tree`。
+- 自動生成 3 幕受約束之視覺動畫解說卡草稿，狀態恆為 `pending` 並存入 `visual_assets`，前端即時 Toast 提示並引導醫師至「🎬 待簽核動畫」分頁審核發布。
+
+### 2.38 全部診所（一般醫學管理）跨診所管理支援（Phase 38 增強）
+
+- 在 Web App 管理中心頂部診所切換器、文件上傳中心（`uploadClinicId`）、SOAP 臨床紀錄檢索（`soapClinicId`）與「向 LLM 提問」（`askClinicId`）新增「全部診所（一般醫學管理）」選項。
+- 支援將全科或非特定單一診所之衛教資料、病歷摘要直接作為一般醫學跨診所共用知識進行管理與查詢。
+
+### 2.39 Hermes Agent 長時間執行防卡死三道防線（Phase 38 運維強化）
+
+針對本地 Qwen 27B 推理長上下文記憶體快照壓迫導致的逾時問題，建立三層自治防線：
+1. **第一道防線（Hermes 輪次配額與自動壓縮）**：配置 `~/.hermes/config.yaml` 之 `max_turns: 45` 與 `threshold_ratio: 0.5`，超過立即自動壓縮上下文。
+2. **第二道防線（乾淨執行封裝腳本）**：提供 `~/.local/bin/run_clinic_test.sh`，隔離環境變數與自製臨時腳本死鎖。
+3. **第三道防線（Herdr 看門狗自動自癒）**：透過 `scripts/herdr_supervisor.py` 監控終端輸出，檢測到連續超載或無響應時自動發送中斷信號並執行 `/new` 重置。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：
@@ -996,6 +1027,9 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `src/visual/icd10_catalog.py`、`src/visual/icd10_enrichment.py`、`data/icd10/primary_care_36_catalog.json`：Phase 35 臺灣基層診所 6 大專科（36 項 ICD-10-CM 常見疾病）器官病理藍圖（`pathology_mechanism`）、非手術誘因對照、三階段病程與四段式臨床知識管線（`scripts/seed_icd10_primary_care.py`、`scripts/enrich_icd10_primary_care.py`、`tests/test_icd10_primary_care.py`）
 * `src/visual/harness_optimizer.py`、`data/visual/harness_lessons.json`、`scripts/harness_check.sh`：Phase 36 ClinicBrain Native Harness²（雙層遞迴自進化馬具：跨任務治理經驗記憶庫、臨床語意對齊評分器、`--k` 多候選探索與 V2 審核晉升自動沉澱，`tests/test_harness_optimizer.py`）
 * `src/pageindex/text_harness.py`：Phase 37 Text Native Harness²（將雙層遞迴擴展至 FAQ 答案生成與推理樹四段式提煉；支援 36 項基層 ICD-10 疾病升格一般醫學共用推理樹，`tests/test_icd10_trees_and_text_harness.py`）
+* `src/scraper/playwright_scraper.py`：Phase 38 Playwright 無頭 Chromium 動態網頁擷取器（`tests/test_playwright_scraper.py`）
+* `src/scraper/site_crawler.py`：Phase 38 同網域廣度探索爬蟲、Sitemap 種子與路徑優先級排序（`tests/test_site_crawler.py`）
+* `src/scraper/distill_pipeline.py`：Phase 38 智能知識提煉管線，由網頁內文自動生成 pending FAQ 與 PageIndex 推理樹（`tests/test_scraper_distill_pipeline.py`）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
@@ -1008,3 +1042,17 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * 新資料來源在用於生成用途前，先確認語言與領域是否吻合（見 2.2 節的踩雷案例：SFT 資料語言不對、`service_items.payment_rules` 只是給付範本無臨床細節）。
 * 任務範圍要守住邊界：不要因為手邊在做某個任務，就順手把後續任務（如查詢層、LLM 生成邏輯）的工作也做掉，會混淆任務追蹤與驗收界線。
 * 完整的未來願景與待決策事項見 `.planning/VISION-EXPANSION.md`，不要重複在這裡展開。
+
+---
+
+## 6. 未來里程碑規劃 (Future Roadmap & Next To Do)
+
+* **Phase 39：全自動爬蟲後台非同步工作 (Crawler Background Job & Admin UI Integration)**
+  - 在管理後台「文件拖曳上傳中心」新增「🌐 診所網站全自動爬取提煉」輸入框，輸入網址後以非同步工作（Background Worker）執行探索與提煉。
+  - 即時呈現進度條（已爬取頁數、提煉 FAQ 數、提煉推理樹數），完成後自動刷新審核清單。
+* **Phase 40：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
+  - 在病人諮詢端點支援自適應推薦診所與院所特約醫師門診時段。
+  - 動態關聯已昇華之基層 ICD-10 解說動畫卡，並強化門診就診預約引導。
+* **Phase 41：自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)**
+  - 整合 `demo/visual/render_video.py` 與批次排程，將已審核通過之動畫卡自動渲染為 MP4 短片。
+  - 供診所電視看板、衛教平板離線循環播放與社群媒體短影音推播。

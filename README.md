@@ -77,6 +77,15 @@
     - 全面應用於視覺動畫 IR、FAQ 問答生成與 PageIndex 臨床推理樹四段式提煉。
     - 36 項基層疾病全面升格 PageIndex 臨床推理樹，使全庫已簽核推理樹增至 **85 筆**（44 筆基層 general + 41 筆專科 special），支援病人端對話式即時衛教與動態引用。
 
+14. **全自動診所網站爬取與智能知識提煉引擎 (Phase 38)**
+    - 基於 Playwright 無頭 Chromium 打造動態網頁擷取器 (`src/scraper/playwright_scraper.py`)，支援 SPA 與動態渲染。
+    - 同網域廣度探索爬蟲 (`src/scraper/site_crawler.py`)，自動讀取 Sitemap、排序高價值衛教路徑，並以 opencc 轉正體中文與 `deep_mask_prices()` 價格清洗。
+    - 提煉管線 (`src/scraper/distill_pipeline.py`) 直接驅動 Qwen 27B 提煉結構化 FAQ 與四段式推理樹，以 `pending` 狀態入庫供醫師審定。
+
+15. **推理樹核准自動聯動動畫草稿與跨診所全域管理 (Phase 38 增強)**
+    - 醫師於後台核准任一推理樹時，後端非同步自動觸發 3 幕動畫草稿生成，立即送入「🎬 待簽核動畫」專區。
+    - Web 管理後台頂部、拖曳上傳中心、SOAP 紀錄檢索與「向 LLM 提問」全面支援「全部診所（一般醫學管理）」選項，無縫管理跨診所共享醫學知識。
+
 ---
 
 ## 🏗️ 系統架構 (Architecture)
@@ -88,6 +97,7 @@ clinicbrain/
 │   ├── clinic/               # 診所專屬層 (custom_notes)
 │   ├── db/                   # 資料庫 Schema (clinic_schema.sql, otc_mappings.json)
 │   ├── ingestion/            # 文件擷取與 FAQ 生成管線
+│   ├── scraper/              # 診所網站爬蟲與動態提煉 (Playwright, site_crawler, distill)
 │   ├── pageindex/            # PageIndex 推理樹、LLM 客戶端、db_writer, faq_writer
 │   ├── visual/               # 視覺解說卡核心 (auto_promotion, blueprints, autodraft, ir, writer)
 │   └── query/                # 查詢路由 (router.py: handle_query, search.py)
@@ -239,6 +249,17 @@ curl -X POST http://127.0.0.1:8000/api/v1/sync/import \
     }
   }'
 ```
+
+---
+
+## 🗺️ 未來里程碑規劃 (Roadmap & Next Steps)
+
+- **Phase 39: 爬蟲後台非同步工作與管理 UI 整合 (Crawler Background Job & Admin UI Integration)**
+  - 管理後台「文件拖曳上傳中心」新增診所網址爬取入口，以非同步 Worker 執行整站探索與知識提煉，提供即時進度條與自動化重整。
+- **Phase 40: 病人端多診所聯合諮詢與導流 (Multi-Clinic Patient Federated Consultation)**
+  - 整合多診所特約醫師時段與一般醫學知識，引導病患諮詢後直接對接診所預約。
+- **Phase 41: 自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)**
+  - 背景佇列自動將核准動畫卡經無頭 Chromium 渲染並以 ffmpeg 合成高品質 MP4 影片，供院所輪播使用。
 
 ---
 
