@@ -2479,10 +2479,11 @@ function populateClinicFilters(list) {
     if (header) {
         const current = header.value;
         header.textContent = "";
+        header.appendChild(new Option("全部診所（全站一般醫學管理）", ""));
         list.forEach((c) => header.appendChild(new Option(`${c.name}（${c.clinic_id}）`, c.clinic_id)));
         const fallback = CLINIC_SELECT_IDS.map((id) => document.getElementById(id)?.value).find((v) => v);
-        const wanted = [current, fallback].find((v) => v && list.some((c) => c.clinic_id === v));
-        header.value = wanted || (list[0] ? list[0].clinic_id : "");
+        const wanted = [current, fallback].find((v) => v !== undefined && (v === "" || list.some((c) => c.clinic_id === v)));
+        header.value = wanted !== undefined ? wanted : (list[0] ? list[0].clinic_id : "");
         header.dataset.prev = header.value;
     }
     CLINIC_FILTER_IDS.forEach((id) => {
@@ -2502,11 +2503,11 @@ function renderClinicSelects(list, preferredId) {
         if (!sel) return;
         const previous = sel.dataset.prev || sel.value;
         sel.textContent = "";
-        sel.appendChild(new Option("請選擇診所", ""));
+        sel.appendChild(new Option("全部診所（一般醫學管理）", ""));
         list.forEach((c) => sel.appendChild(new Option(`${c.name}（${c.clinic_id}）`, c.clinic_id)));
         sel.appendChild(new Option("＋ 新增診所…", CLINIC_NEW_VALUE));
-        const wanted = [preferredId, previous].find((v) => v && list.some((c) => c.clinic_id === v));
-        sel.value = wanted || (list[0] ? list[0].clinic_id : "");
+        const wanted = [preferredId, previous].find((v) => v !== undefined && (v === "" || list.some((c) => c.clinic_id === v)));
+        sel.value = wanted !== undefined ? wanted : "";
         sel.dataset.prev = sel.value;
     });
 }
@@ -2517,7 +2518,6 @@ function onClinicSelectChange(sel) {
         openClinicCreateModal();
         return;
     }
-    if (!sel.value) return;
     setGlobalClinic(sel.value);
 }
 

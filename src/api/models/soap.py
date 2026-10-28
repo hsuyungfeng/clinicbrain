@@ -61,7 +61,7 @@ class SoapSearchRequest(BaseModel):
     """醫師專用臨床歷史檢索請求模型。"""
 
     query: str = Field(..., min_length=1, description="臨床關鍵字查詢（支援繁體中文 trigram 檢索）")
-    clinic_id: str = Field(..., description="欲查詢之機構代碼（嚴格同診所隔離）")
+    clinic_id: Optional[str] = Field(None, description="欲查詢之機構代碼（若為空則查詢所有診所）")
     tag: Optional[str] = Field(None, description="可選之標籤篩選條件")
     limit: int = Field(default=20, ge=1, le=100, description="最多回傳筆數")
 

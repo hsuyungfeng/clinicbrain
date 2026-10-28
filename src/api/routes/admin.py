@@ -119,7 +119,7 @@ class UpdateFaqRequest(BaseModel):
 class AskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(..., min_length=1, max_length=300)
-    clinic_id: str = Field(..., min_length=1, max_length=40)
+    clinic_id: Optional[str] = Field(None, max_length=40)
 
 
 class GeneralDraftRequest(BaseModel):
@@ -231,10 +231,10 @@ def validate_display_name(raw: Optional[str]) -> Optional[str]:
 def _text_to_faq_drafts(
     raw_text: str,
     topic: str,
-    clinic_id: str,
+    clinic_id: Optional[str],
 ) -> tuple[list[dict[str, Any]], int, int]:
     """將純文字/Markdown/萃取內文清洗、切分並轉換為 FAQ 草稿清單（D-11）。
-
+    若 clinic_id 為空字串或 None，則 category 設為 'general'（一般醫學共用）。
     回傳: (faqs_to_insert, extracted_paragraphs_count, rejected_paragraphs)
     """
     # 4. 簡轉繁、去識別化與價格數字遮蔽
@@ -254,6 +254,9 @@ def _text_to_faq_drafts(
     faqs_to_insert = []
     rejected_paragraphs = 0
 
+    clean_cid = str(clinic_id).strip() if clinic_id and str(clinic_id).strip() else None
+    cat = "general" if not clean_cid else "special"
+
     for idx, p in enumerate(paragraphs):
         lines = p.splitlines()
         first = lines[0].strip() if lines else ""
@@ -270,7 +273,8 @@ def _text_to_faq_drafts(
                     a_part = a_part[len(pre):].strip()
                     break
         else:
-            q_part = f"【診所文件】{topic} - 指示 {idx + 1}"
+            q_prefix = "【一般醫學】" if not clean_cid else "【診所文件】"
+            q_part = f"{q_prefix}{topic} - 指示 {idx + 1}"
             a_part = p
 
         a_part = a_part[:MAX_ANSWER_CHARS]
@@ -287,8 +291,8 @@ def _text_to_faq_drafts(
         faqs_to_insert.append({
             "question": q_part,
             "answer": a_part,
-            "category": "special",
-            "clinic_id": clinic_id,
+            "category": cat,
+            "clinic_id": clean_cid,
             "topic_key": f"doc-{topic}",
         })
 
@@ -298,29 +302,25 @@ def _text_to_faq_drafts(
 @router.post("/upload", summary="診所衛教與項目文件上傳解析")
 async def upload_admin_file(
     file: UploadFile = File(...),
-    clinic_id: str = Form(...),
+    clinic_id: Optional[str] = Form(None),
     preview_only: bool = Form(False),
     name: Optional[str] = Form(None),
     conn: sqlite3.Connection = Depends(get_write_db),
 ):
     """
     接收診所人員上傳之衛教或項目文件（.docx, .xlsx, .pdf），進行安全防禦、內文解析、去識別化與價格遮蔽。
+    若 clinic_id 為空，則自動歸類為一般醫學共用文件（category='general'）。
     若 preview_only=False，將合格問答段落寫入 faq_cache（source_type='web_upload'，review_status 恆為 'pending'）。
-
-    Fail-Closed：web_upload 屬審核閘門來源（REVIEW_GATED_SOURCES），由唯一權威寫入函式 upsert_faqs
-    直接以 pending 寫入，經醫師 approve 前對所有公開端點與同步匯出完全隱蔽。
     """
-    if not clinic_id or not clinic_id.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="必須提供非空之診所代碼 clinic_id",
-        )
-    clinic_id = clinic_id.strip()
-    if conn.execute("SELECT 1 FROM clinic_info WHERE clinic_id = ?", (clinic_id,)).fetchone() is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="找不到指定的診所代碼",
-        )
+    clean_clinic_id = (clinic_id or "").strip()
+    if clean_clinic_id:
+        if conn.execute("SELECT 1 FROM clinic_info WHERE clinic_id = ?", (clean_clinic_id,)).fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="找不到指定的診所代碼",
+            )
+    else:
+        clean_clinic_id = None
 
     # 1. 安全防禦：檔名路徑穿越過濾與副檔名檢查
     filename = Path(file.filename or "uploaded_file").name
@@ -411,7 +411,7 @@ async def upload_admin_file(
         faqs_to_insert, extracted_paragraphs_count, rejected_paragraphs = _text_to_faq_drafts(
             raw_text=raw_text,
             topic=doc_topic,
-            clinic_id=clinic_id,
+            clinic_id=clean_clinic_id,
         )
 
         if preview_only:
@@ -419,7 +419,7 @@ async def upload_admin_file(
                 "status": "ok",
                 "preview_only": True,
                 "filename": filename,
-                "clinic_id": clinic_id,
+                "clinic_id": clean_clinic_id,
                 "extracted_paragraphs_count": extracted_paragraphs_count,
                 "rejected_paragraphs": rejected_paragraphs,
                 "faqs_preview": faqs_to_insert,
@@ -481,7 +481,7 @@ def get_url_fetch_deps() -> UrlFetchDeps:
 @router.post("/upload-url", summary="網站解析（網址）上傳草稿")
 def upload_admin_url(
     url: str = Form(""),
-    clinic_id: str = Form(...),
+    clinic_id: Optional[str] = Form(None),
     name: str = Form(""),
     target: str = Form("faq"),
     preview_only: bool = Form(False),
@@ -490,18 +490,24 @@ def upload_admin_url(
 ):
     """
     接收公開已授權之 HTTPS 網址，經由 Phase 23 擷取器與結構化抽取，轉換為待審核之 FAQ 草稿。
+    若 clinic_id 為空，則自動歸類為一般醫學共用文件（category='general'）。
     """
     # a. clinic_id 去空白；clinic_info 不存在 → 404
     clean_clinic_id = (clinic_id or "").strip()
-    clinic_row = conn.execute(
-        "SELECT clinic_id, name FROM clinic_info WHERE clinic_id = ?",
-        (clean_clinic_id,),
-    ).fetchone()
-    if not clinic_row:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"找不到指定的診所代碼: {clean_clinic_id}",
-        )
+    clinic_name = "一般醫學"
+    if clean_clinic_id:
+        clinic_row = conn.execute(
+            "SELECT clinic_id, name FROM clinic_info WHERE clinic_id = ?",
+            (clean_clinic_id,),
+        ).fetchone()
+        if not clinic_row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到指定的診所代碼: {clean_clinic_id}",
+            )
+        clinic_name = clinic_row[1]
+    else:
+        clean_clinic_id = None
 
     # b. target 非 "faq" → 400
     if (target or "").strip() != "faq":
@@ -549,7 +555,7 @@ def upload_admin_url(
                 validated.url,
                 deps=deps,
                 pinned_addresses=validated.addresses,
-                institution_name=clinic_row["name"],
+                institution_name=clinic_name,
             )
         except UrlFetchError as e:
             if e.reason in {
@@ -1026,9 +1032,12 @@ def admin_ask_llm(
     """唯讀：不寫入任何資料。紅旗問句與無資料問句不呼叫 LLM；其餘走本機 llama-server。"""
     from ...pageindex.llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
-    clinic_id = req.clinic_id.strip()
-    if conn.execute("SELECT 1 FROM clinic_info WHERE clinic_id = ?", (clinic_id,)).fetchone() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的診所代碼")
+    clinic_id = (req.clinic_id or "").strip()
+    if clinic_id:
+        if conn.execute("SELECT 1 FROM clinic_info WHERE clinic_id = ?", (clinic_id,)).fetchone() is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的診所代碼")
+    else:
+        clinic_id = None
     if not _GENERATION_LOCK.acquire(blocking=False):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="本機模型忙碌中，請稍後再試")
     try:

@@ -204,14 +204,16 @@ def search_soap_records(
     使用 FTS5 trigram MATCH 進行繁體中文臨床症狀、處置與標籤匹配；
     當關鍵字少於 3 字元時自動分流至 LIKE 模糊搜尋（遵守 trigram 鐵則）。
     """
-    _verify_clinic_exists(conn, req.clinic_id)
+    clinic_id = (req.clinic_id or "").strip()
+    if clinic_id:
+        _verify_clinic_exists(conn, clinic_id)
 
     query_str = (req.query or "").strip()
     if not query_str:
         return SoapSearchResponse(total=0, records=[])
 
     cursor = conn.cursor()
-    params: List[Any] = [req.clinic_id]
+    params: List[Any] = []
 
     # trigram 全文檢索分流邏輯（3字以上走 FTS trigram，少於 3 字走 LIKE 混合）
     if len(query_str) >= 3:
@@ -221,10 +223,14 @@ def search_soap_records(
                    r.raw_text, r.tags, r.created_at, r.updated_at
             FROM soap_records_fts fts
             JOIN soap_records r ON fts.rowid = r.id
-            WHERE r.clinic_id = ? AND soap_records_fts MATCH ?
+            WHERE 1=1
         """
+        if clinic_id:
+            sql += " AND r.clinic_id = ?"
+            params.append(clinic_id)
         # 清理並轉義 FTS MATCH 關鍵字
         safe_match = query_str.replace('"', '""')
+        sql += " AND soap_records_fts MATCH ?"
         params.append(f'"{safe_match}"')
     else:
         sql = """
@@ -232,7 +238,12 @@ def search_soap_records(
                    r.subjective, r.objective, r.assessment, r.plan,
                    r.raw_text, r.tags, r.created_at, r.updated_at
             FROM soap_records r
-            WHERE r.clinic_id = ? AND (
+            WHERE 1=1
+        """
+        if clinic_id:
+            sql += " AND r.clinic_id = ?"
+            params.append(clinic_id)
+        sql += """ AND (
                 r.subjective LIKE ? ESCAPE '\\' OR
                 r.objective LIKE ? ESCAPE '\\' OR
                 r.assessment LIKE ? ESCAPE '\\' OR
