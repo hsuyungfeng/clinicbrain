@@ -1670,9 +1670,13 @@ function createTreeCard(tree) {
                     headers: getAuthHeaders(),
                 });
                 if (resp.ok) {
-                    showToast("簽核發布成功！", "success");
+                    const okData = await resp.json().catch(() => ({}));
+                    showToast(okData.message || "簽核發布成功！", "success");
                     loadTrees();
                     loadDashboardSummary();
+                    if (okData.auto_visual_drafting) {
+                        setTimeout(() => loadVisuals(), 2500);
+                    }
                 } else {
                     const errData = await resp.json().catch(() => ({}));
                     showToast(apiErrorText(errData, "簽核失敗"), "error");

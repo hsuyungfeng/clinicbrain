@@ -15,7 +15,7 @@ import time
 from typing import Any, Literal, Optional
 import unicodedata
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ...ingestion.convert_chinese import to_traditional
@@ -1277,12 +1277,32 @@ def update_admin_tree(
 
 
 
+def _auto_draft_visual_in_background(tree_id: int, db_path: str) -> None:
+    """背景非同步為已核准推理樹生成 3 幕視覺動畫草稿（狀態恆為 pending）。"""
+    try:
+        from ...visual.autodraft import autodraft_from_tree
+        with sqlite3.connect(db_path, timeout=30.0) as bg_conn:
+            bg_conn.execute("PRAGMA foreign_keys = ON;")
+            autodraft_from_tree(
+                bg_conn,
+                tree_id,
+                llm_call=_visual_llm_call,
+                db_path=db_path,
+            )
+    except Exception:
+        # 背景任務 Fail-Safe：不中斷主 API 流程
+        pass
+
+
 @router.post("/trees/{tree_id}/approve", summary="醫師簽核核准臨床決策推理樹")
 def approve_admin_tree(
     tree_id: int,
+    background_tasks: BackgroundTasks,
     conn: sqlite3.Connection = Depends(get_write_db),
 ):
-    """核准前重跑完整合規檢驗（與 FAQ 核准一致）：四段必須齊全且通過檢驗；醫囑欄位若有內容亦須通過。"""
+    """核准前重跑完整合規檢驗（與 FAQ 核准一致）：四段必須齊全且通過檢驗；醫囑欄位若有內容亦須通過。
+    核准成功後自動於背景觸發生成對應的 3 幕視覺解說卡草稿 (visual_assets pending)。
+    """
     from ...pageindex.prompt_template import TreeValidationError
     from ...pageindex.tree_distiller import TREE_TEXT_FIELDS, validate_tree_segment
     from ...pageindex.tree_review import approve_tree, get_tree
@@ -1308,7 +1328,16 @@ def approve_admin_tree(
     ok = approve_tree(conn, tree_id)
     if not ok:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無法核准該推理樹（狀態已變更）")
-    return {"status": "ok", "message": f"推理樹 {tree_id} 已核准發布", "id": tree_id}
+
+    # 自動觸發背景生成對應的 3 幕視覺解說卡草稿
+    background_tasks.add_task(_auto_draft_visual_in_background, tree_id, config.db_path)
+
+    return {
+        "status": "ok",
+        "message": f"推理樹 {tree_id} 已核准發布，系統正於背景為您自動提煉視覺解說卡草稿",
+        "id": tree_id,
+        "auto_visual_drafting": True,
+    }
 
 
 
