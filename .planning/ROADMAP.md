@@ -275,15 +275,24 @@ Plans:
 - [x] 32-01-PLAN.md — 診所核准即昇華一般醫學與聯邦查詢放寬（Wave 1）
 - [x] 32-02-PLAN.md — 語意動作繪圖引擎升級與外科專科解剖圖元擴充（Wave 2）
 
-### Phase 33: 專科解剖對照與修復歷程語意繪圖全面升級 (已完成)
+### Phase 37: 36 項基層疾病升格臨床推理樹與 Text Native Harness² 雙層遞迴 (已完成)
 
-**Goal**: 延續文字意圖轉 Code 繪圖架構，全面升級場景 2（對照組 Contrast）與場景 3（歷程組 Timeline）之專科解剖與活體生理動態表現，涵蓋體雕、眼整、鼻整、隆乳、微整等專科病理對照，以及骨質癒合、退瘀色譜、疤痕隱痕重塑、神經重生等生理修復歷程，徹底達成 100% 依文字意義轉寫動態 Code 表現。
-**Status**: Complete (2/2 計畫完成，通過 167 項視覺測試、瀏覽器確定性驗證、MP4 動畫匯出與 Hermes 視覺審計)
-**Depends on**: Phase 32（語意動作繪圖引擎 2.0 與自動昇華）
-**Requirements**: P33-CONTRAST-DSL, P33-TIMELINE-DSL, P33-AUTODRAFT-INFER, P33-CONTRAST-ENGINE, P33-TIMELINE-ENGINE, P33-BROWSER-VERIFY
-**Plans**: 2 plans
+**Goal**: 實作 36 項基層常見疾病全面升格 PageIndex 臨床推理樹（跨診所 general 共用），並將 Native Harness² 雙層遞迴自進化架構擴展至文本端（FAQ 生成與推理樹蒸餾審查）。
+**Status**: Complete (45 項專屬測試通過，全庫已簽核推理樹升至 85 筆，正式庫同步完成)
+**Depends on**: Phase 36 (ClinicBrain Native Harness²)
+**Plans**: 1 plan
 Plans:
-- [x] 33-01-PLAN.md — Contrast 與 Timeline 專科架構規格與 Autodraft 語意推斷升級（Wave 1）
-- [x] 33-02-PLAN.md — 前端繪圖引擎專科向量動態實作與瀏覽器截圖驗收（Wave 2）
+- [x] 37-01-PLAN.md — 36 項基層 ICD-10 疾病升格與 Text Native Harness² 雙層遞迴
+
+### Phase 38: 全自動診所網站爬取與智能知識提煉引擎 (Automated Clinic Web Scraper & Distiller)
+
+**Goal**: 解決 SPA/動態渲染網站與單頁爬取限制，實作基於 Playwright 的動態頁面擷取器、同網域子頁面自動探索與醫療法規清洗，並將抓取的 Markdown 內文對接既有提煉管線與雙層遞迴審查，在管理後台提供非同步作業端點與即時進度條，一鍵自動產出待審 FAQ 與 PageIndex 臨床推理樹。
+**Status**: Planned
+**Depends on**: Phase 37 (Text Native Harness² 與基層推理樹架構), Phase 23/24 (網址解析與上傳中心)
+**Requirements**: P38-PLAYWRIGHT, P38-CRAWLER, P38-FILTER, P38-DISTILL, P38-API, P38-UI
+**Plans**: 1 plan
+Plans:
+- [ ] 38-01-PLAN.md — 全自動診所網站爬取與智能知識提煉引擎（Wave 1~3）
+
 
 
