@@ -151,6 +151,38 @@ def test_batch_job_isolates_failures_and_skips_ineligible(client, db, monkeypatc
     assert s["state"] == "done" and s["ok"] == 1 and len(s["failed"]) == 1 and s["skipped"] == 1
 
 
+def test_batch_job_overwrite_regenerates_already_complete_pending_faqs(client, db, monkeypatch):
+    """已有完整答案的待審草稿（如 71 筆基層疾病 FAQ），預設 skipped=1；帶 overwrite=True 時可強制重新生成。"""
+    upsert_faqs(
+        db,
+        [{
+            "clinic_id": None,
+            "topic_key": "icd-j069-uri",
+            "category": "general",
+            "question": "感冒一般多久會好？",
+            "answer": "一般感冒多由病毒引起，多數人在一到兩週內可逐漸緩解，期間可多休息、補充水分並注意保暖。若出現高燒不退或呼吸急促，請儘速就醫。",
+        }],
+        source_type="llm_generated",
+    )
+    fid = db.execute("SELECT id FROM faq_cache WHERE topic_key='icd-j069-uri'").fetchone()[0]
+    monkeypatch.setattr(admin_mod, "_local_llm_call", lambda p: ANSWER)
+
+    # 1. 未帶 overwrite：因答案已完整（>=30字），視為略過（skipped=1, ok=0）
+    r1 = client.post("/api/v1/admin/review/batch-generate", json={"faq_ids": [fid]})
+    assert r1.status_code == 200
+    s1 = _wait_done(client)
+    assert s1["ok"] == 0 and s1["skipped"] == 1
+
+    # 2. 帶 overwrite=True：強制由本機 LLM 重新生成並覆寫（ok=1, skipped=0）
+    batch_answer_job._state = None
+    r2 = client.post("/api/v1/admin/review/batch-generate", json={"faq_ids": [fid], "overwrite": True})
+    assert r2.status_code == 200
+    s2 = _wait_done(client)
+    assert s2["ok"] == 1 and s2["skipped"] == 0
+    new_ans = db.execute("SELECT answer FROM faq_cache WHERE id=?", (fid,)).fetchone()[0]
+    assert "糖尿病足潰瘍" in new_ans
+
+
 def test_batch_job_aborts_when_llm_down(client, db, monkeypatch):
     from src.pageindex.llm_client import LocalLLMUnavailableError
 

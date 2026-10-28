@@ -110,6 +110,7 @@ def post_general_consult(
         "disclaimer": result.disclaimer,
         "booking_url": BOOKING_URL,
         "visual": deep_mask_prices(result.visual),
+        "followup_chips": list(result.followup_chips),
     }
 
 

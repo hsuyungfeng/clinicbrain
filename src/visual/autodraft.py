@@ -42,6 +42,13 @@ from .ir import (
     validate_visual_text,
 )
 from .writer import upsert_assets
+from .harness_optimizer import (
+    EXCELLENT_THRESHOLD,
+    build_alignment_critique_prompt,
+    format_lessons_for_prompt,
+    score_visual_ir_alignment,
+    select_lessons_for_tree,
+)
 
 _THINK_BLOCK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 _THINK_OPEN_RE = re.compile(r"<think>.*", re.DOTALL | re.IGNORECASE)
@@ -775,7 +782,7 @@ def infer_scene3_timeline(tree: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_tree_visual_prompt(tree: dict[str, Any]) -> str:
+def _build_tree_visual_prompt_base(tree: dict[str, Any]) -> str:
     """依據推理樹內容組裝自動生成 3 場景視覺解說卡 Typed IR 的 LLM 提示詞。"""
     title = _resolve_tree_title(tree)
     summary = tree.get("summary_text") or ""
@@ -863,6 +870,44 @@ def _check_no_digits_recursive(data: Any) -> bool:
     if isinstance(data, list):
         return all(_check_no_digits_recursive(item) for item in data)
     return True
+
+
+_PATHOLOGY_ORGAN_SYSTEMS: tuple[str, ...] = tuple(BLUEPRINTS["pathology_mechanism"]["params"]["organ_system"]["values"])
+_PATHOLOGY_ORGAN_DEFAULT_LABEL: dict[str, str] = {
+    "respiratory_mucosa": "呼吸道黏膜",
+    "vascular_metabolic": "動脈管壁",
+    "gi_tract": "胃腸黏膜",
+    "skin_barrier": "表皮屏障",
+    "joint_spine": "關節軟骨",
+    "uro_pelvic": "膀胱黏膜",
+}
+
+
+def _shape_pathology_params(raw_params: dict[str, Any]) -> dict[str, Any]:
+    """將模型輸出塑形為 pathology_mechanism 註冊規格；缺漏欄位以規格預設補齊（單一來源 BLUEPRINTS）。
+
+    註：規格欄位為 organ_label／trigger_label／defense_label／accent_fill；
+    提示詞中的 highlight_fill 對應 accent_fill，不在規格內的欄位一律捨棄。
+    """
+    shaped = default_params("pathology_mechanism")
+    organ = raw_params.get("organ_system", shaped["organ_system"])
+    shaped["organ_system"] = organ if organ in _PATHOLOGY_ORGAN_SYSTEMS else "respiratory_mucosa"
+    if not (isinstance(raw_params.get("organ_label"), str) and raw_params["organ_label"].strip()):
+        shaped["organ_label"] = _PATHOLOGY_ORGAN_DEFAULT_LABEL[shaped["organ_system"]]
+    for key in ("organ_label", "lesion_label", "trigger_label", "defense_label"):
+        val = raw_params.get(key)
+        if isinstance(val, str) and val.strip():
+            shaped[key] = val.strip()[:8]
+    sev = raw_params.get("severity_level")
+    if isinstance(sev, int) and not isinstance(sev, bool) and 1 <= sev <= 5:
+        shaped["severity_level"] = sev
+    fill = raw_params.get("accent_fill", raw_params.get("highlight_fill"))
+    if fill in PALETTE_TOKENS:
+        shaped["accent_fill"] = fill
+    steps = raw_params.get("step_labels")
+    if isinstance(steps, list) and len(steps) == 3 and all(isinstance(x, str) and x.strip() for x in steps):
+        shaped["step_labels"] = [x.strip()[:10] for x in steps]
+    return shaped
 
 
 def parse_and_build_tree_ir(
@@ -958,6 +1003,7 @@ def parse_and_build_tree_ir(
         "deep_plane_facelift",
         "corset_platysmaplasty",
         "surgical_action",
+        "pathology_mechanism",
     )
     shaped_scenes = []
 
@@ -1195,6 +1241,9 @@ def parse_and_build_tree_ir(
                 "suture_fill": raw_params.get("suture_fill", "accent"),
                 "step_labels": [sl.strip()[:10] for sl in step_lbls],
             }
+
+        elif bp == "pathology_mechanism":
+            shaped_params = _shape_pathology_params(raw_params)
 
         elif bp == "surgical_action":
             anat = raw_params.get("anatomy_target", "mandible")
@@ -1445,6 +1494,62 @@ def _default_visual_llm(prompt: str) -> str:
     return local_llm_call(prompt, timeout=240, sampling=sampling)
 
 
+_SELF_HEALING_FEEDBACK_MAP: dict[str, str] = {
+    "forbidden_phrase": (
+        "【上一次生成未通過合規檢驗（forbidden_phrase），請嚴格修正】：\n"
+        "一、所有文字欄位（title、keywords、caption、labels、params 內各標籤與 step_labels、milestones）"
+        "【絕對禁止出現任何半形或全形阿拉伯數字（零至九請一律寫成國字：一、二、三）】。\n"
+        "二、嚴禁使用保證療效詞彙（如：保證、根治、百分之百、永久、零風險、完全無痛、存活率）。\n"
+        "三、第三幕（timeline）的 caption 結尾必須包含「恢復程度因人而異，需由醫師當面評估。」。"
+    ),
+    "schema_error": (
+        "【上一次生成未通過結構檢驗（schema_error），請嚴格修正】：\n"
+        "請確認輸出為單一合法 JSON 物件，scenes 必須恰好三幕，且各欄位字數符合上限："
+        "卡片 title 十至十六字、場景 title 不超過十六字、caption 二十至一百二十字、"
+        "labels 每項不超過十二字、step_labels 每項不超過十字、milestones 恰好三項且每項不超過八字、"
+        "contrast 左右 title 與 core_label 不超過八字、note 不超過十四字、footnote 不超過十六字。"
+    ),
+    "unknown_blueprint": (
+        "【上一次生成使用了未知的藍圖（unknown_blueprint），請嚴格修正】：\n"
+        "第二幕 blueprint 必須為 contrast，第三幕必須為 timeline；"
+        "第一幕僅能從合法的十二種藍圖（surgical_action、deep_plane_facelift、corset_platysmaplasty、"
+        "cyst_excision、nail_matrix、subdermal_curettage、process_diagram、skin_energy、"
+        "laser_action、neuromuscular、dermal_support、pathology_mechanism）中選用；"
+        "基層診所疾病請優先使用 pathology_mechanism。"
+    ),
+    "text_unsafe": (
+        "【上一次生成含有不安全字元（text_unsafe），請嚴格修正】：\n"
+        "所有文字欄位嚴禁包含尖括號、HTML 標籤、網址或腳本語法，僅能使用純繁體中文與標準標點符號。"
+    ),
+    "dosage_prescription": (
+        "【上一次生成觸發處方或劑量限制（dosage_prescription），請嚴格修正】：\n"
+        "嚴禁提及具體藥品劑量、注射單位、每日服藥次數或停藥指示；請改以一般解剖原理與「依醫師指示評估」表述。"
+    ),
+    "price_leak": (
+        "【上一次生成含有費用或價格字樣（price_leak），請嚴格修正】：\n"
+        "嚴禁提及任何金額、費用、價格或促銷字眼。"
+    ),
+    "simplified_chinese": (
+        "【上一次生成含有簡體字（simplified_chinese），請嚴格修正】：\n"
+        "全篇所有文字必須使用台灣繁體中文（正體字），嚴禁出現任何簡體字。"
+    ),
+    "truncated": (
+        "【上一次生成因長度過長被截斷（truncated），請嚴格修正】：\n"
+        "請直接輸出緊湊的純 JSON 物件，不要附加額外說明，並將各幕 caption 精簡控制在三十五至七十字之間。"
+    ),
+    "parse_error": (
+        "【上一次輸出無法解析為合法 JSON（parse_error），請嚴格修正】：\n"
+        "請只輸出純 JSON 物件本體，確保所有雙引號與大括號正確閉合，不要加上任何解釋文字。"
+    ),
+}
+
+
+def build_self_healing_feedback(error_code: str) -> str:
+    """將驗證失敗代碼轉為具體、不洩漏原文的繁體中文自癒修正提示詞（純函式）。"""
+    code = (error_code or "parse_error").strip()
+    return _SELF_HEALING_FEEDBACK_MAP.get(code, _SELF_HEALING_FEEDBACK_MAP["parse_error"])
+
+
 def _lookup_template_override(conn: sqlite3.Connection, clinic_id: Any, topic_key: str) -> Optional[str]:
     """讀取既有草稿的醫師覆寫模板；欄位或列不存在時回傳 None（向後相容）。"""
     try:
@@ -1460,16 +1565,58 @@ def _lookup_template_override(conn: sqlite3.Connection, clinic_id: Any, topic_ke
     return row[0] if row and row[0] else None
 
 
+def build_tree_visual_prompt(tree: dict[str, Any]) -> str:
+    """依據推理樹內容組裝 Typed IR 提示詞，並自動注入命中之 Harness² 治理經驗防護欄。"""
+    base = _build_tree_visual_prompt_base(tree)
+    lessons_block = format_lessons_for_prompt(select_lessons_for_tree(tree))
+    return f"{base}\n\n{lessons_block}" if lessons_block else base
+
+
+def _generate_candidate(
+    act_llm: Callable[[str], str],
+    prompt: str,
+    topic_key: str,
+    fallback_title: str,
+    max_attempts: int,
+) -> Tuple[Optional[dict[str, Any]], str]:
+    """單一候選的生成與自癒重試；回傳 (ir, "ok") 或 (None, 錯誤代碼)。"""
+    last_code = "parse_error"
+    for attempt in range(max(1, max_attempts)):
+        call_prompt = prompt if attempt == 0 else f"{prompt}\n\n{build_self_healing_feedback(last_code)}"
+        try:
+            raw_out = act_llm(call_prompt)
+        except LocalLLMUnavailableError:
+            return None, "llm_unavailable"
+        except LLMTruncatedError:
+            last_code = "truncated"
+            continue
+        except (LLMEmptyOutputError, Exception):
+            last_code = "parse_error"
+            continue
+        ir, code = parse_and_build_tree_ir(raw_out, topic_key=topic_key, fallback_title=fallback_title)
+        if ir is None:
+            last_code = code
+            continue
+        return ir, "ok"
+    return None, last_code
+
+
 def autodraft_from_tree(
     conn: sqlite3.Connection,
     tree_id_or_dict: int | dict[str, Any],
     llm_call: Optional[Callable[[str], str]] = None,
     *,
-    max_attempts: int = 2,
+    max_attempts: int = 3,
     db_path: Any = None,
     commit: bool = True,
+    topic_key_suffix: str = "",
+    k_candidates: int = 1,
+    recursion_mode: str = "sequential",
 ) -> dict[str, Any]:
     """由已核准的 PageIndex 推理樹自動生成視覺解說卡草稿並寫入 visual_assets。
+
+    參數：
+        topic_key_suffix: 選填後綴（如 '-v2'），用於平行繪製候選版本而不覆蓋線上已核准之 V1 資產。
 
     回傳：
         {"status": "ok", "topic_key": ..., "clinic_id": ..., "review_status": "pending", "ir": ...}
@@ -1497,12 +1644,17 @@ def autodraft_from_tree(
 
     doc_id = tree.get("doc_id") or ""
     try:
-        topic_key = normalize_tree_topic_key(doc_id)
+        base_topic_key = normalize_tree_topic_key(doc_id)
     except ValueError:
         return {"status": "error", "code": "schema_error"}
 
+    suffix = (topic_key_suffix or "").strip()
+    topic_key = f"{base_topic_key}{suffix}" if suffix else base_topic_key
+
     # Phase 34：醫師覆寫模板（visual_assets.template_override）優先於關鍵字推斷；非法值直接拒絕，不呼叫 LLM
     override = _lookup_template_override(conn, tree.get("clinic_id"), topic_key)
+    if override is None and suffix:
+        override = _lookup_template_override(conn, tree.get("clinic_id"), base_topic_key)
     if override is not None:
         if override not in BLUEPRINTS:
             return {"status": "error", "code": "unknown_blueprint"}
@@ -1515,58 +1667,78 @@ def autodraft_from_tree(
     if not GENERATION_LOCK.acquire(blocking=False):
         return {"status": "busy", "code": "busy"}
 
+    if recursion_mode not in ("sequential", "parallel") or not isinstance(k_candidates, int) or k_candidates < 1:
+        GENERATION_LOCK.release()
+        return {"status": "error", "code": "invalid_argument"}
+
     act_llm = llm_call or _default_visual_llm
     prompt = build_tree_visual_prompt(tree)
     resolved_title = _resolve_tree_title(tree)
     fallback_title = f"{resolved_title}原理圖解" if not resolved_title.endswith("原理") else resolved_title
 
     try:
+        # Harness² 任務級遞迴：探索最多 k 個合法候選，依臨床對齊分數選優
+        candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
         last_code = "parse_error"
-        for _ in range(max(1, max_attempts)):
-            try:
-                raw_out = act_llm(prompt)
-            except LocalLLMUnavailableError:
-                return {"status": "error", "code": "llm_unavailable"}
-            except LLMTruncatedError:
-                last_code = "truncated"
-                continue
-            except (LLMEmptyOutputError, Exception):
-                last_code = "parse_error"
-                continue
-
-            ir, code = parse_and_build_tree_ir(raw_out, topic_key=topic_key, fallback_title=fallback_title)
+        round_prompt = prompt
+        for _round in range(k_candidates):
+            ir, code = _generate_candidate(act_llm, round_prompt, topic_key, fallback_title, max_attempts)
             if ir is None:
+                if code == "llm_unavailable":
+                    return {"status": "error", "code": "llm_unavailable"}
                 last_code = code
                 continue
+            report = score_visual_ir_alignment(tree, ir)
+            candidates.append((ir, report))
+            if recursion_mode == "sequential":
+                if report["score"] >= EXCELLENT_THRESHOLD:
+                    break
+                round_prompt = build_alignment_critique_prompt(prompt, ir, report)
+            # parallel 模式：每輪皆由原始提示詞獨立生成，互不影響
 
-            # 生成成功，組裝資產資料
-            asset = {
-                "clinic_id": tree.get("clinic_id"),
-                "topic_key": topic_key,
-                "title": ir["title"],
-                "keywords": ir["keywords"],
-                "ir": ir,
-                "metadata": {
-                    "origin": "pageindex_tree",
-                    "tree_id": tree.get("id"),
-                    "doc_id": doc_id,
-                    "tree_version": tree.get("content_version", 1),
-                    # 追溯用：產生時間（UTC）與產生程序 PID，供日後查明草稿由哪次執行寫入
-                    "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                    "generator_pid": os.getpid(),
-                },
-            }
+        if not candidates:
+            return {"status": "error", "code": last_code}
 
-            upsert_res = upsert_assets(conn, [asset], source_type="llm_generated", commit=commit)
-            return {
-                "status": "ok",
-                "topic_key": topic_key,
-                "clinic_id": tree.get("clinic_id"),
-                "review_status": "pending",
-                "ir": ir,
-                **upsert_res,
-            }
+        ir, report = max(candidates, key=lambda item: item[1]["score"])
 
-        return {"status": "error", "code": last_code}
+        meta_dict: dict[str, Any] = {
+            "origin": "pageindex_tree",
+            "tree_id": tree.get("id"),
+            "doc_id": doc_id,
+            "tree_version": tree.get("content_version", 1),
+            # 追溯用：產生時間（UTC）與產生程序 PID，供日後查明草稿由哪次執行寫入
+            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "generator_pid": os.getpid(),
+            "harness_score": report["score"],
+            "harness_k": k_candidates,
+            "harness_mode": recursion_mode,
+            "harness_candidates_explored": len(candidates),
+            "harness_penalties": report["penalties"],
+        }
+        if suffix:
+            meta_dict["candidate_for"] = base_topic_key
+            meta_dict["edition"] = suffix.lstrip("-")
+
+        asset = {
+            "clinic_id": tree.get("clinic_id"),
+            "topic_key": topic_key,
+            "title": ir["title"],
+            "keywords": ir["keywords"],
+            "ir": ir,
+            "metadata": meta_dict,
+        }
+
+        upsert_res = upsert_assets(conn, [asset], source_type="llm_generated", commit=commit)
+        return {
+            "status": "ok",
+            "topic_key": topic_key,
+            "clinic_id": tree.get("clinic_id"),
+            "review_status": "pending",
+            "ir": ir,
+            "harness_score": report["score"],
+            "harness_mode": recursion_mode,
+            "harness_k": k_candidates,
+            **upsert_res,
+        }
     finally:
         GENERATION_LOCK.release()

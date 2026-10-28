@@ -30,6 +30,7 @@ VALID_BLUEPRINTS: tuple[str, ...] = (
     "deep_plane_facelift",
     "corset_platysmaplasty",
     "surgical_action",
+    "pathology_mechanism",
 )
 VALID_TONES: tuple[str, ...] = ("neutral", "warning", "optimal")
 

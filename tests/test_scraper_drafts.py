@@ -297,7 +297,7 @@ def test_write_faq_drafts_lifecycle(isolated_conn, sample_page):
 
     # 查證草稿屬性
     rows = isolated_conn.execute(
-        "SELECT source_type, review_status, metadata FROM faq_cache WHERE topic_key LIKE 'web-%'"
+        "SELECT source_type, review_status, metadata FROM faq_cache WHERE topic_key LIKE 'web-%' AND metadata NOT LIKE '%service-detail%'"
     ).fetchall()
     assert len(rows) == 2
     for r in rows:
@@ -309,7 +309,7 @@ def test_write_faq_drafts_lifecycle(isolated_conn, sample_page):
     # 2. 審核前隱蔽
     vis_sql = visible_faq_sql(isolated_conn)
     visible_rows = isolated_conn.execute(
-        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND ({vis_sql})"
+        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND metadata NOT LIKE '%service-detail%' AND ({vis_sql})"
     ).fetchone()[0]
     assert visible_rows == 0
 

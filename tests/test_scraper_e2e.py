@@ -58,7 +58,7 @@ def test_scraper_end_to_end_lifecycle(isolated_conn):
 
     # 2. 查驗資料庫中草稿屬性與 metadata
     cur = isolated_conn.execute(
-        "SELECT id, question, answer, source_type, review_status, metadata FROM faq_cache WHERE topic_key LIKE 'web-%'"
+        "SELECT id, question, answer, source_type, review_status, metadata FROM faq_cache WHERE topic_key LIKE 'web-%' AND metadata NOT LIKE '%service-detail%'"
     )
     rows = cur.fetchall()
     assert len(rows) == 2
@@ -94,7 +94,7 @@ def test_scraper_end_to_end_lifecycle(isolated_conn):
     # 3. 審核前隱蔽驗證：對外可見查詢完全不出現
     vis_sql = visible_faq_sql(isolated_conn)
     cur = isolated_conn.execute(
-        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND ({vis_sql})"
+        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND metadata NOT LIKE '%service-detail%' AND ({vis_sql})"
     )
     visible_count = cur.fetchone()[0]
     assert visible_count == 0
@@ -107,7 +107,7 @@ def test_scraper_end_to_end_lifecycle(isolated_conn):
 
     # 核准後：該筆可見，另一筆仍隱蔽
     cur = isolated_conn.execute(
-        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND ({vis_sql})"
+        f"SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND metadata NOT LIKE '%service-detail%' AND ({vis_sql})"
     )
     assert cur.fetchone()[0] == 1
 

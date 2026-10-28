@@ -500,13 +500,35 @@ async function startBatchGenerateSelected() {
         return;
     }
     const ids = selected.slice(0, 100);
-    const mins = Math.round(ids.length * 5);
-    if (!window.confirm(`將由本機 LLM 逐題補齊所選 ${ids.length} 筆草稿的答案（約需 ${mins} 分鐘，可先離開此頁）。\n補齊後仍為待審，不會自動核准；完成後再一起審核。\n確定開始嗎？`)) return;
+    let alreadyFull = 0;
+    ids.forEach(id => {
+        const entry = reviewState.cards.get(id);
+        if (entry && entry.state && !entry.state.needsAnswer) alreadyFull++;
+    });
+    let overwrite = false;
+    if (alreadyFull > 0) {
+        if (alreadyFull === ids.length) {
+            if (!window.confirm(
+                `所選 ${ids.length} 筆草稿皆「已有完整答案」（非待補齊狀態）。\n\n` +
+                `• 若您是要直接核准發布，請按「取消」並改點右側綠色的「✅ 批量核准 (${ids.length})」。\n` +
+                `• 若您確定要由本機 LLM 重新生成並覆寫這 ${ids.length} 筆答案，請按「確定」。`
+            )) return;
+            overwrite = true;
+        } else {
+            overwrite = window.confirm(
+                `所選 ${ids.length} 筆草稿中，有 ${alreadyFull} 筆已有完整答案。\n` +
+                `按「確定」將一併重新生成並覆寫；按「取消」則僅補齊空白或過短的草稿（略過已有答案者）。`
+            );
+        }
+    } else {
+        const mins = Math.round(ids.length * 5);
+        if (!window.confirm(`將由本機 LLM 逐題補齊所選 ${ids.length} 筆草稿的答案（約需 ${mins} 分鐘，可先離開此頁）。\n補齊後仍為待審，不會自動核准；完成後再一起審核。\n確定開始嗎？`)) return;
+    }
     try {
         const resp = await fetch("/api/v1/admin/review/batch-generate", {
             method: "POST",
             headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-            body: JSON.stringify({ faq_ids: ids }),
+            body: JSON.stringify({ faq_ids: ids, overwrite }),
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) { showToast(`無法開始：${typeof data.detail === "string" ? data.detail : "格式不正確"}`, "error"); return; }
@@ -600,7 +622,7 @@ function renderBatchGenPanel(s) {
     }
     const autoCount = document.getElementById("autofillCountText");
     if (autoCount) {
-        autoCount.textContent = `${s.processed} / ${s.total} (成功 ${s.ok}・失敗 ${s.failed.length})`;
+        autoCount.textContent = `${s.processed} / ${s.total} (成功 ${s.ok}・失敗 ${s.failed.length}・略過 ${s.skipped || 0})`;
     }
     const autoBar = document.getElementById("autofillProgressBar");
     if (autoBar) autoBar.style.width = `${progressPercent}%`;
@@ -610,7 +632,15 @@ function renderBatchGenPanel(s) {
 
     const autoDetail = document.getElementById("autofillDetailText");
     if (autoDetail) {
-        autoDetail.textContent = s.message || (s.failed.length > 0 ? `失敗 ${s.failed.length} 筆：${s.failed.map(f => `ID ${f.id} (${f.reason})`).slice(0, 3).join(", ")}` : "");
+        if (s.message) {
+            autoDetail.textContent = s.message;
+        } else if (s.failed.length > 0) {
+            autoDetail.textContent = `失敗 ${s.failed.length} 筆：${s.failed.map(f => `ID ${f.id} (${f.reason})`).slice(0, 3).join(", ")}`;
+        } else if (!running && s.ok === 0 && s.skipped > 0) {
+            autoDetail.textContent = `此 ${s.skipped} 筆草稿皆已有完整答案（無須補齊），可直接勾選後點右下角「✅ 批量核准」發布。`;
+        } else {
+            autoDetail.textContent = "";
+        }
     }
 }
 
@@ -629,13 +659,26 @@ async function pollBatchGenerate(silent) {
         return;
     }
     if (batchGen.lastState === "running" && s.state !== "idle") {
-        // 剛結束：重載清單與總覽統計，並切到「AI 生成待確認」，方便最後一起審
         batchGen.lastState = s.state;
         const reviewView = document.getElementById("reviewView");
-        if (reviewView) reviewView.value = "ai";
+        if (s.ok > 0) {
+            // 有新生成的項目：切到「AI 生成待確認」，方便最後一起審
+            if (reviewView) reviewView.value = "ai";
+        } else if (reviewView && reviewView.value === "ai") {
+            // 0 成功（例如全數略過）：切回「全部」，避免因「AI 生成待確認」為空導致畫面全部消失
+            reviewView.value = "all";
+        }
         await loadReviewFaqs();
         loadDashboardSummary();
-        showToast(`${s.state === "done" ? "批量補齊完成" : "批量補齊結束"}：成功 ${s.ok}、失敗 ${s.failed.length}。已切換到「AI 生成待確認」，請逐筆檢視後批量核准`, s.failed.length ? "info" : "success");
+        if (s.ok === 0 && s.skipped > 0 && s.failed.length === 0) {
+            showToast(`所選 ${s.skipped} 筆草稿皆已有完整答案（略過 ${s.skipped} 筆），請直接勾選並按「✅ 批量核准」發布`, "info");
+        } else {
+            showToast(
+                `${s.state === "done" ? "批量補齊完成" : "批量補齊結束"}：成功 ${s.ok}、失敗 ${s.failed.length}、略過 ${s.skipped || 0}。` +
+                (s.ok > 0 ? "已切換到「AI 生成待確認」，請逐筆檢視後批量核准" : ""),
+                s.failed.length ? "info" : "success"
+            );
+        }
     }
 }
 

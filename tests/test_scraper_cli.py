@@ -44,11 +44,20 @@ def test_cli_interval_below_minimum_rejected(capsys, monkeypatch):
     assert "不得小於 3.0 秒" in captured.err
 
 
-def test_cli_unallowlisted_url_rejected(capsys):
-    """Task 3 Test 2: --url 不在白名單內，退出碼 2。"""
+def test_cli_unallowlisted_url_rejected(tmp_path, capsys):
+    """Task 3 Test 2: 封閉模式下 --url 不在白名單內，退出碼 2。"""
+    closed_allowlist = tmp_path / "closed_sources.json"
+    closed_allowlist.write_text(
+        json.dumps({
+            "open_access": False,
+            "allowed_domains": [{"host": "www.nu-vendome.com", "path_prefixes": ["/"]}]
+        }),
+        encoding="utf-8",
+    )
     code = cli_main([
         "--clinic-id", "3503190424",
         "--url", "https://example.com/other/",
+        "--allowlist", str(closed_allowlist),
         "--live",
     ])
     assert code == 2

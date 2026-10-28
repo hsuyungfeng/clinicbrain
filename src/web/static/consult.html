@@ -349,10 +349,74 @@
             padding-top: 8px;
             text-align: center;
         }
+        .followup-chips-container {
+            display: none;
+            margin-bottom: 14px;
+            padding-top: 10px;
+            border-top: 1px solid #edf2f7;
+        }
+        .followup-chips-label {
+            font-size: 0.82rem;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .followup-chips-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn-followup-chip {
+            background-color: #ebf8ff;
+            color: #2b6cb0;
+            border: 1px solid #bee3f8;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .btn-followup-chip:hover {
+            background-color: #bee3f8;
+            border-color: #90cdf4;
+        }
+        .booking-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+        .btn-copy-summary {
+            display: inline-block;
+            background-color: #edf2f7;
+            color: #2d3748;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-copy-summary:hover {
+            background-color: #e2e8f0;
+        }
+        .copy-feedback {
+            display: none;
+            margin-top: 8px;
+            font-size: 0.82rem;
+            color: #2f855a;
+            font-weight: 600;
+        }
         @media (prefers-reduced-motion: reduce) {
             .visual-scene-box,
             .visual-dot,
             .btn-visual-nav,
+            .btn-followup-chip,
+            .btn-copy-summary,
             .btn-submit,
             .btn-booking,
             textarea {
@@ -384,9 +448,17 @@
             <span id="statusBadge" class="result-badge"></span>
             <div id="resultLabel" class="result-label"></div>
             <div id="resultMessage" class="result-message"></div>
+            <div id="followupChipsContainer" class="followup-chips-container">
+                <div class="followup-chips-label">您可能還想了解（點擊直接詢問）：</div>
+                <div id="followupChipsList" class="followup-chips-list"></div>
+            </div>
             <div id="resultDisclaimer" class="result-disclaimer"></div>
             <div id="bookingContainer" class="booking-container">
-                <a id="bookingLink" class="btn-booking" href="https://doctor-toolbox.com/" target="_blank" rel="noopener noreferrer">預約諮詢</a>
+                <div class="booking-actions">
+                    <button id="btnCopySummary" type="button" class="btn-copy-summary">複製諮詢重點並前往預約</button>
+                    <a id="bookingLink" class="btn-booking" href="https://doctor-toolbox.com/" target="_blank" rel="noopener noreferrer">預約諮詢</a>
+                </div>
+                <div id="copyFeedback" class="copy-feedback"></div>
             </div>
         </section>
 

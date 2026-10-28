@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from ..pageindex.general_fallback import GeneralDraftError, generate_general_draft, find_existing_general_draft
@@ -28,6 +28,7 @@ from ..pageindex.llm_client import (
 )
 from ..pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
 from ..visual.match import visuals_for_tree_sources
+from .answer_compose import classify_intent, suggest_followup_chips
 from .consult import GeneralConsultResult, consult_general
 from .disclaimer import message_for_red_flag, RED_FLAG_DISCLAIMER_TEXT
 from .patient_compose import (
@@ -69,6 +70,7 @@ class PatientConsultResult:
     label: str | None
     booking_url: str
     visual: dict | None = None
+    followup_chips: list[str] = field(default_factory=list)
 
 
 def _cited_visual(
@@ -125,6 +127,27 @@ def default_patient_compose_llm(prompt: str) -> str:
 
 
 def patient_consult(
+    conn: sqlite3.Connection,
+    query: str,
+    llm_call: Callable[[str], str] = default_patient_llm,
+    compose_llm_call: Callable[[str], str] | None = None,
+    clinic_id: str | None = None,
+) -> PatientConsultResult:
+    """病人諮詢入口：核心判定後，為有回答的結果附上互動追問膠囊（純 canned 文字，不含問句）。"""
+    result = _patient_consult_core(
+        conn,
+        query,
+        llm_call=llm_call,
+        compose_llm_call=compose_llm_call,
+        clinic_id=clinic_id,
+    )
+    if result.status in ("answered", "llm_general"):
+        scope = "procedure" if clinic_id else "general"
+        result.followup_chips = suggest_followup_chips(classify_intent(query), scope=scope)
+    return result
+
+
+def _patient_consult_core(
     conn: sqlite3.Connection,
     query: str,
     llm_call: Callable[[str], str] = default_patient_llm,

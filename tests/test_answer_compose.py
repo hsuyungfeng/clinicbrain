@@ -266,3 +266,52 @@ def test_assemble_answer_model_followup_procedure_terms_blocked_in_general():
     assert ans_gen.endswith(ac.CTA_TEXT)
 
 
+def test_suggest_followup_chips_complementary_and_compliant():
+    """驗證 suggest_followup_chips 回傳 2 個互補意圖追問且皆符合合規規範。"""
+    chips_proc = ac.suggest_followup_chips("what", scope="procedure")
+    assert len(chips_proc) == 2
+    assert ac.DEFAULT_FOLLOWUPS["what"] not in chips_proc
+    assert chips_proc[0] == ac.DEFAULT_FOLLOWUPS["recovery"]
+    assert chips_proc[1] == ac.DEFAULT_FOLLOWUPS["suitable"]
+
+    chips_gen = ac.suggest_followup_chips("recovery", scope="general")
+    assert len(chips_gen) == 2
+    assert ac.GENERAL_FOLLOWUPS["recovery"] not in chips_gen
+    for chip in chips_gen:
+        ok, err = ac._validate_followup_text(chip)
+        assert ok, err
+        for term in ac.PROCEDURE_ONLY_TERMS:
+            assert term not in chip
+
+
+
+
+
+# ---- 2.5 互動追問膠囊：suggest_followup_chips ----
+
+ALL_INTENTS = ["what", "recovery", "risk", "suitable", "when_to_see_doctor", "other"]
+
+
+@pytest.mark.parametrize("intent", ALL_INTENTS)
+@pytest.mark.parametrize("scope", ["procedure", "general"])
+def test_suggest_followup_chips_returns_two_compliant_questions(intent, scope):
+    """每個意圖與範圍皆回傳 2 句，且取自合規追問表，不含當前意圖的追問句。"""
+    chips = ac.suggest_followup_chips(intent, scope=scope)
+    table = ac.GENERAL_FOLLOWUPS if scope == "general" else ac.DEFAULT_FOLLOWUPS
+    assert len(chips) == 2
+    assert all(c in table.values() for c in chips)
+    assert table.get(intent) not in chips or intent == "other"
+
+
+def test_suggest_followup_chips_excludes_current_intent_question():
+    chips = ac.suggest_followup_chips("recovery", scope="procedure")
+    assert ac.DEFAULT_FOLLOWUPS["recovery"] not in chips
+
+
+def test_suggest_followup_chips_unknown_intent_falls_back_to_other():
+    assert ac.suggest_followup_chips("不存在的意圖") == ac.suggest_followup_chips("other")
+    assert ac.suggest_followup_chips("") == ac.suggest_followup_chips("other")
+
+
+def test_suggest_followup_chips_is_pure_and_deterministic():
+    assert ac.suggest_followup_chips("risk") == ac.suggest_followup_chips("risk")

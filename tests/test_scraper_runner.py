@@ -221,14 +221,22 @@ def test_runner_schema_drift(tmp_path, isolated_conn):
 
 
 def test_runner_unallowlisted_url(tmp_path):
-    """Task 2 Test 3: 白名單外網址，outcome.reason='not_allowlisted'，計入 skipped_by_policy，HTTP 請求數為 0。"""
+    """Task 2 Test 3: 封閉模式下白名單外網址，outcome.reason='not_allowlisted'，計入 skipped_by_policy，HTTP 請求數為 0。"""
+    closed_allowlist = tmp_path / "closed_sources.json"
+    closed_allowlist.write_text(
+        json.dumps({
+            "open_access": False,
+            "allowed_domains": [{"host": "www.nu-vendome.com", "path_prefixes": ["/location-detail/"]}]
+        }),
+        encoding="utf-8",
+    )
     urls = [
         "https://www.evil-site.com/location-detail/1/",
         "https://www.nu-vendome.com/other-path/secret",
     ]
     options = ScrapeOptions(
         clinic_id="3503190424",
-        allowlist_path=SOURCES_JSON,
+        allowlist_path=closed_allowlist,
         ownership_path=OWNERSHIP_FILE,
         write=False,
     )
@@ -564,7 +572,7 @@ def test_runner_transaction_isolation(tmp_path, isolated_conn, monkeypatch):
     assert report.summary["drafts_written"] == 2
 
     # 查證資料庫
-    cur = isolated_conn.execute("SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%'")
+    cur = isolated_conn.execute("SELECT COUNT(*) FROM faq_cache WHERE topic_key LIKE 'web-%' AND metadata NOT LIKE '%service-detail%'")
     assert cur.fetchone()[0] == 2
 
 

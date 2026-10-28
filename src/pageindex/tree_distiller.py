@@ -117,7 +117,10 @@ def distill_tree_from_text(
     """自給定長篇文字中提煉臨床推理樹，並以 pending 狀態寫入「新」草稿（不覆寫既有樹）。"""
     if conn.execute("SELECT 1 FROM page_index_trees WHERE doc_id = ?", (doc_id,)).fetchone():
         raise TreeConflictError(f"doc_id '{doc_id}' 已存在，提煉僅能建立新草稿，請改用其他識別碼")
-    prompt = TREE_DISTILL_PROMPT_TEMPLATE.format(title=title, text=text[:MAX_SOURCE_CHARS])
+    from .tree_navigator import condense_long_document_by_toc
+
+    condensed_text = condense_long_document_by_toc(text, MAX_SOURCE_CHARS)
+    prompt = TREE_DISTILL_PROMPT_TEMPLATE.format(title=title, text=condensed_text)
     raw = llm_call(prompt)
     clean_json = _clean_json_output(raw)
 

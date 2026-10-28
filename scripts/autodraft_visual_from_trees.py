@@ -81,8 +81,29 @@ def main(argv: Optional[list[str]] = None) -> int:
         default=False,
         help="強制重新生成已存在之視覺解說卡（預設跳過已存在項目）",
     )
+    parser.add_argument(
+        "--v2-candidate",
+        action="store_true",
+        default=False,
+        help="平行生成 -v2 候選草稿列（不覆寫線上已核准之 V1 資產，供審核擇優後晉升）",
+    )
+
+    parser.add_argument(
+        "--k",
+        type=int,
+        default=1,
+        help="Harness² 任務級候選數（>1 時探索多個合法候選並選取最高臨床對齊分數）",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("sequential", "parallel"),
+        default="sequential",
+        help="候選遞迴模式：sequential 依批評逐輪精煉；parallel 各自獨立生成後評分",
+    )
 
     args = parser.parse_args(argv)
+    if args.k < 1:
+        parser.error("--k 必須為正整數")
     target_path = Path(args.db)
 
     # 1. 正式庫安全檢核：寫入模式必須在連線前檢查
@@ -153,6 +174,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         cur.execute("SELECT topic_key FROM visual_assets")
         existing_keys = {row[0] for row in cur.fetchall()}
 
+        suffix = "-v2" if args.v2_candidate else ""
         success_count = 0
         skipped_count = 0
         for tree in trees:
@@ -162,13 +184,19 @@ def main(argv: Optional[list[str]] = None) -> int:
             except Exception:
                 norm_key = f"tree-{doc_id}"
 
-            if not args.force and (norm_key in existing_keys or f"tree-{doc_id}" in existing_keys):
-                print(f"⏭️ 跳過已存在之視覺資產：doc_id='{doc_id}'（如欲覆寫請加上 --force）")
+            target_key = f"{norm_key}{suffix}"
+            alt_key = f"tree-{doc_id}{suffix}"
+
+            if not args.force and (target_key in existing_keys or alt_key in existing_keys):
+                print(f"⏭️ 跳過已存在之視覺資產：topic_key='{target_key}'（如欲覆寫請加上 --force）")
                 skipped_count += 1
                 continue
 
-            print(f"⏳ 正在生成動畫草稿：doc_id='{doc_id}' ...")
-            res = autodraft_from_tree(conn, tree, db_path=target_path)
+            print(f"⏳ 正在生成動畫草稿：doc_id='{doc_id}' -> topic_key='{target_key}' ...")
+            res = autodraft_from_tree(
+                conn, tree, db_path=target_path, topic_key_suffix=suffix,
+                k_candidates=args.k, recursion_mode=args.mode,
+            )
             if res.get("status") == "ok":
                 print(f"✅ 成功生成並寫入草稿：topic_key='{res['topic_key']}'（狀態：{res['review_status']}）")
                 success_count += 1

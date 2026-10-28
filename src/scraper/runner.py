@@ -27,7 +27,14 @@ from src.scraper.drafts import (
     build_faq_drafts,
     write_faq_drafts,
 )
-from src.scraper.extract import extract_clinic_page
+from src.scraper.extract import ExtractedClinicPage, extract_clinic_page
+from src.scraper.overrides import (
+    DEFAULT_OVERRIDES_PATH,
+    OverrideError,
+    apply_overrides,
+    load_physician_overrides,
+)
+from src.scraper.service_detail import extract_service_detail
 from src.scraper.fetch import (
     FetchResult,
     build_user_agent,
@@ -105,6 +112,7 @@ class ScrapeOptions:
     write: bool = False
     db_path: Union[str, Path] = ""
     fixture_dir: Optional[Union[str, Path]] = None
+    overrides_path: Union[str, Path] = DEFAULT_OVERRIDES_PATH
     fixture_map: Optional[dict[str, str]] = None
 
     def __post_init__(self) -> None:
@@ -216,6 +224,74 @@ def _fetch_all(
     return results
 
 
+def _clinic_institution_name(
+    options: ScrapeOptions,
+    conn_factory: Optional[Callable[[], sqlite3.Connection]] = None,
+) -> str:
+    """由 clinic_info 讀取機構名稱（唯讀連線；查無資料回傳空字串）。"""
+    if conn_factory is not None:
+        conn = conn_factory()
+    else:
+        conn = sqlite3.connect(f"file:{Path(options.db_path).as_posix()}?mode=ro", uri=True)
+    try:
+        row = conn.execute(
+            "SELECT name FROM clinic_info WHERE clinic_id = ?", (options.clinic_id,)
+        ).fetchone()
+        return (row[0] or "").strip() if row else ""
+    except sqlite3.Error:
+        return ""
+    finally:
+        conn.close()
+
+
+def _extract_service_detail_page(
+    html: str,
+    *,
+    options: ScrapeOptions,
+    conn_factory: Optional[Callable[[], sqlite3.Connection]] = None,
+    url: str = "",
+) -> ExtractedClinicPage:
+    """服務詳細頁轉為批次可用的頁面結構；機構名稱缺失或解析失敗時標記 schema_drift。
+
+    醫師改寫覆寫（physician_overrides.json）於此套用：只替換來源中完全相符的句子，
+    覆寫後的文字仍須通過草稿建置的所有合規檢查（DX、禁詞、價格等），覆寫不會繞過任何規則。
+    """
+    institution = _clinic_institution_name(options, conn_factory)
+    detail = extract_service_detail(html)
+    if detail is None:
+        return ExtractedClinicPage(
+            institution_name=institution,
+            schema_drift=True,
+            drift_fields=["service_detail"],
+        )
+    if not institution:
+        return ExtractedClinicPage(
+            institution_name="",
+            schema_drift=True,
+            drift_fields=["institution_name"],
+        )
+    description = detail.description
+    try:
+        overrides = load_physician_overrides(options.overrides_path).get(urllib.parse.urlsplit(url).path, [])
+    except OverrideError:
+        return ExtractedClinicPage(
+            institution_name=institution,
+            schema_drift=True,
+            drift_fields=["override_invalid"],
+        )
+    description, missing = apply_overrides(description, overrides)
+    if missing:
+        return ExtractedClinicPage(
+            institution_name=institution,
+            schema_drift=True,
+            drift_fields=["override_not_found"],
+        )
+    return ExtractedClinicPage(
+        institution_name=institution,
+        services=[{"name": detail.name, "description": description}],
+    )
+
+
 def _process_one(
     url: str,
     fetch_res: FetchResult,
@@ -249,8 +325,17 @@ def _process_one(
         )
         return outcome, 0, 0
 
-    # 結構抽取
-    page = extract_clinic_page(fetch_res.html)
+    # 結構抽取：服務詳細頁（/service-detail/）改用詳細頁解析器，與單頁適配器一致；
+    # 詳細頁本身不含機構名稱，改由 clinic_info 提供。
+    if urllib.parse.urlsplit(url).path.startswith("/service-detail/"):
+        page = _extract_service_detail_page(
+            fetch_res.html,
+            options=options,
+            conn_factory=conn_factory,
+            url=url,
+        )
+    else:
+        page = extract_clinic_page(fetch_res.html)
     doctors_cnt = len(page.doctors)
 
     if not page.is_usable():

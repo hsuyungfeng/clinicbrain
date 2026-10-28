@@ -18,6 +18,7 @@ from ..general.disclaimer import message_for_red_flag
 from ..general.red_flags import detect_red_flag
 from ..query.router import handle_query
 from .faq_review import sanitize_faq_text
+from .tree_navigator import select_tree_branches
 
 MAX_QUESTION_CHARS = 300
 MAX_FAQ = 8
@@ -39,6 +40,7 @@ def _render_evidence(
     notes: list[tuple[str, str]],
     clinic_info: Optional[dict],
     budget_ratio: float = 1.0,
+    question: str = "",
 ) -> tuple[str, list[dict]]:
     faq_ans_budget = max(MIN_ITEM_CHARS, int(DEFAULT_FAQ_ANSWER_BUDGET * budget_ratio))
     tree_budget = max(MIN_ITEM_CHARS, int(DEFAULT_TREE_BUDGET * budget_ratio))
@@ -66,11 +68,14 @@ def _render_evidence(
     for i, h in enumerate(tree_hits, 1):
         f = h.fields
         ref = f"T{i}"
-        parts = [
-            f"{label}：{clip_at_sentence(f.get(key) or '', tree_budget)}"
-            for key, label in _TREE_FIELDS
-            if (f.get(key) or "").strip()
-        ]
+        selected_branches = select_tree_branches(f, question, total_budget=tree_budget * 4)
+        parts: list[str] = []
+        for b in selected_branches:
+            seg = b.content.strip()
+            if b.physician_note.strip():
+                seg = f"{seg}（醫囑：{b.physician_note.strip()}）" if seg else f"醫囑：{b.physician_note.strip()}"
+            if seg:
+                parts.append(f"[{b.node_id} {b.label}]：{seg}")
         summary_raw = (f.get("summary_text") or "").strip()
         summary = clip_at_sentence(summary_raw, summary_budget) if summary_raw else ""
         body = (f"摘要：{summary}\n" if summary else "") + "\n".join(parts)
@@ -109,23 +114,23 @@ def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str) -
     clinic_info = resp.clinic_info
 
     # 1. 嘗試以標準預算渲染 (budget_ratio = 1.0)
-    context, sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=1.0)
+    context, sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=1.0, question=question)
     if len(context) <= CONTEXT_TOTAL_CHARS:
         return context, sources
 
     # 2. 若超出預算，嘗試縮減每項預算至 MIN_ITEM_CHARS；若在 MIN_ITEM_CHARS 下仍超標，逐一從後方剔除 FAQ
     while len(faq_candidates) > 1:
-        min_ctx, _ = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0)
+        min_ctx, _ = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0, question=question)
         if len(min_ctx) <= CONTEXT_TOTAL_CHARS:
             break
         faq_candidates.pop()
 
     # 3. 在當前候選集下，在 [0.0, 1.0] 間二分搜尋最佳預算比率，盡可能充分利用 CONTEXT_TOTAL_CHARS
     low, high = 0.0, 1.0
-    best_context, best_sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0)
+    best_context, best_sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0, question=question)
     for _ in range(8):
         mid = (low + high) / 2
-        ctx, srcs = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=mid)
+        ctx, srcs = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=mid, question=question)
         if len(ctx) <= CONTEXT_TOTAL_CHARS:
             best_context, best_sources = ctx, srcs
             low = mid

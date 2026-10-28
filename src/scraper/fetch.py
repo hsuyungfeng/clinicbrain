@@ -44,6 +44,23 @@ def assert_tls_config(ctx: ssl.SSLContext | object) -> None:
         raise PolicyError(reason="tls_config", message="TLS 必須開啟 check_hostname 且 verify_mode 必須為 CERT_REQUIRED")
 
 
+# 已知機器人防護／人工驗證頁面的特徵字串（如 Imperva/Incapsula、Cloudflare、reCAPTCHA、hCaptcha）
+BOT_CHALLENGE_MARKERS = (
+    "_Incapsula_Resource",
+    "Incapsula incident",
+    "cf-browser-verification",
+    "challenge-platform",
+    "cf_chl_opt",
+    "g-recaptcha",
+    "hcaptcha.com/1/api.js",
+)
+
+
+def is_bot_challenge(html_text: str) -> bool:
+    """判定回應是否為機器人防護或人工驗證頁（僅比對已知特徵，不回傳原文）。"""
+    return any(marker in html_text for marker in BOT_CHALLENGE_MARKERS)
+
+
 @dataclass
 class FetchResult:
     """單一網址擷取結果。"""
@@ -283,6 +300,17 @@ def fetch_page(
                     html_text = body.decode(charset, errors="replace")
                 except Exception:
                     html_text = body.decode("utf-8", errors="replace")
+
+                # 人工驗證／機器人防護頁以 HTTP 200 回傳：直接標記失敗，不解析、不重試、不嘗試繞過
+                if is_bot_challenge(html_text):
+                    return FetchResult(
+                        ok=False,
+                        url=url,
+                        final_url=current_url,
+                        status=status,
+                        reason="bot_challenge",
+                        fetched_at=iso_now,
+                    )
 
                 return FetchResult(
                     ok=True,

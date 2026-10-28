@@ -1,0 +1,4516 @@
+[
+  {
+    "icd10_code": "J06.9",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j069-uri",
+    "ir": {
+      "topic_key": "icd-j069-uri",
+      "title": "感冒（急性上呼吸道感染）",
+      "keywords": [
+        "感冒",
+        "上呼吸道感染",
+        "鼻塞",
+        "喉嚨痛",
+        "流鼻水"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "感冒病毒的侵犯過程",
+          "caption": "病毒附著於鼻咽黏膜，引起局部發炎與鼻塞流涕，多數在一兩週內逐漸修復。",
+          "labels": [
+            {
+              "text": "鼻塞流涕",
+              "tone": "neutral"
+            },
+            {
+              "text": "多數自癒",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "鼻咽黏膜",
+            "lesion_label": "充血發炎區",
+            "trigger_label": "病毒入侵",
+            "defense_label": "纖毛排痰修復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "病毒附著黏膜",
+              "免疫反應發炎",
+              "黏膜逐步修復"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "誘因與照護對照",
+          "caption": "淋雨受涼與熬夜過勞會削弱鼻咽防線，保暖休息並充分補充水分，有助於黏膜修復，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "受涼過勞",
+              "tone": "warning"
+            },
+            {
+              "text": "保暖補水",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "淋雨受涼",
+              "note": "病毒與寒冷刺激",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "防線受損",
+              "footnote": "過勞熬夜，防線變弱",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "保暖補水",
+              "note": "充分休息與補水",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "及時休養，屏障修復",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "急性感染病程",
+          "caption": "感冒多數在數日內由急性發炎逐步轉為黏膜修復，病程長短因人而異，若未改善請由醫師評估。",
+          "labels": [
+            {
+              "text": "多數自癒",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "鼻塞流涕",
+              "免疫清除",
+              "黏膜修復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "感冒一般多久會好？",
+        "answer": "一般感冒多由病毒引起，多數人在一到兩週內可逐漸緩解，期間可多休息、補充水分並注意保暖。若症狀持續超過兩週未改善，或出現持續高燒不退、呼吸困難等情形，請及時就醫評估。"
+      },
+      {
+        "question": "感冒期間應注意什麼？",
+        "answer": "建議充分休息、保持室內通風與適當濕度，並避免過度勞累。若出現高燒不退、呼吸急促或意識改變，請立即就醫或前往急診評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "病毒附著鼻咽黏膜，引起局部發炎與黏膜水腫，纖毛清除功能暫時下降。",
+      "clinical_presentation": "常見鼻塞、流鼻水、喉嚨不適與輕度咳嗽，多於數日內逐漸減輕。",
+      "management_care": "充分休息、補充水分、保持室內濕潤與通風，多數症狀可自行緩解。",
+      "red_flags_prevention": "若出現持續高燒不退、呼吸困難或胸痛，應及時就醫評估。"
+    }
+  },
+  {
+    "icd10_code": "J02.9",
+    "icd10_alt": [
+      "J03.90"
+    ],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j029-pharyngitis",
+    "ir": {
+      "topic_key": "icd-j029-pharyngitis",
+      "title": "急性咽喉炎與扁桃腺炎",
+      "keywords": [
+        "咽喉痛",
+        "扁桃腺炎",
+        "喉嚨痛",
+        "吞嚥痛",
+        "咽喉炎"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "咽喉發炎的過程",
+          "caption": "病原刺激咽喉黏膜與扁桃腺，引起腫脹疼痛與吞嚥不適，多數經休養後逐步消退。",
+          "labels": [
+            {
+              "text": "吞嚥疼痛",
+              "tone": "neutral"
+            },
+            {
+              "text": "及早評估",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "咽喉黏膜",
+            "lesion_label": "扁桃腺腫大",
+            "trigger_label": "病原刺激",
+            "defense_label": "黏膜修復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "病原刺激咽喉",
+              "扁桃腺腫脹",
+              "症狀逐步消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "刺激與潤喉照護",
+          "caption": "乾冷空氣、菸霧與長時間用嗓會刺激咽喉黏膜，多喝溫水並減少用聲，有助於潤喉與黏膜恢復，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "菸霧乾冷",
+              "tone": "warning"
+            },
+            {
+              "text": "溫水潤喉",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "乾冷空氣",
+              "note": "菸霧與大聲用嗓",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "咽喉黏膜受刺",
+              "footnote": "過度用聲加重刺激",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "溫水潤喉",
+              "note": "多喝溫水與減少用聲",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保濕潤喉，黏膜修復",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "咽喉發炎病程",
+          "caption": "咽喉發炎多在數日內由腫痛逐步消退，恢復速度因人而異，吞嚥困難或高燒時請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步舒緩",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "喉嚨刺痛",
+              "腫脹消退",
+              "恢復正常"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "喉嚨痛要看醫生嗎？",
+        "answer": "多數急性咽喉炎由病毒引起並可自行緩解，但若喉嚨痛明顯、發燒且吞嚥困難，建議就醫確認病因。若出現無法吞嚥、呼吸困難或嘴唇發紫等情形，請立即前往急診。"
+      },
+      {
+        "question": "如何減輕咽喉疼痛？",
+        "answer": "可以多喝溫水、避免刺激性食物，並減少說話頻率讓喉嚨休息。若疼痛加劇、持續發燒或出現呼吸困難，請儘速就醫評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "病原刺激咽喉黏膜與扁桃腺，引起充血腫脹與吞嚥疼痛。",
+      "clinical_presentation": "喉嚨刺痛、吞嚥時疼痛加劇，部分伴隨發燒與頸部淋巴腺腫脹。",
+      "management_care": "多休息、多喝溫水，避免刺激性食物與過度用聲，必要時回診確認病因。",
+      "red_flags_prevention": "若無法吞嚥口水、呼吸急促或嘴唇發紫，請立即前往急診。"
+    }
+  },
+  {
+    "icd10_code": "J30.9",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j309-allergic-rhinitis",
+    "ir": {
+      "topic_key": "icd-j309-allergic-rhinitis",
+      "title": "過敏性鼻炎",
+      "keywords": [
+        "過敏性鼻炎",
+        "鼻癢",
+        "打噴嚏",
+        "過敏",
+        "鼻塞"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "過敏原與鼻黏膜反應",
+          "caption": "過敏原接觸鼻黏膜後引起組織腫脹與分泌增加，減少接觸並妥善控制，症狀可明顯緩解。",
+          "labels": [
+            {
+              "text": "鼻癢打噴嚏",
+              "tone": "neutral"
+            },
+            {
+              "text": "減少接觸",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "鼻腔黏膜",
+            "lesion_label": "黏膜水腫",
+            "trigger_label": "過敏原",
+            "defense_label": "減少接觸",
+            "severity_level": 2,
+            "accent_fill": "warn",
+            "step_labels": [
+              "過敏原接觸黏膜",
+              "組織腫脹分泌",
+              "減少接觸後緩解"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "過敏原與防護對照",
+          "caption": "塵蟎、花粉與冷風反覆刺激鼻黏膜，勤換寢具並配戴口罩可阻隔過敏原，症狀變化仍需醫師評估。",
+          "labels": [
+            {
+              "text": "接觸過敏原",
+              "tone": "warning"
+            },
+            {
+              "text": "阻隔防護",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "塵蟎冷風",
+              "note": "塵蟎花粉與冷風",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "黏膜持續受刺",
+              "footnote": "塵蟎花粉反覆接觸",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "除蟎口罩",
+              "note": "勤換寢具與配戴口罩",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "阻隔過敏原，修復黏膜",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "長期控制病程",
+          "caption": "過敏性鼻炎需長期辨識誘因與規律控制，症狀起伏因人而異，請依醫師評估調整治療方式。",
+          "labels": [
+            {
+              "text": "波動收斂",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "急性發作",
+              "規律控制",
+              "穩定維持"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "過敏性鼻炎會好嗎？",
+        "answer": "過敏性鼻炎屬慢性體質相關問題，需要長期辨識過敏原並配合醫師評估的管理方式，多數患者可以有效控制症狀。若出現呼吸困難、胸悶或耳痛等情形，請及時就醫評估。"
+      },
+      {
+        "question": "過敏性鼻炎平時可以怎麼預防？",
+        "answer": "平時可保持居家清潔、勤換寢具並減少接觸塵蟎與花粉，外出時可配戴口罩。症狀變化或不確定時，應與醫師討論合適的處理方式。若出現呼吸困難或胸悶，請立即就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "過敏原接觸鼻黏膜，引發組織胺釋放，造成黏膜水腫與分泌增加。",
+      "clinical_presentation": "反覆打噴嚏、鼻癢、流清鼻水與鼻塞，常與季節或環境相關。",
+      "management_care": "辨識並減少接觸塵蟎與花粉，保持居家清潔，依醫師評估規律控制。",
+      "red_flags_prevention": "若出現呼吸困難、胸悶或持續耳痛，應儘速就醫評估。"
+    }
+  },
+  {
+    "icd10_code": "J11.1",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j111-influenza",
+    "ir": {
+      "topic_key": "icd-j111-influenza",
+      "title": "流行性感冒（流感）",
+      "keywords": [
+        "流感",
+        "流行性感冒",
+        "高燒",
+        "肌肉痠痛",
+        "流感病毒"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "流感病毒在呼吸道的過程",
+          "caption": "流感病毒在呼吸道快速增殖，引起全身性發炎反應，多數患者經休養與醫療評估後逐步恢復。",
+          "labels": [
+            {
+              "text": "突發高燒",
+              "tone": "warning"
+            },
+            {
+              "text": "及早就醫",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "呼吸道黏膜",
+            "lesion_label": "病毒增殖區",
+            "trigger_label": "流感病毒",
+            "defense_label": "免疫清除",
+            "severity_level": 4,
+            "accent_fill": "warn",
+            "step_labels": [
+              "病毒快速增殖",
+              "全身性發炎",
+              "免疫清除病毒"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "傳播與就醫照護",
+          "caption": "人群密閉環境易使流感病毒快速傳播，早期就醫評估並充分休息、配戴口罩，有助於縮短病程，治療方式請依醫師評估。",
+          "labels": [
+            {
+              "text": "人群傳播",
+              "tone": "warning"
+            },
+            {
+              "text": "早期就醫",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "人群接觸",
+              "note": "密閉空間與人潮",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "病毒快速增殖",
+              "footnote": "延遲就醫加重病情",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "早期就醫",
+              "note": "早期就醫與充分休息",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "及早治療，減少併發",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "流感病程演進",
+          "caption": "流感多在突發高燒後數日內由免疫清除逐步恢復，體力回復速度因人而異，若病況惡化請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步恢復",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "突發高燒",
+              "免疫清除",
+              "體力恢復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "流感和一般感冒有什麼不同？",
+        "answer": "流感通常來得較急，常見突發高燒、全身肌肉痠痛與明顯疲倦，症狀通常比一般感冒嚴重。若懷疑感染流感，應儘早就醫確認並遵循醫囑處置。若出現呼吸急促、胸痛或意識改變，請立即前往急診。"
+      },
+      {
+        "question": "得了流感要如何照顧自己？",
+        "answer": "應充分休息、多補充水分，並注意保暖與營養。避免接觸他人並配戴口罩以降低傳染風險。若出現持續高燒不退或呼吸困難，請立即就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "流感病毒在呼吸道黏膜快速增殖，引發全身性發炎反應。",
+      "clinical_presentation": "突發高燒、全身肌肉痠痛與極度疲倦，症狀通常比一般感冒明顯。",
+      "management_care": "早期就醫評估，充分休息並補充水分，外出配戴口罩減少傳播。",
+      "red_flags_prevention": "若出現呼吸急促、胸痛、意識改變或持續高燒不退，請立即前往急診。"
+    }
+  },
+  {
+    "icd10_code": "J20.9",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j209-bronchitis",
+    "ir": {
+      "topic_key": "icd-j209-bronchitis",
+      "title": "急性支氣管炎",
+      "keywords": [
+        "支氣管炎",
+        "咳嗽",
+        "咳痰",
+        "胸悶",
+        "呼吸道發炎"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "支氣管黏膜的發炎過程",
+          "caption": "支氣管黏膜受刺激而發炎，分泌物增多並引起咳嗽，多數在數週內逐步好轉。",
+          "labels": [
+            {
+              "text": "咳嗽咳痰",
+              "tone": "neutral"
+            },
+            {
+              "text": "逐步好轉",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "支氣管壁",
+            "lesion_label": "黏膜發炎區",
+            "trigger_label": "病原刺激",
+            "defense_label": "纖毛清痰",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "呼吸道黏膜發炎",
+              "分泌物增加咳嗽",
+              "發炎逐步消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "刺激源與空氣照護",
+          "caption": "菸霧與粉塵會持續刺激支氣管黏膜，遠離菸霧並保持空氣濕潤，有助於減少咳嗽與黏液堆積，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "菸霧刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "潔淨保濕",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "菸霧粉塵",
+              "note": "菸霧與粉塵刺激",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "支氣管受損",
+              "footnote": "吸菸與粉塵反覆刺激",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "潔淨保濕",
+              "note": "遠離菸霧並保持濕潤",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保濕潤肺，減少刺激",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "支氣管修復病程",
+          "caption": "急性支氣管炎的咳嗽多隨黏膜修復逐步減輕，病程長短因人而異，咳嗽持續加重時請由醫師評估。",
+          "labels": [
+            {
+              "text": "咳嗽趨緩",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "咳嗽明顯",
+              "痰量減少",
+              "逐步恢復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "急性支氣管炎的咳嗽要持續多久？",
+        "answer": "急性支氣管炎的咳嗽可能持續數週，症狀會隨時間逐步減輕。居家可多補充水分並保持空氣濕潤。若咳嗽持續加重，或出現胸悶、呼吸急促與咳血，請儘速就醫。"
+      },
+      {
+        "question": "咳嗽時該如何照顧？",
+        "answer": "可以多喝溫水、避免菸霧與刺激性空氣，並視需要保持充足睡眠。若呼吸困難、喘鳴明顯或高燒不退，請立即就醫評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "病原刺激支氣管黏膜，造成發炎與黏液分泌增加。",
+      "clinical_presentation": "咳嗽常持續數週，伴隨咳痰與胸部不適，夜間較為明顯。",
+      "management_care": "多喝溫水、避免菸霧與粉塵，保持空氣濕潤，咳嗽不減時回診評估。",
+      "red_flags_prevention": "若咳嗽持續加重、出現呼吸急促或胸悶，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "J01.90",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j0190-sinusitis",
+    "ir": {
+      "topic_key": "icd-j0190-sinusitis",
+      "title": "急性鼻竇炎",
+      "keywords": [
+        "鼻竇炎",
+        "鼻竇發炎",
+        "頭痛臉痛",
+        "黃綠色鼻涕",
+        "鼻塞"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "鼻竇引流受阻的過程",
+          "caption": "鼻竇開口因黏膜腫脹而阻塞，分泌物無法排出便造成悶痛與鼻塞，多數會隨引流改善而緩解。",
+          "labels": [
+            {
+              "text": "悶痛鼻塞",
+              "tone": "neutral"
+            },
+            {
+              "text": "引流改善",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "鼻竇黏膜",
+            "lesion_label": "分泌物積聚",
+            "trigger_label": "病毒細菌",
+            "defense_label": "引流通暢",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "感染引起黏膜腫脹",
+              "分泌物積聚堵塞",
+              "引流後逐步改善"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "阻塞與引流照護",
+          "caption": "感冒後鼻涕反覆積聚，鼻竇開口受阻，保持鼻腔濕潤與引流通暢，有助於分泌物排出，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "鼻涕阻塞",
+              "tone": "warning"
+            },
+            {
+              "text": "引流保濕",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "感冒未癒",
+              "note": "感冒後鼻涕阻塞",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "引流受阻積液",
+              "footnote": "鼻涕滯留加重悶痛",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "鼻腔保濕",
+              "note": "保持濕潤與引流通暢",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保濕引流，改善悶痛",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "鼻竇病程演進",
+          "caption": "鼻竇炎的悶痛多隨引流改善而逐步緩解，恢復時間因人而異，若持續不退請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步緩解",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "悶痛鼻塞",
+              "引流改善",
+              "逐步恢復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "鼻竇炎需要看醫生嗎？",
+        "answer": "若鼻塞、黃綠色鼻涕與臉部悶痛持續超過一段時間未改善，建議就醫評估。若出現眼眶腫脹、劇烈頭痛或視力改變，請立即前往急診。"
+      },
+      {
+        "question": "如何減輕鼻竇炎的不適？",
+        "answer": "可多補充水分、保持室內濕度，並以溫和方式清潔鼻腔。若出現高燒不退、臉部腫脹或頭痛加劇，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "感染使鼻竇開口阻塞，分泌物積聚於鼻竇內無法順利排出。",
+      "clinical_presentation": "鼻塞、黃綠色鼻涕、臉部悶痛與頭痛，久咳可能加重。",
+      "management_care": "保持鼻腔濕潤與引流通暢，溫和清潔鼻腔，症狀持續時回診。",
+      "red_flags_prevention": "若出現眼眶腫脹、劇烈頭痛或視力改變，請立即前往急診。"
+    }
+  },
+  {
+    "icd10_code": "H66.90",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-h6690-otitis-media",
+    "ir": {
+      "topic_key": "icd-h6690-otitis-media",
+      "title": "急性中耳炎",
+      "keywords": [
+        "中耳炎",
+        "耳痛",
+        "耳朵發炎",
+        "耳內悶脹",
+        "耳鳴"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "中耳積液的發炎過程",
+          "caption": "感冒後細菌或病毒可能經咽鼓管進入中耳，造成發炎積液與耳痛悶脹，多數經評估後逐步改善。",
+          "labels": [
+            {
+              "text": "耳痛悶脹",
+              "tone": "neutral"
+            },
+            {
+              "text": "及時評估",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "中耳腔黏膜",
+            "lesion_label": "積液發炎",
+            "trigger_label": "細菌病毒",
+            "defense_label": "積液引流",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "咽鼓管功能受阻",
+              "中耳積液發炎",
+              "積液排出消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "咽鼓管與耳部照護",
+          "caption": "感冒後鼻涕經咽鼓管逆流進入中耳，溫和擤鼻並避免二手菸，有助於積液排出，耳部變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "感冒逆流",
+              "tone": "warning"
+            },
+            {
+              "text": "溫和清鼻",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "感冒後咽鼓管",
+              "note": "感冒鼻涕逆流入耳",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "中耳積液發炎",
+              "footnote": "鼻涕反覆逆流",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "清潔鼻腔",
+              "note": "溫和擤鼻避免二手菸",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保持咽鼓管通暢",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "中耳炎病程演進",
+          "caption": "急性中耳炎多數在積液逐漸吸收後改善，耳內悶脹與聽力恢復速度因人而異，請依醫師評估安排回診。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "安排回診",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "耳痛悶脹",
+              "積液消退",
+              "聽力恢復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "耳朵痛是不是中耳炎？",
+        "answer": "耳痛、耳內悶脹或聽力下降都可能與中耳炎有關，但需由醫師檢查耳道與鼓膜才能確認。在家中請避免自行挖耳或將異物塞入耳道。若出現高燒不退、耳朵流膿或劇烈耳痛，請立即就醫。"
+      },
+      {
+        "question": "小朋友得中耳炎要注意什麼？",
+        "answer": "兒童感冒後較容易發生中耳炎，家長應留意是否哭鬧、抓耳或食慾變差。避免二手菸並讓孩子依醫囑完成回診。若出現持續高燒不退或耳後腫脹，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "細菌或病毒經咽鼓管侵入中耳，造成黏膜發炎與積液。",
+      "clinical_presentation": "耳痛、耳內悶脹與聽力下降，兒童常伴隨哭鬧與食慾變差。",
+      "management_care": "依醫師指示回診檢查耳道與鼓膜，避免自行挖耳或塞入異物。",
+      "red_flags_prevention": "若出現持續高燒不退、耳朵流膿或劇烈耳痛，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "J45.909",
+    "icd10_alt": [],
+    "specialty": "ent_peds_fm",
+    "topic_key": "icd-j45909-asthma",
+    "ir": {
+      "topic_key": "icd-j45909-asthma",
+      "title": "氣喘與慢性氣道發炎",
+      "keywords": [
+        "氣喘",
+        "喘鳴",
+        "呼吸喘",
+        "胸悶咳嗽",
+        "慢性氣道發炎"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "氣道收縮與平穩控制",
+          "caption": "過敏原或刺激物誘發氣道發炎與平滑肌收縮，造成喘鳴與胸悶，規律控制可降低發作。",
+          "labels": [
+            {
+              "text": "喘鳴胸悶",
+              "tone": "warning"
+            },
+            {
+              "text": "規律控制",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "氣道黏膜",
+            "lesion_label": "氣道收縮",
+            "trigger_label": "過敏刺激",
+            "defense_label": "規律控制",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "接觸誘發因子",
+              "氣道收縮發炎",
+              "控制後趨於平穩"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "誘因與控制對照",
+          "caption": "塵蟎、菸霧與寒冷空氣會誘發氣道收縮，避開誘因並保持空氣濕潤，配合醫師指示規律控制，有助減少發作，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "誘因誘發",
+              "tone": "warning"
+            },
+            {
+              "text": "避開控制",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "過敏與冷空氣",
+              "note": "塵蟎與寒冷空氣",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "氣道持續發炎",
+              "footnote": "誘因反覆刺激氣道",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "避開誘因",
+              "note": "遠離塵蟎保持濕潤",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "規律控制，減少發作",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "長期控制病程",
+          "caption": "氣喘以長期控制為目標，發作頻率與症狀起伏因人而異，請依醫師評估調整長期控制計畫與追蹤肺功能。",
+          "labels": [
+            {
+              "text": "波動收斂",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "急性發作",
+              "症狀控制",
+              "長期維持"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "氣喘可以根治嗎？",
+        "answer": "氣喘是慢性氣道發炎的疾病，目前多以長期控制為目標，讓症狀維持穩定並減少發作。請依醫師指示規律追蹤，不要自行停止治療。若出現呼吸困難、嘴唇發紫或喘鳴明顯加重，請立即就醫或前往急診。"
+      },
+      {
+        "question": "氣喘發作時該怎麼辦？",
+        "answer": "發作時應保持冷靜、採取舒適坐姿，並依醫師先前的指示處理。若症狀未緩解、說話困難或嘴唇發紫，請立即撥打119或前往急診。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "過敏或刺激物誘發氣道慢性發炎，平滑肌收縮造成氣道狹窄。",
+      "clinical_presentation": "反覆喘鳴、胸悶與夜間咳嗽，接觸誘因或活動後較容易加重。",
+      "management_care": "依醫師指示進行長期規律控制，辨識誘發因子並定期追蹤肺功能。",
+      "red_flags_prevention": "若呼吸困難加重、嘴唇發紫或說話困難，應立即撥打緊急電話。"
+    }
+  },
+  {
+    "icd10_code": "I10",
+    "icd10_alt": [],
+    "specialty": "internal_chronic",
+    "topic_key": "icd-i10-hypertension",
+    "ir": {
+      "topic_key": "icd-i10-hypertension",
+      "title": "原發性高血壓",
+      "keywords": [
+        "高血壓",
+        "血壓偏高",
+        "心血管風險",
+        "血壓控制",
+        "頭暈"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "血管長期承受壓力",
+          "caption": "血壓長期偏高會增加血管壁負擔，久而久之可能影響心臟與腎臟，規律控制可降低風險。",
+          "labels": [
+            {
+              "text": "血管負擔",
+              "tone": "neutral"
+            },
+            {
+              "text": "規律控制",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "vascular_metabolic",
+            "organ_label": "動脈管壁",
+            "lesion_label": "管壁增厚",
+            "trigger_label": "血壓升高",
+            "defense_label": "規律控制",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "血管長期承受壓力",
+              "血管壁逐漸受損",
+              "規律控制穩定"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "高壓誘因與調控",
+          "caption": "高鹽飲食、熬夜與精神壓力會讓血管承受高壓，減少鹽分並規律運動與作息，有助於血壓平衡，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "高鹽壓力",
+              "tone": "warning"
+            },
+            {
+              "text": "減鹽作息",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "高鹽高壓",
+              "note": "高鹽飲食與壓力",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "血管承受高壓",
+              "footnote": "高鹽與熬夜加重負荷",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "低鹽規律",
+              "note": "減鹽運動與規律作息",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "作息調控，血壓平衡",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "血壓長期管理",
+          "caption": "高血壓需要長期監測與規律調控，血壓波動範圍因人而異，請依醫師評估調整照護計畫並定期回診。",
+          "labels": [
+            {
+              "text": "波動收斂",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期回診",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "血壓偏高",
+              "規律監測",
+              "長期穩定"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "血壓偏高要怎麼開始管理？",
+        "answer": "建議先從規律量測血壓、減少鹽分攝取、維持適度運動與良好作息開始，並定期回診由醫師評估。若血壓明顯升高，或出現劇烈頭痛、胸痛、意識改變，請立即就醫或前往急診。"
+      },
+      {
+        "question": "高血壓患者需要注意哪些警訊？",
+        "answer": "若出現劇烈頭痛、胸悶、說話不清或單側肢體無力，可能是嚴重的心腦血管事件，應立即撥打119。平時也請遵循醫囑按時回診。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "血壓長期偏高使動脈管壁承受壓力，內皮逐漸受損並增厚。",
+      "clinical_presentation": "多數無明顯症狀，少數可能頭暈、頭痛或容易疲倦。",
+      "management_care": "規律量測血壓、減少鹽分攝取、維持運動與良好作息，並定期回診。",
+      "red_flags_prevention": "若出現劇烈頭痛、胸痛、說話不清或肢體無力，請立即撥打緊急電話。"
+    }
+  },
+  {
+    "icd10_code": "E11.9",
+    "icd10_alt": [],
+    "specialty": "internal_chronic",
+    "topic_key": "icd-e119-diabetes",
+    "ir": {
+      "topic_key": "icd-e119-diabetes",
+      "title": "第二型糖尿病",
+      "keywords": [
+        "糖尿病",
+        "血糖偏高",
+        "第二型糖尿病",
+        "血糖控制",
+        "口渴多尿"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "胰島素作用與血糖變化",
+          "caption": "胰島素作用減弱會使血糖長期偏高，長期下來可能損傷眼睛、腎臟與神經，需要持續控制。",
+          "labels": [
+            {
+              "text": "血糖長期偏高",
+              "tone": "warning"
+            },
+            {
+              "text": "持續控制",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "vascular_metabolic",
+            "organ_label": "胰島受體",
+            "lesion_label": "血糖偏高",
+            "trigger_label": "胰島素阻抗",
+            "defense_label": "飲食運動",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "胰島素作用減弱",
+              "血糖長期偏高",
+              "飲食運動控制"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "糖分誘因與飲食照護",
+          "caption": "含糖飲料與精緻澱粉使血糖快速升高，久坐又降低胰島素作用，均衡飲食與規律運動有助於血糖調控，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "高糖久坐",
+              "tone": "warning"
+            },
+            {
+              "text": "飲食運動",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "高糖飲食",
+              "note": "含糖飲料與精緻澱粉",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "血糖長期偏高",
+              "footnote": "高糖與久坐加重負荷",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "均衡飲食",
+              "note": "均衡飲食與規律運動",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "血糖調控，趨於平穩",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "血糖長期管理",
+          "caption": "第二型糖尿病需要長期監測與調控，血糖變化因人而異，請依醫師評估治療方案並定期追蹤。",
+          "labels": [
+            {
+              "text": "波動收斂",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "血糖偏高",
+              "生活調整",
+              "穩定追蹤"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "第二型糖尿病可以只靠飲食控制嗎？",
+        "answer": "部分輕度患者可透過飲食調整與規律運動改善血糖，但是否足夠需由醫師依檢驗結果評估。請勿自行中斷治療方式，應定期回診追蹤。若出現意識改變、極度口渴或嘔吐不止，請立即就醫或前往急診。"
+      },
+      {
+        "question": "糖尿病患者日常要注意什麼？",
+        "answer": "建議規律作息、均衡飲食、適量運動，並留意足部傷口是否癒合緩慢。定期檢查眼睛與腎功能，有助於早期發現問題。若出現意識改變或傷口紅腫化膿，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "胰島素作用減弱使血糖長期偏高，逐漸影響全身血管與神經。",
+      "clinical_presentation": "常見口渴、多尿、疲倦與傷口癒合較慢，部分患者早期無明顯症狀。",
+      "management_care": "規律監測血糖、均衡飲食、適度運動，依醫囑定期追蹤血糖指標與眼睛、腎臟檢查。",
+      "red_flags_prevention": "若出現意識改變、極度口渴、嘔吐不止或傷口紅腫化膿，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "E78.00",
+    "icd10_alt": [],
+    "specialty": "internal_chronic",
+    "topic_key": "icd-e7800-hyperlipidemia",
+    "ir": {
+      "topic_key": "icd-e7800-hyperlipidemia",
+      "title": "高脂血症與高膽固醇",
+      "keywords": [
+        "高膽固醇",
+        "高血脂",
+        "三酸甘油脂",
+        "膽固醇偏高",
+        "血脂異常"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "血脂沉積於血管壁",
+          "caption": "血液中膽固醇或三酸甘油脂偏高，可能逐漸沉積於血管壁，增加動脈硬化風險，需透過生活與醫療共同管理。",
+          "labels": [
+            {
+              "text": "血脂偏高",
+              "tone": "warning"
+            },
+            {
+              "text": "生活調整",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "vascular_metabolic",
+            "organ_label": "動脈管壁",
+            "lesion_label": "脂質斑塊",
+            "trigger_label": "高膽固醇",
+            "defense_label": "飲食運動",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "血脂長期偏高",
+              "血管壁逐漸沉積",
+              "飲食運動改善"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "高脂誘因與飲食照護",
+          "caption": "油炸與高脂飲食會使血脂升高並沉積於血管壁，清淡飲食搭配規律運動，有助於改善血脂代謝，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "高脂沉積",
+              "tone": "warning"
+            },
+            {
+              "text": "清淡運動",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "油炸高脂",
+              "note": "油炸與高脂飲食",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "脂質沉積血管",
+              "footnote": "久坐與高脂加重負擔",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "清淡飲食",
+              "note": "清淡飲食與規律運動",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "脂質代謝，逐步改善",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "血脂長期追蹤",
+          "caption": "血脂異常需要持續監測與生活調整，指標改善速度因人而異，請依醫師評估是否需要進一步治療。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期抽血",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "指標偏高",
+              "生活調整",
+              "指標改善"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "高膽固醇一定需要治療嗎？",
+        "answer": "是否需要治療應依血脂數值、心血管風險與其他疾病狀況綜合評估，請與醫師討論個別化方案。生活上可調整飲食並增加規律運動。若出現胸痛、胸悶或呼吸困難，請立即就醫。"
+      },
+      {
+        "question": "降低血脂的飲食原則是什麼？",
+        "answer": "建議減少油炸與高糖飲食，多攝取蔬菜、全穀類與適量魚類，並保持規律運動。定期回診抽血追蹤，有助於掌握血脂變化。若出現持續胸痛或胸悶，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "血脂偏高使脂質沉積於動脈管壁，逐漸形成斑塊並增加硬化風險。",
+      "clinical_presentation": "通常無明顯症狀，需透過抽血檢驗才能發現血脂數值異常。",
+      "management_care": "減少油炸與高糖飲食，增加蔬菜與規律運動，依醫師評估是否需要進一步治療。",
+      "red_flags_prevention": "若出現胸痛、胸悶或呼吸困難，請立即就醫或前往急診。"
+    }
+  },
+  {
+    "icd10_code": "M10.9",
+    "icd10_alt": [
+      "E79.0"
+    ],
+    "specialty": "internal_chronic",
+    "topic_key": "icd-m109-gout",
+    "ir": {
+      "topic_key": "icd-m109-gout",
+      "title": "高尿酸血症與痛風",
+      "keywords": [
+        "痛風",
+        "高尿酸",
+        "關節紅腫",
+        "大拇趾疼痛",
+        "尿酸偏高"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "尿酸結晶引起關節發炎",
+          "caption": "尿酸結晶沉積於關節引起急性發炎，造成劇烈疼痛與紅腫，多在適當處理後逐漸消退。",
+          "labels": [
+            {
+              "text": "關節劇痛",
+              "tone": "warning"
+            },
+            {
+              "text": "發炎消退",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "vascular_metabolic",
+            "organ_label": "血液尿酸",
+            "lesion_label": "結晶沉積",
+            "trigger_label": "尿酸過高",
+            "defense_label": "降尿酸控制",
+            "severity_level": 4,
+            "accent_fill": "warn",
+            "step_labels": [
+              "尿酸結晶沉積",
+              "關節急性發炎",
+              "發炎逐步消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "高普林與控飲對照",
+          "caption": "海鮮內臟、含酒飲品與高普林食物會使尿酸升高，多喝水並控制飲食，有助於尿酸排出與減少發作，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "高普林酒",
+              "tone": "warning"
+            },
+            {
+              "text": "多喝水",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "高普林飲酒",
+              "note": "海鮮內臟與飲酒",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "尿酸結晶沉積",
+              "footnote": "飲酒與高普林加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "多喝水控飲食",
+              "note": "多喝水與適度飲食",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "排出尿酸，減少發作",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "尿酸長期管理",
+          "caption": "痛風的關節發作與尿酸濃度相關，控制效果因人而異，請依醫師評估長期管理方案並定期檢驗尿酸。",
+          "labels": [
+            {
+              "text": "發作趨緩",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期檢驗",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "急性發作",
+              "發炎消退",
+              "長期控制"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "痛風發作時可以做什麼？",
+        "answer": "急性發作時可先休息、抬高患部，並避免過量飲酒與高嘌呤食物。若關節劇烈疼痛、紅腫發熱且活動受限，應儘速就醫評估。若伴隨高燒不退，請立即就醫。"
+      },
+      {
+        "question": "高尿酸一定會發生痛風嗎？",
+        "answer": "高尿酸並不代表一定會發展為痛風，但長期偏高會增加關節發炎與結石的風險。建議定期檢驗並與醫師討論飲食與生活調整。若出現關節持續性疼痛或異常腫脹，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "尿酸結晶沉積於關節，引發局部急性發炎反應。",
+      "clinical_presentation": "常見大拇趾等關節突發劇烈疼痛、紅腫發熱與活動受限。",
+      "management_care": "急性發作時休息並抬高患部，避免過量飲酒，定期檢驗尿酸並與醫師討論長期管理。",
+      "red_flags_prevention": "若關節劇烈疼痛伴隨高燒不退或紅腫擴散，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "K76.0",
+    "icd10_alt": [],
+    "specialty": "internal_chronic",
+    "topic_key": "icd-k760-fatty-liver",
+    "ir": {
+      "topic_key": "icd-k760-fatty-liver",
+      "title": "非酒精性脂肪肝",
+      "keywords": [
+        "脂肪肝",
+        "肝臟脂肪",
+        "肝功能",
+        "非酒精性",
+        "肝指數偏高"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "脂肪囤積於肝細胞",
+          "caption": "熱量攝取過多與代謝失衡時，脂肪會堆積於肝細胞內，多數經生活調整後可逐步改善。",
+          "labels": [
+            {
+              "text": "脂肪堆積",
+              "tone": "warning"
+            },
+            {
+              "text": "代謝改善",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "vascular_metabolic",
+            "organ_label": "肝臟代謝",
+            "lesion_label": "脂肪囤積",
+            "trigger_label": "熱量過多",
+            "defense_label": "生活調整",
+            "severity_level": 2,
+            "accent_fill": "accent",
+            "step_labels": [
+              "多餘熱量轉為脂肪",
+              "肝細胞脂肪囤積",
+              "代謝改善後減少"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "代謝誘因與生活調整",
+          "caption": "含糖飲料、飲酒與久坐會使脂肪囤積於肝臟，減少精緻糖並規律運動，有助於代謝改善，肝功能變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "糖酒久坐",
+              "tone": "warning"
+            },
+            {
+              "text": "減糖運動",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "精緻糖與飲酒",
+              "note": "含糖飲料與飲酒",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "脂肪囤積肝臟",
+              "footnote": "久坐與精緻飲食加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "減糖與運動",
+              "note": "減少精緻糖並規律運動",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "代謝改善，減輕肝負擔",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "肝功能長期追蹤",
+          "caption": "脂肪肝的改善需要持續生活調整與定期檢查，肝功能指標變化因人而異，請依醫師評估追蹤計畫。",
+          "labels": [
+            {
+              "text": "指標改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "脂肪堆積",
+              "生活調整",
+              "指標改善"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "脂肪肝可以改善嗎？",
+        "answer": "脂肪肝多數可透過減重、飲食控制與規律運動獲得改善，但需依醫師評估進行追蹤。請避免飲酒並減少精緻糖與油炸食物。若出現右上腹持續疼痛、黃疸或嘔血，請儘速就醫。"
+      },
+      {
+        "question": "如何預防脂肪肝？",
+        "answer": "建議均衡飲食、控制體重、減少含糖飲料與油炸食物，並維持每週規律運動。定期健康檢查有助於及早發現肝功能異常。若出現異常疲倦、嘔吐不止或皮膚發黃，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "熱量攝取過多與代謝失衡時，脂肪堆積於肝細胞內。",
+      "clinical_presentation": "多數無明顯症狀，常在健康檢查時發現肝功能指標異常。",
+      "management_care": "控制體重、減少精緻糖與油炸食物，避免飲酒並維持規律運動，定期追蹤。",
+      "red_flags_prevention": "若出現右上腹持續疼痛、黃疸或嘔血，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "N18.9",
+    "icd10_alt": [],
+    "specialty": "internal_chronic",
+    "topic_key": "icd-n189-ckd",
+    "ir": {
+      "topic_key": "icd-n189-ckd",
+      "title": "慢性腎臟疾病",
+      "keywords": [
+        "慢性腎臟病",
+        "腎功能",
+        "腎臟",
+        "蛋白尿",
+        "水腫"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "腎組織的長期損傷",
+          "caption": "慢性腎臟疾病多因長期血壓或血糖控制不佳，使腎組織逐漸受損，初期至中期病患積極控制可延緩惡化。",
+          "labels": [
+            {
+              "text": "長期負擔",
+              "tone": "warning"
+            },
+            {
+              "text": "積極控制",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "vascular_metabolic",
+            "organ_label": "腎臟濾網",
+            "lesion_label": "組織纖維化",
+            "trigger_label": "長期負擔",
+            "defense_label": "延緩惡化",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "長期血壓血糖負擔",
+              "腎組織逐漸受損",
+              "積極控制延緩惡化"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "腎臟負擔與調控",
+          "caption": "高鹽飲食與血糖失控會持續加重腎臟負擔，減鹽控糖並定期檢查腎功能，有助於延緩惡化，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "長期負擔",
+              "tone": "warning"
+            },
+            {
+              "text": "減鹽控糖",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "高鹽與血糖",
+              "note": "高鹽飲食與血糖失控",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "腎臟長期負擔",
+              "footnote": "血壓血糖失控加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "低鹽與控糖",
+              "note": "減鹽控糖並定期檢查",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "延緩惡化，保護腎功能",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "腎功能長期照護",
+          "caption": "慢性腎臟疾病的病程進展因人而異，積極控制血壓與血糖並定期追蹤，可延緩功能下降，請由醫師評估照護方案。",
+          "labels": [
+            {
+              "text": "延緩惡化",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "早期察覺",
+              "積極控制",
+              "長期追蹤"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "慢性腎臟病有什麼早期警訊？",
+        "answer": "早期常無明顯症狀，可能只在健康檢查時發現尿蛋白或腎功能指標異常。若出現腳部明顯水腫、尿量明顯減少或噁心食慾變差，請及時就醫。"
+      },
+      {
+        "question": "腎臟病患者的飲食要注意什麼？",
+        "answer": "建議依醫師或營養師指示調整飲食，控制鹽分與蛋白質攝取，並維持血壓與血糖穩定。避免自行購買來路不明的保健產品。若出現尿量明顯減少或全身水腫，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "長期血壓與血糖負擔使腎小球與腎小管逐漸受損並纖維化。",
+      "clinical_presentation": "早期常無症狀，可能出現泡沫尿、水腫或夜尿增多，需靠檢驗發現。",
+      "management_care": "積極控制血壓與血糖，依醫師或營養師指示調整飲食，定期檢查腎功能與尿蛋白。",
+      "red_flags_prevention": "若出現尿量明顯減少、全身水腫或噁心嘔吐，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "A09",
+    "icd10_alt": [
+      "K52.9"
+    ],
+    "specialty": "gi_hepatobiliary",
+    "topic_key": "icd-a09-gastroenteritis",
+    "ir": {
+      "topic_key": "icd-a09-gastroenteritis",
+      "title": "急性感染性胃腸炎",
+      "keywords": [
+        "腸胃炎",
+        "腹瀉",
+        "嘔吐",
+        "腹痛",
+        "脫水"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "病原侵犯腸道黏膜",
+          "caption": "病原侵犯腸道黏膜引起發炎與分泌增加，造成腹瀉嘔吐，多數經補充水分後逐步恢復。",
+          "labels": [
+            {
+              "text": "腹瀉嘔吐",
+              "tone": "neutral"
+            },
+            {
+              "text": "補充水分",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "gi_tract",
+            "organ_label": "胃腸黏膜",
+            "lesion_label": "發炎分泌",
+            "trigger_label": "病原微生物",
+            "defense_label": "補充水分",
+            "severity_level": 4,
+            "accent_fill": "warn",
+            "step_labels": [
+              "病原侵犯腸黏膜",
+              "腸道發炎腹瀉",
+              "黏膜逐步修復"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "飲食誘因與衛生照護",
+          "caption": "生冷與不潔食物會刺激腸道黏膜引起腹瀉，注意飲食衛生並少量多次補充水分，有助於腸道修復，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "不潔刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "衛生補水",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "生冷不潔食物",
+              "note": "生冷與不潔食物",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "腸道黏膜受刺",
+              "footnote": "飲食不潔反覆刺激",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "飲食衛生補水",
+              "note": "飲食衛生與補充水分",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "補水保護，修復黏膜",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "腸胃炎病程演進",
+          "caption": "急性腸胃炎多在數日內由發炎逐步轉為恢復，飲食循序恢復的速度因人而異，若脫水或血便請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步恢復",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "腹瀉嘔吐",
+              "逐漸緩解",
+              "腸道恢復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "腸胃炎拉肚子時要怎麼補充水分？",
+        "answer": "可少量多次補充溫開水或電解質飲品，並避免牛奶、油炸與過甜食物。若無法進食或喝水，或出現尿量明顯減少，應儘速就醫。若嘔吐不止或出現血便，請立即前往急診。"
+      },
+      {
+        "question": "什麼情況下腸胃炎需要就醫？",
+        "answer": "若腹瀉超過兩天未改善、持續發燒、出現血便或意識改變，應儘速就醫評估。嬰幼兒與長者更容易脫水，應提早就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "病原侵犯腸道黏膜，引起發炎與水分分泌增加。",
+      "clinical_presentation": "急性腹瀉、嘔吐與腹痛，多數在數日內逐漸緩解。",
+      "management_care": "少量多次補充溫開水或電解質飲品，避免油膩與牛奶，飲食循序恢復。",
+      "red_flags_prevention": "若嘔吐不止、出現血便、尿量明顯減少或意識改變，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "K21.9",
+    "icd10_alt": [],
+    "specialty": "gi_hepatobiliary",
+    "topic_key": "icd-k219-gerd",
+    "ir": {
+      "topic_key": "icd-k219-gerd",
+      "title": "胃食道逆流疾病",
+      "keywords": [
+        "胃食道逆流",
+        "胃酸逆流",
+        "燒心",
+        "胸口灼熱",
+        "反胃"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "胃酸逆流刺激食道",
+          "caption": "胃酸逆流至食道下段會刺激黏膜，引起胸口灼熱與反酸，調整生活習慣可明顯改善不適。",
+          "labels": [
+            {
+              "text": "燒心反酸",
+              "tone": "warning"
+            },
+            {
+              "text": "生活調整",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "gi_tract",
+            "organ_label": "食道下括約肌",
+            "lesion_label": "胃酸逆流",
+            "trigger_label": "過飽飲食",
+            "defense_label": "生活調整",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "胃酸逆流至食道",
+              "食道黏膜受刺激",
+              "生活調整後緩解"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "飽食平躺與墊高照護",
+          "caption": "宵夜飽食並飯後立即平躺，會使胃酸逆流至食道，少量多餐並抬高床頭，有助於減少逆流與灼熱感，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "飽食平躺",
+              "tone": "warning"
+            },
+            {
+              "text": "少量墊高",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "宵夜飽食平躺",
+              "note": "宵夜與飯後立即平躺",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "胃酸逆流刺激",
+              "footnote": "飽食平躺使逆流加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "少量多餐墊高",
+              "note": "少量多餐並抬高床頭",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "作息調控，減少逆流",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "逆流長期調控",
+          "caption": "胃食道逆流的症狀起伏與生活習慣密切相關，改善速度因人而異，若吞嚥困難或體重下降請由醫師評估。",
+          "labels": [
+            {
+              "text": "波動收斂",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "燒心反酸",
+              "生活調整",
+              "症狀平穩"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "胃食道逆流可以自己改善嗎？",
+        "answer": "許多人透過少量多餐、避免晚餐過飽、睡前三小時不進食與抬高床頭等方式獲得改善。若症狀頻繁，或伴隨吞嚥困難與體重不明原因下降，應回診評估。若出現胸痛、呼吸急促或嘔血，請立即就醫。"
+      },
+      {
+        "question": "燒心時要注意什麼？",
+        "answer": "可避免過量咖啡因、酒精、辛辣與油炸食物，並減少吃飽後立即平躺。若胸口疼痛與呼吸困難同時出現，請立即撥打119。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "胃酸逆流刺激食道下段黏膜，引起灼熱感與黏膜受損。",
+      "clinical_presentation": "胸口灼熱、反酸、口苦與吞嚥不適，飯後或平躺時更明顯。",
+      "management_care": "少量多餐、飯後避免立即平躺，睡前減少進食並抬高床頭，減少刺激性食物。",
+      "red_flags_prevention": "若出現吞嚥困難、不明原因體重下降或嘔血，應儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "K29.70",
+    "icd10_alt": [],
+    "specialty": "gi_hepatobiliary",
+    "topic_key": "icd-k2970-gastritis",
+    "ir": {
+      "topic_key": "icd-k2970-gastritis",
+      "title": "胃炎與十二指腸炎",
+      "keywords": [
+        "胃炎",
+        "胃痛",
+        "上腹痛",
+        "胃黏膜發炎",
+        "消化不良"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "刺激物傷害胃黏膜",
+          "caption": "胃黏膜受到刺激後發炎，引起上腹不適與脹痛，減少刺激並規律飲食，多數可逐步改善。",
+          "labels": [
+            {
+              "text": "上腹不適",
+              "tone": "neutral"
+            },
+            {
+              "text": "規律飲食",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "gi_tract",
+            "organ_label": "胃黏膜",
+            "lesion_label": "黏膜發炎",
+            "trigger_label": "刺激物",
+            "defense_label": "黏膜修復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "刺激物傷害黏膜",
+              "黏膜發炎不適",
+              "黏膜逐步修復"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "刺激飲食與保護照護",
+          "caption": "辛辣、油炸食物與空腹飲酒會刺激胃黏膜引起發炎，規律進食並選擇溫和飲食，有助於黏膜修復，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "辛辣刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "溫和保護",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "辛辣與空腹飲酒",
+              "note": "辛辣油炸與空腹飲酒",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "胃黏膜受刺激",
+              "footnote": "辛辣與酒精反覆刺激",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "溫和飲食保護",
+              "note": "規律進食與溫和飲食",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "黏膜保護，逐步修復",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "胃部長期調控",
+          "caption": "胃黏膜發炎的不適常隨飲食與作息起伏，調整習慣的效果因人而異，請依醫師評估照護方式並定期追蹤。",
+          "labels": [
+            {
+              "text": "逐步平穩",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "上腹不適",
+              "黏膜修復",
+              "恢復平穩"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "胃痛一定是胃炎嗎？",
+        "answer": "上腹痛可能與胃炎、胃潰瘍或其他疾病有關，需由醫師檢查後才能確認。居家可避免空腹飲酒與刺激性食物。若出現解黑便、嘔血或劇烈腹痛，請立即前往急診。"
+      },
+      {
+        "question": "胃炎期間的飲食原則是什麼？",
+        "answer": "建議規律進食、細嚼慢嚥，減少辛辣、油炸與過酸飲食。若進食後疼痛加重或持續嘔吐，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "刺激物傷害胃黏膜，造成黏膜充血發炎與糜爛。",
+      "clinical_presentation": "上腹不適、脹痛、食慾下降與飽脹感，飲食不當時加重。",
+      "management_care": "規律進食，避免空腹飲酒與刺激性食物，症狀持續時回診。",
+      "red_flags_prevention": "若出現解黑便、嘔血或劇烈腹痛，請立即前往急診。"
+    }
+  },
+  {
+    "icd10_code": "K27.9",
+    "icd10_alt": [],
+    "specialty": "gi_hepatobiliary",
+    "topic_key": "icd-k279-peptic-ulcer",
+    "ir": {
+      "topic_key": "icd-k279-peptic-ulcer",
+      "title": "消化性潰瘍",
+      "keywords": [
+        "胃潰瘍",
+        "十二指腸潰瘍",
+        "消化性潰瘍",
+        "胃痛",
+        "黑便"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "胃酸侵蝕黏膜形成缺損",
+          "caption": "胃酸與幽門螺旋桿菌等因素可能侵蝕黏膜形成潰瘍，經醫師評估與規律治療後，多數可逐步癒合。",
+          "labels": [
+            {
+              "text": "黏膜侵蝕",
+              "tone": "warning"
+            },
+            {
+              "text": "逐步癒合",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "gi_tract",
+            "organ_label": "胃十二指腸",
+            "lesion_label": "潰瘍缺損",
+            "trigger_label": "胃酸侵蝕",
+            "defense_label": "保護膜修復",
+            "severity_level": 4,
+            "accent_fill": "warn",
+            "step_labels": [
+              "胃酸侵蝕黏膜",
+              "形成局部缺損",
+              "黏膜逐步癒合"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "侵蝕誘因與保護照護",
+          "caption": "空腹飲酒與刺激性食物會加重胃酸侵蝕，規律進食並避免刺激，有助於保護黏膜與促進潰瘍癒合，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "酒食刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "規律保護",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "空腹飲酒",
+              "note": "空腹飲酒與刺激食物",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "潰瘍反覆侵蝕",
+              "footnote": "空腹飲酒加重侵蝕",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "規律進食",
+              "note": "規律進食與避免刺激",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保護黏膜，促進癒合",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "潰瘍長期追蹤",
+          "caption": "消化性潰瘍的癒合速度因人而異，需依醫師評估完成照護並定期追蹤，若出現黑便或嘔血請立即就醫。",
+          "labels": [
+            {
+              "text": "逐步癒合",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "局部潰瘍",
+              "黏膜癒合",
+              "追蹤確認"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "消化性潰瘍會出血嗎？",
+        "answer": "潰瘍若侵蝕到血管可能引起出血，症狀可能包含解黑便、嘔血或頭暈無力。若出現解黑便、嘔血或頭暈無力等情形，請立即前往急診。平時應避免空腹飲酒，並避免未經評估即長期自行使用止痛類產品。"
+      },
+      {
+        "question": "潰瘍期間飲食要注意什麼？",
+        "answer": "建議避免辛辣、過酸、過燙與酒精飲品，並採少量多餐、規律用餐。若出現解黑便或持續性疼痛加劇，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "胃酸侵蝕黏膜形成潰瘍缺損，局部血管可能受損。",
+      "clinical_presentation": "上腹灼痛，飯後或空腹時疼痛，可能伴隨黑便或食慾減退。",
+      "management_care": "避免空腹飲酒與刺激性食物，依醫師評估完成治療並定期追蹤癒合情形。",
+      "red_flags_prevention": "若出現解黑便、嘔血、頭暈無力或劇烈腹痛，請立即前往急診。"
+    }
+  },
+  {
+    "icd10_code": "K58.9",
+    "icd10_alt": [],
+    "specialty": "gi_hepatobiliary",
+    "topic_key": "icd-k589-ibs",
+    "ir": {
+      "topic_key": "icd-k589-ibs",
+      "title": "大腸激躁症",
+      "keywords": [
+        "腸躁症",
+        "腹瀉便秘",
+        "腹脹",
+        "腸胃敏感",
+        "排便習慣改變"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "腸道神經與蠕動的失調",
+          "caption": "腸道神經較敏感或蠕動失調時，容易出現腹脹腹痛與排便習慣改變，多數可透過生活調整與醫療協助改善。",
+          "labels": [
+            {
+              "text": "腹脹腹痛",
+              "tone": "neutral"
+            },
+            {
+              "text": "節律調整",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "gi_tract",
+            "organ_label": "腸道管腔",
+            "lesion_label": "蠕動失調",
+            "trigger_label": "壓力飲食",
+            "defense_label": "節律調整",
+            "severity_level": 2,
+            "accent_fill": "accent",
+            "step_labels": [
+              "神經敏感腸蠕動異常",
+              "腹脹腹痛反覆出現",
+              "節律調整後穩定"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "壓力誘因與節律照護",
+          "caption": "長期壓力與不規律飲食會使腸道蠕動失調，規律作息並適度紓壓，有助於腸道節律穩定，症狀變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "壓力飲食",
+              "tone": "warning"
+            },
+            {
+              "text": "規律紓壓",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "精神壓力",
+              "note": "長期壓力與不規律飲食",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "腸道蠕動失調",
+              "footnote": "壓力與飲食反覆加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "規律作息",
+              "note": "規律作息與適度紓壓",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "節律調控，症狀平穩",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "腸道節律長期調控",
+          "caption": "腸躁症的症狀容易隨壓力與飲食起伏，改善程度因人而異，請依醫師評估調整照護方式並定期追蹤。",
+          "labels": [
+            {
+              "text": "節律穩定",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "症狀反覆",
+              "生活調整",
+              "逐步穩定"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "腸躁症會造成大腸癌嗎？",
+        "answer": "大腸激躁症是功能性的腸道問題，本身並不會直接轉變為大腸癌。但若出現血便、體重不明原因減輕或夜間痛醒，仍需就醫進行檢查。"
+      },
+      {
+        "question": "腸躁症患者日常如何調整？",
+        "answer": "建議規律進食、記錄會加重症狀的食物，並保持充足睡眠與適度運動。若腹痛加劇、持續嘔吐或出現血便，請儘速就醫評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "腸道神經較敏感且蠕動失調，造成腸壁收縮與感覺異常。",
+      "clinical_presentation": "反覆腹痛腹脹，排便習慣改變，可能腹瀉與便秘交替出現。",
+      "management_care": "規律作息與飲食，記錄誘發因素，適度紓壓，依醫師評估調整照護方式。",
+      "red_flags_prevention": "若出現血便、不明原因體重減輕或夜間痛醒，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "K64.9",
+    "icd10_alt": [],
+    "specialty": "gi_hepatobiliary",
+    "topic_key": "icd-k649-hemorrhoids",
+    "ir": {
+      "topic_key": "icd-k649-hemorrhoids",
+      "title": "痔瘡與肛門靜脈曲張",
+      "keywords": [
+        "痔瘡",
+        "肛門出血",
+        "排便出血",
+        "肛門腫脹",
+        "靜脈曲張"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "肛門靜脈充血的過程",
+          "caption": "長期用力排便或久坐會使肛門靜脈充血擴張，形成痔瘡，調整排便習慣與飲食，多可改善不適。",
+          "labels": [
+            {
+              "text": "腫脹不適",
+              "tone": "neutral"
+            },
+            {
+              "text": "習慣調整",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "gi_tract",
+            "organ_label": "肛門靜脈",
+            "lesion_label": "靜脈充血",
+            "trigger_label": "用力排便",
+            "defense_label": "纖維習慣",
+            "severity_level": 2,
+            "accent_fill": "warn",
+            "step_labels": [
+              "長期用力排便",
+              "肛門靜脈充血",
+              "纖維與習慣調整"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "久坐用力與排便照護",
+          "caption": "久坐與長時間用力排便會使肛門靜脈充血擴張，攝取足夠纖維與水分並保持順暢排便，有助於減少復發，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "久坐用力",
+              "tone": "warning"
+            },
+            {
+              "text": "纖維水分",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "久坐用力排便",
+              "note": "久坐與用力排便",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "肛門靜脈充血",
+              "footnote": "久坐用力使腫脹加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "纖維與水分",
+              "note": "纖維蔬果與充足水分",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "順暢排便，減少復發",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "排便習慣長期調控",
+          "caption": "痔瘡的不適多與排便習慣相關，調整習慣的效果因人而異，若出現持續出血請由醫師評估。",
+          "labels": [
+            {
+              "text": "習慣改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "腫脹疼痛",
+              "症狀緩解",
+              "習慣養成"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "痔瘡出血要擔心嗎？",
+        "answer": "痔瘡常見排便後少量鮮紅色出血，但仍需與大腸疾病做區分，因此出血時不宜自行判斷。若出血量變多、排出黑色或暗紅色血便，或伴隨腹痛與體重下降，請儘速就醫。"
+      },
+      {
+        "question": "如何預防痔瘡？",
+        "answer": "建議多攝取蔬菜與水果、每日補充足量水分，並避免久坐與排便時間過長。若排便持續出血或肛門腫痛加劇，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "長期用力排便或久坐，使肛門靜脈充血擴張形成腫塊。",
+      "clinical_presentation": "排便後鮮紅色出血、肛門腫脹與異物感，久坐時加重。",
+      "management_care": "維持順暢排便，攝取足夠纖維與水分，避免久坐與排便時過度用力。",
+      "red_flags_prevention": "若排出黑色或暗紅色血便、出血持續或腫痛加劇，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "L30.9",
+    "icd10_alt": [],
+    "specialty": "dermatology",
+    "topic_key": "icd-l309-eczema",
+    "ir": {
+      "topic_key": "icd-l309-eczema",
+      "title": "濕疹與皮膚炎",
+      "keywords": [
+        "濕疹",
+        "皮膚炎",
+        "皮膚癢",
+        "皮膚乾燥",
+        "紅疹"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "皮膚屏障與保濕修復",
+          "caption": "皮膚屏障受損後水分易流失，外在刺激容易引發發炎與搔癢，規律保濕並避免搔抓可幫助修復。",
+          "labels": [
+            {
+              "text": "乾癢發炎",
+              "tone": "neutral"
+            },
+            {
+              "text": "保濕修復",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "表皮屏障",
+            "lesion_label": "屏障受損",
+            "trigger_label": "外來刺激",
+            "defense_label": "保濕修復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "清潔保濕",
+              "修復屏障",
+              "減少搔抓"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "搔抓刺激與保濕照護",
+          "caption": "過熱水溫、搔抓與刺激性清潔用品會持續破壞皮膚屏障，溫和清潔並每日保濕，有助於屏障修復，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "搔抓刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "每日保濕",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "搔抓與過熱",
+              "note": "過熱搔抓與刺激用品",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "屏障持續受損",
+              "footnote": "搔抓與刺激反覆加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "溫水與保濕",
+              "note": "溫水清潔與每日保濕",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保濕修復，減少發炎",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "皮膚屏障長期照護",
+          "caption": "濕疹的症狀常隨屏障狀態起伏，長期保濕與避免刺激能逐步穩定，改善程度因人而異，請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步穩定",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "紅癢乾燥",
+              "屏障修復",
+              "平穩控制"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "濕疹可以控制嗎？",
+        "answer": "濕疹是慢性且容易反覆的皮膚問題，多數需要長期保濕與避免刺激來控制。若皮膚出現大面積紅腫、化膿或發燒，請儘速就醫。"
+      },
+      {
+        "question": "濕疹患者平日如何照顧皮膚？",
+        "answer": "建議使用溫水清潔、洗後立即保濕，並選擇溫和無香料的清潔用品。避免抓破皮膚以防感染。若出現滲液、化膿或紅腫擴散，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "皮膚屏障受損，水分流失且外來刺激容易穿透而引發發炎。",
+      "clinical_presentation": "皮膚乾燥、紅癢、丘疹與脫屑，搔抓後可能加重。",
+      "management_care": "溫水清潔、洗後立即保濕，選擇溫和無香料用品，避免搔抓與過熱刺激。",
+      "red_flags_prevention": "若皮膚出現大面積紅腫、化膿或發燒，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "L50.9",
+    "icd10_alt": [],
+    "specialty": "dermatology",
+    "topic_key": "icd-l509-urticaria",
+    "ir": {
+      "topic_key": "icd-l509-urticaria",
+      "title": "急性與慢性蕁麻疹",
+      "keywords": [
+        "蕁麻疹",
+        "風疹塊",
+        "皮膚起疹",
+        "搔癢",
+        "過敏反應"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "過敏刺激引起的風疹塊",
+          "caption": "過敏刺激使皮膚肥大細胞釋放組織胺，造成血管擴張與風疹塊，多數會在數小時到數日內逐漸消退。",
+          "labels": [
+            {
+              "text": "突發起疹",
+              "tone": "warning"
+            },
+            {
+              "text": "逐漸消退",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "真皮血管",
+            "lesion_label": "血管擴張",
+            "trigger_label": "過敏刺激",
+            "defense_label": "消退恢復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "肥大細胞釋放",
+              "血管擴張滲漏",
+              "症狀逐步消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "過敏誘因與防護照護",
+          "caption": "過敏食物、搔抓與高溫會促使皮膚肥大細胞釋放組織胺，穿著寬鬆衣物並避免刺激，有助於風疹塊消退，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "過敏誘因",
+              "tone": "warning"
+            },
+            {
+              "text": "避免刺激",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "過敏食物環境",
+              "note": "過敏食物與刺激環境",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "肥大細胞反應",
+              "footnote": "過敏誘因反覆出現",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "穿著避刺激",
+              "note": "寬鬆衣物與避免高溫",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "減少刺激，皮膚恢復",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "風疹塊長期管理",
+          "caption": "蕁麻疹的發作與誘因相關，發作頻率因人而異，記錄誘因並依醫師評估長期照護，可減少反覆起疹。",
+          "labels": [
+            {
+              "text": "反覆減少",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "突發起疹",
+              "逐漸消退",
+              "減少復發"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "蕁麻疹會危及生命嗎？",
+        "answer": "多數蕁麻疹屬良性，但少數情況可能合併嚴重過敏反應。若出現嘴唇或喉嚨腫脹、呼吸困難或意識不清，請立即撥打119。"
+      },
+      {
+        "question": "蕁麻疹發作時如何照顧？",
+        "answer": "可穿著寬鬆透氣衣物、避免搔抓與高溫刺激，並記錄發作前接觸的食物或環境。若風疹塊持續擴散或伴隨臉部腫脹，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "過敏刺激使肥大細胞釋放組織胺，造成血管擴張與滲漏。",
+      "clinical_presentation": "突發風疹塊與劇烈搔癢，多數在數小時到數日內消退。",
+      "management_care": "穿著寬鬆透氣衣物，避免搔抓與高溫刺激，記錄可能誘發的食物或環境。",
+      "red_flags_prevention": "若出現嘴唇或喉嚨腫脹、呼吸困難或意識不清，請立即撥打緊急電話。"
+    }
+  },
+  {
+    "icd10_code": "L20.9",
+    "icd10_alt": [],
+    "specialty": "dermatology",
+    "topic_key": "icd-l209-atopic-dermatitis",
+    "ir": {
+      "topic_key": "icd-l209-atopic-dermatitis",
+      "title": "異位性皮膚炎",
+      "keywords": [
+        "異位性皮膚炎",
+        "異膚",
+        "慢性濕疹",
+        "皮膚乾癢",
+        "過敏體質"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "屏障不足與長期保濕",
+          "caption": "異位性皮膚炎與遺傳體質及屏障功能不足有關，皮膚容易乾燥發癢，需長期保濕與規律照護。",
+          "labels": [
+            {
+              "text": "乾癢反覆",
+              "tone": "neutral"
+            },
+            {
+              "text": "長期保濕",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "表皮屏障",
+            "lesion_label": "屏障缺損",
+            "trigger_label": "過敏體質",
+            "defense_label": "長期保濕",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "補充保濕",
+              "修復屏障",
+              "減少發炎"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "乾燥刺激與保濕照護",
+          "caption": "乾燥環境、粗糙衣物與過熱水溫會使屏障缺損加重，每日保濕並溫和清潔，有助於長期穩定皮膚狀態，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "乾燥刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "每日保濕",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "乾燥刺激衣物",
+              "note": "乾燥環境與粗糙衣物",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "屏障持續缺損",
+              "footnote": "乾燥刺激反覆發作",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "每日保濕",
+              "note": "每日保濕與溫和清潔",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保濕屏障，長期穩定",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "長期屏障照護",
+          "caption": "異位性皮膚炎多屬長期照護的慢性問題，症狀起伏因人而異，請依醫師評估照護方案並定期追蹤。",
+          "labels": [
+            {
+              "text": "逐步穩定",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "急性發炎",
+              "症狀控制",
+              "長期維持"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "異位性皮膚炎可以根治嗎？",
+        "answer": "異位性皮膚炎目前多以長期控制為目標，透過保濕、減少刺激與醫師評估，多數患者可讓症狀維持穩定。若皮膚出現大面積化膿、紅腫擴散或發燒，請儘速就醫。"
+      },
+      {
+        "question": "異位性皮膚炎的小朋友如何照顧？",
+        "answer": "建議每日保濕、洗澡水溫不宜過熱，並修剪指甲減少抓傷。若出現滲液、化膿或感染跡象，請及時就醫評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "遺傳體質與屏障功能不足，使皮膚容易受刺激而反覆發炎。",
+      "clinical_presentation": "慢性乾癢、皮膚增厚與反覆發作，嬰幼兒與成人表現型態不同。",
+      "management_care": "每日保濕，洗澡水溫不宜過熱，修剪指甲減少抓傷，依醫囑長期照護。",
+      "red_flags_prevention": "若出現大面積化膿、紅腫擴散或發燒，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "B35.3",
+    "icd10_alt": [
+      "B35.6"
+    ],
+    "specialty": "dermatology",
+    "topic_key": "icd-b353-tinea",
+    "ir": {
+      "topic_key": "icd-b353-tinea",
+      "title": "足癬與股癬黴菌感染",
+      "keywords": [
+        "香港腳",
+        "足癬",
+        "股癬",
+        "黴菌感染",
+        "皮膚脫皮"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "黴菌侵入角質層",
+          "caption": "黴菌偏好潮濕悶熱環境，侵入角質層後造成脫皮與搔癢，保持乾燥清潔是重要的照護方式。",
+          "labels": [
+            {
+              "text": "脫皮發癢",
+              "tone": "neutral"
+            },
+            {
+              "text": "保持乾燥",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "角質層",
+            "lesion_label": "黴菌繁殖",
+            "trigger_label": "潮濕悶熱",
+            "defense_label": "保持乾燥",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "黴菌侵入角質",
+              "局部癢與脫皮",
+              "保持乾燥改善"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "潮濕誘因與乾燥照護",
+          "caption": "潮濕悶熱的鞋襪與共用拖鞋容易使黴菌繁殖，保持足部乾爽並穿著透氣鞋襪，有助於阻隔感染與減少復發，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "潮濕感染",
+              "tone": "warning"
+            },
+            {
+              "text": "保持乾爽",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "潮濕悶熱鞋襪",
+              "note": "悶熱鞋襪與共用拖鞋",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "角質層持續受侵",
+              "footnote": "潮濕悶熱反覆感染",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "保持乾爽",
+              "note": "保持乾爽透氣鞋襪",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "乾燥阻隔，減少繁殖",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "黴菌感染病程",
+          "caption": "足癬的脫皮與搔癢多在規律照護下逐步改善，恢復時間因人而異，症狀擴散或反覆發作時請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "脫皮發癢",
+              "逐漸改善",
+              "乾燥穩定"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "香港腳會傳染嗎？",
+        "answer": "足癬具有傳染性，可能透過共用拖鞋、毛巾或潮濕地面傳播。建議保持足部乾爽、勤換襪子並避免共用私人物品。若出現紅腫、化膿或疼痛加劇，請及時就醫。"
+      },
+      {
+        "question": "皮膚癬菌感染如何預防復發？",
+        "answer": "建議洗後徹底擦乾、穿透氣鞋襪，並定期更換拖鞋與鞋墊。若症狀反覆或擴散到其他部位，應回診評估。若出現大範圍紅腫或滲液化膿，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "黴菌偏好潮濕悶熱環境，侵入角質層後繁殖並造成發炎。",
+      "clinical_presentation": "趾縫脫皮、搔癢與異味，股部可見環狀紅斑，具有傳染性。",
+      "management_care": "保持皮膚乾爽、穿透氣鞋襪，勤換襪子，避免共用拖鞋與毛巾。",
+      "red_flags_prevention": "若出現大範圍紅腫、滲液化膿或疼痛加劇，請及時就醫。"
+    }
+  },
+  {
+    "icd10_code": "L70.0",
+    "icd10_alt": [],
+    "specialty": "dermatology",
+    "topic_key": "icd-l700-acne",
+    "ir": {
+      "topic_key": "icd-l700-acne",
+      "title": "尋常痤瘡與青春痘",
+      "keywords": [
+        "痘痘",
+        "青春痘",
+        "痤瘡",
+        "粉刺",
+        "毛孔阻塞"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "皮脂與角質阻塞毛孔",
+          "caption": "皮脂與角質堆積阻塞毛孔，細菌繁殖後引起紅腫發炎，規律清潔與保持皮膚健康有助改善。",
+          "labels": [
+            {
+              "text": "毛孔阻塞",
+              "tone": "neutral"
+            },
+            {
+              "text": "規律清潔",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "毛囊皮脂腺",
+            "lesion_label": "毛囊發炎",
+            "trigger_label": "皮脂阻塞",
+            "defense_label": "溫和清潔",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "皮脂與角質阻塞",
+              "細菌引起發炎",
+              "減少阻塞逐步改善"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "擠壓刺激與清潔照護",
+          "caption": "用手擠壓與油膩清潔用品會加重毛孔發炎並增加疤痕風險，溫和清潔並避免擠壓，有助於減少反覆發作，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "擠壓油膩",
+              "tone": "warning"
+            },
+            {
+              "text": "溫和清潔",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "油膩與擠壓",
+              "note": "油膩食物與用手擠壓",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "毛孔持續受刺",
+              "footnote": "擠壓與油膩加重發炎",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "溫和清潔",
+              "note": "溫和清潔並避免擠壓",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "減少刺激，降低疤痕",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "青春痘長期照護",
+          "caption": "青春痘的反覆發作與作息及皮脂分泌有關，改善速度因人而異，請依醫師評估照護方式並定期回診。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期回診",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "紅腫發炎",
+              "逐漸消退",
+              "皮膚平穩"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "痘痘可以用手擠嗎？",
+        "answer": "不建議用手擠壓，因為容易加重發炎並增加留下疤痕與色素沉澱的風險。建議保持臉部清潔並減少油膩與刺激。若痘痘大面積紅腫、化膿或疼痛明顯，請儘速就醫。"
+      },
+      {
+        "question": "青春期痘痘反覆發作要怎麼辦？",
+        "answer": "建議保持規律作息、均衡飲食、溫和清潔，並避免頻繁更換保養品。若痘痘反覆發炎或留下明顯疤痕，應就醫與醫師討論合適的處理方式。若出現大面積化膿，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "皮脂與角質阻塞毛孔，細菌繁殖後引起毛囊發炎。",
+      "clinical_presentation": "粉刺、紅丘疹與膿皰，好發於臉部與背部，容易反覆發作。",
+      "management_care": "溫和清潔、避免用手擠壓，減少油膩與刺激，必要時就醫評估處理方式。",
+      "red_flags_prevention": "若痘痘大面積紅腫、化膿或疼痛明顯，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "B02.9",
+    "icd10_alt": [],
+    "specialty": "dermatology",
+    "topic_key": "icd-b029-herpes-zoster",
+    "ir": {
+      "topic_key": "icd-b029-herpes-zoster",
+      "title": "帶狀皰疹與神經痛",
+      "keywords": [
+        "帶狀皰疹",
+        "皮蛇",
+        "神經痛",
+        "水泡",
+        "單側刺痛"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "病毒沿神經分布活化",
+          "caption": "水痘帶狀皰疹病毒潛伏於神經中，活化後沿神經分布出現疼痛與水泡，及早就醫可減少後遺神經痛。",
+          "labels": [
+            {
+              "text": "沿神經刺痛",
+              "tone": "warning"
+            },
+            {
+              "text": "及早就醫",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "感覺神經",
+            "lesion_label": "沿神經發炎",
+            "trigger_label": "病毒潛伏",
+            "defense_label": "及早就醫",
+            "severity_level": 4,
+            "accent_fill": "warn",
+            "step_labels": [
+              "病毒潛伏神經",
+              "沿神經活化",
+              "水泡結痂消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "誘發因素與保護照護",
+          "caption": "過度疲勞、壓力與免疫力下降容易讓潛伏病毒活化，保持水泡部位清潔乾燥並避免抓破，有助於控制感染，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "免疫下降",
+              "tone": "warning"
+            },
+            {
+              "text": "保護水泡",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "免疫力下降",
+              "note": "過勞壓力與免疫力下降",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "病毒活化沿神經",
+              "footnote": "疲勞壓力反覆誘發",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "保持清潔",
+              "note": "保持水泡乾燥清潔",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "阻隔感染，保護水泡",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "帶狀皰疹病程",
+          "caption": "帶狀皰疹的水泡多在數週內結痂消退，但神經痛恢復速度因人而異，若疼痛持續請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步消退",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "水泡疼痛",
+              "結痂消退",
+              "神經修復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "帶狀皰疹的疼痛要多久才會好？",
+        "answer": "帶狀皰疹的皮膚症狀多在數週內逐漸改善，但部分患者的神經痛可能持續較久。若出現水泡擴散到眼睛附近、持續劇烈疼痛或伴隨發燒，請立即就醫。"
+      },
+      {
+        "question": "帶狀皰疹期間如何照顧？",
+        "answer": "保持水泡部位清潔乾燥，避免抓破以防感染，並穿著寬鬆衣物減少摩擦。若水泡出現化膿、紅腫擴散或視力變化，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "病毒潛伏於神經節，活化後沿神經分布引發發炎與水泡。",
+      "clinical_presentation": "單側沿神經帶狀分布的刺痛、水泡與灼熱感，疼痛可能較為劇烈。",
+      "management_care": "及早就醫評估，保持水泡部位清潔乾燥，避免抓破以防感染。",
+      "red_flags_prevention": "若水泡擴散到眼睛附近、持續劇烈疼痛或伴隨高燒，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "L03.90",
+    "icd10_alt": [],
+    "specialty": "dermatology",
+    "topic_key": "icd-l0390-cellulitis",
+    "ir": {
+      "topic_key": "icd-l0390-cellulitis",
+      "title": "蜂窩性組織炎",
+      "keywords": [
+        "蜂窩性組織炎",
+        "蜂窩狀",
+        "皮膚感染",
+        "紅腫熱痛",
+        "細菌感染"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "細菌經破損處侵入",
+          "caption": "細菌經皮膚破損處侵入深層組織，造成紅腫熱痛並可能擴散，需儘早評估與適當治療。",
+          "labels": [
+            {
+              "text": "紅腫熱痛",
+              "tone": "warning"
+            },
+            {
+              "text": "儘早處理",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "skin_barrier",
+            "organ_label": "深層組織",
+            "lesion_label": "炎症擴散",
+            "trigger_label": "細菌侵入",
+            "defense_label": "及時處理",
+            "severity_level": 4,
+            "accent_fill": "warn",
+            "step_labels": [
+              "細菌經傷口侵入",
+              "深層組織發炎",
+              "及時治療控制"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "傷口侵入與清潔照護",
+          "caption": "皮膚破損與抓傷會讓細菌侵入深層組織，以清水清潔傷口並覆蓋乾淨敷料，有助於阻隔細菌，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "細菌侵入",
+              "tone": "warning"
+            },
+            {
+              "text": "清潔覆蓋",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "皮膚破損",
+              "note": "皮膚傷口與抓傷",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "深層組織受侵",
+              "footnote": "破損處反覆感染",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "傷口清潔",
+              "note": "清水清潔與覆蓋敷料",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "阻隔細菌，促進修復",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "深層感染病程",
+          "caption": "蜂窩性組織炎的紅腫多在及時治療後逐步消退，恢復速度因人而異，紅腫擴大或發燒時請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步消退",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "紅腫熱痛",
+              "炎症控制",
+              "皮膚修復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "皮膚紅腫熱痛一定是蜂窩性組織炎嗎？",
+        "answer": "紅腫熱痛可能與蜂窩性組織炎或其他皮膚感染有關，需由醫師檢查後才能確認。若紅腫範圍持續擴大、發燒或出現化膿，請儘速就醫。"
+      },
+      {
+        "question": "皮膚有傷口時如何預防感染？",
+        "answer": "應先以清水與肥皂清潔傷口，保持乾燥並覆蓋乾淨敷料，避免自行擠壓。若傷口出現持續紅腫、化膿或發燒，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "細菌經皮膚破損處侵入，深層組織發炎並可能擴散。",
+      "clinical_presentation": "局部紅腫熱痛、皮膚緊繃，可能伴隨發燒與淋巴腺腫脹。",
+      "management_care": "及早就醫評估與治療，抬高患肢，清潔傷口並依醫囑完成照護。",
+      "red_flags_prevention": "若紅腫範圍持續擴大、發燒不退或出現化膿，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "M54.50",
+    "icd10_alt": [],
+    "specialty": "ortho_rehab",
+    "topic_key": "icd-m5450-low-back-pain",
+    "ir": {
+      "topic_key": "icd-m5450-low-back-pain",
+      "title": "下背痛與腰部筋膜拉傷",
+      "keywords": [
+        "下背痛",
+        "腰痛",
+        "腰部拉傷",
+        "腰肌勞損",
+        "筋膜拉傷"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "腰部肌肉長期負荷",
+          "caption": "久坐或搬重物造成腰部肌肉與筋膜過度負荷，引起緊繃與疼痛，多數經休息與適度活動可逐步改善。",
+          "labels": [
+            {
+              "text": "下背緊繃",
+              "tone": "warning"
+            },
+            {
+              "text": "適度活動",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "joint_spine",
+            "organ_label": "腰椎肌筋膜",
+            "lesion_label": "肌肉緊繃",
+            "trigger_label": "負荷過重",
+            "defense_label": "適度活動",
+            "severity_level": 2,
+            "accent_fill": "warn",
+            "step_labels": [
+              "姿勢不良負擔",
+              "肌肉緊繃痙攣",
+              "活動後逐步放鬆"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "彎腰搬重與核心照護",
+          "caption": "久坐、彎腰與搬重物會使腰部肌筋膜負荷過重，維持核心支撐與正確姿勢，有助於分散負荷並減少緊繃，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "彎腰搬重",
+              "tone": "warning"
+            },
+            {
+              "text": "核心支撐",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "彎腰搬重",
+              "note": "彎腰搬重與久坐",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "肌筋膜負荷過重",
+              "footnote": "彎腰久坐反覆加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "核心護腰",
+              "note": "核心支撐與正確姿勢",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "分散負荷，減少緊繃",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "腰部減壓復健",
+          "caption": "下背痛多數在減壓與溫和伸展後逐步改善，恢復速度因人而異，若疼痛持續加劇請由醫師或復健師評估。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "復健評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "急性疼痛",
+              "活動改善",
+              "穩定預防"
+            ],
+            "unit_effect": "steady",
+            "connectors": "structural_rehab",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "下背痛要休息多久？",
+        "answer": "一般急性下背痛不建議長期臥床，多數人可在幾天到數週內逐步改善，並建議儘早恢復輕度活動。若疼痛持續加劇，或伴隨持續高燒、大小便失禁等情形，請立即就醫或前往急診。"
+      },
+      {
+        "question": "平時如何預防腰痛？",
+        "answer": "建議坐姿時維持腰背支撐、定時起身活動，搬重物時採用正確姿勢。若腰痛伴隨下肢麻木或異常腫脹，請儘速就醫評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "久坐或搬重物使腰部肌肉與筋膜過度負荷，引起緊繃與發炎。",
+      "clinical_presentation": "下背痛與僵硬感，彎腰或起身時加重，多數在數週內改善。",
+      "management_care": "維持良好姿勢、適度活動，避免長時間臥床，依醫師或復健師指導伸展。",
+      "red_flags_prevention": "若疼痛持續加劇，或伴隨持續高燒、下肢無力與大小便失禁，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "M17.9",
+    "icd10_alt": [],
+    "specialty": "ortho_rehab",
+    "topic_key": "icd-m179-knee-osteoarthritis",
+    "ir": {
+      "topic_key": "icd-m179-knee-osteoarthritis",
+      "title": "膝關節退化性關節炎",
+      "keywords": [
+        "膝關節炎",
+        "退化性關節炎",
+        "膝蓋疼痛",
+        "膝痛",
+        "上下樓梯痛"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "軟骨磨損與肌力支撐",
+          "caption": "膝關節軟骨隨年齡與負重逐漸磨損，關節周圍肌力減弱時容易疼痛，規律肌力訓練有助於穩定關節。",
+          "labels": [
+            {
+              "text": "膝蓋疼痛",
+              "tone": "warning"
+            },
+            {
+              "text": "肌力訓練",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "joint_spine",
+            "organ_label": "膝關節軟骨",
+            "lesion_label": "軟骨磨損",
+            "trigger_label": "負重過度",
+            "defense_label": "肌力支撐",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "軟骨逐漸磨損",
+              "關節腫脹疼痛",
+              "肌力訓練改善"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "超重負重與肌力照護",
+          "caption": "體重超重與長時間爬樓會使膝關節軟骨持續承受壓力，控制體重並訓練股四頭肌，有助於分散負荷與穩定關節，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "超重負重",
+              "tone": "warning"
+            },
+            {
+              "text": "肌力支撐",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "超重與爬樓負重",
+              "note": "體重超重與長時間爬樓",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "軟骨持續受力",
+              "footnote": "超重負重使軟骨磨損",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "減重與肌力",
+              "note": "控制體重與股四頭肌訓練",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "減輕負荷，支撐關節",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "膝關節減壓復健",
+          "caption": "膝關節退化的疼痛多隨肌力訓練與體重管理而改善，進展速度因人而異，請依醫師或復健師評估治療方案。",
+          "labels": [
+            {
+              "text": "肌力改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "復健評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "偶爾疼痛",
+              "肌力提升",
+              "活動穩定"
+            ],
+            "unit_effect": "steady",
+            "connectors": "structural_rehab",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "膝關節退化一定要開刀嗎？",
+        "answer": "多數膝關節退化患者可先透過體重管理、肌力訓練與醫師評估的保守方式改善，是否需要進一步治療應依影像檢查與症狀決定。若膝蓋明顯紅腫熱痛、無法負重或關節卡住，請儘速就醫。"
+      },
+      {
+        "question": "膝蓋痛時可以運動嗎？",
+        "answer": "建議選擇低衝擊運動如游泳或騎乘固定式腳踏車，避免劇烈跳躍。若運動後疼痛加劇或膝蓋腫脹明顯，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "軟骨隨年齡與負重逐漸磨損，關節周圍肌力不足使負擔加重。",
+      "clinical_presentation": "上下樓梯或久站後膝痛，晨間僵硬，活動後可能腫脹。",
+      "management_care": "控制體重、加強股四頭肌肌力訓練，選擇低衝擊運動，依醫師評估治療方式。",
+      "red_flags_prevention": "若膝關節明顯紅腫熱痛、無法負重或關節卡住，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "S93.409",
+    "icd10_alt": [
+      "S39.011"
+    ],
+    "specialty": "ortho_rehab",
+    "topic_key": "icd-s93409-sprain-strain",
+    "ir": {
+      "topic_key": "icd-s93409-sprain-strain",
+      "title": "肌腱拉傷與韌帶扭傷",
+      "keywords": [
+        "扭傷",
+        "韌帶扭傷",
+        "拉傷",
+        "肌腱拉傷",
+        "關節扭到"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "韌帶與肌腱的過度牽拉",
+          "caption": "扭傷或拉傷使韌帶與肌腱過度牽拉，造成局部發炎與腫脹，妥善休息與適度復健有助於修復。",
+          "labels": [
+            {
+              "text": "局部腫脹",
+              "tone": "warning"
+            },
+            {
+              "text": "適度休息",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "joint_spine",
+            "organ_label": "韌帶肌腱",
+            "lesion_label": "纖維撕裂",
+            "trigger_label": "急性扭轉",
+            "defense_label": "休息修復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "急性受傷牽拉",
+              "局部發炎腫脹",
+              "休息加壓修復"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "扭轉負重與休息照護",
+          "caption": "急停扭轉或受傷後過早負重，會使韌帶與肌腱承受過大張力，初期休息、冰敷加壓並抬高患部，有助於減輕張力，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "過早負重",
+              "tone": "warning"
+            },
+            {
+              "text": "休息修復",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "急停扭轉",
+              "note": "急停扭轉與負重過早",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "韌帶受力撕裂",
+              "footnote": "過早負重加重撕裂",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "休息與加壓",
+              "note": "休息冰敷加壓與抬高",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "減輕張力，促進修復",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "韌帶修復復健",
+          "caption": "扭傷與拉傷多數在休息與循序復健後逐步恢復，修復速度因人而異，若無法承重或劇烈疼痛請由醫師評估。",
+          "labels": [
+            {
+              "text": "循序復健",
+              "tone": "optimal"
+            },
+            {
+              "text": "醫師評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "急性腫痛",
+              "組織修復",
+              "恢復活動"
+            ],
+            "unit_effect": "steady",
+            "connectors": "structural_rehab",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "扭傷後什麼時候需要看醫生？",
+        "answer": "若扭傷後無法站立或承重、關節明顯變形或腫脹持續加重，應儘速就醫評估是否有骨折或韌帶撕裂。若出現劇烈疼痛、異常腫脹或麻木無力，請立即就醫。"
+      },
+      {
+        "question": "扭傷初期要怎麼處理？",
+        "answer": "初期可遵循休息、冰敷、加壓與抬高的原則，減少腫脹與疼痛。避免立即熱敷或強行活動患部。若疼痛加劇或無法活動，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "扭轉或過度牽拉使韌帶與肌腱纖維撕裂，局部出血並發炎。",
+      "clinical_presentation": "受傷後立即疼痛、腫脹、瘀青與活動受限，按壓時疼痛明顯。",
+      "management_care": "初期休息、冰敷、加壓與抬高，避免強行活動，待腫痛緩解後逐步復健。",
+      "red_flags_prevention": "若無法站立承重、關節明顯變形或劇烈疼痛、麻木無力，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "M75.00",
+    "icd10_alt": [
+      "M75.8"
+    ],
+    "specialty": "ortho_rehab",
+    "topic_key": "icd-m7500-frozen-shoulder",
+    "ir": {
+      "topic_key": "icd-m7500-frozen-shoulder",
+      "title": "肩部肌腱炎與五十肩",
+      "keywords": [
+        "五十肩",
+        "肩膀痛",
+        "沾黏性肩關節囊炎",
+        "肩關節活動受限",
+        "肩周炎"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "關節囊沾黏與活動受限",
+          "caption": "肩關節囊發炎沾黏，使活動範圍逐漸受限並伴隨疼痛，依醫囑進行伸展復健，多數可逐步改善。",
+          "labels": [
+            {
+              "text": "活動受限",
+              "tone": "warning"
+            },
+            {
+              "text": "伸展復健",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "joint_spine",
+            "organ_label": "肩關節囊",
+            "lesion_label": "關節囊沾黏",
+            "trigger_label": "長期不動",
+            "defense_label": "伸展復健",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "關節囊逐漸發炎",
+              "活動範圍受限",
+              "復健伸展改善"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "長期不動與伸展照護",
+          "caption": "長期固定姿勢與不活動會使肩關節囊逐漸沾黏，規律進行溫和伸展與活動，有助於維持活動度並減少僵硬，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "長期不動",
+              "tone": "warning"
+            },
+            {
+              "text": "規律伸展",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "長期不動",
+              "note": "長期不動與姿勢固定",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "關節囊持續沾黏",
+              "footnote": "長期不動使沾黏加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "伸展活動",
+              "note": "規律伸展與溫和活動",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "維持活動度，減少沾黏",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "肩關節復健進程",
+          "caption": "五十肩的恢復通常歷時較長，活動度回復的速度因人而異，請依醫師或復健師指導循序進行伸展訓練。",
+          "labels": [
+            {
+              "text": "逐步鬆開",
+              "tone": "optimal"
+            },
+            {
+              "text": "復健評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "疼痛為主",
+              "活動受限",
+              "逐漸鬆開"
+            ],
+            "unit_effect": "steady",
+            "connectors": "structural_rehab",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "五十肩會自己好嗎？",
+        "answer": "五十肩多數會經過數個月到一兩年逐漸緩解，但恢復過程可能較慢。配合復健伸展能幫助活動度回復。若肩部疼痛劇烈、夜間痛醒或伴隨發燒紅腫，請及時就醫。"
+      },
+      {
+        "question": "肩膀痛如何做日常照顧？",
+        "answer": "避免長時間固定同一姿勢，並進行醫師或復健師指導的溫和伸展。若肩部出現持續性疼痛、腫脹或發燒，請儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "肩關節囊發炎並逐漸沾黏增厚，使關節活動空間明顯縮小。",
+      "clinical_presentation": "肩部疼痛、夜間加重，手臂向上或向後活動明顯受限。",
+      "management_care": "依醫師或復健師指導進行伸展與活動訓練，保持規律練習，耐心配合病程。",
+      "red_flags_prevention": "若疼痛劇烈、夜間痛醒或伴隨發燒紅腫，請及時就醫評估。"
+    }
+  },
+  {
+    "icd10_code": "M81.0",
+    "icd10_alt": [],
+    "specialty": "ortho_rehab",
+    "topic_key": "icd-m810-osteoporosis",
+    "ir": {
+      "topic_key": "icd-m810-osteoporosis",
+      "title": "骨質疏鬆症",
+      "keywords": [
+        "骨質疏鬆",
+        "骨鬆",
+        "骨密度",
+        "骨折風險",
+        "鈣質流失"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "骨量流失與骨小樑變稀",
+          "caption": "骨質吸收速度超過新生，骨小樑逐漸變稀變脆，增加跌倒後骨折的風險，適度運動與營養有助於維持骨密度。",
+          "labels": [
+            {
+              "text": "骨量流失",
+              "tone": "warning"
+            },
+            {
+              "text": "運動營養",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "joint_spine",
+            "organ_label": "骨小樑",
+            "lesion_label": "骨量流失",
+            "trigger_label": "骨吸收增快",
+            "defense_label": "負重營養",
+            "severity_level": 3,
+            "accent_fill": "accent",
+            "step_labels": [
+              "骨吸收速度增快",
+              "骨小樑逐漸變稀",
+              "補充鈣質與運動"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "少動與鈣質照護",
+          "caption": "缺乏負重運動與鈣質攝取不足會加速骨量流失，規律負重運動並攝取足夠鈣質與蛋白質，有助於維持骨密度，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "少動缺鈣",
+              "tone": "warning"
+            },
+            {
+              "text": "負重鈣質",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "缺乏負重",
+              "note": "缺乏負重運動與鈣質不足",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "骨量持續流失",
+              "footnote": "少動與營養不足加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "負重與鈣質",
+              "note": "規律負重運動與足量鈣質",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "維持骨密度，減少骨折",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "骨密度長期維持",
+          "caption": "骨質疏鬆的骨量變化緩慢且因人而異，透過營養與負重運動逐步維持骨密度，請依醫師評估檢查與治療方案。",
+          "labels": [
+            {
+              "text": "穩定維持",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期檢查",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "骨量減少",
+              "補充營養",
+              "骨密度維持"
+            ],
+            "unit_effect": "steady",
+            "connectors": "structural_rehab",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "骨質疏鬆沒有症狀，要怎麼發現？",
+        "answer": "骨質疏鬆常無明顯症狀，多在跌倒或受傷後才發現骨折，因此建議依醫師建議進行骨密度檢查。若輕微跌倒後出現劇烈疼痛或無法負重，請立即就醫評估。"
+      },
+      {
+        "question": "如何預防骨質疏鬆？",
+        "answer": "建議攝取足夠的鈣質與蛋白質、適度負重運動，並避免菸酒與過量咖啡因。注意居家防跌措施，減少跌倒風險。若跌倒後出現劇烈疼痛或異常腫脹，應儘速就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "骨吸收速度超過新生，骨小樑變稀變脆，骨強度逐漸下降。",
+      "clinical_presentation": "通常無明顯症狀，常在跌倒或骨折後才被發現。",
+      "management_care": "攝取足夠鈣質與蛋白質、規律負重運動，避免菸酒並注意居家防跌。",
+      "red_flags_prevention": "若輕微跌倒後出現劇烈疼痛、無法負重或異常腫脹，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "N30.00",
+    "icd10_alt": [
+      "N39.0"
+    ],
+    "specialty": "uro_obgyn",
+    "topic_key": "icd-n3000-uti",
+    "ir": {
+      "topic_key": "icd-n3000-uti",
+      "title": "急性膀胱炎與泌尿道感染",
+      "keywords": [
+        "膀胱炎",
+        "泌尿道感染",
+        "頻尿",
+        "解尿疼痛",
+        "尿急"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "細菌由尿道上行",
+          "caption": "細菌沿尿道上行至膀胱，引起黏膜發炎造成頻尿與解尿疼痛，多數經適當治療後逐步改善。",
+          "labels": [
+            {
+              "text": "頻尿解尿痛",
+              "tone": "neutral"
+            },
+            {
+              "text": "及早治療",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "uro_pelvic",
+            "organ_label": "膀胱黏膜",
+            "lesion_label": "細菌上行",
+            "trigger_label": "尿道感染",
+            "defense_label": "沖刷排尿",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "細菌由尿道上行",
+              "膀胱黏膜發炎",
+              "症狀逐步消退"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "憋尿與飲水照護",
+          "caption": "長時間憋尿與水分攝取不足，會讓細菌在尿道與膀胱中停留繁殖，足量飲水並定時排空，有助於沖刷細菌，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "憋尿缺水",
+              "tone": "warning"
+            },
+            {
+              "text": "足量排空",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "憋尿水分不足",
+              "note": "長時間憋尿與水分不足",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "膀胱黏膜受刺",
+              "footnote": "憋尿缺水反覆感染",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "足量飲水排空",
+              "note": "足量飲水與定時排空",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "沖刷尿道，減少感染",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "泌尿道感染病程",
+          "caption": "急性膀胱炎的頻尿與解尿疼痛多在規律照護與治療後改善，恢復速度因人而異，若出現血尿或發燒請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "頻尿疼痛",
+              "症狀緩解",
+              "恢復正常"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "尿路感染要多喝水嗎？",
+        "answer": "適量補充水分有助於沖刷尿道，但仍需依醫師評估進行處理，不可自行延誤就醫。若出現高燒不退、腰痛或血尿，請立即就醫。"
+      },
+      {
+        "question": "如何減少泌尿道感染的機會？",
+        "answer": "建議保持良好的排尿習慣、勿長時間憋尿，並注意清潔。若排尿疼痛、血尿或高燒持續，請及時就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "細菌沿尿道上行至膀胱，引起黏膜發炎與充血。",
+      "clinical_presentation": "頻尿、解尿疼痛與下腹不適，部分伴隨混濁尿液或血尿。",
+      "management_care": "保持良好排尿習慣、勿長時間憋尿，注意清潔，依醫囑完成處置。",
+      "red_flags_prevention": "若出現高燒不退、腰痛、血尿或意識改變，請立即就醫。"
+    }
+  },
+  {
+    "icd10_code": "N40.0",
+    "icd10_alt": [],
+    "specialty": "uro_obgyn",
+    "topic_key": "icd-n400-bph",
+    "ir": {
+      "topic_key": "icd-n400-bph",
+      "title": "良性前列腺肥大",
+      "keywords": [
+        "前列腺肥大",
+        "攝護腺肥大",
+        "夜尿",
+        "排尿困難",
+        "尿流減弱"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "前列腺增生壓迫尿道",
+          "caption": "前列腺隨年齡逐漸增大，壓迫尿道造成排尿變慢與夜尿增多，應依醫師評估選擇合適的處理方式。",
+          "labels": [
+            {
+              "text": "排尿變慢",
+              "tone": "neutral"
+            },
+            {
+              "text": "依醫囑評估",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "uro_pelvic",
+            "organ_label": "前列腺環",
+            "lesion_label": "腺體增生",
+            "trigger_label": "年齡變化",
+            "defense_label": "規律評估",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": [
+              "腺體逐漸增大",
+              "壓迫尿道排尿",
+              "依醫囑評估治療"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "睡前飲水與排尿照護",
+          "caption": "睡前大量飲水與含咖啡因飲品會使夜尿增多，前列腺增生壓迫尿道時更明顯，控制睡前飲水並定時排尿，有助於穩定排尿，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "睡前飲水",
+              "tone": "warning"
+            },
+            {
+              "text": "控水排尿",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "睡前飲水",
+              "note": "睡前大量飲水與咖啡",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "前列腺壓迫尿道",
+              "footnote": "睡前飲水使夜尿加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "規律作息",
+              "note": "睡前控水與定時排尿",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "減少夜尿，穩定排尿",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "排尿功能長期追蹤",
+          "caption": "良性前列腺肥大的排尿症狀起伏因人而異，依醫師評估調整生活習慣並定期追蹤排尿狀況，是長期管理的重點。",
+          "labels": [
+            {
+              "text": "波動收斂",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期追蹤",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "排尿困難",
+              "症狀調整",
+              "穩定追蹤"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "攝護腺肥大會變成癌症嗎？",
+        "answer": "良性前列腺肥大本身不是癌症，但症狀與攝護腺癌有時相似，需由醫師透過檢查加以區分。若出現血尿、排尿困難或下腹劇烈疼痛，請立即就醫或前往急診。"
+      },
+      {
+        "question": "夜尿增多時可以怎麼做？",
+        "answer": "可在睡前減少飲水量與含咖啡因飲品，並避免睡前飲酒。若夜尿影響睡眠或出現排尿疼痛、尿液混濁，請回診評估。若出現尿量明顯減少或無法排尿，請立即就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "前列腺隨年齡逐漸增生，壓迫尿道造成排尿阻力增加。",
+      "clinical_presentation": "排尿變慢、尿流減弱、夜尿增多與排尿不盡感。",
+      "management_care": "依醫師評估選擇合適處理方式，睡前減少飲水與咖啡因，定期追蹤排尿狀況。",
+      "red_flags_prevention": "若出現血尿、完全無法排尿或下腹劇烈疼痛，請立即就醫或前往急診。"
+    }
+  },
+  {
+    "icd10_code": "N76.0",
+    "icd10_alt": [],
+    "specialty": "uro_obgyn",
+    "topic_key": "icd-n760-vaginitis",
+    "ir": {
+      "topic_key": "icd-n760-vaginitis",
+      "title": "陰道及外陰發炎",
+      "keywords": [
+        "陰道發炎",
+        "外陰搔癢",
+        "陰道分泌物",
+        "私密處發炎",
+        "白帶異常"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "菌叢失衡引起黏膜發炎",
+          "caption": "陰道菌叢失衡或感染會引起黏膜發炎，造成分泌物異常與搔癢不適，依醫囑處理後多可逐步改善。",
+          "labels": [
+            {
+              "text": "分泌物異常",
+              "tone": "neutral"
+            },
+            {
+              "text": "依醫囑處理",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "uro_pelvic",
+            "organ_label": "陰道黏膜",
+            "lesion_label": "菌叢失衡",
+            "trigger_label": "外來刺激",
+            "defense_label": "菌叢恢復",
+            "severity_level": 2,
+            "accent_fill": "warn",
+            "step_labels": [
+              "菌叢比例失衡",
+              "黏膜局部發炎",
+              "菌叢逐步恢復"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "悶濕清洗與透氣照護",
+          "caption": "緊身悶濕衣物與過度清洗會破壞陰道菌叢平衡，穿著透氣棉質內褲並溫和清潔，有助於恢復菌叢與減少發炎，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "悶濕刺激",
+              "tone": "warning"
+            },
+            {
+              "text": "透氣清潔",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "悶濕清洗",
+              "note": "緊身悶濕衣物與過度清洗",
+              "mode": "mucosal_irritant_surge",
+              "core_effect": "none",
+              "core_label": "黏膜菌叢失衡",
+              "footnote": "悶濕清洗反覆刺激",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "透氣清潔",
+              "note": "透氣棉質內褲與溫和清潔",
+              "mode": "barrier_hydration_shield",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "保持乾燥，恢復菌叢",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "黏膜發炎病程",
+          "caption": "陰道發炎的分泌物異常與搔癢多隨黏膜恢復而改善，恢復速度因人而異，異常分泌物持續時請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步改善",
+              "tone": "optimal"
+            },
+            {
+              "text": "持續評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "搔癢分泌",
+              "發炎消退",
+              "黏膜恢復"
+            ],
+            "unit_effect": "steady",
+            "connectors": "mucosal_clearance",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "私密處搔癢一定是感染嗎？",
+        "answer": "私密處搔癢可能與感染、過敏或刺激有關，需由醫師檢查才能確認原因。請保持清潔乾燥，避免使用刺激性清潔用品。若出現大量異常分泌物、紅腫化膿或發燒，請儘速就醫。"
+      },
+      {
+        "question": "陰道發炎期間如何照顧？",
+        "answer": "建議穿著透氣棉質內褲，避免過度清洗與長時間潮濕。若分泌物異常、搔癢加劇或伴隨腹痛，請及時就醫評估。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "陰道菌叢失衡或感染，使黏膜發生局部發炎與充血。",
+      "clinical_presentation": "分泌物異常、外陰搔癢與灼熱感，部分伴隨異味。",
+      "management_care": "保持清潔乾燥，穿透氣棉質內褲，避免過度清洗與刺激性清潔用品，依醫囑就醫。",
+      "red_flags_prevention": "若出現大量異常分泌物、紅腫化膿或發燒，請儘速就醫。"
+    }
+  },
+  {
+    "icd10_code": "N94.4",
+    "icd10_alt": [],
+    "specialty": "uro_obgyn",
+    "topic_key": "icd-n944-dysmenorrhea",
+    "ir": {
+      "topic_key": "icd-n944-dysmenorrhea",
+      "title": "原發性經痛",
+      "keywords": [
+        "經痛",
+        "痛經",
+        "月經疼痛",
+        "下腹痛",
+        "生理痛"
+      ],
+      "scenes": [
+        {
+          "blueprint": "pathology_mechanism",
+          "title": "子宮收縮與下腹悶痛",
+          "caption": "經期前後前列腺素分泌增加，使子宮收縮增強而引起下腹悶痛，多數可透過保暖與放鬆改善。",
+          "labels": [
+            {
+              "text": "下腹悶痛",
+              "tone": "warning"
+            },
+            {
+              "text": "局部保暖",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "organ_system": "uro_pelvic",
+            "organ_label": "子宮肌肉",
+            "lesion_label": "子宮收縮",
+            "trigger_label": "前列腺素",
+            "defense_label": "保暖放鬆",
+            "severity_level": 2,
+            "accent_fill": "accent",
+            "step_labels": [
+              "前列腺素分泌增加",
+              "子宮收縮加強",
+              "放鬆後疼痛減輕"
+            ]
+          }
+        },
+        {
+          "blueprint": "contrast",
+          "title": "受寒熬夜與保暖照護",
+          "caption": "經期受寒與作息紊亂會使子宮收縮增強、疼痛加重，保暖並適度運動、規律作息，有助於放鬆肌肉與減輕不適，實際變化請由醫師評估。",
+          "labels": [
+            {
+              "text": "受寒熬夜",
+              "tone": "warning"
+            },
+            {
+              "text": "保暖運動",
+              "tone": "optimal"
+            }
+          ],
+          "params": {
+            "left": {
+              "title": "經期寒冷與熬夜",
+              "note": "經期受寒與作息紊亂",
+              "mode": "metabolic_mechanical_overload",
+              "core_effect": "none",
+              "core_label": "子宮收縮增強",
+              "footnote": "寒冷熬夜使疼痛加重",
+              "unit_fill": "warn"
+            },
+            "right": {
+              "title": "保暖與運動",
+              "note": "保暖適度運動與規律作息",
+              "mode": "lifestyle_homeostasis_load",
+              "rows": 3,
+              "per_row": 5,
+              "footnote": "放鬆子宮，減輕疼痛",
+              "unit_fill": "ok"
+            }
+          }
+        },
+        {
+          "blueprint": "timeline",
+          "title": "經期舒緩長期照護",
+          "caption": "原發性經痛的程度因人而異，規律作息與保暖運動有助於緩解，若疼痛逐年加重或影響生活，請由醫師評估。",
+          "labels": [
+            {
+              "text": "逐步舒緩",
+              "tone": "optimal"
+            },
+            {
+              "text": "定期評估",
+              "tone": "neutral"
+            }
+          ],
+          "params": {
+            "milestones": [
+              "經期疼痛",
+              "舒緩改善",
+              "規律追蹤"
+            ],
+            "unit_effect": "steady",
+            "connectors": "homeostasis_control",
+            "units": 3,
+            "unit_fill": "ok"
+          }
+        }
+      ]
+    },
+    "faqs": [
+      {
+        "question": "經痛很痛正常嗎？",
+        "answer": "輕度到中度經痛在部分女性中很常見，但若疼痛嚴重到影響工作或睡眠，應就醫評估是否有子宮內膜異位等其他原因。若出現劇烈腹痛、發燒或經血量異常增多，請儘速就醫。"
+      },
+      {
+        "question": "經痛時可以怎麼緩解？",
+        "answer": "可以嘗試保暖、適度運動與規律作息，並在醫師指導下使用合適的舒緩方式。若疼痛加劇、伴隨嘔吐不止或暈厥，請立即就醫。"
+      }
+    ],
+    "clinical_summary": {
+      "pathophysiology": "經期前後前列腺素分泌增加，子宮收縮增強而引起疼痛。",
+      "clinical_presentation": "下腹悶痛或絞痛，可能向腰背與大腿放射，經量變化時更明顯。",
+      "management_care": "保暖、適度運動與規律作息，依醫師評估選擇合適舒緩方式，並記錄疼痛變化。",
+      "red_flags_prevention": "若疼痛嚴重影響生活、伴隨劇烈腹痛、發燒或經血量異常增多，請儘速就醫。"
+    }
+  }
+]

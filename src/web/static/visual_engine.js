@@ -57,6 +57,10 @@
     return {
       svg: parentGroup,
       rect: function (attrs, parent) {
+        // 主場景背景（data-bg）改用柔和漸層；其餘矩形維持原填色
+        if (attrs && attrs["data-bg"] === "1" && attrs.fill === "#0f172a") {
+          attrs = Object.assign({}, attrs, { fill: "url(#grad-canvas-bg)" });
+        }
         return makeElement("rect", attrs, parent);
       },
       circle: function (attrs, parent) {
@@ -90,6 +94,66 @@
     };
   }
 
+  // 精緻醫療插畫風 2.5：以純 DOM API 注入共用漸層與柔和陰影定義（零被禁 API）
+  function ensureVisualDefs(svgEl) {
+    if (!svgEl || svgEl.querySelector("#soft-shadow")) return;
+    const defs = document.createElementNS(SVG_NS, "defs");
+
+    function addLinearGradient(id, x1, y1, x2, y2, stops) {
+      const lg = document.createElementNS(SVG_NS, "linearGradient");
+      lg.setAttribute("id", id);
+      lg.setAttribute("x1", x1);
+      lg.setAttribute("y1", y1);
+      lg.setAttribute("x2", x2);
+      lg.setAttribute("y2", y2);
+      for (let i = 0; i < stops.length; i++) {
+        const st = document.createElementNS(SVG_NS, "stop");
+        st.setAttribute("offset", stops[i].offset);
+        st.setAttribute("stop-color", stops[i].color);
+        if (stops[i].opacity !== undefined) {
+          st.setAttribute("stop-opacity", String(stops[i].opacity));
+        }
+        lg.appendChild(st);
+      }
+      defs.appendChild(lg);
+    }
+
+    addLinearGradient("grad-canvas-bg", "0%", "0%", "0%", "100%", [
+      { offset: "0%", color: "#0b1528" },
+      { offset: "55%", color: "#0f172a" },
+      { offset: "100%", color: "#132038" }
+    ]);
+    addLinearGradient("grad-pill-active", "0%", "0%", "100%", "100%", [
+      { offset: "0%", color: "#1e40af", opacity: 0.92 },
+      { offset: "100%", color: "#1e3a5f", opacity: 0.96 }
+    ]);
+    addLinearGradient("grad-pill-passed", "0%", "0%", "100%", "100%", [
+      { offset: "0%", color: "#172554", opacity: 0.85 },
+      { offset: "100%", color: "#162032", opacity: 0.9 }
+    ]);
+    addLinearGradient("grad-pill-idle", "0%", "0%", "0%", "100%", [
+      { offset: "0%", color: "#0f172a", opacity: 0.8 },
+      { offset: "100%", color: "#090f1d", opacity: 0.85 }
+    ]);
+
+    const filter = document.createElementNS(SVG_NS, "filter");
+    filter.setAttribute("id", "soft-shadow");
+    filter.setAttribute("x", "-10%");
+    filter.setAttribute("y", "-10%");
+    filter.setAttribute("width", "120%");
+    filter.setAttribute("height", "125%");
+    const drop = document.createElementNS(SVG_NS, "feDropShadow");
+    drop.setAttribute("dx", "0");
+    drop.setAttribute("dy", "2");
+    drop.setAttribute("stdDeviation", "3");
+    drop.setAttribute("flood-color", "#020617");
+    drop.setAttribute("flood-opacity", "0.45");
+    filter.appendChild(drop);
+    defs.appendChild(filter);
+
+    svgEl.appendChild(defs);
+  }
+
   // 醫療專業狀態步驟膠囊（安全渲染於 y <= 410）
   function drawStepPills(ctx, steps, u) {
     if (!Array.isArray(steps) || steps.length === 0) return;
@@ -105,16 +169,17 @@
       const pillW = 170;
       const pillH = 30;
 
-      // 膠囊底板
+      // 膠囊底板（套用精緻漸層與微陰影濾鏡）
       ctx.rect({
         x: pillX,
         y: pillY,
         width: pillW,
         height: pillH,
         rx: 15,
-        fill: isCurrent ? "#1e3a5f" : isPassed ? "#162032" : "#0f172a",
+        fill: isCurrent ? "url(#grad-pill-active)" : isPassed ? "url(#grad-pill-passed)" : "url(#grad-pill-idle)",
         stroke: isCurrent ? PALETTE.ok : isPassed ? "#38bdf8" : "#334155",
         "stroke-width": isCurrent ? 2 : 1.2,
+        filter: isCurrent ? "url(#soft-shadow)" : undefined,
         opacity: isPassed ? 1.0 : 0.45
       });
 
@@ -250,13 +315,169 @@
     return STROKE_FOR[token] || STROKE_FOR.fat;
   }
 
+  // Phase 35-03：基層醫療專屬病理誘因（左）與日常防護（右）對照模式、三種基層病程 connectors
+  const CONTRAST_LEFT_BASE = ["mucosal_irritant_surge", "metabolic_mechanical_overload"];
+  const CONTRAST_RIGHT_BASE = ["barrier_hydration_shield", "lifestyle_homeostasis_load"];
+  const TIMELINE_BASE = ["mucosal_clearance", "homeostasis_control", "structural_rehab"];
+  const CLINICAL_BADGES = ["階段一·急性反應", "階段二·調控修復", "階段三·穩定維持"];
+
+  // 連續平滑函式（僅用於本區塊；確保相鄰影格位移有界）
+  function bsSmooth(x) {
+    const c = Math.max(0, Math.min(1, x));
+    return c * c * (3 - 2 * c);
+  }
+
+  function bsRamp(u, a, b) {
+    return bsSmooth((u - a) / (b - a));
+  }
+
+  // 以正弦波產生單一 path 的 d 字串（一個元素，避免配對錯誤）
+  function bsWave(x0, x1, y0, amp, freq, phase) {
+    let d = "";
+    for (let x = x0; x <= x1; x += 8) {
+      d += (d ? " L" : "M") + x + " " + (y0 + amp * Math.sin(x * freq + phase)).toFixed(2);
+    }
+    return d;
+  }
+
+  // 左側：黏膜持續受刺激（外來刺激波衝擊受損黏膜，紅腫擴散與防線缺口）
+  function drawContrastLeftMucosal(ctx, u) {
+    const dmg = bsRamp(u, 0.0, 0.5);
+    ctx.rect({ x: 70, y: 230, width: 280, height: 32, rx: 6, fill: "#fbe7d6", stroke: "#c79a7d", "stroke-width": 1 });
+    ctx.rect({ x: 70, y: 230, width: 280, height: 32, rx: 6, fill: PALETTE.warn, opacity: 0.55 * dmg });
+    ctx.ellipse({ cx: 210, cy: 231, rx: 8 + 52 * dmg, ry: 4 + 6 * dmg, fill: "#0f172a", opacity: 0.85 * dmg });
+    for (let i = 0; i < 3; i++) {
+      ctx.path({
+        d: bsWave(70, 350, 180 + i * 18, 6 + 8 * dmg, 0.09, u * 10 + i * 1.2),
+        fill: "none", stroke: PALETTE.warn, "stroke-width": 2, opacity: 0.75
+      });
+    }
+    for (let i = 0; i < 6; i++) {
+      ctx.circle({ cx: 110 + i * 40, cy: 150 + 30 * dmg, r: 3, fill: PALETTE.warn, opacity: 0.4 + 0.6 * dmg });
+    }
+  }
+
+  // 左側：代謝失衡與力學超載（管腔高壓箭頭擠壓、沉積堆積與紅暈警示）
+  function drawContrastLeftOverload(ctx, u) {
+    const p = bsRamp(u, 0, 0.6);
+    ctx.rect({ x: 80, y: 226, width: 260, height: 48, rx: 24, fill: "#3b4a5f", stroke: "#64748b", "stroke-width": 1.5 });
+    ctx.circle({ cx: 210, cy: 232, r: 30 + 50 * p, fill: PALETTE.warn, opacity: 0.25 * p });
+    ctx.ellipse({ cx: 210, cy: 228, rx: 10 + 70 * p, ry: 4 + 14 * p, fill: PALETTE.oil, opacity: 0.9 });
+    [-16, 0, 16].forEach(function (k) {
+      const y = 250 + k;
+      const x2 = 80 + 40 * p;
+      ctx.line({ x1: 60, y1: y, x2: x2, y2: y, stroke: PALETTE.warn, "stroke-width": 3, "stroke-linecap": "round" });
+      ctx.polygon({ points: x2 + "," + y + " " + (x2 - 9) + "," + (y - 6) + " " + (x2 - 9) + "," + (y + 6), fill: PALETTE.warn });
+    });
+  }
+
+  // 右側：阻隔誘因與保濕修復護盾（翠綠弧形防護，底層平順修復，無注射套管）
+  function drawContrastRightBarrier(ctx, u) {
+    const r = bsRamp(u, 0.0, 0.6);
+    const h = bsRamp(u, 0.3, 1.0);
+    ctx.rect({ x: 440, y: 230, width: 280, height: 32, rx: 6, fill: "#fbe7d6", stroke: "#c79a7d", "stroke-width": 1 });
+    ctx.rect({ x: 440, y: 230, width: 280, height: 32, rx: 6, fill: PALETTE.ok, opacity: 0.55 * h });
+    ctx.path({ d: "M480 215 Q580 " + (200 - 60 * r).toFixed(2) + " 700 215 L700 230 L480 230 Z", fill: PALETTE.gel, opacity: 0.15 * r });
+    ctx.path({ d: "M480 215 Q580 " + (200 - 60 * r).toFixed(2) + " 700 215", fill: "none", stroke: PALETTE.ok, "stroke-width": 6, opacity: 0.9 * r });
+    for (let i = 0; i < 2; i++) {
+      ctx.path({
+        d: bsWave(440, 720, 150 + i * 16, 6 * (1 - 0.8 * r), 0.09, u * 10 + i),
+        fill: "none", stroke: PALETTE.warn, "stroke-width": 2, opacity: 0.7 * (1 - r)
+      });
+    }
+    ctx.circle({ cx: 580, cy: 246, r: 40 + 8 * Math.sin(u * Math.PI * 4), fill: PALETTE.gel, opacity: 0.12 });
+  }
+
+  // 右側：作息飲食調控與力學減壓平衡（傾斜天平隨調控回正，雙向平衡流線，無注射套管）
+  function drawContrastRightBalance(ctx, u) {
+    const s = bsRamp(u, 0, 1);
+    const th = 10 * (1 - s);
+    const g = ctx.group({ transform: "rotate(" + th.toFixed(2) + " 590 228)" });
+    ctx.rect({ x: 490, y: 222, width: 200, height: 12, rx: 6, fill: "#64748b" }, g);
+    ctx.circle({ cx: 500, cy: 228, r: 12, fill: PALETTE.accent }, g);
+    ctx.circle({ cx: 680, cy: 228, r: 12, fill: PALETTE.accent }, g);
+    ctx.polygon({ points: "590,240 574,300 606,300", fill: PALETTE.neutral });
+    ctx.rect({ x: 455, y: 250, width: 10, height: 50, fill: PALETTE.pale, opacity: 0.8 });
+    ctx.rect({ x: 715, y: 250, width: 10, height: 50, fill: PALETTE.pale, opacity: 0.8 });
+    [185, 280].forEach(function (y) {
+      ctx.line({
+        x1: 450, y1: y, x2: 730, y2: y, stroke: "#38bdf8", "stroke-width": 2,
+        "stroke-dasharray": "10 8", "stroke-dashoffset": (-u * 400).toFixed(1), opacity: 0.7
+      });
+    });
+  }
+
+  // 基層病程：黏膜急性感染清除（發炎 -> 免疫清除 -> 屏障修復）
+  function drawTimelineMucosal(ctx, u) {
+    const inflam = bsRamp(u, 0, 0.3) * (1 - bsRamp(u, 0.35, 0.7));
+    const clr = bsRamp(u, 0.3, 0.7);
+    const rep = bsRamp(u, 0.7, 1.0);
+    ctx.rect({ x: 80, y: 262, width: 640, height: 56, rx: 10, fill: "#e8c9a8", opacity: 0.6 });
+    ctx.rect({ x: 80, y: 236, width: 640, height: 30, rx: 8, fill: "#fbe7d6", stroke: "#c79a7d", "stroke-width": 1 });
+    ctx.rect({ x: 80, y: 236, width: 640, height: 30, rx: 8, fill: PALETTE.warn, opacity: 0.5 * inflam });
+    ctx.path({ d: bsWave(80, 720, 236, -6 * inflam, 0.05, 0), fill: "none", stroke: "#f87171", "stroke-width": 3 });
+    ctx.rect({ x: 80, y: 234, width: 640, height: 4, fill: PALETTE.ok, opacity: rep });
+    for (let i = 0; i < 9; i++) {
+      const y0 = 180 + (i % 3) * 8;
+      ctx.circle({
+        cx: 150 + i * 60 + (i % 2 ? 10 : -10), cy: y0 + 40 * bsRamp(u, 0, 0.3), r: 5, fill: PALETTE.warn,
+        opacity: 0.95 * (1 - clr)
+      });
+    }
+    for (let i = 0; i < 6; i++) {
+      ctx.circle({ cx: 170 + i * 90, cy: 300 - 60 * clr, r: 4, fill: PALETTE.ok, opacity: clr * (1 - 0.6 * rep) });
+    }
+  }
+
+  // 基層病程：慢性生理指標穩定（波動越界 -> 規律調控收斂 -> 穩定於安全帶內，右側保護盾）
+  function drawTimelineHomeostasis(ctx, u) {
+    const s = bsRamp(u, 0, 1);
+    ctx.rect({ x: 80, y: 190, width: 640, height: 52, rx: 8, fill: PALETTE.ok, opacity: 0.16, stroke: PALETTE.ok, "stroke-width": 1.5, "stroke-dasharray": "6 5" });
+    ctx.path({ d: bsWave(80, 720, 216, 58 * (1 - s) + 5, 0.035, u * 8 * Math.PI), fill: "none", stroke: "#38bdf8", "stroke-width": 3 });
+    ctx.path({
+      d: "M680 120 L712 130 L712 180 Q712 200 680 210 Q648 200 648 180 L648 130 Z",
+      fill: PALETTE.gel, opacity: 0.22 * s, stroke: PALETTE.ok, "stroke-width": 2
+    });
+  }
+
+  // 基層病程：肌肉骨骼力學軸線與肌腱支撐（受力歪斜 -> 減壓復健 -> 對稱支撐）
+  function drawTimelineStructural(ctx, u) {
+    const t = bsRamp(u, 0, 1);
+    ctx.ellipse({ cx: 400, cy: 220, rx: 90, ry: 60, fill: PALETTE.warn, opacity: 0.35 * (1 - t) });
+    const g = ctx.group({ transform: "rotate(" + (12 * (1 - t)).toFixed(2) + " 400 220)" });
+    [130, 190, 250, 310].forEach(function (y) {
+      ctx.rect({ x: 360, y: y, width: 80, height: 30, rx: 6, fill: "#e2e8f0", stroke: "#94a3b8", "stroke-width": 1.5 }, g);
+    });
+    ctx.line({ x1: 400, y1: 120, x2: 400, y2: 320, stroke: "#cbd5e1", "stroke-width": 4 }, g);
+    ctx.line({ x1: 340, y1: 130, x2: 340, y2: 320, stroke: "#fbbf24", "stroke-width": 3, opacity: 0.8 }, g);
+    ctx.line({ x1: 460, y1: 130, x2: 460, y2: 320, stroke: "#fbbf24", "stroke-width": 3, opacity: 0.8 }, g);
+    ctx.rect({ x: 240, y: 230 - 40 * t, width: 24, height: 60 * t + 10, rx: 6, fill: PALETTE.ok, opacity: 0.6 });
+    ctx.rect({ x: 536, y: 230 - 40 * t, width: 24, height: 60 * t + 10, rx: 6, fill: PALETTE.ok, opacity: 0.6 });
+  }
+
+  function drawContrastLeftBase(ctx, mode, u) {
+    if (mode === "mucosal_irritant_surge") drawContrastLeftMucosal(ctx, u);
+    else drawContrastLeftOverload(ctx, u);
+  }
+
+  function drawContrastRightBase(ctx, mode, u) {
+    if (mode === "barrier_hydration_shield") drawContrastRightBarrier(ctx, u);
+    else drawContrastRightBalance(ctx, u);
+  }
+
+  function drawTimelineBase(ctx, connector, u) {
+    if (connector === "mucosal_clearance") drawTimelineMucosal(ctx, u);
+    else if (connector === "homeostasis_control") drawTimelineHomeostasis(ctx, u);
+    else drawTimelineStructural(ctx, u);
+  }
+
   // Phase 33：專科列舉常數（與 src/visual/blueprints.py 規格一致；白名單與繪製共用）
   const CONTRAST_LEFT_SPECIALTY = ["tissue_trauma_torn_vessel", "scar_contracture_ectropion", "silicone_extrusion_erythema", "capsular_contracture_ball", "nodule_clumping"];
   const CONTRAST_RIGHT_SPECIALTY = ["ultrasonic_emulsification", "transconjunctival_fat_reposition", "cartilage_triangular_strut", "dual_plane_natural_teardrop", "micro_droplet_diffusion"];
   const TIMELINE_SPECIALTY = ["bone_healing", "bruise_metabolism", "scar_maturation", "nerve_regeneration", "skin_retraction"];
-  const CONTRAST_LEFT_MODES = ["mass", "scattered", "wide_incision", "thermal_spread"].concat(CONTRAST_LEFT_SPECIALTY);
-  const CONTRAST_RIGHT_MODES = ["layered", "mass", "minimal_incision", "targeted_energy"].concat(CONTRAST_RIGHT_SPECIALTY);
-  const TIMELINE_CONNECTORS = ["vessels", "none", "wound_healing", "collagen_remodeling"].concat(TIMELINE_SPECIALTY);
+  const CONTRAST_LEFT_MODES = ["mass", "scattered", "wide_incision", "thermal_spread"].concat(CONTRAST_LEFT_SPECIALTY, CONTRAST_LEFT_BASE);
+  const CONTRAST_RIGHT_MODES = ["layered", "mass", "minimal_incision", "targeted_energy"].concat(CONTRAST_RIGHT_SPECIALTY, CONTRAST_RIGHT_BASE);
+  const TIMELINE_CONNECTORS = ["vessels", "none", "wound_healing", "collagen_remodeling"].concat(TIMELINE_SPECIALTY, TIMELINE_BASE);
   const TIMELINE_UNIT_EFFECTS = ["mature", "fade", "steady", "glow_restored"];
 
   // Phase 33 場景 2：左側（傳統處置／病理風險）專科繪製。u 為進度，皆為純函式。
@@ -400,6 +621,26 @@
       "深層能量溫熱刺激，啟動自體修復連鎖生理反應",
       "成纖維細胞大量活化，新生三股螺旋膠原交聯增生",
       "彈力纖維網格緻密交織，肌膚深層結構緊緻提拉"
+    ],
+    mucosal_clearance: [
+      "急性發炎反應期，病原刺激黏膜引起充血水腫與不適",
+      "免疫系統活化清除病原，分泌物減少且紅腫逐步消退",
+      "黏膜上皮屏障修復完整，局部防禦功能恢復平穩狀態"
+    ],
+    homeostasis_control: [
+      "生理指標波動偏離穩定區間，器官組織承受額外負荷",
+      "規律生活作息與醫療調控介入，波動幅度逐步收斂平穩",
+      "長期維持穩定目標區間，降低器官負擔並定期追蹤評估"
+    ],
+    structural_rehab: [
+      "急性期組織緊繃或力學負荷失衡，應減少負重保護患部",
+      "發炎反應逐步緩解，配合溫和伸展與物理照護恢復彈性",
+      "強化周邊肌力分散關節負荷，維持良好姿勢預防復發"
+    ],
+    none: [
+      "病程初期依醫師評估進行基礎照護與症狀觀察",
+      "規律生活與醫療照護介入，症狀逐步趨於平穩",
+      "維持良好生活型態並定期追蹤，降低復發風險"
     ],
     vessels: [
       "移植物置入初期，依賴周圍組織液維持初期滋養",
@@ -676,6 +917,8 @@
       ctx.circle({ cx: 210, cy: 235, r: 22, fill: leftFill, stroke: leftStroke, "stroke-width": 2 });
     } else if (CONTRAST_LEFT_SPECIALTY.indexOf(params.left.mode) >= 0) {
       drawContrastLeftSpecialty(ctx, params.left.mode, u);
+    } else if (CONTRAST_LEFT_BASE.indexOf(params.left.mode) >= 0) {
+      drawContrastLeftBase(ctx, params.left.mode, u);
     } else {
       // scattered mode
       for (let i = 0; i < 6; i++) {
@@ -738,6 +981,8 @@
       ctx.circle({ cx: 590, cy: 235, r: 3 + 5 * focusU, fill: rightFill });
     } else if (CONTRAST_RIGHT_SPECIALTY.indexOf(params.right.mode) >= 0) {
       drawContrastRightSpecialty(ctx, params.right.mode, u);
+    } else if (CONTRAST_RIGHT_BASE.indexOf(params.right.mode) >= 0) {
+      drawContrastRightBase(ctx, params.right.mode, u);
     } else {
       ctx.circle({ cx: 590, cy: 235, r: 50, fill: rightFill, stroke: rightStroke, "stroke-width": 2 });
     }
@@ -750,7 +995,9 @@
     ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
 
     // 頂部解剖專科標題與法規免責小字（y <= 55）
-    ctx.text({ x: 50, y: 52, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" }, "【生理修復歷程與組織成熟】");
+    const isClinicalBase = TIMELINE_BASE.indexOf(params.connectors) >= 0 || params.connectors === "none";
+    ctx.text({ x: 50, y: 52, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" },
+      isClinicalBase ? "【臨床病程演進與健康管理】" : "【生理修復歷程與組織成熟】");
     ctx.text({ x: 750, y: 52, "text-anchor": "end", "font-size": 11, fill: "#64748b" }, "實際結果因人而異，須由醫師當面評估");
 
     // 計算當前進度階段（三階段切換，圖文緊密呼應）
@@ -760,7 +1007,7 @@
       { badge: "階段二·修復重塑", fill: "#451a03", stroke: "#f59e0b", textFill: "#fbbf24" },
       { badge: "階段三·穩定隱痕", fill: "#064e3b", stroke: "#10b981", textFill: "#6ee7b7" }
     ];
-    const sc = STAGE_CONFIGS[stageIdx];
+    const sc = isClinicalBase ? Object.assign({}, STAGE_CONFIGS[stageIdx], { badge: CLINICAL_BADGES[stageIdx] }) : STAGE_CONFIGS[stageIdx];
 
     // 動態階段徽章與當前里程碑膠囊（y: 66..92）
     ctx.rect({ x: 50, y: 66, width: 130, height: 26, rx: 6, fill: sc.fill, stroke: sc.stroke, "stroke-width": 1.5 });
@@ -771,7 +1018,7 @@
     ctx.text({ x: 242, y: 83, "text-anchor": "middle", "font-size": 12, "font-weight": "bold", fill: "#ffffff" }, curMilestone);
 
     // 動態圖文解說文字（大字清晰隨進度切換，杜絕無圖文變化）
-    const descs = TIMELINE_STAGE_DESC[params.connectors] || TIMELINE_STAGE_DESC.vessels;
+    const descs = TIMELINE_STAGE_DESC[params.connectors] || TIMELINE_STAGE_DESC.none;
     const stageDescText = descs[stageIdx] || "";
     ctx.text({ x: 310, y: 84, "font-size": 13, "font-weight": "bold", fill: "#f1f5f9" }, stageDescText);
 
@@ -782,6 +1029,8 @@
     const isSpecialty = TIMELINE_SPECIALTY.indexOf(params.connectors) >= 0;
     if (isSpecialty) {
       drawTimelineSpecialty(ctx, params.connectors, u, params.unit_fill);
+    } else if (TIMELINE_BASE.indexOf(params.connectors) >= 0) {
+      drawTimelineBase(ctx, params.connectors, u);
     } else {
       // 通用血管網絡
       const unitCount = params.units;
@@ -890,7 +1139,7 @@
     // 三個里程碑點與標籤（全部 y <= 405，嚴格在安全區內）
     const nodePositions = [110, 400, 690];
     const thresholds = [0.05, 0.48, 0.92];
-    const stageTimes = ["術後 1~3 天", "術後 1~4 週", "長期穩定"];
+    const stageTimes = isClinicalBase ? ["病程初期", "病程中期", "長期追蹤"] : ["術後 1~3 天", "術後 1~4 週", "長期穩定"];
 
     for (let mIdx = 0; mIdx < 3; mIdx++) {
       const nx = nodePositions[mIdx];
@@ -1920,6 +2169,234 @@
 
 
   // 註冊表
+  // Phase 35-02：6 大基層專科器官病理機轉（organ_system 白名單與 src/visual/blueprints.py 完全一致）
+  const PATHO_ORGAN_SYSTEMS = ["respiratory_mucosa", "vascular_metabolic", "gi_tract", "skin_barrier", "joint_spine", "uro_pelvic"];
+
+  // 連續平滑函式：所有動畫皆為 u 的連續函式（無階躍、無取模環繞），確保相鄰影格位移有界
+  function pmSmooth(x) {
+    const c = Math.max(0, Math.min(1, x));
+    return c * c * (3 - 2 * c);
+  }
+
+  function pmRange(u, a, b) {
+    return pmSmooth((u - a) / (b - a));
+  }
+
+  function pmStageText(u) {
+    if (u < 0.35) return "致病因子入侵";
+    if (u < 0.70) return "局部組織發炎";
+    return "屏障逐步修復";
+  }
+
+  function pmDrawFrame(ctx, p) {
+    ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
+    ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
+    ctx.text({ x: 50, y: 56, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" }, "【器官病理機轉】");
+    const chips = [
+      [240, 130, p.organ_label, "#93c5fd", "#334155"],
+      [382, 112, p.trigger_label, "#fca5a5", "#4c1d1d"],
+      [506, 112, p.lesion_label, "#fde68a", "#3f3a1d"],
+      [630, 120, p.defense_label, "#86efac", "#1e3a2f"]
+    ];
+    chips.forEach(function (c) {
+      ctx.rect({ x: c[0], y: 42, width: c[1], height: 22, rx: 4, fill: c[4], stroke: "#64748b", "stroke-width": 1.5 });
+      ctx.text({ x: c[0] + c[1] / 2, y: 57, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: c[3] }, c[2] || "");
+    });
+  }
+
+  // 右側微觀機轉面板（x 535..745, y 85..345）：細胞群、病灶點與修復環
+  function pmDrawMicro(ctx, env, p) {
+    ctx.rect({ x: 535, y: 85, width: 210, height: 260, rx: 12, fill: "#0f172a", stroke: "#334155", "stroke-width": 1.5 });
+    ctx.text({ x: 640, y: 106, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#cbd5e1" }, "微觀機轉");
+    ctx.circle({ cx: 640, cy: 205, r: 70, fill: "#1e293b", stroke: "#475569", "stroke-width": 1.5 });
+    const cells = [[606, 184], [674, 184], [640, 212], [606, 240], [674, 240]];
+    cells.forEach(function (c) {
+      ctx.circle({ cx: c[0], cy: c[1], r: 18, fill: PALETTE.pale, opacity: 0.35 + 0.25 * (1 - env.lvl) });
+      ctx.circle({ cx: c[0], cy: c[1], r: 6, fill: PALETTE.skin, opacity: 0.8 });
+    });
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4 + 0.3;
+      ctx.circle({
+        cx: 640 + 46 * Math.cos(a),
+        cy: 205 + 46 * Math.sin(a),
+        r: 2.5 + 2.5 * env.lvl,
+        fill: PALETTE.blood,
+        opacity: Math.min(1, env.lvl * env.amp * 1.3)
+      });
+    }
+    ctx.circle({
+      cx: 640, cy: 205, r: 30 + 26 * env.lvl, fill: "none",
+      stroke: ctx.palette(p.accent_fill, PALETTE.warn), "stroke-width": 2.5, opacity: 0.4 + 0.5 * env.lvl
+    });
+    ctx.circle({ cx: 640, cy: 205, r: 58, fill: "none", stroke: PALETTE.ok, "stroke-width": 3, opacity: env.rep });
+    ctx.text({ x: 640, y: 318, "text-anchor": "middle", "font-size": 13, fill: "#e2e8f0" }, pmStageText(env.u));
+  }
+
+  // 呼吸道黏膜：管腔切面、纖毛上皮、病原微粒與黏膜腫脹
+  function pmRespiratory(ctx, env) {
+    const wt = 20 + 26 * env.lvl;
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: PALETTE.pale, opacity: 0.9 });
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: PALETTE.blood, opacity: env.lvl * 0.45 });
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: PALETTE.ok, opacity: env.rep * 0.25 });
+    ctx.rect({ x: 70, y: 150 + wt, width: 430, height: 130 - 2 * wt, fill: "#0b1324" });
+    const yt = 150 + wt;
+    const yb = 280 - wt;
+    // 纖毛以單一 path 元素繪製（避免大量相同小元素在影格間被錯誤配對）
+    let cilia = "";
+    for (let i = 0; i < 22; i++) {
+      const x = 90 + i * 18.5;
+      const wave = Math.sin(env.u * Math.PI * 8 + i * 0.7) * 3;
+      cilia += "M" + x.toFixed(2) + " " + yt.toFixed(2) + " L" + (x + wave).toFixed(2) + " " + (yt + 8).toFixed(2);
+      cilia += "M" + x.toFixed(2) + " " + yb.toFixed(2) + " L" + (x - wave).toFixed(2) + " " + (yb - 8).toFixed(2);
+    }
+    ctx.path({ d: cilia, fill: "none", stroke: "#7dd3fc", "stroke-width": 1.6, opacity: 0.4 + 0.4 * (1 - env.lvl) });
+    for (let i = 0; i < 6; i++) {
+      const y = 215 + (i % 2 === 0 ? -12 : 12) + (i - 2.5) * 1.5;
+      ctx.circle({
+        cx: 78 + env.inv * (60 + i * 46), cy: y, r: 4, fill: PALETTE.warn,
+        opacity: Math.min(1, env.inv * 2) * (1 - 0.75 * env.rep)
+      });
+    }
+  }
+
+  // 三高與代謝：動脈管壁剖面、動脈粥狀斑塊、尿酸結晶與血球流動
+  function pmVascular(ctx, env) {
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 40, fill: PALETTE.pale, opacity: 0.9 });
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 40, fill: PALETTE.blood, opacity: env.lvl * 0.35 });
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 40, fill: PALETTE.ok, opacity: env.rep * 0.2 });
+    ctx.rect({ x: 90, y: 172, width: 390, height: 86, rx: 30, fill: "#0b1324" });
+    const ph = 36 * env.lvl;
+    ctx.path({ d: "M220 172 Q300 " + (172 + 2 * ph) + " 380 172 Z", fill: PALETTE.oil, opacity: 0.95 });
+    [[255, 190], [300, 196], [345, 189]].forEach(function (c) {
+      const x = c[0];
+      const y = c[1];
+      ctx.polygon({
+        points: x + "," + (y - 4) + " " + (x + 4) + "," + y + " " + x + "," + (y + 4) + " " + (x - 4) + "," + y,
+        fill: "#e2e8f0", opacity: env.lvl * (1 - 0.6 * env.rep)
+      });
+    });
+    for (let i = 0; i < 7; i++) {
+      const drift = Math.sin(env.u * Math.PI * 2 + i * 1.3) * 6 * (1 - 0.5 * env.lvl);
+      ctx.circle({ cx: 120 + i * 52 + drift, cy: 232 + (i % 2 === 0 ? -8 : 0), r: 6, fill: PALETTE.blood, opacity: 0.85 });
+    }
+  }
+
+  // 胃腸肝膽：食道括約肌、胃腔、胃酸逆流與黏膜潰瘍／保護膜修復
+  function pmGI(ctx, env) {
+    ctx.rect({ x: 150, y: 90, width: 40, height: 120, rx: 8, fill: PALETTE.pale, opacity: 0.9 });
+    ctx.rect({ x: 160, y: 90, width: 20, height: 118, fill: "#0b1324" });
+    ctx.rect({ x: 140 + 11 * env.lvl, y: 196, width: 60 - 22 * env.lvl, height: 16, rx: 6, fill: PALETTE.accent });
+    ctx.ellipse({ cx: 330, cy: 250, rx: 150, ry: 95, fill: PALETTE.pale, opacity: 0.9, stroke: "#fb7185", "stroke-width": 2 });
+    ctx.ellipse({ cx: 330, cy: 250, rx: 150, ry: 95, fill: PALETTE.blood, opacity: env.lvl * 0.35 });
+    ctx.ellipse({ cx: 330, cy: 250, rx: 138, ry: 84, fill: "#0b1324" });
+    ctx.path({
+      d: "M196 236 Q330 " + (226 - 6 * env.lvl) + " 464 236 Q330 330 196 236 Z",
+      fill: PALETTE.warn, opacity: 0.35 * env.amp
+    });
+    for (let i = 0; i < 5; i++) {
+      const r = pmRange(env.u, 0.05 + 0.04 * i, 0.5 + 0.04 * i) * env.amp;
+      ctx.circle({
+        cx: 240 + (170 - 240) * r + i * 2, cy: 230 + (150 - 230) * r, r: 3, fill: PALETTE.warn,
+        opacity: Math.min(1, env.lvl * 2) * (1 - env.rep)
+      });
+    }
+    ctx.ellipse({ cx: 240, cy: 300, rx: 3 + 13 * env.lvl, ry: 2 + 8 * env.lvl, fill: PALETTE.blood, opacity: 0.9 });
+    ctx.ellipse({ cx: 240, cy: 300, rx: 4 + 12 * env.rep, ry: 3 + 7 * env.rep, fill: PALETTE.gel, opacity: env.rep * 0.8 });
+    ctx.ellipse({ cx: 330, cy: 250, rx: 130, ry: 78, fill: "none", stroke: PALETTE.gel, "stroke-width": 3, opacity: env.rep * 0.7 });
+  }
+
+  // 皮膚科：表皮角質磚牆、真皮毛囊皮脂腺、神經與水泡、過敏原或黴菌穿透
+  function pmSkin(ctx, env) {
+    const gap = 2 + 6 * env.lvl;
+    for (let i = 0; i < 14; i++) {
+      ctx.rect({ x: 70 + i * 30.7, y: 150, width: 30.7 - gap, height: 22, fill: PALETTE.skin, stroke: "#c79a7d", "stroke-width": 0.8 });
+    }
+    ctx.rect({ x: 70, y: 150, width: 430, height: 22, fill: PALETTE.ok, opacity: env.rep * 0.35 });
+    ctx.rect({ x: 70, y: 172, width: 430, height: 30, fill: "#fbe7d6", opacity: 0.9 });
+    ctx.rect({ x: 70, y: 202, width: 430, height: 88, fill: "#e8c9a8", opacity: 0.9 });
+    ctx.rect({ x: 292, y: 202, width: 16, height: 62, fill: "#64748b", opacity: 0.7 });
+    ctx.circle({ cx: 278, cy: 228, r: 10, fill: PALETTE.oil });
+    ctx.circle({ cx: 322, cy: 228, r: 10, fill: PALETTE.oil });
+    ctx.circle({ cx: 300, cy: 250, r: 6 + 18 * env.lvl, fill: PALETTE.blood, opacity: env.lvl * 0.5 });
+    ctx.ellipse({ cx: 400, cy: 220, rx: 4 + 14 * env.lvl, ry: 3 + 10 * env.lvl, fill: PALETTE.gel, opacity: env.lvl * 0.8, stroke: PALETTE.ok, "stroke-width": 1.2 });
+    let nd = "M70 282";
+    for (let x = 88; x <= 500; x += 18) {
+      nd += " L" + x + " " + (282 + 3 * Math.sin(x / 10 + env.u * Math.PI * 2)).toFixed(2);
+    }
+    ctx.path({ d: nd, fill: "none", stroke: "#fbbf24", "stroke-width": 2 });
+    for (let i = 0; i < 6; i++) {
+      const sx = 100 + i * 70;
+      const tx = 240 + i * 24;
+      ctx.circle({
+        cx: sx + (tx - sx) * env.inv, cy: 118 + env.inv * (40 + i * 2), r: 4, fill: PALETTE.warn,
+        opacity: Math.min(1, env.inv * 2) * (1 - 0.7 * env.rep)
+      });
+    }
+  }
+
+  // 骨科復健：關節軟骨、滑液囊、肌腱韌帶、骨端與負荷壓迫
+  function pmJoint(ctx, env) {
+    const thick = 56 - 30 * env.lvl;
+    ctx.rect({ x: 160, y: 102, width: 290, height: 46, rx: 22, fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.5 });
+    ctx.rect({ x: 190, y: 148, width: 230, height: thick, fill: "#fef3c7" });
+    ctx.rect({ x: 190, y: 148, width: 230, height: thick, fill: PALETTE.ok, opacity: env.rep * 0.4 });
+    ctx.rect({ x: 160, y: 148 + thick, width: 290, height: 60, rx: 22, fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.5 });
+    ctx.ellipse({ cx: 305, cy: 148 + thick / 2, rx: 152, ry: thick / 2 + 10, fill: PALETTE.gel, opacity: 0.18, stroke: PALETTE.gel, "stroke-width": 1.5 });
+    ctx.ellipse({ cx: 305, cy: 148 + thick / 2, rx: 152, ry: thick / 2 + 10, fill: PALETTE.blood, opacity: env.lvl * 0.5 });
+    ctx.line({ x1: 185, y1: 148, x2: 172, y2: 300, stroke: "#e2e8f0", "stroke-width": 4, opacity: 0.7 });
+    ctx.line({ x1: 425, y1: 148, x2: 438, y2: 300, stroke: "#e2e8f0", "stroke-width": 4, opacity: 0.7 });
+    ctx.polygon({ points: "305,96 296,84 314,84", fill: PALETTE.warn, opacity: env.inv * (1 - 0.6 * env.rep) });
+  }
+
+  // 泌尿婦產：膀胱、尿道、前列腺環、逆行感染與沖刷舒緩
+  function pmUro(ctx, env) {
+    ctx.ellipse({ cx: 300, cy: 165, rx: 130, ry: 62, fill: PALETTE.pale, opacity: 0.9 });
+    ctx.ellipse({ cx: 300, cy: 165, rx: 130, ry: 62, fill: PALETTE.blood, opacity: env.lvl * 0.45 });
+    ctx.ellipse({ cx: 300, cy: 165, rx: 116, ry: 50, fill: "#0b1324" });
+    ctx.rect({ x: 290, y: 225, width: 20, height: 80, fill: PALETTE.pale, opacity: 0.9 });
+    ctx.rect({ x: 290, y: 225, width: 20, height: 80, fill: PALETTE.blood, opacity: env.lvl * 0.45 });
+    const w = 12 - 6 * env.lvl;
+    ctx.rect({ x: 300 - w / 2, y: 225, width: w, height: 80, fill: "#0b1324" });
+    ctx.circle({ cx: 300, cy: 262, r: 24 + 10 * env.lvl, fill: "none", stroke: PALETTE.fat, "stroke-width": 7, opacity: 0.85 });
+    for (let i = 0; i < 6; i++) {
+      ctx.circle({
+        cx: 300 + (i - 2.5) * 6, cy: 300 - env.inv * (60 + i * 3), r: 3.5, fill: PALETTE.warn,
+        opacity: Math.min(1, env.inv * 2) * (1 - 0.7 * env.rep)
+      });
+    }
+    [240, 262, 284].forEach(function (y) {
+      ctx.line({ x1: 300, y1: y, x2: 300, y2: y + 14, stroke: PALETTE.ok, "stroke-width": 2, opacity: env.rep });
+    });
+  }
+
+  const PATHO_DRAWERS = {
+    respiratory_mucosa: pmRespiratory,
+    vascular_metabolic: pmVascular,
+    gi_tract: pmGI,
+    skin_barrier: pmSkin,
+    joint_spine: pmJoint,
+    uro_pelvic: pmUro
+  };
+
+  // Blueprint 14：器官病理機轉（Phase 35-02）
+  function drawPathologyMechanism(ctx, params, u) {
+    const p = params || {};
+    const sev = clampNumber(p.severity_level, 1, 5);
+    const amp = 0.5 + 0.1 * sev;
+    const env = {
+      u: u,
+      inv: pmRange(u, 0, 0.35),
+      lvl: amp * pmRange(u, 0.2, 0.55) * (1 - 0.7 * pmRange(u, 0.6, 1.0)),
+      rep: pmRange(u, 0.6, 1.0),
+      amp: amp
+    };
+    pmDrawFrame(ctx, p);
+    const drawer = PATHO_DRAWERS[p.organ_system] || pmRespiratory;
+    drawer(ctx, env);
+    pmDrawMicro(ctx, env, p);
+    drawStepPills(ctx, p.step_labels, u);
+  }
+
   const blueprints = {
     process_diagram: {
       params: ["source", "particles", "container_layers", "step_labels"],
@@ -2179,6 +2656,24 @@
         ]
 },
       draw: drawSurgicalAction
+    },
+    pathology_mechanism: {
+      params: ["organ_system", "organ_label", "lesion_label", "trigger_label", "defense_label", "severity_level", "accent_fill", "step_labels"],
+      defaults: {
+        "organ_system": "respiratory_mucosa",
+        "organ_label": "呼吸道黏膜",
+        "lesion_label": "充血發炎區",
+        "trigger_label": "外來致病源",
+        "defense_label": "黏膜屏障修復",
+        "severity_level": 3,
+        "accent_fill": "warn",
+        "step_labels": [
+          "致病因子刺激",
+          "局部組織發炎",
+          "屏障逐步修復"
+        ]
+      },
+      draw: drawPathologyMechanism
     }
   };
 
@@ -2192,6 +2687,7 @@
     if (bp === "process_diagram") return 8;
     if (bp === "contrast") return 9;
     if (bp === "timeline") return 7;
+    if (bp === "pathology_mechanism") return 8;
     return 8;
   }
 
@@ -2199,8 +2695,10 @@
     if (!blueprints[blueprint]) return {};
     const def = blueprints[blueprint].defaults;
     const out = cloneObject(def);
-    if (!params || typeof params !== "object" || Array.isArray(params)) {
-  
+    if (params && typeof params === "object" && !Array.isArray(params)) {
+      mergeDeep(out, params);
+    }
+
     if (blueprint === "surgical_action") {
       out.anatomy_target = String(out.anatomy_target || "mandible");
       out.bone_label = String(out.bone_label || "").slice(0, 8);
@@ -2247,9 +2745,6 @@
       }
     }
 
-    return out;
-    }
-
     function mergeDeep(target, source) {
       for (const k of Object.keys(source)) {
         const val = source[k];
@@ -2263,8 +2758,6 @@
         }
       }
     }
-
-    mergeDeep(out, params);
 
     if (blueprint === "process_diagram") {
       out.particles = clampNumber(Math.round(out.particles), 4, 12);
@@ -2327,6 +2820,19 @@
       }
       out.units = clampNumber(Math.round(out.units), 2, 5);
       if (!PALETTE[out.unit_fill]) out.unit_fill = "fat";
+    } else if (blueprint === "pathology_mechanism") {
+      if (PATHO_ORGAN_SYSTEMS.indexOf(out.organ_system) < 0) out.organ_system = "respiratory_mucosa";
+      out.organ_label = String(out.organ_label || "").slice(0, 8);
+      out.lesion_label = String(out.lesion_label || "").slice(0, 8);
+      out.trigger_label = String(out.trigger_label || "").slice(0, 8);
+      out.defense_label = String(out.defense_label || "").slice(0, 8);
+      out.severity_level = clampNumber(Math.round(out.severity_level), 1, 5);
+      if (!PALETTE[out.accent_fill]) out.accent_fill = "warn";
+      if (!Array.isArray(out.step_labels) || out.step_labels.length !== 3) {
+        out.step_labels = cloneObject(def.step_labels);
+      } else {
+        out.step_labels = out.step_labels.map(function (s) { return String(s || "").slice(0, 10); });
+      }
     }
 
     return out;
@@ -2335,6 +2841,8 @@
   function mount(svgEl, scenes) {
     if (!svgEl) return null;
     svgEl.setAttribute("viewBox", "0 0 800 510");
+
+    ensureVisualDefs(svgEl);
 
     const scList = Array.isArray(scenes) ? scenes : [];
     const durations = scList.map(function (sc) {
@@ -2358,9 +2866,10 @@
     }
 
     function renderAt(t) {
-      while (svgEl.firstChild) {
-        svgEl.removeChild(svgEl.firstChild);
-      }
+      // 清除繪圖內容但保留 <defs>（漸層與濾鏡只在 mount 時注入一次）
+      Array.prototype.slice.call(svgEl.childNodes).forEach(function (node) {
+        if (node.localName !== "defs") svgEl.removeChild(node);
+      });
       if (scList.length === 0) return;
 
       const clampedT = clampNumber(t, 0, totalDuration);

@@ -314,6 +314,37 @@ def test_autodraft_from_tree_e2e_isolated(isolated_db_path: Path):
         conn.close()
 
 
+def test_autodraft_from_tree_self_healing_feedback_injected(isolated_db_path: Path):
+    """驗證第 1 次失敗後，第 2 次呼叫時 prompt 確實注入 build_self_healing_feedback 自癒修正指令並成功過關。"""
+    from src.visual.autodraft import build_self_healing_feedback
+
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        tree_id = _seed_tree(conn, doc_id="test-self-heal", clinic_id="3503190424", review_status=TREE_APPROVED)
+        prompts_received: list[str] = []
+
+        bad_digits = json.loads(VALID_MODEL_JSON)
+        bad_digits["scenes"][0]["caption"] = "透過聚焦能量作用於筋膜層達到 3 倍刺激效果以利組織健康修復。"
+        bad_json_str = json.dumps(bad_digits, ensure_ascii=False)
+
+        def mock_healing_llm(p: str) -> str:
+            prompts_received.append(p)
+            if len(prompts_received) == 1:
+                return bad_json_str
+            return VALID_MODEL_JSON
+
+        res = autodraft_from_tree(conn, tree_id, llm_call=mock_healing_llm, max_attempts=3, db_path=isolated_db_path)
+        assert res["status"] == "ok"
+        assert len(prompts_received) == 2
+        expected_fb = build_self_healing_feedback("forbidden_phrase")
+        assert expected_fb not in prompts_received[0]
+        assert expected_fb in prompts_received[1]
+        assert "阿拉伯數字" in prompts_received[1]
+    finally:
+        conn.close()
+
+
 def test_autodraft_unapproved_tree_rejected(isolated_db_path: Path):
     """驗證未核准推理樹被拒絕生成。"""
     apply_visual_migration(isolated_db_path)
@@ -720,3 +751,79 @@ def test_parse_and_build_tree_ir_surgical_action():
     assert ir["scenes"][1]["blueprint"] == "contrast"
     assert ir["scenes"][2]["blueprint"] == "timeline"
     assert ir["scenes"][2]["params"]["connectors"] == "bone_healing"
+
+
+def test_v2_candidate_parallel_generation_and_promotion(isolated_db_path: Path):
+    """驗證平行繪製 -v2 候選列不覆寫線上已核准之 V1，且晉升時能一鍵取代 V1 並清理 -v2 暫存列。"""
+    from src.visual.review import adopt_v2_candidate, discard_v2_candidate, set_review_status
+
+    apply_visual_migration(isolated_db_path)
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        tree_id = _seed_tree(conn, doc_id="test-vtwo-flow", clinic_id="3503190424", review_status=TREE_APPROVED)
+
+        # 1. 先產出 V1 並核准
+        res_v1 = autodraft_from_tree(conn, tree_id, llm_call=lambda p: VALID_MODEL_JSON, db_path=isolated_db_path)
+        assert res_v1["status"] == "ok"
+        assert res_v1["topic_key"] == "tree-test-vtwo-flow"
+        set_review_status(conn, "tree-test-vtwo-flow", "approved", clinic_id="3503190424")
+
+        # 2. 平行產出 -v2 候選列（修改說明文案）
+        v2_payload = json.loads(VALID_MODEL_JSON)
+        v2_payload["scenes"][0]["caption"] = "第二代高解析聚焦超音波精準作用於深層筋膜，收縮組織並啟動自體修復，實際反應因人而異。"
+        v2_json_str = json.dumps(v2_payload, ensure_ascii=False)
+
+        res_v2 = autodraft_from_tree(
+            conn,
+            tree_id,
+            llm_call=lambda p: v2_json_str,
+            db_path=isolated_db_path,
+            topic_key_suffix="-v2",
+        )
+        assert res_v2["status"] == "ok"
+        assert res_v2["topic_key"] == "tree-test-vtwo-flow-v2"
+
+        # 確認線上 V1 仍維持 approved 且內容未被覆寫
+        v1_row = conn.execute(
+            "SELECT review_status, ir_json, content_version FROM visual_assets WHERE clinic_id = '3503190424' AND topic_key = 'tree-test-vtwo-flow'"
+        ).fetchone()
+        assert v1_row[0] == "approved"
+        assert "第二代高解析" not in v1_row[1]
+        assert v1_row[2] == 1
+
+        # 確認 V2 候選列為 pending 且 metadata 記錄 candidate_for
+        v2_row = conn.execute(
+            "SELECT review_status, metadata FROM visual_assets WHERE clinic_id = '3503190424' AND topic_key = 'tree-test-vtwo-flow-v2'"
+        ).fetchone()
+        assert v2_row[0] == "pending"
+        assert json.loads(v2_row[1])["candidate_for"] == "tree-test-vtwo-flow"
+
+        # 3. 執行一鍵晉升取代 V1
+        prom_res = adopt_v2_candidate(conn, "tree-test-vtwo-flow-v2", clinic_id="3503190424")
+        assert prom_res["status"] == "ok"
+        assert prom_res["base_topic_key"] == "tree-test-vtwo-flow"
+        assert prom_res["v2_removed"] is True
+
+        # 確認 V1 內容已更新為 V2、狀態為 approved、版本遞增為 2，且 -v2 暫存列已清除
+        v1_after = conn.execute(
+            "SELECT review_status, ir_json, content_version FROM visual_assets WHERE clinic_id = '3503190424' AND topic_key = 'tree-test-vtwo-flow'"
+        ).fetchone()
+        assert v1_after[0] == "approved"
+        assert "第二代高解析" in v1_after[1]
+        assert v1_after[2] == 2
+
+        v2_after = conn.execute(
+            "SELECT COUNT(*) FROM visual_assets WHERE clinic_id = '3503190424' AND topic_key = 'tree-test-vtwo-flow-v2'"
+        ).fetchone()[0]
+        assert v2_after == 0
+
+        # 4. 測試 discard_v2_candidate：再產出一次 -v2 並執行捨棄
+        autodraft_from_tree(conn, tree_id, llm_call=lambda p: VALID_MODEL_JSON, db_path=isolated_db_path, topic_key_suffix="-v2")
+        disc_res = discard_v2_candidate(conn, "tree-test-vtwo-flow-v2", clinic_id="3503190424")
+        assert disc_res["status"] == "ok"
+        assert conn.execute(
+            "SELECT COUNT(*) FROM visual_assets WHERE clinic_id = '3503190424' AND topic_key = 'tree-test-vtwo-flow-v2'"
+        ).fetchone()[0] == 0
+    finally:
+        conn.close()
+

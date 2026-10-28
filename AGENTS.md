@@ -957,6 +957,9 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `plan32_gallery.html`、`plan33_gallery.html`：專科動作、病理對照與修復歷程整合展示藝廊（含 HTML5 MP4 播放器）
 * `.agents/skills/clinic-visual-batch/SKILL.md`：本地大模型批次生成與 Hermes Agent 自動化監控規範
 * `tests/test_auto_promotion.py`：Phase 32 診所核准即自動昇華一般醫學資料層與邏輯測試
+* `src/pageindex/tree_navigator.py`：PageIndex 推理樹節點導航、VectifyAI Schema 無損匯出與長文件依章節 TOC 均衡濃縮模組（`tests/test_tree_navigator.py`）
+* `src/visual/icd10_catalog.py`、`src/visual/icd10_enrichment.py`、`data/icd10/primary_care_36_catalog.json`：Phase 35 臺灣基層診所 6 大專科（36 項 ICD-10-CM 常見疾病）器官病理藍圖（`pathology_mechanism`）、非手術誘因對照、三階段病程與四段式臨床知識管線（`scripts/seed_icd10_primary_care.py`、`scripts/enrich_icd10_primary_care.py`、`tests/test_icd10_primary_care.py`）
+* `src/visual/harness_optimizer.py`、`data/visual/harness_lessons.json`、`scripts/harness_check.sh`：Phase 36 ClinicBrain Native Harness²（雙層遞迴自進化馬具：跨任務治理經驗記憶庫、臨床語意對齊評分器、`--k` 多候選探索與 V2 審核晉升自動沉澱，`tests/test_harness_optimizer.py`）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 

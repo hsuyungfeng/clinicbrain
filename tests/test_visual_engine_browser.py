@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 import pytest
 
-from src.visual.blueprints import BLUEPRINTS, PALETTE_TOKENS
+from src.visual.blueprints import BLUEPRINTS, PALETTE_TOKENS, merge_defaults
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_JS_PATH = PROJECT_ROOT / "src" / "web" / "static" / "visual_engine.js"
@@ -734,3 +734,140 @@ def test_visual_engine_geometry_audit_and_frame_pop_check(playwright_page, tmp_p
     print("\n".join(summary))
     print("資訊性：可見元素瞬間出現／消失（粒子生成，未計入失敗）→ " + "; ".join(info_births))
     assert failures == [], "幾何審計／跳變檢查失敗：\n" + "\n".join(failures)
+
+
+def test_visual_defs_injected_once_and_background_uses_gradient(playwright_page, tmp_path):
+    """精緻畫風 2.5：<defs> 於 mount 時只注入一次（跨多次 renderAt 不重複），主背景使用漸層。"""
+    _setup_page(playwright_page, tmp_path)
+    result = playwright_page.evaluate(
+        """(() => {
+            const svg = document.getElementById('testSvg');
+            const m = window.ClinicVisual.mount(svg, [{ blueprint: 'process_diagram', title: 'defs', params: null }]);
+            for (let i = 0; i < 5; i++) m.renderAt(i * 0.2 * m.totalDuration);
+            const defsCount = svg.querySelectorAll('defs').length;
+            const bg = svg.querySelector('rect[data-bg="1"]');
+            const hasGrad = !!svg.querySelector('#grad-canvas-bg');
+            const hasShadow = !!svg.querySelector('#soft-shadow');
+            return { defsCount, bgFill: bg ? bg.getAttribute('fill') : null, hasGrad, hasShadow };
+        })()"""
+    )
+    assert result["defsCount"] == 1
+    assert result["hasGrad"] is True
+    assert result["hasShadow"] is True
+    assert result["bgFill"] == "url(#grad-canvas-bg)"
+
+
+# ============================================================================
+# Phase 35-02：pathology_mechanism 嚴格安全區與 resolveParams 正確性
+# - 所有繪圖元素（排除 data-bg 背景）落在 [15,785] x [15,495] 內（較測試框 [5,795]x[5,505] 更嚴）
+# - 所有 <text> 底部 vy2 <= 405（字幕安全區更嚴格版本）
+# - resolveParams 在 params 為 null 與物件時皆正確處理，且與 Python merge_defaults 結果一致
+# ============================================================================
+
+PATHO_ORGANS = ["respiratory_mucosa", "vascular_metabolic", "gi_tract", "skin_barrier", "joint_spine", "uro_pelvic"]
+PATHO_SAMPLE_U = [0.0, 0.1, 0.25, 0.35, 0.5, 0.7, 0.85, 1.0]
+
+_PATHO_STRICT_JS = """(args) => {
+    const svg = document.getElementById('testSvg');
+    const out = [];
+    args.organs.forEach(function (org) {
+        args.us.forEach(function (u) {
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+            const mounted = window.ClinicVisual.mount(svg, [{ blueprint: 'pathology_mechanism', title: '驗收', params: { organ_system: org } }]);
+            mounted.renderAt(u * mounted.totalDuration);
+            const svgRect = svg.getBoundingClientRect();
+            const sx = 800 / svgRect.width;
+            const sy = 510 / svgRect.height;
+            svg.querySelectorAll('*').forEach(function (el) {
+                const tag = el.tagName.toLowerCase();
+                if (tag === 'defs' || tag === 'clippath' || tag === 'svg' || tag === 'g') return;
+                if (el.closest('defs') || el.closest('clipPath')) return;
+                if (el.getAttribute('data-bg') === '1') return;
+                const r = el.getBoundingClientRect();
+                if (r.width <= 0.1 || r.height <= 0.1) return;
+                const x1 = (r.left - svgRect.left) * sx;
+                const y1 = (r.top - svgRect.top) * sy;
+                const x2 = (r.right - svgRect.left) * sx;
+                const y2 = (r.bottom - svgRect.top) * sy;
+                if (x1 < 15 || x2 > 785 || y1 < 15 || y2 > 495) {
+                    out.push({ org: org, u: u, tag: tag, type: 'outside_safe_zone', box: [x1, y1, x2, y2] });
+                }
+                if (tag === 'text' && y2 > 405) {
+                    out.push({ org: org, u: u, tag: tag, text: el.textContent, type: 'text_bottom', y2: y2 });
+                }
+            });
+        });
+    });
+    return out;
+}"""
+
+
+def test_pathology_mechanism_strict_safe_zone(playwright_page, tmp_path):
+    """六大專科器官病理機轉：所有元素在 [15,785]x[15,495]，文字底部 <= 405。"""
+    _setup_page(playwright_page, tmp_path)
+    violations = playwright_page.evaluate(
+        "(args) => (" + _PATHO_STRICT_JS + ")(args)",
+        {"organs": PATHO_ORGANS, "us": PATHO_SAMPLE_U},
+    )
+    assert violations == [], f"pathology_mechanism 安全區違規：{violations[:5]}（共 {len(violations)} 處）"
+
+
+def test_pathology_mechanism_resolve_params_null_and_object(playwright_page, tmp_path):
+    """resolveParams 對 pathology_mechanism：null 與物件皆正確，且 null 結果與 Python 預設一致。"""
+    _setup_page(playwright_page, tmp_path)
+    js_defaults = playwright_page.evaluate("window.ClinicVisual.resolveParams('pathology_mechanism', null)")
+    py_defaults = merge_defaults("pathology_mechanism", None)
+    assert js_defaults == py_defaults
+
+    clipped = playwright_page.evaluate(
+        "window.ClinicVisual.resolveParams('pathology_mechanism', "
+        "{organ_system: 'gi_tract', severity_level: 9, organ_label: '一二三四五六七八九十', "
+        "accent_fill: 'nope', step_labels: ['甲', '乙']})"
+    )
+    assert clipped["organ_system"] == "gi_tract"
+    assert clipped["severity_level"] == 5
+    assert clipped["organ_label"] == "一二三四五六七八"
+    assert clipped["accent_fill"] == "warn"
+    assert clipped["step_labels"] == py_defaults["step_labels"]
+
+    bogus = playwright_page.evaluate(
+        "window.ClinicVisual.resolveParams('pathology_mechanism', {organ_system: 'surgical_face'})"
+    )
+    assert bogus["organ_system"] == "respiratory_mucosa"
+
+
+# ============================================================================
+# Phase 35-03：基層病程與對照模式的渲染文字不得殘留外科隱痕／脂肪移植字樣
+# ============================================================================
+
+BASE_RENDER_FORBIDDEN = ("隱痕", "移植物", "術後", "注射", "套管", "脂肪移植")
+
+
+def test_base_connectors_and_contrast_modes_render_no_surgical_text(playwright_page, tmp_path):
+    _setup_page(playwright_page, tmp_path)
+    cases = [
+        ("timeline", {"connectors": c, "milestones": ["甲乙丙", "丁戊己", "庚辛壬"]})
+        for c in ("mucosal_clearance", "homeostasis_control", "structural_rehab", "none")
+    ] + [
+        ("contrast", {"left": {"mode": m}}) for m in ("mucosal_irritant_surge", "metabolic_mechanical_overload")
+    ] + [
+        ("contrast", {"right": {"mode": m}}) for m in ("barrier_hydration_shield", "lifestyle_homeostasis_load")
+    ]
+    problems = []
+    for bp, params in cases:
+        for u in (0.0, 0.5, 0.9):
+            texts = playwright_page.evaluate(
+                """([bp, params, u]) => {
+                    const svg = document.getElementById('testSvg');
+                    while (svg.firstChild) svg.removeChild(svg.firstChild);
+                    const m = window.ClinicVisual.mount(svg, [{ blueprint: bp, title: 'x', params: params }]);
+                    m.renderAt(u * m.totalDuration);
+                    return Array.prototype.map.call(svg.querySelectorAll('text'), function (t) { return t.textContent; });
+                }""",
+                [bp, params, u],
+            )
+            for text in texts:
+                for word in BASE_RENDER_FORBIDDEN:
+                    if word in text:
+                        problems.append((bp, json.dumps(params, ensure_ascii=False), u, word, text))
+    assert problems == [], problems[:5]

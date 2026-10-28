@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 import re
 import sqlite3
 from typing import Any, Optional
@@ -32,6 +33,7 @@ DEFAULT_DURATIONS = {
     "laser_action": 8,
     "neuromuscular": 8,
     "dermal_support": 8,
+    "pathology_mechanism": 8,
 }
 
 
@@ -713,3 +715,200 @@ def update_visual_asset_by_id(
             conn.commit()
 
     return get_visual_asset_by_id(conn, asset_id)
+
+
+def adopt_v2_candidate(
+    conn: sqlite3.Connection,
+    topic_key: str,
+    *,
+    clinic_id: Optional[str] = None,
+    asset_id: Optional[int] = None,
+    keep_v2_row: bool = False,
+    commit: bool = True,
+    lessons_path: Optional[Path] = None,
+) -> dict[str, Any]:
+    """將平行繪製之 -v2 候選列晉升取代原本的 V1 資產並設為 approved，同時清理 -v2 暫存列。
+
+    參數：
+        conn: SQLite 連線
+        topic_key: 可傳入 'tree-xxx-v2' 或原始 'tree-xxx'
+        clinic_id: 診所代碼（選填）
+        asset_id: 選填，直接指定 -v2 候選列的 id
+        keep_v2_row: 若為 False（預設），晉升成功後自動刪除 -v2 候選列
+        commit: 是否提交交易
+    """
+    if not has_visual_assets_table(conn):
+        raise RuntimeError("資料庫尚未建立 visual_assets 資料表。")
+
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(visual_assets)")
+    has_clinic_col = "clinic_id" in [r[1] for r in cur.fetchall()]
+
+    v2_key = topic_key if topic_key.endswith("-v2") else f"{topic_key}-v2"
+
+    if asset_id is not None:
+        cur.execute(
+            "SELECT id, clinic_id, topic_key, title, keywords, ir_json, source_type, metadata FROM visual_assets WHERE id = ?",
+            (asset_id,),
+        )
+    elif has_clinic_col:
+        if clinic_id is not None:
+            cur.execute(
+                "SELECT id, clinic_id, topic_key, title, keywords, ir_json, source_type, metadata "
+                "FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+                (clinic_id, v2_key),
+            )
+        else:
+            cur.execute(
+                "SELECT id, clinic_id, topic_key, title, keywords, ir_json, source_type, metadata "
+                "FROM visual_assets WHERE topic_key = ? ORDER BY id DESC LIMIT 1",
+                (v2_key,),
+            )
+    else:
+        cur.execute(
+            "SELECT id, NULL as clinic_id, topic_key, title, keywords, ir_json, source_type, metadata "
+            "FROM visual_assets WHERE topic_key = ?",
+            (v2_key,),
+        )
+
+    row = cur.fetchone()
+    if row is None:
+        return {"status": "not_found", "v2_topic_key": v2_key}
+
+    v2_id, row_clinic_id, actual_v2_key, title, kw_str, ir_str, source_type, meta_str = row
+
+    try:
+        meta = json.loads(meta_str) if meta_str else {}
+        if not isinstance(meta, dict):
+            meta = {}
+    except Exception:
+        meta = {}
+
+    base_topic_key = meta.get("candidate_for") or (
+        actual_v2_key[:-3] if actual_v2_key.endswith("-v2") else actual_v2_key
+    )
+    if base_topic_key == actual_v2_key:
+        return {"status": "error", "code": "not_a_v2_candidate"}
+
+    try:
+        ir = json.loads(ir_str)
+        keywords = json.loads(kw_str)
+    except Exception:
+        return {"status": "validation_failed", "code": "schema_error"}
+
+    ir["topic_key"] = base_topic_key
+    ok, code = validate_ir(ir)
+    if not ok:
+        return {"status": "validation_failed", "code": code}
+
+    # Harness² 治理級遞迴：晉升覆寫前先保留原 V1 內容，供成功後沉澱經驗教訓
+    cur.execute(
+        "SELECT ir_json FROM visual_assets WHERE topic_key = ? AND clinic_id IS ?",
+        (base_topic_key, row_clinic_id),
+    )
+    v1_row = cur.fetchone()
+    old_ir: Optional[dict[str, Any]] = None
+    if v1_row is not None and v1_row[0]:
+        try:
+            parsed_old = json.loads(v1_row[0])
+            old_ir = parsed_old if isinstance(parsed_old, dict) else None
+        except Exception:
+            old_ir = None
+
+    meta["promoted_from_v2_id"] = v2_id
+    meta["edition"] = "v2_adopted"
+
+    upsert_res = upsert_assets(
+        conn,
+        [{
+            "clinic_id": row_clinic_id,
+            "topic_key": base_topic_key,
+            "title": title,
+            "keywords": keywords,
+            "ir": ir,
+            "metadata": meta,
+        }],
+        source_type=source_type,
+        commit=False,
+    )
+
+    rev_res = set_review_status(
+        conn,
+        base_topic_key,
+        "approved",
+        commit=False,
+        clinic_id=row_clinic_id,
+    )
+    if rev_res.get("status") != "ok":
+        if commit:
+            conn.rollback()
+        return rev_res
+
+    if not keep_v2_row:
+        cur.execute("DELETE FROM visual_assets WHERE id = ?", (v2_id,))
+
+    if commit:
+        conn.commit()
+        # 僅於交易確實提交後沉澱教訓；沉澱失敗絕不影響已完成的晉升
+        if old_ir is not None:
+            try:
+                from src.visual.harness_optimizer import record_review_lesson
+
+                record_review_lesson(old_ir, ir, topic_key=base_topic_key, title=title, path=lessons_path)
+            except Exception:  # noqa: BLE001
+                pass
+
+    return {
+        "status": "ok",
+        "base_topic_key": base_topic_key,
+        "v2_topic_key": actual_v2_key,
+        "clinic_id": row_clinic_id,
+        "review_status": "approved",
+        "v2_removed": not keep_v2_row,
+        **upsert_res,
+    }
+
+
+def discard_v2_candidate(
+    conn: sqlite3.Connection,
+    topic_key: str,
+    *,
+    clinic_id: Optional[str] = None,
+    asset_id: Optional[int] = None,
+    commit: bool = True,
+) -> dict[str, Any]:
+    """捨棄 -v2 候選草稿列（保留線上 V1 原封不動，並刪除 -v2 暫存列）。"""
+    if not has_visual_assets_table(conn):
+        raise RuntimeError("資料庫尚未建立 visual_assets 資料表。")
+
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(visual_assets)")
+    has_clinic_col = "clinic_id" in [r[1] for r in cur.fetchall()]
+    v2_key = topic_key if topic_key.endswith("-v2") else f"{topic_key}-v2"
+
+    if asset_id is not None:
+        cur.execute("SELECT id, topic_key, clinic_id FROM visual_assets WHERE id = ?", (asset_id,))
+    elif has_clinic_col and clinic_id is not None:
+        cur.execute(
+            "SELECT id, topic_key, clinic_id FROM visual_assets WHERE clinic_id IS ? AND topic_key = ?",
+            (clinic_id, v2_key),
+        )
+    else:
+        cur.execute(
+            "SELECT id, topic_key, clinic_id FROM visual_assets WHERE topic_key = ? ORDER BY id DESC LIMIT 1",
+            (v2_key,),
+        )
+
+    row = cur.fetchone()
+    if row is None:
+        return {"status": "not_found", "v2_topic_key": v2_key}
+
+    v2_id, actual_key, row_cid = row
+    if not str(actual_key).endswith("-v2"):
+        return {"status": "error", "code": "not_a_v2_candidate"}
+
+    cur.execute("DELETE FROM visual_assets WHERE id = ?", (v2_id,))
+    if commit:
+        conn.commit()
+    return {"status": "ok", "v2_topic_key": actual_key, "clinic_id": row_cid, "deleted_id": v2_id}
+

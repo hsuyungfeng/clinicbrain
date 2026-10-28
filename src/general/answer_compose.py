@@ -291,6 +291,36 @@ def assemble_answer(value: str, followup: str | None, intent: str, scope: str = 
     return final_text
 
 
+# 各意圖之互補追問意圖優先順序表（供前端互動追問膠囊或延伸詢問使用）
+_COMPLEMENTARY_INTENT_MAP: dict[str, tuple[str, str]] = {
+    "what": ("recovery", "suitable"),
+    "recovery": ("risk", "when_to_see_doctor"),
+    "risk": ("suitable", "recovery"),
+    "suitable": ("what", "recovery"),
+    "when_to_see_doctor": ("recovery", "risk"),
+    "other": ("what", "recovery"),
+}
+
+
+def suggest_followup_chips(intent: str, scope: str = "procedure") -> list[str]:
+    """依當前意圖回傳 2 個互補意圖的簡短合規追問句（純函式）。
+
+    規則：
+    - 嚴格取自經合規檢驗的 DEFAULT_FOLLOWUPS 或 GENERAL_FOLLOWUPS。
+    - 不包含當前 intent 本身，引導病患從「了解原理」自然推進至「恢復期／自身評估」。
+    """
+    norm_intent = (intent or "other").strip()
+    if norm_intent not in _COMPLEMENTARY_INTENT_MAP:
+        norm_intent = "other"
+    pair = _COMPLEMENTARY_INTENT_MAP[norm_intent]
+    table = GENERAL_FOLLOWUPS if scope == "general" else DEFAULT_FOLLOWUPS
+    chips: list[str] = []
+    for key in pair:
+        if key != norm_intent and key in table:
+            chips.append(table[key])
+    return chips
+
+
 def build_compose_prompt(query: str, evidence_blocks: list[str], intent: str) -> str:
     """組裝即時組稿之 LLM 提示詞（純文字兩段輸出，不要 JSON）。"""
     ev_text = "\n\n".join(evidence_blocks) if evidence_blocks else "（目前無特定資料）"

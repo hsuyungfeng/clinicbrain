@@ -24,7 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.visual.review import set_review_status
+from src.visual.review import adopt_v2_candidate, discard_v2_candidate, set_review_status
 from src.visual.writer import has_visual_assets_table
 
 PROD_DB_PATH = PROJECT_ROOT / "clinic.db"
@@ -103,6 +103,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     p_rej.add_argument("topic_key", type=str, help="欲駁回之主題識別碼 (topic_key)")
     p_rej.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
 
+    p_prom = subparsers.add_parser("promote-v2", help="採納 -v2 候選列取代原本 V1 並設為 approved（同時清理 -v2 暫存列）")
+    p_prom.add_argument("topic_key", type=str, help="欲晉升之 -v2 主題識別碼（如 tree-hifu-lifting-v2 或 tree-hifu-lifting）")
+    p_prom.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
+    p_prom.add_argument("--keep-v2", action="store_true", default=False, help="晉升後保留 -v2 列不刪除")
+
+    p_disc = subparsers.add_parser("discard-v2", help="捨棄 -v2 候選列並保留原本 V1 原封不動")
+    p_disc.add_argument("topic_key", type=str, help="欲捨棄之 -v2 主題識別碼（如 tree-hifu-lifting-v2）")
+    p_disc.add_argument("--clinic-id", type=str, default=argparse.SUPPRESS, help="診所代碼（選填）")
+
     args = parser.parse_args(argv)
     if not args.subcommand:
         parser.print_help()
@@ -111,7 +120,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     target_path = Path(args.db)
 
     # 寫入子命令對正式庫的保護檢核（必須在任何 sqlite3.connect 之前）
-    if args.subcommand in ("approve", "reject"):
+    if args.subcommand in ("approve", "reject", "promote-v2", "discard-v2"):
         try:
             is_prod = target_path.resolve() == PROD_DB_PATH.resolve()
         except Exception:
@@ -223,12 +232,41 @@ def main(argv: Optional[list[str]] = None) -> int:
         finally:
             conn.close()
 
-    # approve / reject
+    # approve / reject / promote-v2 / discard-v2
     conn = sqlite3.connect(str(target_path))
     try:
         if not has_visual_assets_table(conn):
             print("❌ 目標資料庫尚未建立 visual_assets 資料表。", file=sys.stderr)
             return 2
+
+        if args.subcommand == "promote-v2":
+            res = adopt_v2_candidate(
+                conn,
+                args.topic_key,
+                clinic_id=clinic_id,
+                keep_v2_row=getattr(args, "keep_v2", False),
+            )
+            if res["status"] == "not_found":
+                print(f"❌ 找不到 V2 候選主題：{res.get('v2_topic_key')}", file=sys.stderr)
+                return 1
+            if res["status"] != "ok":
+                print(f"❌ 晉升 V2 失敗：code={res.get('code')}", file=sys.stderr)
+                return 1
+            print(
+                f"✅ 已採納 {res['v2_topic_key']} 取代 {res['base_topic_key']}（狀態：approved，已清理暫存列：{res['v2_removed']}）"
+            )
+            return 0
+
+        if args.subcommand == "discard-v2":
+            res = discard_v2_candidate(conn, args.topic_key, clinic_id=clinic_id)
+            if res["status"] == "not_found":
+                print(f"❌ 找不到 V2 候選主題：{res.get('v2_topic_key')}", file=sys.stderr)
+                return 1
+            if res["status"] != "ok":
+                print(f"❌ 捨棄 V2 失敗：code={res.get('code')}", file=sys.stderr)
+                return 1
+            print(f"🗑️ 已捨棄 V2 候選列 {res['v2_topic_key']}（線上 V1 維持不變）")
+            return 0
 
         target_status = "approved" if args.subcommand == "approve" else "rejected"
         res = set_review_status(conn, args.topic_key, target_status, clinic_id=clinic_id)

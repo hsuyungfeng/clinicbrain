@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "updated_at": "2026-10-27T17:20:00+08:00",
+  "lessons": [
+    {
+      "lesson_id": "lesson-body-abdominoplasty",
+      "scope": "topic_keywords",
+      "match_terms": ["媽咪", "產後", "妊娠", "肚皮", "腹直肌", "腹壁"],
+      "preferred_blueprint": "surgical_action",
+      "rule": "產後腹部拉皮與媽咪改造必須聚焦腹直肌分離縫合、腹壁筋膜收緊與肚臍重塑，嚴禁套用臉部拉皮或闊頸肌字眼。",
+      "negative_terms": ["闊頸肌", "下臉", "耳前", "臉頰", "SMAS筋膜瓣", "馬甲式"],
+      "positive_terms": ["腹直肌", "腹壁筋膜", "肚臍重塑", "妊娠紋", "腰腹核心"],
+      "origin": "phase32_audit"
+    },
+    {
+      "lesson_id": "lesson-hair-fue-transplant",
+      "scope": "topic_keywords",
+      "match_terms": ["植髮", "毛囊", "髮際", "禿髮", "毛囊單位"],
+      "preferred_blueprint": "subdermal_curettage",
+      "rule": "FUE 植髮應聚焦毛囊單位逐一鑽取與受植區開槽種植，嚴禁套用自體脂肪離心純化或脂肪移植詞彙。",
+      "negative_terms": ["脂肪離心", "離心純化", "脂肪移植", "抽脂管", "脂肪顆粒"],
+      "positive_terms": ["毛囊鑽取", "毛囊單位", "受植區", "開槽種植", "髮際線"],
+      "origin": "phase31_audit"
+    },
+    {
+      "lesson_id": "lesson-eye-blepharoplasty",
+      "scope": "topic_keywords",
+      "match_terms": ["眼袋", "眼皮", "雙眼皮", "眶隔", "眼瞼", "淚溝"],
+      "preferred_blueprint": "surgical_action",
+      "rule": "眼袋與眼皮手術應聚焦眶隔脂肪轉位、提眼瞼肌與淚溝平順，嚴禁套用下顎骨、削骨或截骨詞彙。",
+      "negative_terms": ["下顎骨", "削骨", "截骨", "下巴", "鈦板"],
+      "positive_terms": ["眶隔脂肪", "提眼瞼肌", "淚溝", "眼袋脂肪", "眼瞼皮膚"],
+      "origin": "phase32_audit"
+    },
+    {
+      "lesson_id": "lesson-rhinoplasty-cartilage",
+      "scope": "topic_keywords",
+      "match_terms": ["隆鼻", "鼻樑", "鼻尖", "鼻中膈", "肋軟骨", "鼻雕"],
+      "preferred_blueprint": "surgical_action",
+      "rule": "結構式隆鼻與自體肋軟骨鼻雕應聚焦鼻尖支撐、軟骨支架與鼻中膈延長，嚴禁以矽膠假體外推或脂肪注射表述。",
+      "negative_terms": ["矽膠假體", "注射套管", "脂肪注射", "填充劑", "下顎"],
+      "positive_terms": ["軟骨支架", "鼻尖支撐", "鼻中膈", "肋軟骨", "三角支架"],
+      "origin": "phase33_audit"
+    },
+    {
+      "lesson_id": "lesson-jaw-orthognathic",
+      "scope": "topic_keywords",
+      "match_terms": ["正顎", "削骨", "下顎", "截骨", "下巴", "顎骨"],
+      "preferred_blueprint": "surgical_action",
+      "rule": "正顎與削骨手術應聚焦截骨面對合、頦神經保護與純鈦板釘固定，嚴禁套用脂肪移植或眼袋字眼。",
+      "negative_terms": ["眶隔脂肪", "眼袋", "脂肪移植", "抽脂", "淚溝"],
+      "positive_terms": ["頦神經", "截骨面", "純鈦板釘", "咬合", "骨骼滑移"],
+      "origin": "phase32_audit"
+    },
+    {
+      "lesson_id": "lesson-scar-subcision",
+      "scope": "topic_keywords",
+      "match_terms": ["痘疤", "疤痕", "痘洞", "皮下剝離", "凹洞"],
+      "preferred_blueprint": "subdermal_curettage",
+      "rule": "痘疤與凹洞應聚焦皮下纖維束鬆解、真皮支撐與膠原新生，嚴禁以眼袋或抽脂管的用語描述。",
+      "negative_terms": ["抽脂管", "眼袋", "脂肪離心", "闊頸肌", "矽膠"],
+      "positive_terms": ["纖維束", "皮下剝離", "真皮支撐", "膠原新生", "凹洞平整"],
+      "origin": "phase33_audit"
+    },
+    {
+      "lesson_id": "lesson-pc-respiratory",
+      "scope": "primary_care",
+      "match_terms": ["感冒", "咽喉", "扁桃腺", "鼻竇", "中耳", "流感", "支氣管", "氣喘", "鼻塞", "過敏性鼻炎"],
+      "preferred_blueprint": "pathology_mechanism",
+      "rule": "耳鼻喉、小兒與家醫呼吸道疾病應使用 pathology_mechanism 之 respiratory_mucosa 器官病理藍圖，聚焦黏膜充血、纖毛清除與屏障修復，場景二採誘因對照，場景三採 mucosal_clearance 病程，嚴禁手術切口、移植物與抽脂管詞彙。",
+      "negative_terms": ["切口", "移植物", "抽脂", "隱痕", "注射", "手術"],
+      "positive_terms": ["黏膜", "纖毛", "病原", "免疫清除", "屏障修復"],
+      "origin": "phase35_primary_care"
+    },
+    {
+      "lesson_id": "lesson-pc-vascular-metabolic",
+      "scope": "primary_care",
+      "match_terms": ["高血壓", "糖尿病", "高血脂", "膽固醇", "痛風", "尿酸", "脂肪肝", "慢性腎", "血糖"],
+      "preferred_blueprint": "pathology_mechanism",
+      "rule": "一般內科三高與代謝慢性病應使用 vascular_metabolic 器官病理藍圖，場景三採 homeostasis_control 長期調控病程，聚焦血管壁負荷、代謝指標與器官保護，嚴禁套用外科手術或抽脂詞彙。",
+      "negative_terms": ["抽脂", "手術", "切口", "隱痕", "移植物", "注射套管"],
+      "positive_terms": ["血管壁", "代謝", "安全區間", "器官保護", "規律追蹤"],
+      "origin": "phase35_primary_care"
+    },
+    {
+      "lesson_id": "lesson-pc-gi-tract",
+      "scope": "primary_care",
+      "match_terms": ["胃炎", "胃潰瘍", "胃食道", "逆流", "腸胃炎", "腹瀉", "痔瘡", "腸躁", "便秘", "消化"],
+      "preferred_blueprint": "pathology_mechanism",
+      "rule": "胃腸肝膽消化疾病應使用 gi_tract 器官病理藍圖，聚焦黏膜屏障、胃酸平衡與管腔蠕動，場景二採黏膜刺激對照，嚴禁手術切口與移植物詞彙。",
+      "negative_terms": ["切口", "移植物", "抽脂", "隱痕", "眼袋", "拉皮"],
+      "positive_terms": ["黏膜屏障", "胃酸", "括約肌", "蠕動", "保護膜"],
+      "origin": "phase35_primary_care"
+    },
+    {
+      "lesson_id": "lesson-pc-skin-barrier",
+      "scope": "primary_care",
+      "match_terms": ["濕疹", "皮膚炎", "蕁麻疹", "異位", "痤瘡", "青春痘", "足癬", "香港腳", "帶狀", "蜂窩", "皮膚感染"],
+      "preferred_blueprint": "pathology_mechanism",
+      "rule": "皮膚科常見疾病應使用 skin_barrier 器官病理藍圖，聚焦表皮角質屏障、保濕修復與毛囊發炎，場景二採屏障保濕護盾對照，嚴禁以醫美注射或植髮詞彙描述。",
+      "negative_terms": ["注射", "植髮", "毛囊鑽取", "抽脂", "脂肪離心"],
+      "positive_terms": ["角質層", "屏障", "保濕", "毛囊", "修復"],
+      "origin": "phase35_primary_care"
+    },
+    {
+      "lesson_id": "lesson-pc-joint-spine",
+      "scope": "primary_care",
+      "match_terms": ["下背痛", "腰痛", "膝關節", "關節炎", "扭傷", "拉傷", "五十肩", "骨質疏鬆"],
+      "preferred_blueprint": "pathology_mechanism",
+      "rule": "骨科與復健科肌肉骨骼疼痛應使用 joint_spine 器官病理藍圖，聚焦軟骨磨損、肌腱支撐與減壓復健，場景三採 structural_rehab 病程，嚴禁套用手術截骨或移植物詞彙。",
+      "negative_terms": ["截骨", "移植物", "抽脂", "隱痕", "鈦板", "眼袋"],
+      "positive_terms": ["軟骨", "肌腱", "韌帶", "力學", "減壓"],
+      "origin": "phase35_primary_care"
+    },
+    {
+      "lesson_id": "lesson-pc-uro-pelvic",
+      "scope": "primary_care",
+      "match_terms": ["膀胱", "尿道", "泌尿", "前列腺", "攝護腺", "經痛", "痛經", "陰道", "子宮", "骨盆"],
+      "preferred_blueprint": "pathology_mechanism",
+      "rule": "泌尿與婦產科疾病應使用 uro_pelvic 器官病理藍圖，聚焦尿路沖刷、骨盆平滑肌與黏膜保護，場景三採 homeostasis_control 或 mucosal_clearance 病程，嚴禁套用腹直肌縫合或拉皮手術詞彙。",
+      "negative_terms": ["腹直肌", "拉皮", "切口", "移植物", "抽脂"],
+      "positive_terms": ["尿路", "沖刷", "平滑肌", "骨盆", "黏膜"],
+      "origin": "phase35_primary_care"
+    }
+  ]
+}

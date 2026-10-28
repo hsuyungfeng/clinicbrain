@@ -98,19 +98,33 @@ def _record(**kw) -> None:
             _state.update(kw)
 
 
-def _worker(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: threading.Lock) -> None:
+def _worker(
+    db_path: str,
+    ids: list[int],
+    llm_call,
+    grounded_call,
+    gen_lock: threading.Lock,
+    overwrite: bool = False,
+) -> None:
     from .llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     global _db_lock_fd
     try:
-        _run_items(db_path, ids, llm_call, grounded_call, gen_lock)
+        _run_items(db_path, ids, llm_call, grounded_call, gen_lock, overwrite=overwrite)
     finally:
         with _state_lock:
             fd, _db_lock_fd = _db_lock_fd, None
         db_lock.release(fd)
 
 
-def _run_items(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: threading.Lock) -> None:
+def _run_items(
+    db_path: str,
+    ids: list[int],
+    llm_call,
+    grounded_call,
+    gen_lock: threading.Lock,
+    overwrite: bool = False,
+) -> None:
     from .llm_client import LLMEmptyOutputError, LocalLLMUnavailableError
 
     final = "done"
@@ -128,7 +142,9 @@ def _run_items(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: 
                 _record(current_id=fid)
                 conn = sqlite3.connect(db_path, timeout=30)
                 conn.execute("PRAGMA foreign_keys = ON;")
-                generate_answer_for_faq(conn, fid, llm_call, grounded_llm_call=grounded_call)
+                generate_answer_for_faq(
+                    conn, fid, llm_call, overwrite=overwrite, grounded_llm_call=grounded_call
+                )
                 with _state_lock:
                     _state["ok"] += 1
                     _state["ok_ids"].append(fid)
@@ -168,8 +184,15 @@ def _run_items(db_path: str, ids: list[int], llm_call, grounded_call, gen_lock: 
             _state["message"] = "本機 LLM 無法使用，已中止剩餘題目"
 
 
-def start(db_path: str | Path, ids: list[int], llm_call: Callable[[str], str],
-          grounded_call: Optional[Callable[[str], str]], gen_lock: threading.Lock) -> dict:
+def start(
+    db_path: str | Path,
+    ids: list[int],
+    llm_call: Callable[[str], str],
+    grounded_call: Optional[Callable[[str], str]],
+    gen_lock: threading.Lock,
+    *,
+    overwrite: bool = False,
+) -> dict:
     """啟動背景作業；已有作業進行中時拋 RuntimeError。"""
     global _state, _thread, _db_lock_fd
     ids = list(dict.fromkeys(int(i) for i in ids))
@@ -192,8 +215,10 @@ def start(db_path: str | Path, ids: list[int], llm_call: Callable[[str], str],
         _state = _fresh(ids)
     try:
         _thread = threading.Thread(
-            target=_worker, args=(str(db_path), ids, llm_call, grounded_call, gen_lock),
-            name="batch-answer-job", daemon=True,
+            target=_worker,
+            args=(str(db_path), ids, llm_call, grounded_call, gen_lock, bool(overwrite)),
+            name="batch-answer-job",
+            daemon=True,
         )
         _thread.start()
     except Exception:

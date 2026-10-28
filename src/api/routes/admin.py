@@ -130,6 +130,7 @@ class GeneralDraftRequest(BaseModel):
 class BatchGenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     faq_ids: list[StrictInt] = Field(..., min_length=1, max_length=batch_answer_job.MAX_JOB_IDS)
+    overwrite: bool = False
 
 
 class GenerateAnswerRequest(BaseModel):
@@ -563,6 +564,11 @@ def upload_admin_url(
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="網址不允許解析（僅接受已授權之公開 https 網址）",
+                ) from e
+            elif e.reason == "bot_challenge":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="目標網站要求人工驗證（機器人防護），本系統不會嘗試繞過，請改由診所提供內容或更換來源",
                 ) from e
             elif e.reason == "robots_denied":
                 raise HTTPException(
@@ -1047,7 +1053,12 @@ def start_batch_generate(req: BatchGenerateRequest):
     """同時只允許一個作業；每題結果一律 pending。進度以 GET /review/batch-generate/status 查詢。"""
     try:
         return batch_answer_job.start(
-            config.db_path, req.faq_ids, _local_llm_call, _local_llm_ask_call, _GENERATION_LOCK
+            config.db_path,
+            req.faq_ids,
+            _local_llm_call,
+            _local_llm_ask_call,
+            _GENERATION_LOCK,
+            overwrite=req.overwrite,
         )
     except RuntimeError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
@@ -1497,7 +1508,7 @@ def approve_admin_visual(
     asset_id: int,
     conn: sqlite3.Connection = Depends(get_write_db),
 ):
-    from ...visual.review import set_review_status
+    from ...visual.review import adopt_v2_candidate, set_review_status
     from ...visual.writer import has_visual_assets_table
 
     if not has_visual_assets_table(conn):
@@ -1506,7 +1517,13 @@ def approve_admin_visual(
             detail="資料庫尚未建立 visual_assets 資料表",
         )
 
-    res = set_review_status(conn, "", "approved", asset_id=asset_id)
+    # 若核准目標為 -v2 平行候選列，一鍵晉升取代 V1 並清理 -v2 暫存列
+    row = conn.execute("SELECT topic_key FROM visual_assets WHERE id = ?", (asset_id,)).fetchone()
+    if row is not None and str(row[0] or "").endswith("-v2"):
+        res = adopt_v2_candidate(conn, str(row[0]), asset_id=asset_id)
+    else:
+        res = set_review_status(conn, "", "approved", asset_id=asset_id)
+
     if res.get("status") == "not_found":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
     if res.get("status") == "validation_failed":
@@ -1516,7 +1533,12 @@ def approve_admin_visual(
             detail=f"動畫內容驗證未通過: {code}",
         )
 
-    return {"status": "ok", "id": asset_id, "review_status": "approved"}
+    return {
+        "status": "ok",
+        "id": asset_id,
+        "review_status": "approved",
+        "promoted_v2_to": res.get("base_topic_key"),
+    }
 
 
 @router.post("/visuals/{asset_id}/reject", summary="醫師駁回視覺解說卡")

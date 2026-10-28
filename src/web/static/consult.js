@@ -15,9 +15,15 @@
     var resultLabel = document.getElementById("resultLabel");
     var resultMessage = document.getElementById("resultMessage");
     var resultDisclaimer = document.getElementById("resultDisclaimer");
+    var followupChipsContainer = document.getElementById("followupChipsContainer");
+    var followupChipsList = document.getElementById("followupChipsList");
     var bookingContainer = document.getElementById("bookingContainer");
     var bookingLink = document.getElementById("bookingLink");
+    var btnCopySummary = document.getElementById("btnCopySummary");
+    var copyFeedback = document.getElementById("copyFeedback");
     var visualCard = document.getElementById("visualCard");
+    var lastSubmittedQuery = "";
+    var lastVisualTitle = "";
 
     consultInput.addEventListener("input", function() {
         var len = consultInput.value ? consultInput.value.length : 0;
@@ -562,18 +568,78 @@
         }
     }
 
+    function renderFollowupChips(data) {
+        if (!followupChipsContainer || !followupChipsList) {
+            return;
+        }
+        clearElement(followupChipsList);
+        var st = data && data.status ? String(data.status) : "";
+        // 膠囊只在回應帶有動畫時顯示；追問句由後端 suggest_followup_chips 產生（canned 合規文字）
+        var hasVis = Boolean(data && data.visual && Array.isArray(data.visual.scenes) && data.visual.scenes.length >= 3);
+        var backendChips = Array.isArray(data && data.followup_chips) ? data.followup_chips : [];
+        var chips = (st === "answered" || st === "llm_general") && hasVis
+            ? backendChips.filter(function(c) { return typeof c === "string" && c.length > 0; }).slice(0, 2)
+            : [];
+        for (var i = 0; i < chips.length; i++) {
+            (function(chipText) {
+                var btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "btn-followup-chip";
+                btn.textContent = chipText;
+                btn.addEventListener("click", function() {
+                    if (consultInput.disabled) {
+                        return;
+                    }
+                    consultInput.value = chipText;
+                    charCounter.textContent = chipText.length + "/300";
+                    handleConsultSubmit();
+                });
+                followupChipsList.appendChild(btn);
+            })(chips[i]);
+        }
+        followupChipsContainer.style.display = chips.length > 0 ? "block" : "none";
+    }
+
+    // 預約網址固定為此常數，不採用伺服器回傳值（避免開放式重導向）
+    var BOOKING_URL = "https://doctor-toolbox.com/";
+
+    if (btnCopySummary) {
+        btnCopySummary.addEventListener("click", function() {
+            var topicPart = lastVisualTitle ? "【關注主題：" + lastVisualTitle + "】\n" : "";
+            var qPart = lastSubmittedQuery ? "諮詢問題：" + lastSubmittedQuery + "\n" : "";
+            var mPart = resultMessage && resultMessage.textContent ? "衛教重點摘要：" + resultMessage.textContent.slice(0, 140) : "";
+            var summaryText = topicPart + qPart + mPart;
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function" && summaryText) {
+                navigator.clipboard.writeText(summaryText).catch(function() {});
+            }
+            if (copyFeedback) {
+                copyFeedback.textContent = "已複製諮詢重點！即將開啟預約頁面，可直接貼上供醫師參考。";
+                copyFeedback.style.display = "block";
+            }
+            window.open(BOOKING_URL, "_blank", "noopener,noreferrer");
+        });
+    }
+
     function handleConsultSubmit() {
         var q = consultInput.value ? consultInput.value.trim() : "";
         if (!q) {
             return;
         }
 
+        lastSubmittedQuery = q;
+        if (copyFeedback) {
+            copyFeedback.textContent = "";
+            copyFeedback.style.display = "none";
+        }
         consultInput.value = "";
         charCounter.textContent = "0/300";
         consultInput.disabled = true;
         btnSubmit.disabled = true;
 
         resultArea.style.display = "none";
+        if (followupChipsContainer) {
+            followupChipsContainer.style.display = "none";
+        }
         hideVisualCard();
         errorMessage.style.display = "none";
         loadingMessage.style.display = "block";
@@ -703,6 +769,8 @@
         var url = data.booking_url || "https://doctor-toolbox.com/";
         bookingLink.setAttribute("href", url);
         bookingContainer.style.display = "block";
+        lastVisualTitle = data && data.visual && data.visual.title ? String(data.visual.title) : "";
+        renderFollowupChips(data);
 
         resultArea.style.display = "block";
         renderVisual(data);

@@ -84,6 +84,8 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                         "mass", "scattered", "wide_incision", "thermal_spread",
                         "tissue_trauma_torn_vessel", "scar_contracture_ectropion", "silicone_extrusion_erythema",
                         "capsular_contracture_ball", "nodule_clumping",
+                        # Phase 35-03：基層病理誘因（黏膜刺激、代謝力學超載）
+                        "mucosal_irritant_surge", "metabolic_mechanical_overload",
                     )},
                     "core_effect": {"type": "enum", "values": ("dim", "none")},
                     "core_label": {"type": "text", "max_len": 8},
@@ -101,6 +103,8 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                         "layered", "mass", "minimal_incision", "targeted_energy",
                         "ultrasonic_emulsification", "transconjunctival_fat_reposition", "cartilage_triangular_strut",
                         "dual_plane_natural_teardrop", "micro_droplet_diffusion",
+                        # Phase 35-03：日常防護（屏障保濕護盾、作息調控平衡）
+                        "barrier_hydration_shield", "lifestyle_homeostasis_load",
                     )},
                     "rows": {"type": "int", "min": 1, "max": 4},
                     "per_row": {"type": "int", "min": 3, "max": 8},
@@ -143,6 +147,8 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
             "connectors": {"type": "enum", "values": (
                 "vessels", "none", "wound_healing", "collagen_remodeling",
                 "bone_healing", "bruise_metabolism", "scar_maturation", "nerve_regeneration", "skin_retraction",
+                # Phase 35-03：基層醫療病程（急性黏膜清除、慢性生理穩定、肌骨減壓復健）
+                "mucosal_clearance", "homeostasis_control", "structural_rehab",
             )},
             "units": {"type": "int", "min": 2, "max": 5},
             "unit_fill": {"type": "palette"},
@@ -428,6 +434,44 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
             "bone_shift_mm": 6,
             "protect_nerve": True,
             "step_labels": ["口內隱痕切開", "保護神經截骨", "純鈦板釘固定"],
+        },
+    },
+    # Phase 35-02：6 大基層專科器官病理機轉（與 visual_engine.js 的 pathology_mechanism 100% 同步）
+    "pathology_mechanism": {
+        "params": {
+            "organ_system": {
+                "type": "enum",
+                "values": (
+                    "respiratory_mucosa",
+                    "vascular_metabolic",
+                    "gi_tract",
+                    "skin_barrier",
+                    "joint_spine",
+                    "uro_pelvic",
+                ),
+            },
+            "organ_label": {"type": "text", "max_len": 8},
+            "lesion_label": {"type": "text", "max_len": 8},
+            "trigger_label": {"type": "text", "max_len": 8},
+            "defense_label": {"type": "text", "max_len": 8},
+            "severity_level": {"type": "int", "min": 1, "max": 5},
+            "accent_fill": {"type": "palette"},
+            "step_labels": {
+                "type": "list",
+                "min": 3,
+                "max": 3,
+                "item": {"type": "text", "max_len": 10},
+            },
+        },
+        "defaults": {
+            "organ_system": "respiratory_mucosa",
+            "organ_label": "呼吸道黏膜",
+            "lesion_label": "充血發炎區",
+            "trigger_label": "外來致病源",
+            "defense_label": "黏膜屏障修復",
+            "severity_level": 3,
+            "accent_fill": "warn",
+            "step_labels": ["致病因子刺激", "局部組織發炎", "屏障逐步修復"],
         },
     },
 }
