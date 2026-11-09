@@ -5,7 +5,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141+-009688.svg)](https://fastapi.tiangolo.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-FTS5%20trigram-003B57.svg)](https://sqlite.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-167%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-163%20passed-brightgreen.svg)]()
 
 ---
 
@@ -85,6 +85,12 @@
 15. **推理樹核准自動聯動動畫草稿與跨診所全域管理 (Phase 38 增強)**
     - 醫師於後台核准任一推理樹時，後端非同步自動觸發 3 幕動畫草稿生成，立即送入「🎬 待簽核動畫」專區。
     - Web 管理後台頂部、拖曳上傳中心、SOAP 紀錄檢索與「向 LLM 提問」全面支援「全部診所（一般醫學管理）」選項，無縫管理跨診所共享醫學知識。
+
+16. **臺灣健保 200 大疾病 24 秒醫學解說動畫與全景審核矩陣 (Phase 39)**
+    - **雙模型編譯流程**：DeepSeek 提煉疾病精確解剖部位與三幕特徵卡，本地 Ornith-1.5-35B（Qwen2.5 衍生）將其編譯為合規 3 幕 × 8 秒（嚴格 24 秒循環）Typed IR。
+    - **新專科解剖圖元拓展**：新增牙科口腔組織 (`dental_oral`)、中醫經絡穴位 (`tcm_meridian`) 等專科圖元藍圖，生動呈現齲齒窩洞充填、中醫落枕與筋膜拔罐修復機轉。
+    - **臨床知識庫資產審核全景矩陣 (Knowledge Audit Matrix)**：管理後台首頁整合衛教問答 (936 筆)、推理樹 (88 筆)、醫學動畫 (198 筆)、SOAP 病歷之待審、已發布、已駁回、總數與核准率全景對稱展示。
+    - **全庫資產去重與歷史舊版淘汰 (`scripts/dedup_visual_assets.py`)**：深度比對疾病 ICD-10 代碼與主題 slug，精準剔除 161 筆 Phase 34 舊版粗糙草稿與雙軌昇華舊列，達成 198 筆唯一權威主題，100% 通過 `validate_ir` 醫療法規與 24 秒循環驗證。
 
 ---
 

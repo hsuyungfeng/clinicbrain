@@ -186,10 +186,10 @@ def validate_ir(ir: Any) -> Tuple[bool, str]:
         if not isinstance(blueprint, str) or blueprint not in VALID_BLUEPRINTS:
             return False, "unknown_blueprint"
 
-        # duration_sec（選填，4..12 整數）
+        # duration_sec（選填，4..12 數值）
         if "duration_sec" in scene:
             dur = scene["duration_sec"]
-            if not isinstance(dur, int) or isinstance(dur, bool) or not (4 <= dur <= 12):
+            if not isinstance(dur, (int, float)) or isinstance(dur, bool) or not (4 <= dur <= 12):
                 return False, "param_error"
 
         # params（選填，委派 blueprints.validate_params 檢驗）

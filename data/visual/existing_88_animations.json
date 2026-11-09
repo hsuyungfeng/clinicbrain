@@ -1,0 +1,1640 @@
+[
+  {
+    "topic_key": "autologous-fat-grafting",
+    "title": "自體脂肪移植原理",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-19 06:56:57",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-laser-skin-resurfacing",
+    "title": "皮秒雷射原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 04:05:42",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-botox-injection",
+    "title": "肉毒桿菌素注射原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 04:09:02",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "neuromuscular",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-electrowave-facelift",
+    "title": "電波拉皮原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 04:10:11",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-hyaluronic-acid-filler",
+    "title": "玻尿酸填充原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 04:11:27",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "dermal_support",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-fractional-laser",
+    "title": "飛梭雷射原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 04:13:31",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-hifu-lifting",
+    "title": "音波拉提原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 04:15:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-epidermal-cyst-excision",
+    "title": "未感染粉瘤微創切除原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "cyst_excision",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-paronychia-matrixectomy",
+    "title": "甲溝炎甲床重整原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "nail_matrix",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-bromhidrosis-rotary-cutter",
+    "title": "螺旋刀微創狐臭手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "subdermal_curettage",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-endolift-laser",
+    "title": "光纖內提拉微創原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-microneedle-rf",
+    "title": "黃金微針電波原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-scar-subcision",
+    "title": "疤痕皮下切割原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "subdermal_curettage",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-lipoma-aspiration",
+    "title": "微創脂肪瘤切除原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "subdermal_curettage",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-plasma-pen-electrocautery",
+    "title": "等離子筆微氣化原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 07:00:22",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-3503264627-mid-lower-smas-facelift",
+    "title": "中下臉 SMAS 筋膜深層拉皮手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 09:23:06",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "deep_plane_facelift",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-swan-neck-cervicoplasty",
+    "title": "天鵝頸闊頸肌縫合拉皮術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 09:23:21",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "corset_platysmaplasty",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-thermage-flx-rf",
+    "title": "Thermage FLX 鳳凰電波單極緊膚療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 09:23:34",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-epidermal-cyst-excision",
+    "title": "未感染粉瘤微創旋轉吸引切除手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:23:21",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "cyst_excision",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-paronychia-matrixectomy",
+    "title": "甲溝炎嵌甲甲床重整手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:39:26",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "nail_matrix",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-bromhidrosis-rotary-cutter",
+    "title": "微創螺旋刀頂漿腺狐臭手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:39:40",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "subdermal_curettage",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-endolift-laser",
+    "title": "Endolift 光纖內提拉手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:39:53",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-microneedle-rf",
+    "title": "黃金微針電波拉提原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:40:07",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-scar-subcision",
+    "title": "疤痕與蟹足腫光纖皮下切割治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:40:21",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "subdermal_curettage",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-lipoma-aspiration",
+    "title": "微創脂肪瘤抽吸切除手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:40:37",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "subdermal_curettage",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-plasma-pen-electrocautery",
+    "title": "等離子筆與電灼贅疣治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:40:50",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-qray-frx-fractional-laser",
+    "title": "QRAY FRX 雙波長微創飛梭雷射原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:41:04",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-facial-bone-contouring",
+    "title": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:41:56",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-ultraformer-mpt-hifu",
+    "title": "Ultraformer MPT 媚必提微脈衝音波拉提療程原理",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:42:09",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-mommy-makeover-reconstruction",
+    "title": "產後媽媽身形修復手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:42:24",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-triton-laser-hair-removal",
+    "title": "Triton 海神雙波長雷射除毛療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:43:47",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-nd-yag-laser-toning",
+    "title": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:44:35",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-hyaluronic-acid-dermal-filler",
+    "title": "玻尿酸皮下填充微整形雕塑原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:44:49",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "dermal_support",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-picosecond-laser-rejuvenation",
+    "title": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:45:04",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-ultherapy-focused-ultrasound",
+    "title": "Ultherapy 美國音波深層極線音波拉提療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:45:55",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-full-deep-plane-facelift",
+    "title": "高位深層筋膜全臉拉皮手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:46:10",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "deep_plane_facelift",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-renuvion-helium-plasma",
+    "title": "Renuvion 超能電漿微創皮下縮皮緊緻術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:46:23",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-bbl-broadband-light",
+    "title": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:47:14",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-varicose-vein-evlt-sclerotherapy",
+    "title": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:47:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-chronic-migraine-botox-decompression",
+    "title": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:47:42",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "neuromuscular",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-overfilled-face-syndrome-correction",
+    "title": "饅化臉過度填充修復綜合治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:47:57",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "dermal_support",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-rejuran-pdrn-skin-healer",
+    "title": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PD",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:48:44",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-bulbous-nose-rhinoplasty",
+    "title": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:49:01",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-chin-augmentation-genioplasty",
+    "title": "下巴美型手術（三維客製人工骨植入與下巴截骨成型術）原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:58:46",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-fue-hair-transplantation",
+    "title": "FUE 微創毛囊單位精準植髮手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:59:04",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 16,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-3503264627-orthognathic-surgery",
+    "title": "三維 數位導航正顎手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:59:20",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-hydrafacial-deep-cleansing",
+    "title": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:59:36",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-blepharoplasty-eye-contouring",
+    "title": "全方位美眸眼整形手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 10:59:54",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-structural-autologous-rhinoplasty",
+    "title": "結構式自體軟骨全方位隆鼻手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 11:00:10",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-3503264627-asce-rose-exosome-regeneration",
+    "title": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-20 11:00:26",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-asce-rose-exosome-regeneration",
+    "title": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-structural-autologous-rhinoplasty",
+    "title": "結構式自體軟骨全方位隆鼻手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-blepharoplasty-eye-contouring",
+    "title": "全方位美眸眼整形手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-hydrafacial-deep-cleansing",
+    "title": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-orthognathic-surgery",
+    "title": "三維 數位導航正顎手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-fue-hair-transplantation",
+    "title": "FUE 微創毛囊單位精準植髮手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 16,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-chin-augmentation-genioplasty",
+    "title": "下巴美型手術（三維客製人工骨植入與下巴截骨成型術）原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-bulbous-nose-rhinoplasty",
+    "title": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-rejuran-pdrn-skin-healer",
+    "title": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PD",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-overfilled-face-syndrome-correction",
+    "title": "饅化臉過度填充修復綜合治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "dermal_support",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-chronic-migraine-botox-decompression",
+    "title": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "neuromuscular",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-varicose-vein-evlt-sclerotherapy",
+    "title": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-bbl-broadband-light",
+    "title": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-renuvion-helium-plasma",
+    "title": "Renuvion 超能電漿微創皮下縮皮緊緻術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-full-deep-plane-facelift",
+    "title": "高位深層筋膜全臉拉皮手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "deep_plane_facelift",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-ultherapy-focused-ultrasound",
+    "title": "Ultherapy 美國音波深層極線音波拉提療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-picosecond-laser-rejuvenation",
+    "title": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-hyaluronic-acid-dermal-filler",
+    "title": "玻尿酸皮下填充微整形雕塑原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "dermal_support",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-nd-yag-laser-toning",
+    "title": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-triton-laser-hair-removal",
+    "title": "Triton 海神雙波長雷射除毛療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-mommy-makeover-reconstruction",
+    "title": "產後媽媽身形修復手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-ultraformer-mpt-hifu",
+    "title": "Ultraformer MPT 媚必提微脈衝音波拉提療程原理",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-facial-bone-contouring",
+    "title": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "surgical_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-qray-frx-fractional-laser",
+    "title": "QRAY FRX 雙波長微創飛梭雷射原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "laser_action",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-thermage-flx-rf",
+    "title": "Thermage FLX 鳳凰電波單極緊膚療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "skin_energy",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-swan-neck-cervicoplasty",
+    "title": "天鵝頸闊頸肌縫合拉皮術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "corset_platysmaplasty",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-mid-lower-smas-facelift",
+    "title": "中下臉 SMAS 筋膜深層拉皮手術原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-22 06:23:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "deep_plane_facelift",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "icd-j069-uri",
+    "title": "感冒（急性上呼吸道感染）",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-j029-pharyngitis",
+    "title": "急性咽喉炎與扁桃腺炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-j309-allergic-rhinitis",
+    "title": "過敏性鼻炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-j111-influenza",
+    "title": "流行性感冒（流感）",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-j209-bronchitis",
+    "title": "急性支氣管炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-j0190-sinusitis",
+    "title": "急性鼻竇炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-h6690-otitis-media",
+    "title": "急性中耳炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-j45909-asthma",
+    "title": "氣喘與慢性氣道發炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-i10-hypertension",
+    "title": "原發性高血壓",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-e119-diabetes",
+    "title": "第二型糖尿病",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-e7800-hyperlipidemia",
+    "title": "高脂血症與高膽固醇",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-m109-gout",
+    "title": "高尿酸血症與痛風",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-k760-fatty-liver",
+    "title": "非酒精性脂肪肝",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-n189-ckd",
+    "title": "慢性腎臟疾病",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-a09-gastroenteritis",
+    "title": "急性感染性胃腸炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-k219-gerd",
+    "title": "胃食道逆流疾病",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-k2970-gastritis",
+    "title": "胃炎與十二指腸炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-k279-peptic-ulcer",
+    "title": "消化性潰瘍",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-k589-ibs",
+    "title": "大腸激躁症",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-k649-hemorrhoids",
+    "title": "痔瘡與肛門靜脈曲張",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-l309-eczema",
+    "title": "濕疹與皮膚炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-l509-urticaria",
+    "title": "急性與慢性蕁麻疹",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-l209-atopic-dermatitis",
+    "title": "異位性皮膚炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-b353-tinea",
+    "title": "足癬與股癬黴菌感染",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-l700-acne",
+    "title": "尋常痤瘡與青春痘",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-b029-herpes-zoster",
+    "title": "帶狀皰疹與神經痛",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-l0390-cellulitis",
+    "title": "蜂窩性組織炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-m5450-low-back-pain",
+    "title": "下背痛與腰部筋膜拉傷",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-m179-knee-osteoarthritis",
+    "title": "膝關節退化性關節炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-s93409-sprain-strain",
+    "title": "肌腱拉傷與韌帶扭傷",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-m7500-frozen-shoulder",
+    "title": "肩部肌腱炎與五十肩",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-m810-osteoporosis",
+    "title": "骨質疏鬆症",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-n3000-uti",
+    "title": "急性膀胱炎與泌尿道感染",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-n400-bph",
+    "title": "良性前列腺肥大",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-n760-vaginitis",
+    "title": "陰道及外陰發炎",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "icd-n944-dysmenorrhea",
+    "title": "原發性經痛",
+    "source_type": "manual",
+    "created_at": "2026-10-27 07:41:29",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 0,
+    "is_24s": false
+  },
+  {
+    "topic_key": "tree-icd-n944-dysmenorrhea",
+    "title": "原發性經痛原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-28 03:10:13",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-general-hao-zimmer-inductive",
+    "title": "德國Zimmer強力電磁感應深層疼痛與肌力調節治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-28 06:29:49",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-hao-hyperbaric-oxygen",
+    "title": "單人高壓氧深層組織修復與消腫療程原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-28 06:33:43",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "process_diagram",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  },
+  {
+    "topic_key": "tree-hao-prolotherapy-prp",
+    "title": "骨科再生醫學增生與PRP注射治療原理圖解",
+    "source_type": "llm_generated",
+    "created_at": "2026-10-28 06:36:55",
+    "scenes_count": 3,
+    "scene_blueprints": [
+      "pathology_mechanism",
+      "contrast",
+      "timeline"
+    ],
+    "total_duration_sec": 24,
+    "is_24s": true
+  }
+]

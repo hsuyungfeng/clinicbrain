@@ -471,10 +471,19 @@
     else drawTimelineStructural(ctx, u);
   }
 
-  // Phase 33：專科列舉常數（與 src/visual/blueprints.py 規格一致；白名單與繪製共用）
-  const CONTRAST_LEFT_SPECIALTY = ["tissue_trauma_torn_vessel", "scar_contracture_ectropion", "silicone_extrusion_erythema", "capsular_contracture_ball", "nodule_clumping"];
-  const CONTRAST_RIGHT_SPECIALTY = ["ultrasonic_emulsification", "transconjunctival_fat_reposition", "cartilage_triangular_strut", "dual_plane_natural_teardrop", "micro_droplet_diffusion"];
-  const TIMELINE_SPECIALTY = ["bone_healing", "bruise_metabolism", "scar_maturation", "nerve_regeneration", "skin_retraction"];
+  // Phase 33 & Phase 39：專科列舉常數（與 src/visual/blueprints.py 規格一致；白名單與繪製共用）
+  const CONTRAST_LEFT_SPECIALTY = [
+    "tissue_trauma_torn_vessel", "scar_contracture_ectropion", "silicone_extrusion_erythema", "capsular_contracture_ball", "nodule_clumping",
+    "dental_caries_erosion", "tcm_qi_stagnation", "metabolic_insulin_resistance"
+  ];
+  const CONTRAST_RIGHT_SPECIALTY = [
+    "ultrasonic_emulsification", "transconjunctival_fat_reposition", "cartilage_triangular_strut", "dual_plane_natural_teardrop", "micro_droplet_diffusion",
+    "dental_sealing_restoration", "tcm_acupuncture_flow", "metabolic_glycemic_control"
+  ];
+  const TIMELINE_SPECIALTY = [
+    "bone_healing", "bruise_metabolism", "scar_maturation", "nerve_regeneration", "skin_retraction",
+    "dental_pulp_healing", "tcm_meridian_harmony", "metabolic_vessel_stabilization"
+  ];
   const CONTRAST_LEFT_MODES = ["mass", "scattered", "wide_incision", "thermal_spread"].concat(CONTRAST_LEFT_SPECIALTY, CONTRAST_LEFT_BASE);
   const CONTRAST_RIGHT_MODES = ["layered", "mass", "minimal_incision", "targeted_energy"].concat(CONTRAST_RIGHT_SPECIALTY, CONTRAST_RIGHT_BASE);
   const TIMELINE_CONNECTORS = ["vessels", "none", "wound_healing", "collagen_remodeling"].concat(TIMELINE_SPECIALTY, TIMELINE_BASE);
@@ -530,6 +539,37 @@
         const oy = (deterministicHash(i, 19) - 0.5) * 50 * u;
         ctx.circle({ cx: 210 + ox, cy: 240 + oy, r: 4 + 6 * u * deterministicHash(i, 23), fill: "#f59e0b", stroke: "#fef3c7", "stroke-width": 1 });
       }
+    } else if (mode === "dental_caries_erosion") {
+      // 牙科齲齒酸蝕：牙釉質缺損穿孔，黑色細菌深蝕牙本質，牙髓神經炎性充血
+      ctx.path({ d: "M 130 180 C 150 140 270 140 290 180 C 310 210 290 280 270 330 C 260 350 240 350 230 330 C 210 280 190 210 130 180 Z", fill: "#f1f5f9", stroke: "#94a3b8", "stroke-width": 2 });
+      ctx.path({ d: "M 180 230 C 190 210 230 210 240 230 C 250 250 240 310 230 330 C 220 310 210 250 180 230 Z", fill: "#dc2626", opacity: 0.6 + 0.4 * u });
+      const r = 12 + 20 * u;
+      ctx.ellipse({ cx: 210, cy: 155, rx: r, ry: r * 0.65, fill: "#0f172a", stroke: "#450a0a", "stroke-width": 2 });
+      ctx.circle({ cx: 210, cy: 230, r: 18 * u, fill: "#ef4444", opacity: 0.45 });
+    } else if (mode === "tcm_qi_stagnation") {
+      // 中醫氣滯血瘀：經脈拘急攣縮，局部氣血凝滯暗沉，痛點結塊放射
+      ctx.path({ d: "M 210 120 Q 170 210 230 260 T 210 350", fill: "none", stroke: "#64748b", "stroke-width": 4 });
+      ctx.circle({ cx: 200, cy: 235, r: 16 + 22 * u, fill: "#450a0a", opacity: 0.75 + 0.25 * u });
+      ctx.circle({ cx: 200, cy: 235, r: 28 + 14 * u, fill: "none", stroke: "#b91c1c", "stroke-width": 2, "stroke-dasharray": "4 4", opacity: 0.8 });
+      for (let i = 0; i < 6; i++) {
+        const rad = i * Math.PI / 3;
+        ctx.line({
+          x1: 200 + Math.cos(rad) * 22, y1: 235 + Math.sin(rad) * 22,
+          x2: 200 + Math.cos(rad) * (34 + 10 * u), y2: 235 + Math.sin(rad) * (34 + 10 * u),
+          stroke: "#f87171", "stroke-width": 2, opacity: u
+        });
+      }
+    } else if (mode === "metabolic_insulin_resistance") {
+      // 內分泌胰島素阻抗：血管內壁糖化增厚，受體失活屏障阻隔，高糖微環境毒性
+      ctx.rect({ x: 100, y: 190, width: 220, height: 110, rx: 8, fill: "#1e293b", stroke: "#475569", "stroke-width": 2 });
+      ctx.rect({ x: 100, y: 190, width: 220, height: 16 + 12 * u, rx: 4, fill: "#b45309", opacity: 0.85 });
+      ctx.line({ x1: 190, y1: 155, x2: 230, y2: 185, stroke: "#ef4444", "stroke-width": 3 });
+      ctx.line({ x1: 230, y1: 155, x2: 190, y2: 185, stroke: "#ef4444", "stroke-width": 3 });
+      for (let i = 0; i < 8; i++) {
+        const gx = 120 + (i % 4) * 50;
+        const gy = 230 + Math.floor(i / 4) * 35;
+        ctx.circle({ cx: gx, cy: gy, r: 6, fill: "#eab308", opacity: 0.4 + 0.5 * u });
+      }
     }
   }
 
@@ -582,6 +622,31 @@
         const gy = 170 + Math.floor(i / 6) * 40;
         ctx.circle({ cx: sx + (gx - sx) * u, cy: sy + (gy - sy) * u, r: 3, fill: "#a5f3fc", opacity: 0.4 + 0.5 * u });
       }
+    } else if (mode === "dental_sealing_restoration") {
+      // 牙科封填修復：階梯式光固化樹脂密封，阻斷外界刺激，牙神經平穩受護
+      ctx.path({ d: "M 530 180 C 550 140 670 140 690 180 C 710 210 690 280 670 330 C 660 350 640 350 630 330 C 610 280 590 210 530 180 Z", fill: "#f1f5f9", stroke: "#94a3b8", "stroke-width": 2 });
+      ctx.path({ d: "M 580 230 C 590 210 630 210 640 230 C 650 250 640 310 630 330 C 620 310 610 250 580 230 Z", fill: "#ec4899", opacity: 0.6 });
+      const fillU = Math.min(1, u * 1.3);
+      ctx.ellipse({ cx: 610, cy: 158, rx: 26 * fillU, ry: 12 * fillU, fill: "#38bdf8", stroke: "#0284c7", "stroke-width": 2, opacity: 0.9 });
+      ctx.circle({ cx: 610, cy: 158, r: 35, fill: "none", stroke: "#67e8f9", "stroke-width": 1.5, opacity: 0.4 + 0.5 * u });
+    } else if (mode === "tcm_acupuncture_flow") {
+      // 中醫針灸疏通：金針深透入穴，得氣感應循經傳導，微光波紋調和氣血
+      ctx.path({ d: "M 610 120 Q 570 210 630 260 T 610 350", fill: "none", stroke: "#38bdf8", "stroke-width": 4, opacity: 0.9 });
+      ctx.line({ x1: 540, y1: 150, x2: 605, y2: 228, stroke: "#facc15", "stroke-width": 2.5, "stroke-linecap": "round" });
+      for (let w = 0; w < 3; w++) {
+        const waveR = 10 + 35 * ((u * 1.5 + w / 3) % 1);
+        ctx.circle({ cx: 610, cy: 235, r: waveR, fill: "none", stroke: "#4ade80", "stroke-width": 1.5, opacity: Math.max(0, 0.7 - waveR / 50) });
+      }
+      ctx.circle({ cx: 610, cy: 235, r: 7, fill: "#22c55e" });
+    } else if (mode === "metabolic_glycemic_control") {
+      // 內分泌血糖平穩：受體高靈敏結合，葡萄糖轉運蛋白通道開放，微血管內皮平整
+      ctx.rect({ x: 500, y: 190, width: 220, height: 110, rx: 8, fill: "#1e293b", stroke: "#22c55e", "stroke-width": 2 });
+      ctx.rect({ x: 500, y: 190, width: 220, height: 12, rx: 4, fill: "#10b981", opacity: 0.7 });
+      for (let c = 0; c < 3; c++) {
+        const cx = 540 + c * 60;
+        ctx.line({ x1: cx, y1: 175, x2: cx, y2: 215, stroke: "#38bdf8", "stroke-width": 3, "stroke-linecap": "round" });
+        ctx.circle({ cx: cx, cy: 200 + 40 * u, r: 5, fill: "#a7f3d0", opacity: 0.85 });
+      }
     }
   }
 
@@ -611,6 +676,21 @@
       "皮下微水腫與局部鬆弛，彈性加壓帶輔助貼合",
       "深層基質修復收縮，成纖維細胞拉緊組織微間隙",
       "皮下空隙完全貼合，深層輪廓平整回彈、緊緻對稱"
+    ],
+    dental_pulp_healing: [
+      "根管清創與牙髓感染消除，封填保護牙根尖周圍組織",
+      "齒槽骨基質與牙周膜漸進再生，消退局部慢性發炎反應",
+      "全冠與樹脂密合固化，恢復健全咀嚼力學與防禦屏障"
+    ],
+    tcm_meridian_harmony: [
+      "針灸得氣導引與穴位微調，驅散經絡鬱閉凝滯之氣血",
+      "經脈氣血暢行全身，臟腑功能漸次調和並滋養周身筋骨",
+      "陰陽氣血平衡穩固，周身經絡通達、體質精氣神充沛"
+    ],
+    metabolic_vessel_stabilization: [
+      "代謝負荷失調初期，胰島素阻抗促使微血管承受滲透壓",
+      "生活型態與醫療輔助介入，受體敏感度提升且血糖漸穩",
+      "血管內皮細胞修復完整，長期維持平穩代謝降低器官負擔"
     ],
     wound_healing: [
       "術後初期加壓保護傷口，冰敷輔助抑制組織腫脹",
@@ -857,6 +937,78 @@
         // 緊緻金色光弧
         ctx.circle({ cx: 400, cy: 180, r: 40, fill: "none", stroke: "#facc15", "stroke-width": 2.5, opacity: 0.85 });
         ctx.text({ x: 400, y: 240, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "皮下空隙緊密貼合 輪廓平整回彈");
+      }
+    } else if (connector === "dental_pulp_healing") {
+      // 牙科修復歷程：牙髓腔清創保護 -> 根尖與牙周再生 -> 全冠密封咀嚼穩定
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      ctx.rect({ x: 120, y: 260, width: 560, height: 35, rx: 6, fill: "#334155" });
+      ctx.text({ x: 400, y: 282, "text-anchor": "middle", "font-size": 12, "font-weight": "bold", fill: "#94a3b8" }, "健康齒槽骨與牙周組織基底");
+
+      if (u < 0.35) {
+        // 階段一：根管清創與暫時封填
+        ctx.path({ d: "M 360 160 L 440 160 L 420 250 L 380 250 Z", fill: "#0f172a", stroke: "#94a3b8", "stroke-width": 2 });
+        ctx.rect({ x: 385, y: 180, width: 30, height: 60, rx: 4, fill: "#f59e0b", opacity: 0.8 });
+        ctx.text({ x: 400, y: 220, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fde68a" }, "根管感染清除 暫封藥物觀察");
+      } else if (u < 0.70) {
+        // 階段二：根尖骨質沉積與牙周膜修復
+        ctx.path({ d: "M 360 160 L 440 160 L 420 250 L 380 250 Z", fill: "#1e293b", stroke: "#38bdf8", "stroke-width": 2 });
+        ctx.rect({ x: 385, y: 175, width: 30, height: 75, rx: 4, fill: "#0284c7", opacity: 0.85 });
+        ctx.circle({ cx: 400, cy: 255, r: 16, fill: "none", stroke: "#4ade80", "stroke-width": 2, "stroke-dasharray": "3 3" });
+        ctx.text({ x: 400, y: 220, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#67e8f9" }, "緻密充填完成 根尖周圍基質再生");
+      } else {
+        // 階段三：全冠修復，齒列咬合屏障完整
+        ctx.path({ d: "M 340 155 C 360 145 440 145 460 155 L 435 250 L 365 250 Z", fill: "#f8fafc", stroke: "#38bdf8", "stroke-width": 2.5 });
+        ctx.circle({ cx: 400, cy: 195, r: 24, fill: "none", stroke: "#22c55e", "stroke-width": 2, opacity: 0.9 });
+        ctx.text({ x: 400, y: 225, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "全冠密合防護 健全咀嚼力學重建");
+      }
+    } else if (connector === "tcm_meridian_harmony") {
+      // 中醫經絡調和：氣滯驅散 -> 經絡流注 -> 陰陽調和
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      ctx.line({ x1: 140, y1: 225, x2: 660, y2: 225, stroke: "#334155", "stroke-width": 6 });
+
+      if (u < 0.35) {
+        // 階段一：針刺穴位，鬱閉氣血鬆解
+        ctx.circle({ cx: 400, cy: 225, r: 24, fill: "#7f1d1d", opacity: 0.75 });
+        ctx.line({ x1: 340, y1: 160, x2: 395, y2: 220, stroke: "#facc15", "stroke-width": 3, "stroke-linecap": "round" });
+        ctx.text({ x: 400, y: 260, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fca5a5" }, "針灸入穴得氣 局部鬱滯漸進鬆解");
+      } else if (u < 0.70) {
+        // 階段二：經氣流注傳導，雙向暢通
+        ctx.line({ x1: 140, y1: 225, x2: 660, y2: 225, stroke: "#38bdf8", "stroke-width": 5, opacity: 0.85 });
+        for (let p = 0; p < 5; p++) {
+          const px = 200 + p * 100;
+          ctx.circle({ cx: px, cy: 225, r: 6, fill: "#fde047" });
+        }
+        ctx.text({ x: 400, y: 260, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#7dd3fc" }, "經脈波紋傳導 氣血通暢循行全身");
+      } else {
+        // 階段三：陰陽平秘，臟腑精氣充沛
+        ctx.line({ x1: 140, y1: 225, x2: 660, y2: 225, stroke: "#22c55e", "stroke-width": 5 });
+        ctx.circle({ cx: 400, cy: 225, r: 35, fill: "none", stroke: "#facc15", "stroke-width": 2.5, opacity: 0.9 });
+        ctx.text({ x: 400, y: 260, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "臟腑氣血安和 陰陽平衡體質穩固");
+      }
+    } else if (connector === "metabolic_vessel_stabilization") {
+      // 內分泌代謝穩定：血管基底減壓 -> 受體敏感回復 -> 內皮細胞代謝平衡
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      ctx.rect({ x: 120, y: 170, width: 560, height: 18, rx: 4, fill: "#475569" });
+      ctx.rect({ x: 120, y: 260, width: 560, height: 18, rx: 4, fill: "#475569" });
+
+      if (u < 0.35) {
+        // 階段一：血管受糖毒壓迫與微循環減壓
+        ctx.rect({ x: 140, y: 195, width: 520, height: 60, rx: 6, fill: "#78350f", opacity: 0.45 });
+        ctx.text({ x: 400, y: 232, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fde68a" }, "調整生活作息 減輕微血管代謝負荷");
+      } else if (u < 0.70) {
+        // 階段二：受體敏感化，細胞攝入葡萄糖
+        ctx.rect({ x: 140, y: 195, width: 520, height: 60, rx: 6, fill: "#065f46", opacity: 0.45 });
+        for (let g = 0; g < 6; g++) {
+          const gx = 200 + g * 80;
+          ctx.circle({ cx: gx, cy: 225, r: 5, fill: "#34d399" });
+        }
+        ctx.text({ x: 400, y: 232, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#6ee7b7" }, "受體靈敏活化 葡萄糖順暢代謝入細胞");
+      } else {
+        // 階段三：內皮修復完整，長期維持平穩
+        ctx.rect({ x: 120, y: 170, width: 560, height: 18, rx: 4, fill: "#10b981", opacity: 0.8 });
+        ctx.rect({ x: 120, y: 260, width: 560, height: 18, rx: 4, fill: "#10b981", opacity: 0.8 });
+        ctx.circle({ cx: 400, cy: 225, r: 25, fill: "none", stroke: "#38bdf8", "stroke-width": 2 });
+        ctx.text({ x: 400, y: 232, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "血管內皮完整修復 長期穩定代謝目標");
       }
     }
   }
@@ -2202,6 +2354,18 @@
       ctx.rect({ x: c[0], y: 42, width: c[1], height: 22, rx: 4, fill: c[4], stroke: "#64748b", "stroke-width": 1.5 });
       ctx.text({ x: c[0] + c[1] / 2, y: 57, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: c[3] }, c[2] || "");
     });
+
+    // 疾病解剖焦點與病灶定位標註卡
+    if (p.organ_label) {
+      ctx.rect({ x: 50, y: 78, width: 140, height: 24, rx: 6, fill: "#0f172a", stroke: "#38bdf8", "stroke-width": 1.5 });
+      ctx.circle({ cx: 64, cy: 90, r: 4, fill: "#38bdf8" });
+      ctx.text({ x: 74, y: 94, "font-size": 11, "font-weight": "bold", fill: "#e0f2fe" }, p.organ_label);
+    }
+    if (p.lesion_label) {
+      ctx.rect({ x: 200, y: 78, width: 140, height: 24, rx: 6, fill: "#0f172a", stroke: "#ef4444", "stroke-width": 1.5 });
+      ctx.circle({ cx: 214, cy: 90, r: 4, fill: "#ef4444" });
+      ctx.text({ x: 224, y: 94, "font-size": 11, "font-weight": "bold", fill: "#fee2e2" }, p.lesion_label);
+    }
   }
 
   // 右側微觀機轉面板（x 535..745, y 85..345）：細胞群、病灶點與修復環
@@ -2369,14 +2533,394 @@
     });
   }
 
+  // 牙科口腔：牙釉質、牙本質、髓腔神經、齲蝕與樹脂修復
+  function pmDental(ctx, env) {
+    ctx.path({
+      d: "M 220 130 C 240 100 360 100 380 130 C 400 160 380 230 360 290 C 350 320 330 330 320 300 C 310 260 300 240 300 240 C 300 240 290 260 280 300 C 270 330 250 320 240 290 C 220 230 200 160 220 130 Z",
+      fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 2
+    });
+    ctx.path({
+      d: "M 170 230 C 220 250 260 240 300 248 C 340 240 380 250 430 230 L 430 320 L 170 320 Z",
+      fill: PALETTE.skin, opacity: 0.85
+    });
+    ctx.path({
+      d: "M 270 170 C 280 150 320 150 330 170 C 340 190 335 240 325 285 C 320 260 315 220 300 210 C 285 220 280 260 275 285 C 265 240 260 190 270 170 Z",
+      fill: PALETTE.blood, opacity: 0.85
+    });
+    if (env.lvl > 0.05) {
+      const erosionD = 12 + 28 * env.lvl;
+      ctx.ellipse({
+        cx: 300, cy: 112 + 10 * env.lvl, rx: erosionD, ry: erosionD * 0.65,
+        fill: "#1e293b", opacity: Math.min(1, env.lvl * 1.5)
+      });
+      for (let i = 0; i < 4; i++) {
+        const py = 120 + i * 10 * env.lvl;
+        ctx.circle({ cx: 295 + (i % 2 === 0 ? -6 : 6), cy: py, r: 2.5, fill: PALETTE.warn, opacity: env.lvl });
+      }
+    }
+    if (env.rep > 0.05) {
+      ctx.ellipse({
+        cx: 300, cy: 118, rx: 22, ry: 10,
+        fill: PALETTE.gel, opacity: env.rep * 0.9, stroke: PALETTE.ok, "stroke-width": 1.5
+      });
+      ctx.circle({ cx: 300, cy: 118, r: 32, fill: "none", stroke: "#38bdf8", "stroke-width": 2, opacity: env.rep * 0.6 });
+    }
+  }
+
+  // 中醫經絡：經脈循行、穴位結點、氣滯凝阻與金針導引
+  function pmTCM(ctx, env) {
+    ctx.path({
+      d: "M 300 90 Q 250 170 300 230 T 300 330",
+      fill: "none", stroke: "#38bdf8", "stroke-width": 4, opacity: 0.5 + 0.4 * env.rep
+    });
+    ctx.path({ d: "M 250 170 Q 210 200 200 270", fill: "none", stroke: "#38bdf8", "stroke-width": 2, opacity: 0.35 });
+    ctx.path({ d: "M 350 170 Q 390 200 400 270", fill: "none", stroke: "#38bdf8", "stroke-width": 2, opacity: 0.35 });
+    const acupoints = [
+      { x: 300, y: 130 },
+      { x: 275, y: 200 },
+      { x: 300, y: 290 }
+    ];
+    for (let a = 0; a < acupoints.length; a++) {
+      const pt = acupoints[a];
+      ctx.circle({ cx: pt.x, cy: pt.y, r: 8, fill: "#0f172a", stroke: "#38bdf8", "stroke-width": 2 });
+      ctx.circle({ cx: pt.x, cy: pt.y, r: 4, fill: PALETTE.gel, opacity: 0.8 });
+    }
+    if (env.lvl > 0.05) {
+      ctx.circle({ cx: 275, cy: 200, r: 16 + 24 * env.lvl, fill: "#7f1d1d", opacity: env.lvl * 0.75 });
+      ctx.circle({ cx: 275, cy: 200, r: 28 + 12 * env.lvl, fill: "none", stroke: PALETTE.warn, "stroke-width": 2, "stroke-dasharray": "4 4", opacity: env.lvl });
+    }
+    if (env.rep > 0.05) {
+      ctx.line({ x1: 220, y1: 140, x2: 272, y2: 198, stroke: "#facc15", "stroke-width": 2.5, "stroke-linecap": "round", opacity: env.rep });
+      ctx.circle({ cx: 275, cy: 200, r: 20 + 20 * (1 - env.rep), fill: "none", stroke: "#facc15", "stroke-width": 2, opacity: env.rep * 0.8 });
+      for (let w = 0; w < 3; w++) {
+        const wy = 230 + w * 35;
+        ctx.line({ x1: 290, y1: wy, x2: 310, y2: wy, stroke: PALETTE.ok, "stroke-width": 3, "stroke-linecap": "round", opacity: env.rep * 0.9 });
+      }
+    }
+  }
+
+  // 內分泌代謝：受體結合位點、游離分子、阻抗屏障與敏感化修復
+  function pmEndocrine(ctx, env) {
+    ctx.rect({ x: 120, y: 220, width: 360, height: 18, rx: 6, fill: "#334155", stroke: "#64748b", "stroke-width": 1.5 });
+    ctx.rect({ x: 120, y: 242, width: 360, height: 70, rx: 8, fill: "#1e293b" });
+    const receptorXs = [200, 300, 400];
+    for (let r = 0; r < receptorXs.length; r++) {
+      const rx = receptorXs[r];
+      ctx.path({
+        d: "M " + (rx - 14) + " 195 L " + (rx - 10) + " 220 L " + (rx + 10) + " 220 L " + (rx + 14) + " 195 Z",
+        fill: PALETTE.accent, stroke: "#93c5fd", "stroke-width": 1.5
+      });
+    }
+    for (let m = 0; m < 6; m++) {
+      const mx = 170 + m * 45;
+      const my = 145 + 25 * Math.sin(m * 1.4);
+      ctx.circle({ cx: mx, cy: my, r: 6, fill: PALETTE.fat, stroke: "#fef08a", "stroke-width": 1.5 });
+    }
+    if (env.lvl > 0.05) {
+      ctx.rect({
+        x: 150, y: 210, width: 300, height: 14, rx: 4,
+        fill: PALETTE.warn, opacity: env.lvl * 0.75, stroke: "#dc2626", "stroke-width": 1
+      });
+      ctx.line({ x1: 290, y1: 180, x2: 310, y2: 200, stroke: PALETTE.warn, "stroke-width": 3 });
+      ctx.line({ x1: 310, y1: 180, x2: 290, y2: 200, stroke: PALETTE.warn, "stroke-width": 3 });
+    }
+    if (env.rep > 0.05) {
+      for (let r = 0; r < receptorXs.length; r++) {
+        const rx = receptorXs[r];
+        ctx.circle({ cx: rx, cy: 208, r: 5, fill: PALETTE.ok, opacity: env.rep });
+        ctx.circle({ cx: rx, cy: 265, r: 5, fill: PALETTE.gel, opacity: env.rep * 0.85 });
+      }
+      ctx.rect({ x: 120, y: 220, width: 360, height: 18, rx: 6, fill: PALETTE.ok, opacity: env.rep * 0.35 });
+    }
+  }
+
+  // 口咽扁桃腺解剖：軟顎懸雍垂、雙側扁桃腺隱窩、充血腫大化膿斑與咽部氣道
+  function pmPharynxTonsil(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    ctx.path({
+      d: "M 100 130 Q 280 100 460 130 L 460 320 Q 280 340 100 320 Z",
+      fill: "#111827", stroke: "#1f2937", "stroke-width": 1
+    });
+    if (env.lvl > 0.05) {
+      ctx.path({
+        d: "M 180 150 Q 280 135 380 150 M 160 180 Q 280 165 400 180 M 190 220 Q 280 210 370 220",
+        fill: "none", stroke: PALETTE.blood, "stroke-width": 1.2, opacity: env.lvl * 0.7
+      });
+    }
+
+    ctx.path({
+      d: "M 70 110 Q 170 145 250 145 C 260 145 264 175 272 185 C 276 190 284 190 288 185 C 296 175 300 145 310 145 Q 390 145 490 110 L 490 100 L 70 100 Z",
+      fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.5
+    });
+
+    const uvulaShift = Math.sin(env.u * Math.PI * 4) * 2;
+    ctx.ellipse({
+      cx: 280 + uvulaShift, cy: 182, rx: 10, ry: 16,
+      fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.2
+    });
+    if (env.lvl > 0.05) {
+      ctx.ellipse({
+        cx: 280 + uvulaShift, cy: 182, rx: 10, ry: 16,
+        fill: PALETTE.blood, opacity: env.lvl * 0.55
+      });
+    }
+
+    ctx.path({
+      d: "M 70 340 Q 280 285 490 340 L 490 350 L 70 350 Z",
+      fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.5
+    });
+    const tongueDots = [170, 225, 280, 335, 390];
+    for (let t = 0; t < tongueDots.length; t++) {
+      ctx.circle({ cx: tongueDots[t], cy: 318, r: 2, fill: PALETTE.skin, opacity: 0.6 });
+    }
+
+    const expandX = 18 * env.lvl;
+    const rX = 26 + 18 * env.lvl;
+    const rY = 34 + 14 * env.lvl;
+    const leftCX = 160 + expandX;
+    const rightCX = 400 - expandX;
+    const tonsilCY = 225;
+
+    ctx.ellipse({ cx: leftCX, cy: tonsilCY, rx: rX, ry: rY, fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 2 });
+    ctx.ellipse({ cx: leftCX, cy: tonsilCY, rx: rX, ry: rY, fill: PALETTE.blood, opacity: 0.25 + 0.65 * env.lvl });
+    ctx.ellipse({ cx: rightCX, cy: tonsilCY, rx: rX, ry: rY, fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 2 });
+    ctx.ellipse({ cx: rightCX, cy: tonsilCY, rx: rX, ry: rY, fill: PALETTE.blood, opacity: 0.25 + 0.65 * env.lvl });
+
+    ctx.path({
+      d: "M " + (leftCX - 8) + " " + (tonsilCY - 20) + " Q " + (leftCX + 6) + " " + (tonsilCY - 5) + " " + (leftCX - 6) + " " + (tonsilCY + 18) +
+         " M " + (leftCX + 4) + " " + (tonsilCY - 16) + " Q " + (leftCX + 14) + " " + tonsilCY + " " + (leftCX + 6) + " " + (tonsilCY + 20),
+      fill: "none", stroke: "#450a0a", "stroke-width": 1.5, opacity: 0.7
+    });
+    ctx.path({
+      d: "M " + (rightCX + 8) + " " + (tonsilCY - 20) + " Q " + (rightCX - 6) + " " + (tonsilCY - 5) + " " + (rightCX + 6) + " " + (tonsilCY + 18) +
+         " M " + (rightCX - 4) + " " + (tonsilCY - 16) + " Q " + (rightCX - 14) + " " + tonsilCY + " " + (rightCX - 6) + " " + (tonsilCY + 20),
+      fill: "none", stroke: "#450a0a", "stroke-width": 1.5, opacity: 0.7
+    });
+
+    if (env.lvl > 0.08) {
+      const pusSpots = [
+        { x: leftCX - 4, y: tonsilCY - 14 },
+        { x: leftCX + 8, y: tonsilCY - 4 },
+        { x: leftCX - 2, y: tonsilCY + 8 },
+        { x: leftCX + 10, y: tonsilCY + 18 },
+        { x: rightCX + 4, y: tonsilCY - 14 },
+        { x: rightCX - 8, y: tonsilCY - 4 },
+        { x: rightCX + 2, y: tonsilCY + 8 },
+        { x: rightCX - 10, y: tonsilCY + 18 }
+      ];
+      for (let s = 0; s < pusSpots.length; s++) {
+        const spot = pusSpots[s];
+        ctx.circle({ cx: spot.x, cy: spot.y, r: 3 + 2.5 * env.lvl, fill: "#fef08a", stroke: "#fef9c3", "stroke-width": 1, opacity: env.lvl * 0.95 });
+      }
+    }
+
+    for (let b = 0; b < 6; b++) {
+      const bx = 110 + env.inv * (130 + b * 22);
+      const by = 160 + b * 22 + Math.sin(env.u * 8 + b) * 6;
+      ctx.circle({
+        cx: bx, cy: by, r: 3.5, fill: PALETTE.warn,
+        opacity: Math.min(1, env.inv * 2) * (1 - 0.75 * env.rep)
+      });
+    }
+
+    if (env.rep > 0.05) {
+      ctx.ellipse({ cx: leftCX, cy: tonsilCY, rx: rX + 4, ry: rY + 4, fill: "none", stroke: PALETTE.ok, "stroke-width": 2, opacity: env.rep * 0.8 });
+      ctx.ellipse({ cx: rightCX, cy: tonsilCY, rx: rX + 4, ry: rY + 4, fill: "none", stroke: PALETTE.ok, "stroke-width": 2, opacity: env.rep * 0.8 });
+      ctx.line({ x1: 280, y1: 195, x2: 280, y2: 280, stroke: "#38bdf8", "stroke-width": 3, "stroke-dasharray": "6 4", opacity: env.rep * 0.85 });
+    }
+
+    ctx.text({ x: 280, y: 130, "text-anchor": "middle", "font-size": 11, fill: "#94a3b8" }, "軟顎懸雍垂");
+    ctx.text({ x: leftCX, y: tonsilCY + rY + 16, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#fca5a5" }, "左扁桃腺隱窩");
+    ctx.text({ x: rightCX, y: tonsilCY + rY + 16, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#fca5a5" }, "右扁桃腺隱窩");
+    ctx.text({ x: 280, y: 338, "text-anchor": "middle", "font-size": 11, fill: "#94a3b8" }, "舌根後咽腔");
+  }
+
+  // 頸椎與頸深筋膜解剖：頸椎四節骨體椎間盤、棘突骨板、深層肌筋膜痙攣拘急與激痛點
+  function pmCervicalSpineFascia(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+
+    const vY = [130, 175, 220, 265];
+    const vLabels = ["頸椎三", "頸椎四", "頸椎五", "頸椎六"];
+    for (let i = 0; i < 4; i++) {
+      const y = vY[i];
+      ctx.rect({ x: 120, y: y, width: 68, height: 32, rx: 6, fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.5 });
+      ctx.rect({ x: 126, y: y + 5, width: 56, height: 22, rx: 4, fill: "#e2e8f0", opacity: 0.6 });
+      ctx.text({ x: 154, y: y + 21, "text-anchor": "middle", "font-size": 10, fill: "#475569" }, vLabels[i]);
+
+      ctx.path({
+        d: "M 188 " + (y + 6) + " L 235 " + (y + 16) + " L 188 " + (y + 26) + " Z",
+        fill: PALETTE.pale, stroke: "#94a3b8", "stroke-width": 1.5
+      });
+
+      if (i < 3) {
+        ctx.rect({
+          x: 126, y: y + 32, width: 56, height: 11, rx: 3,
+          fill: "#38bdf8", opacity: 0.5 + 0.3 * (1 - env.lvl)
+        });
+      }
+    }
+
+    ctx.path({
+      d: "M 235 130 C 242 180 242 240 235 295",
+      fill: "none", stroke: "#94a3b8", "stroke-width": 3, "stroke-dasharray": "6 3"
+    });
+
+    const spasmOffset = Math.sin(env.u * Math.PI * 6) * 4 * env.lvl;
+    const fiberColor = env.lvl > 0.1 ? "#7f1d1d" : "#334155";
+    ctx.rect({ x: 255, y: 125, width: 215, height: 180, rx: 12, fill: fiberColor, opacity: 0.35 + 0.45 * env.lvl });
+
+    for (let f = 0; f < 5; f++) {
+      const fy = 145 + f * 32;
+      const wave = env.lvl > 0.05 ? Math.sin((f + env.u * 3) * Math.PI) * (8 + 12 * env.lvl) : 0;
+      ctx.path({
+        d: "M 245 " + fy + " Q " + (350 + wave + spasmOffset) + " " + (fy + 14 * env.lvl) + " 470 " + (fy + 10),
+        fill: "none",
+        stroke: env.lvl > 0.1 ? "#dc2626" : "#64748b",
+        "stroke-width": 2 + 1.5 * env.lvl,
+        opacity: 0.6 + 0.35 * env.lvl
+      });
+    }
+
+    const tpCX = 350 + spasmOffset;
+    const tpCY = 210;
+    if (env.lvl > 0.05) {
+      ctx.circle({ cx: tpCX, cy: tpCY, r: 16 + 14 * env.lvl, fill: "#7f1d1d", opacity: env.lvl * 0.85 });
+      ctx.circle({ cx: tpCX, cy: tpCY, r: 8 + 6 * env.lvl, fill: "#dc2626", opacity: env.lvl * 0.95 });
+      for (let r = 1; r <= 3; r++) {
+        ctx.circle({
+          cx: tpCX, cy: tpCY, r: 24 + r * 14 * env.lvl,
+          fill: "none", stroke: PALETTE.warn, "stroke-width": 1.5,
+          "stroke-dasharray": "4 4", opacity: env.lvl * (0.8 - r * 0.2)
+        });
+      }
+    }
+
+    if (env.rep > 0.05) {
+      ctx.line({ x1: 420, y1: 135, x2: tpCX, y2: tpCY, stroke: "#facc15", "stroke-width": 2.5, "stroke-linecap": "round", opacity: env.rep });
+      ctx.circle({ cx: 422, cy: 133, r: 3.5, fill: "#facc15", opacity: env.rep });
+      ctx.circle({ cx: tpCX, cy: tpCY, r: 30, fill: "none", stroke: PALETTE.ok, "stroke-width": 2.5, opacity: env.rep * 0.9 });
+      for (let w = 0; w < 3; w++) {
+        const wy = 230 + w * 28;
+        ctx.line({ x1: 270, y1: wy, x2: 430, y2: wy, stroke: PALETTE.ok, "stroke-width": 2, "stroke-linecap": "round", opacity: env.rep * 0.8 });
+      }
+    }
+
+    ctx.text({ x: 154, y: 312, "text-anchor": "middle", "font-size": 11, fill: "#94a3b8" }, "頸椎骨骼椎體");
+    ctx.text({ x: 235, y: 312, "text-anchor": "middle", "font-size": 11, fill: "#94a3b8" }, "棘突項韌帶");
+    ctx.text({ x: 370, y: 325, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: env.lvl > 0.1 ? "#fca5a5" : "#cbd5e1" }, "頸深筋膜攣急點");
+  }
+
+  // 牙科齒質剖面解剖：牙冠琺瑯質、象牙質小管射線、牙髓神經血管束、齲洞崩塌與樹脂光固化充填
+  function pmDentalCariesSection(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+
+    ctx.path({
+      d: "M 100 240 C 170 265 240 255 280 260 C 320 255 390 265 460 240 L 460 330 L 100 330 Z",
+      fill: PALETTE.skin, opacity: 0.85
+    });
+    ctx.rect({ x: 130, y: 285, width: 300, height: 45, rx: 8, fill: "#1e293b", stroke: "#334155", "stroke-width": 1 });
+    ctx.text({ x: 280, y: 320, "text-anchor": "middle", "font-size": 10, fill: "#64748b" }, "牙槽骨質支撐");
+
+    ctx.path({
+      d: "M 190 145 C 200 115 250 112 280 125 C 310 112 360 115 370 145 C 385 180 375 240 355 285 C 345 310 330 315 320 285 C 310 255 300 235 280 235 C 260 235 250 255 240 285 C 230 315 215 310 205 285 C 185 240 175 180 190 145 Z",
+      fill: PALETTE.pale, stroke: "#cbd5e1", "stroke-width": 2
+    });
+
+    ctx.path({
+      d: "M 205 155 C 215 132 250 130 280 140 C 310 130 345 132 355 155 C 368 185 360 235 342 275 C 335 295 325 295 318 275 C 308 245 295 230 280 230 C 265 230 252 245 242 275 C 235 295 225 295 218 275 C 200 235 192 185 205 155 Z",
+      fill: "#fef3c7", stroke: "#fde68a", "stroke-width": 1.2
+    });
+
+    for (let dt = 0; dt < 8; dt++) {
+      const angle = (dt / 7) * Math.PI;
+      const dtx1 = 280 + Math.cos(angle) * 35;
+      const dty1 = 180 - Math.sin(angle) * 25;
+      const dtx2 = 280 + Math.cos(angle) * 65;
+      const dty2 = 180 - Math.sin(angle) * 45;
+      ctx.line({ x1: dtx1, y1: dty1, x2: dtx2, y2: dty2, stroke: "#fef08a", "stroke-width": 0.8, opacity: 0.6 });
+    }
+
+    ctx.path({
+      d: "M 255 175 C 265 160 295 160 305 175 C 315 190 310 235 305 270 C 300 250 295 215 280 205 C 265 215 260 250 255 270 C 250 235 245 190 255 175 Z",
+      fill: PALETTE.blood, stroke: "#ef4444", "stroke-width": 1.5, opacity: 0.85
+    });
+
+    ctx.path({
+      d: "M 280 170 L 280 205 M 275 195 L 260 265 M 285 195 L 300 265",
+      fill: "none", stroke: "#fca5a5", "stroke-width": 1.5
+    });
+
+    if (env.lvl > 0.05) {
+      const cariesDepth = 12 + 28 * env.lvl;
+      const cariesWidth = 16 + 24 * env.lvl;
+      ctx.path({
+        d: "M " + (280 - cariesWidth) + " 124 Q 280 " + (124 + cariesDepth) + " " + (280 + cariesWidth) + " 124 Q 280 " + (120 + cariesDepth * 0.4) + " " + (280 - cariesWidth) + " 124 Z",
+        fill: "#0f172a", stroke: "#450a0a", "stroke-width": 1.5
+      });
+      ctx.ellipse({
+        cx: 280, cy: 124 + cariesDepth * 0.6, rx: cariesWidth * 0.7, ry: cariesDepth * 0.4,
+        fill: "#450a0a", opacity: env.lvl * 0.75
+      });
+      for (let cb = 0; cb < 4; cb++) {
+        ctx.circle({
+          cx: 275 + (cb % 2 === 0 ? -7 : 7), cy: 130 + cb * 6 * env.lvl,
+          r: 2.5, fill: PALETTE.warn, opacity: env.lvl
+        });
+      }
+    }
+
+    if (env.rep > 0.05) {
+      ctx.ellipse({
+        cx: 280, cy: 132, rx: 25, ry: 12,
+        fill: PALETTE.gel, stroke: PALETTE.ok, "stroke-width": 1.5, opacity: env.rep * 0.95
+      });
+      ctx.circle({
+        cx: 280, cy: 132, r: 35,
+        fill: "none", stroke: "#38bdf8", "stroke-width": 2.5, opacity: env.rep * 0.75
+      });
+      ctx.text({ x: 280, y: 110, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#38bdf8", opacity: env.rep }, "光固化樹脂密合");
+    }
+
+    ctx.text({ x: 150, y: 135, "font-size": 11, fill: "#94a3b8" }, "牙釉質琺瑯質");
+    ctx.text({ x: 150, y: 175, "font-size": 11, fill: "#fde68a" }, "象牙質小管");
+    ctx.text({ x: 410, y: 195, "font-size": 11, fill: "#fca5a5" }, "牙髓腔神經血管");
+    ctx.text({ x: 120, y: 270, "font-size": 11, fill: "#cbd5e1" }, "牙齦黏膜");
+  }
+
   const PATHO_DRAWERS = {
     respiratory_mucosa: pmRespiratory,
     vascular_metabolic: pmVascular,
     gi_tract: pmGI,
     skin_barrier: pmSkin,
     joint_spine: pmJoint,
-    uro_pelvic: pmUro
+    uro_pelvic: pmUro,
+    dental_oral: pmDental,
+    tcm_meridian: pmTCM,
+    endocrine_receptor: pmEndocrine
   };
+
+  // 依據解剖標記與器官系統派發專業解剖繪圖函式
+  function pmPickAnatomyDrawer(p) {
+    const oLabel = (p.organ_label || "");
+    const aTarget = (p.anatomy_target || "");
+    const lLabel = (p.lesion_label || "");
+    const combined = oLabel + " " + aTarget + " " + lLabel;
+
+    // 1. 口咽扁桃腺解剖（急性扁桃腺炎、咽喉炎、扁桃腺隱窩）
+    if (combined.indexOf("扁桃") >= 0 || combined.indexOf("咽") >= 0 || combined.indexOf("懸雍垂") >= 0) {
+      return pmPharynxTonsil;
+    }
+    // 2. 頸椎與頸深筋膜解剖（落枕、頸部筋膜、項韌帶、頸椎病）
+    if (combined.indexOf("頸") >= 0 || combined.indexOf("落枕") >= 0 || combined.indexOf("項") >= 0) {
+      return pmCervicalSpineFascia;
+    }
+    // 3. 牙科齒質剖面（牙釉質、牙本質、齲齒、窩洞、牙髓）
+    if (p.organ_system === "dental_oral" || combined.indexOf("牙") >= 0 || combined.indexOf("齲") >= 0 || combined.indexOf("齒") >= 0) {
+      return pmDentalCariesSection;
+    }
+
+    return PATHO_DRAWERS[p.organ_system] || pmRespiratory;
+  }
 
   // Blueprint 14：器官病理機轉（Phase 35-02）
   function drawPathologyMechanism(ctx, params, u) {
@@ -2391,7 +2935,7 @@
       amp: amp
     };
     pmDrawFrame(ctx, p);
-    const drawer = PATHO_DRAWERS[p.organ_system] || pmRespiratory;
+    const drawer = pmPickAnatomyDrawer(p);
     drawer(ctx, env);
     pmDrawMicro(ctx, env, p);
     drawStepPills(ctx, p.step_labels, u);
@@ -2683,11 +3227,6 @@
         return Math.round(scene.duration_sec);
       }
     }
-    const bp = scene ? scene.blueprint : "";
-    if (bp === "process_diagram") return 8;
-    if (bp === "contrast") return 9;
-    if (bp === "timeline") return 7;
-    if (bp === "pathology_mechanism") return 8;
     return 8;
   }
 

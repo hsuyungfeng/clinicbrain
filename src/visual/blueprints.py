@@ -86,6 +86,8 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                         "capsular_contracture_ball", "nodule_clumping",
                         # Phase 35-03：基層病理誘因（黏膜刺激、代謝力學超載）
                         "mucosal_irritant_surge", "metabolic_mechanical_overload",
+                        # Phase 39：牙科、中醫、內分泌專科病理對照
+                        "dental_caries_erosion", "tcm_qi_stagnation", "metabolic_insulin_resistance",
                     )},
                     "core_effect": {"type": "enum", "values": ("dim", "none")},
                     "core_label": {"type": "text", "max_len": 8},
@@ -105,6 +107,8 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                         "dual_plane_natural_teardrop", "micro_droplet_diffusion",
                         # Phase 35-03：日常防護（屏障保濕護盾、作息調控平衡）
                         "barrier_hydration_shield", "lifestyle_homeostasis_load",
+                        # Phase 39：牙科充填洗牙、中醫針灸得氣、代謝糖分調控
+                        "dental_sealing_restoration", "tcm_acupuncture_flow", "metabolic_glycemic_control",
                     )},
                     "rows": {"type": "int", "min": 1, "max": 4},
                     "per_row": {"type": "int", "min": 3, "max": 8},
@@ -149,6 +153,8 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                 "bone_healing", "bruise_metabolism", "scar_maturation", "nerve_regeneration", "skin_retraction",
                 # Phase 35-03：基層醫療病程（急性黏膜清除、慢性生理穩定、肌骨減壓復健）
                 "mucosal_clearance", "homeostasis_control", "structural_rehab",
+                # Phase 39：牙科牙周修復、中醫經絡調和、代謝血管穩定
+                "dental_pulp_healing", "tcm_meridian_harmony", "metabolic_vessel_stabilization",
             )},
             "units": {"type": "int", "min": 2, "max": 5},
             "unit_fill": {"type": "palette"},
@@ -448,6 +454,10 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                     "skin_barrier",
                     "joint_spine",
                     "uro_pelvic",
+                    # Phase 39：牙科口腔、中醫經絡、內分泌代謝專科
+                    "dental_oral",
+                    "tcm_meridian",
+                    "endocrine_receptor",
                 ),
             },
             "organ_label": {"type": "text", "max_len": 8},
@@ -475,6 +485,13 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
         },
     },
 }
+
+# Phase 39 Plan 02：健保核心專科圖元常數（單一來源，皆源自 BLUEPRINTS 列舉，
+# 供 IR 驗證、管理審核端與前端 visual_engine.js PATHO_DRAWERS/SPECIALTY 詞表共用）
+PATHOLOGY_ORGAN_SYSTEMS: tuple[str, ...] = BLUEPRINTS["pathology_mechanism"]["params"]["organ_system"]["values"]
+CONTRAST_LEFT_SPECIALTY: tuple[str, ...] = BLUEPRINTS["contrast"]["params"]["left"]["fields"]["mode"]["values"]
+CONTRAST_RIGHT_SPECIALTY: tuple[str, ...] = BLUEPRINTS["contrast"]["params"]["right"]["fields"]["mode"]["values"]
+TIMELINE_SPECIALTY: tuple[str, ...] = BLUEPRINTS["timeline"]["params"]["connectors"]["values"]
 
 
 def default_params(blueprint: str) -> dict[str, Any]:

@@ -1,0 +1,3243 @@
+[
+  {
+    "index": 1,
+    "topic_key": "autologous-fat-grafting",
+    "title": "自體脂肪移植原理圖解",
+    "disease_name": "自體脂肪移植",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 1,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "自體脂肪",
+      "脂肪移植",
+      "脂肪填充",
+      "補脂",
+      "自體脂肪移植"
+    ]
+  },
+  {
+    "index": 2,
+    "topic_key": "tree-laser-skin-resurfacing",
+    "title": "皮秒雷射原理圖解",
+    "disease_name": "皮秒雷射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 2,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮秒雷射",
+      "光震波",
+      "膠原蛋白增生"
+    ]
+  },
+  {
+    "index": 3,
+    "topic_key": "tree-botox-injection",
+    "title": "肉毒桿菌素注射原理圖解",
+    "disease_name": "肉毒桿菌素注射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 3,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "神經調節",
+      "肌肉放鬆",
+      "微滴擴散"
+    ]
+  },
+  {
+    "index": 4,
+    "topic_key": "tree-electrowave-facelift",
+    "title": "電波拉皮原理圖解",
+    "disease_name": "電波拉皮",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 4,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "電磁波加熱",
+      "膠原新生",
+      "無恢復期"
+    ]
+  },
+  {
+    "index": 5,
+    "topic_key": "tree-hyaluronic-acid-filler",
+    "title": "玻尿酸填充原理圖解",
+    "disease_name": "玻尿酸填充",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 5,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "玻尿酸填充",
+      "皮下注射",
+      "術後照護"
+    ]
+  },
+  {
+    "index": 6,
+    "topic_key": "tree-fractional-laser",
+    "title": "飛梭雷射原理圖解",
+    "disease_name": "飛梭雷射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 6,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "點陣光熱",
+      "膠原新生",
+      "皮膚修復"
+    ]
+  },
+  {
+    "index": 7,
+    "topic_key": "tree-hifu-lifting",
+    "title": "音波拉提原理圖解",
+    "disease_name": "音波拉提",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 7,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "聚焦超音波",
+      "筋膜層緊緻",
+      "術後照護"
+    ]
+  },
+  {
+    "index": 8,
+    "topic_key": "tree-epidermal-cyst-excision",
+    "title": "未感染粉瘤微創切除原理圖解",
+    "disease_name": "未感染粉瘤微創切除",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 16,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "粉瘤",
+      "表皮樣囊腫",
+      "微創手術",
+      "旋轉切除刀",
+      "囊壁完整清除"
+    ]
+  },
+  {
+    "index": 9,
+    "topic_key": "tree-paronychia-matrixectomy",
+    "title": "甲溝炎甲床重整原理圖解",
+    "disease_name": "甲溝炎甲床重整",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 17,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "甲溝炎",
+      "嵌甲",
+      "甲床重整",
+      "甲母質處理",
+      "微創手術"
+    ]
+  },
+  {
+    "index": 10,
+    "topic_key": "tree-bromhidrosis-rotary-cutter",
+    "title": "螺旋刀微創狐臭手術原理圖解",
+    "disease_name": "螺旋刀微創狐臭手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 18,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "狐臭",
+      "頂漿腺",
+      "微創螺旋刀",
+      "負壓抽吸",
+      "異味改善"
+    ]
+  },
+  {
+    "index": 11,
+    "topic_key": "tree-endolift-laser",
+    "title": "光纖內提拉微創原理圖解",
+    "disease_name": "光纖內提拉微創",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 19,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "光纖拉提",
+      "皮下雷射",
+      "筋膜緊緻",
+      "微創溶脂",
+      "膠原新生"
+    ]
+  },
+  {
+    "index": 12,
+    "topic_key": "tree-microneedle-rf",
+    "title": "黃金微針電波原理圖解",
+    "disease_name": "黃金微針電波",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 20,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "黃金微針",
+      "電波拉提",
+      "真皮膠原",
+      "毛孔細緻",
+      "微創修復"
+    ]
+  },
+  {
+    "index": 13,
+    "topic_key": "tree-scar-subcision",
+    "title": "疤痕皮下切割原理圖解",
+    "disease_name": "疤痕皮下切割",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 21,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮下切割",
+      "疤痕鬆解",
+      "攣縮纖維",
+      "痘疤修復",
+      "光纖處置"
+    ]
+  },
+  {
+    "index": 14,
+    "topic_key": "tree-lipoma-aspiration",
+    "title": "微創脂肪瘤切除原理圖解",
+    "disease_name": "微創脂肪瘤切除",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 22,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "脂肪瘤",
+      "微創抽吸",
+      "包膜取出",
+      "微小切口",
+      "預防復發"
+    ]
+  },
+  {
+    "index": 15,
+    "topic_key": "tree-plasma-pen-electrocautery",
+    "title": "等離子筆微氣化原理圖解",
+    "disease_name": "等離子筆微氣化",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 23,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "等離子筆",
+      "電灼治療",
+      "皮贅肉芽",
+      "微創氣化",
+      "贅疣去除"
+    ]
+  },
+  {
+    "index": 16,
+    "topic_key": "tree-3503264627-mid-lower-smas-facelift",
+    "title": "中下臉 SMAS 筋膜深層拉皮手術原理圖解",
+    "disease_name": "中下臉 SMAS 筋膜深層拉皮手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 26,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "深層筋膜提拉",
+      "骨膜錨定",
+      "零張力縫合"
+    ]
+  },
+  {
+    "index": 17,
+    "topic_key": "tree-3503264627-swan-neck-cervicoplasty",
+    "title": "天鵝頸闊頸肌縫合拉皮術原理圖解",
+    "disease_name": "天鵝頸闊頸肌縫合拉皮術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 27,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "闊頸肌縫合",
+      "微創隱痕",
+      "下顎輪廓"
+    ]
+  },
+  {
+    "index": 18,
+    "topic_key": "tree-3503264627-thermage-flx-rf",
+    "title": "Thermage FLX 鳳凰電波單極緊膚療程原理圖解",
+    "disease_name": "Thermage FLX 鳳凰電波單極緊膚療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 28,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "單極電波",
+      "膠原新生",
+      "智慧阻抗校準"
+    ]
+  },
+  {
+    "index": 19,
+    "topic_key": "tree-3503264627-epidermal-cyst-excision",
+    "title": "未感染粉瘤微創旋轉吸引切除手術原理圖解",
+    "disease_name": "未感染粉瘤微創旋轉吸引切除手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 29,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "微創旋轉吸引",
+      "完整囊壁剝離",
+      "術後照護"
+    ]
+  },
+  {
+    "index": 20,
+    "topic_key": "tree-3503264627-paronychia-matrixectomy",
+    "title": "甲溝炎嵌甲甲床重整手術原理圖解",
+    "disease_name": "甲溝炎嵌甲甲床重整手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 30,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "甲溝炎",
+      "嵌甲",
+      "甲床重整"
+    ]
+  },
+  {
+    "index": 21,
+    "topic_key": "tree-3503264627-bromhidrosis-rotary-cutter",
+    "title": "微創螺旋刀頂漿腺狐臭手術原理圖解",
+    "disease_name": "微創螺旋刀頂漿腺狐臭手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 31,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "微創螺旋刀",
+      "頂漿腺刮除",
+      "腋下手術照護"
+    ]
+  },
+  {
+    "index": 22,
+    "topic_key": "tree-3503264627-endolift-laser",
+    "title": "Endolift 光纖內提拉手術原理圖解",
+    "disease_name": "Endolift 光纖內提拉手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 32,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "光纖內提拉",
+      "雷射緊緻",
+      "微創手術"
+    ]
+  },
+  {
+    "index": 23,
+    "topic_key": "tree-3503264627-microneedle-rf",
+    "title": "黃金微針電波拉提原理圖解",
+    "disease_name": "黃金微針電波拉提",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 33,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "絕緣微針",
+      "立體電波",
+      "膠原新生"
+    ]
+  },
+  {
+    "index": 24,
+    "topic_key": "tree-3503264627-scar-subcision",
+    "title": "疤痕與蟹足腫光纖皮下切割治療原理圖解",
+    "disease_name": "疤痕與蟹足腫光纖皮下切割治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 34,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "皮下纖維鬆解",
+      "光纖鈍針技術",
+      "疤痕修復照護"
+    ]
+  },
+  {
+    "index": 25,
+    "topic_key": "tree-3503264627-lipoma-aspiration",
+    "title": "微創脂肪瘤抽吸切除手術原理圖解",
+    "disease_name": "微創脂肪瘤抽吸切除手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 35,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "微創抽吸",
+      "脂肪瘤切除",
+      "區域性麻醉"
+    ]
+  },
+  {
+    "index": 26,
+    "topic_key": "tree-3503264627-plasma-pen-electrocautery",
+    "title": "等離子筆與電灼贅疣治療原理圖解",
+    "disease_name": "等離子筆與電灼贅疣治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 36,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "等離子筆",
+      "電灼贅疣",
+      "微創修復"
+    ]
+  },
+  {
+    "index": 27,
+    "topic_key": "tree-3503264627-qray-frx-fractional-laser",
+    "title": "QRAY FRX 雙波長微創飛梭雷射原理圖解",
+    "disease_name": "QRAY FRX 雙波長微創飛梭雷射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 37,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "二氧化碳雷射",
+      "微熱分解作用",
+      "膠原蛋白新生"
+    ]
+  },
+  {
+    "index": 28,
+    "topic_key": "tree-3503264627-facial-bone-contouring",
+    "title": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）原理圖解",
+    "disease_name": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 38,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "顴骨內推",
+      "下顎角削減",
+      "口內隱痕"
+    ]
+  },
+  {
+    "index": 29,
+    "topic_key": "tree-3503264627-ultraformer-mpt-hifu",
+    "title": "Ultraformer MPT 媚必提微脈衝音波拉提療程原理圖解",
+    "disease_name": "Ultraformer MPT 媚必提微脈衝音波拉提療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 39,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "微脈衝音波",
+      "筋膜緊緻",
+      "無恢復期"
+    ]
+  },
+  {
+    "index": 30,
+    "topic_key": "tree-3503264627-mommy-makeover-reconstruction",
+    "title": "產後媽媽身形修復手術原理圖解",
+    "disease_name": "產後媽媽身形修復手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 40,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "腹直肌閉合",
+      "腹部拉皮",
+      "自體脂肪移植"
+    ]
+  },
+  {
+    "index": 31,
+    "topic_key": "tree-3503264627-triton-laser-hair-removal",
+    "title": "Triton 海神雙波長雷射除毛療程原理圖解",
+    "disease_name": "Triton 海神雙波長雷射除毛療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 41,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "雙波長雷射",
+      "藍寶石冷卻",
+      "毛囊週期"
+    ]
+  },
+  {
+    "index": 32,
+    "topic_key": "tree-3503264627-nd-yag-laser-toning",
+    "title": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑原理圖解",
+    "disease_name": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 42,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "Nd:YAG雷射",
+      "黑色素代謝",
+      "肌膚均色"
+    ]
+  },
+  {
+    "index": 33,
+    "topic_key": "tree-3503264627-hyaluronic-acid-dermal-filler",
+    "title": "玻尿酸皮下填充微整形雕塑原理圖解",
+    "disease_name": "玻尿酸皮下填充微整形雕塑",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 43,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "玻尿酸填充",
+      "深層支撐",
+      "微整形雕塑"
+    ]
+  },
+  {
+    "index": 34,
+    "topic_key": "tree-3503264627-picosecond-laser-rejuvenation",
+    "title": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑原理圖解",
+    "disease_name": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 44,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "皮秒雷射",
+      "蜂巢透鏡",
+      "光致空泡效應"
+    ]
+  },
+  {
+    "index": 35,
+    "topic_key": "tree-3503264627-ultherapy-focused-ultrasound",
+    "title": "Ultherapy 美國音波深層極線音波拉提療程原理圖解",
+    "disease_name": "Ultherapy 美國音波深層極線音波拉提療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 45,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "微聚焦超音波",
+      "筋膜層緊實",
+      "無創拉提"
+    ]
+  },
+  {
+    "index": 36,
+    "topic_key": "tree-3503264627-full-deep-plane-facelift",
+    "title": "高位深層筋膜全臉拉皮手術原理圖解",
+    "disease_name": "高位深層筋膜全臉拉皮手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 46,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "深層筋膜",
+      "骨膜錨定",
+      "無張力縫合"
+    ]
+  },
+  {
+    "index": 37,
+    "topic_key": "tree-3503264627-renuvion-helium-plasma",
+    "title": "Renuvion 超能電漿微創皮下縮皮緊緻術原理圖解",
+    "disease_name": "Renuvion 超能電漿微創皮下縮皮緊緻術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 47,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "氦氣電漿",
+      "瞬熱瞬冷",
+      "皮下纖維收縮"
+    ]
+  },
+  {
+    "index": 38,
+    "topic_key": "tree-3503264627-bbl-broadband-light",
+    "title": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）原理圖解",
+    "disease_name": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 48,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "多波段寬頻光",
+      "光老化改善",
+      "膠原蛋白增生"
+    ]
+  },
+  {
+    "index": 39,
+    "topic_key": "tree-3503264627-varicose-vein-evlt-sclerotherapy",
+    "title": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療原理圖解",
+    "disease_name": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 49,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "血管內雷射",
+      "泡沫硬化劑",
+      "微創治療"
+    ]
+  },
+  {
+    "index": 40,
+    "topic_key": "tree-3503264627-chronic-migraine-botox-decompression",
+    "title": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療原理圖解",
+    "disease_name": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 50,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "肉毒桿菌素",
+      "偏頭痛",
+      "神經減壓"
+    ]
+  },
+  {
+    "index": 41,
+    "topic_key": "tree-3503264627-overfilled-face-syndrome-correction",
+    "title": "饅化臉過度填充修復綜合治療原理圖解",
+    "disease_name": "饅化臉過度填充修復綜合治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 51,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "高頻超音波定位",
+      "透明質酸酶降解",
+      "微創減容與解離"
+    ]
+  },
+  {
+    "index": 42,
+    "topic_key": "tree-3503264627-rejuran-pdrn-skin-healer",
+    "title": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PD原理圖解",
+    "disease_name": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PD",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 52,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "多核苷酸",
+      "真皮層修復",
+      "微滴注射"
+    ]
+  },
+  {
+    "index": 43,
+    "topic_key": "tree-3503264627-bulbous-nose-rhinoplasty",
+    "title": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術原理圖解",
+    "disease_name": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 53,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "蒜頭鼻雕塑",
+      "軟骨縫合重塑",
+      "微創隱痕手術"
+    ]
+  },
+  {
+    "index": 44,
+    "topic_key": "tree-3503264627-chin-augmentation-genioplasty",
+    "title": "下巴美型手術（三維客製人工骨植入與下巴截骨成型術）原理圖解",
+    "disease_name": "下巴美型手術（三維客製人工骨植入與下巴截骨成型術）",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 54,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "頦神經保護",
+      "口內隱痕",
+      "骨癒合程序"
+    ]
+  },
+  {
+    "index": 45,
+    "topic_key": "tree-3503264627-fue-hair-transplantation",
+    "title": "FUE 微創毛囊單位精準植髮手術原理圖解",
+    "disease_name": "FUE 微創毛囊單位精準植髮手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 55,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "FUE植髮",
+      "毛囊單位",
+      "微創手術"
+    ]
+  },
+  {
+    "index": 46,
+    "topic_key": "tree-3503264627-orthognathic-surgery",
+    "title": "三維 數位導航正顎手術原理圖解",
+    "disease_name": "三維 數位導航正顎手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 56,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "三維數位導航",
+      "正顎手術",
+      "LeFort I截骨",
+      "BSSO下顎枝截骨",
+      "純鈦板釘固定"
+    ]
+  },
+  {
+    "index": 47,
+    "topic_key": "tree-3503264627-hydrafacial-deep-cleansing",
+    "title": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚原理圖解",
+    "disease_name": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 57,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "水渦漩技術",
+      "深層清潔",
+      "保濕匯入"
+    ]
+  },
+  {
+    "index": 48,
+    "topic_key": "tree-3503264627-blepharoplasty-eye-contouring",
+    "title": "全方位美眸眼整形手術原理圖解",
+    "disease_name": "全方位美眸眼整形手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 58,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "無痕內開眼袋",
+      "提眼瞼肌矯正",
+      "客製雙眼皮"
+    ]
+  },
+  {
+    "index": 49,
+    "topic_key": "tree-3503264627-structural-autologous-rhinoplasty",
+    "title": "結構式自體軟骨全方位隆鼻手術原理圖解",
+    "disease_name": "結構式自體軟骨全方位隆鼻手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 59,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "自體軟骨",
+      "鼻中膈延長",
+      "結構式隆鼻"
+    ]
+  },
+  {
+    "index": 50,
+    "topic_key": "tree-3503264627-asce-rose-exosome-regeneration",
+    "title": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法原理圖解",
+    "disease_name": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 60,
+    "clinic_id": "3503264627",
+    "keywords": [
+      "外泌體",
+      "大馬士革玫瑰幹細胞",
+      "皮膚屏障修復"
+    ]
+  },
+  {
+    "index": 51,
+    "topic_key": "tree-epidermal-cyst-excision",
+    "title": "未感染粉瘤微創旋轉吸引切除手術原理圖解",
+    "disease_name": "未感染粉瘤微創旋轉吸引切除手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 61,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "粉瘤",
+      "微創手術",
+      "囊壁剝離"
+    ]
+  },
+  {
+    "index": 52,
+    "topic_key": "tree-paronychia-matrixectomy",
+    "title": "甲溝炎嵌甲甲床重整手術原理圖解",
+    "disease_name": "甲溝炎嵌甲甲床重整手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 62,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "甲溝炎",
+      "嵌甲",
+      "甲床重整"
+    ]
+  },
+  {
+    "index": 53,
+    "topic_key": "tree-bromhidrosis-rotary-cutter",
+    "title": "微創螺旋刀頂漿腺狐臭手術原理圖解",
+    "disease_name": "微創螺旋刀頂漿腺狐臭手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 63,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "微創螺旋刀",
+      "頂漿腺刮除",
+      "腋下手術照護"
+    ]
+  },
+  {
+    "index": 54,
+    "topic_key": "tree-endolift-laser",
+    "title": "Endolift 光纖內提拉手術原理圖解",
+    "disease_name": "Endolift 光纖內提拉手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 64,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "光纖內提拉",
+      "雷射緊緻",
+      "微創手術"
+    ]
+  },
+  {
+    "index": 55,
+    "topic_key": "tree-microneedle-rf",
+    "title": "黃金微針電波拉提原理圖解",
+    "disease_name": "黃金微針電波拉提",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 65,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "絕緣微針",
+      "立體電波",
+      "膠原新生"
+    ]
+  },
+  {
+    "index": 56,
+    "topic_key": "tree-scar-subcision",
+    "title": "疤痕與蟹足腫光纖皮下切割治療原理圖解",
+    "disease_name": "疤痕與蟹足腫光纖皮下切割治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 66,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮下纖維鬆解",
+      "光纖微創技術",
+      "疤痕修復機轉"
+    ]
+  },
+  {
+    "index": 57,
+    "topic_key": "tree-plasma-pen-electrocautery",
+    "title": "等離子筆與電灼贅疣治療原理圖解",
+    "disease_name": "等離子筆與電灼贅疣治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 67,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "等離子筆",
+      "電灼贅疣",
+      "微創修復"
+    ]
+  },
+  {
+    "index": 58,
+    "topic_key": "tree-lipoma-aspiration",
+    "title": "微創脂肪瘤抽吸切除手術原理圖解",
+    "disease_name": "微創脂肪瘤抽吸切除手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 68,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "微創抽吸",
+      "脂肪瘤切除",
+      "區域性麻醉"
+    ]
+  },
+  {
+    "index": 59,
+    "topic_key": "tree-laser-skin-resurfacing",
+    "title": "皮秒雷射原理圖解",
+    "disease_name": "皮秒雷射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 69,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮秒雷射",
+      "光震波",
+      "膠原蛋白增生"
+    ]
+  },
+  {
+    "index": 60,
+    "topic_key": "tree-asce-rose-exosome-regeneration",
+    "title": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法原理圖解",
+    "disease_name": "ASCE+ 外泌體大馬士革玫瑰幹細胞再生修復療法",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 70,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "外泌體",
+      "大馬士革玫瑰幹細胞",
+      "皮膚屏障修復"
+    ]
+  },
+  {
+    "index": 61,
+    "topic_key": "tree-structural-autologous-rhinoplasty",
+    "title": "結構式自體軟骨全方位隆鼻手術原理圖解",
+    "disease_name": "結構式自體軟骨全方位隆鼻手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 71,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "自體軟骨",
+      "鼻中膈延長",
+      "結構式隆鼻"
+    ]
+  },
+  {
+    "index": 62,
+    "topic_key": "tree-blepharoplasty-eye-contouring",
+    "title": "全方位美眸眼整形手術原理圖解",
+    "disease_name": "全方位美眸眼整形手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 72,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "無痕內開眼袋",
+      "提眼瞼肌矯正",
+      "客製雙眼皮"
+    ]
+  },
+  {
+    "index": 63,
+    "topic_key": "tree-hydrafacial-deep-cleansing",
+    "title": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚原理圖解",
+    "disease_name": "Hydrafacial 海菲秀專利水渦漩深層清潔煥膚",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 73,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "水渦漩技術",
+      "深層清潔",
+      "保濕匯入"
+    ]
+  },
+  {
+    "index": 64,
+    "topic_key": "tree-orthognathic-surgery",
+    "title": "三維 數位導航正顎手術原理圖解",
+    "disease_name": "三維 數位導航正顎手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 74,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "三維數位導航",
+      "正顎手術",
+      "LeFort I截骨",
+      "BSSO下顎枝截骨",
+      "純鈦板釘固定"
+    ]
+  },
+  {
+    "index": 65,
+    "topic_key": "tree-fue-hair-transplantation",
+    "title": "FUE 微創毛囊單位精準植髮手術原理圖解",
+    "disease_name": "FUE 微創毛囊單位精準植髮手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 75,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "FUE植髮",
+      "毛囊單位",
+      "微創手術"
+    ]
+  },
+  {
+    "index": 66,
+    "topic_key": "tree-chin-augmentation-genioplasty",
+    "title": "下巴美型手術（三維客製人工骨植入與下巴截骨成型術）原理圖解",
+    "disease_name": "下巴美型手術（三維客製人工骨植入與下巴截骨成型術）",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 76,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "頦神經保護",
+      "口內隱痕",
+      "骨癒合程序"
+    ]
+  },
+  {
+    "index": 67,
+    "topic_key": "tree-bulbous-nose-rhinoplasty",
+    "title": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術原理圖解",
+    "disease_name": "蒜頭鼻雕塑與鼻頭軟骨微創縮小手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 77,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "蒜頭鼻雕塑",
+      "軟骨縫合重塑",
+      "微創隱痕手術"
+    ]
+  },
+  {
+    "index": 68,
+    "topic_key": "tree-rejuran-pdrn-skin-healer",
+    "title": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PD原理圖解",
+    "disease_name": "Rejuran 麗珠蘭野生鮭魚 DNA 多核苷酸（PN/PD",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 78,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "多核苷酸",
+      "真皮層修復",
+      "微滴注射"
+    ]
+  },
+  {
+    "index": 69,
+    "topic_key": "tree-overfilled-face-syndrome-correction",
+    "title": "饅化臉過度填充修復綜合治療原理圖解",
+    "disease_name": "饅化臉過度填充修復綜合治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 79,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "高頻超音波定位",
+      "透明質酸酶降解",
+      "微創減容與解離"
+    ]
+  },
+  {
+    "index": 70,
+    "topic_key": "tree-chronic-migraine-botox-decompression",
+    "title": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療原理圖解",
+    "disease_name": "慢性頑固性偏頭痛肉毒桿菌素注射與周邊神經微創減壓治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 80,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "肉毒桿菌素",
+      "偏頭痛",
+      "神經減壓"
+    ]
+  },
+  {
+    "index": 71,
+    "topic_key": "tree-varicose-vein-evlt-sclerotherapy",
+    "title": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療原理圖解",
+    "disease_name": "微創下肢靜脈曲張血管內雷射閉合與泡沫硬化劑治療",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 81,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "血管內雷射",
+      "泡沫硬化劑",
+      "微創治療"
+    ]
+  },
+  {
+    "index": 72,
+    "topic_key": "tree-bbl-broadband-light",
+    "title": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）原理圖解",
+    "disease_name": "BBL 青萃光旗艦脈衝光嫩膚（多波段光老化精準光療）",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 82,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "多波段寬頻光",
+      "光老化改善",
+      "膠原蛋白增生"
+    ]
+  },
+  {
+    "index": 73,
+    "topic_key": "tree-renuvion-helium-plasma",
+    "title": "Renuvion 超能電漿微創皮下縮皮緊緻術原理圖解",
+    "disease_name": "Renuvion 超能電漿微創皮下縮皮緊緻術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 83,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "氦氣電漿",
+      "瞬熱瞬冷",
+      "皮下纖維收縮"
+    ]
+  },
+  {
+    "index": 74,
+    "topic_key": "tree-full-deep-plane-facelift",
+    "title": "高位深層筋膜全臉拉皮手術原理圖解",
+    "disease_name": "高位深層筋膜全臉拉皮手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 84,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "深層筋膜",
+      "骨膜錨定",
+      "無張力縫合"
+    ]
+  },
+  {
+    "index": 75,
+    "topic_key": "tree-ultherapy-focused-ultrasound",
+    "title": "Ultherapy 美國音波深層極線音波拉提療程原理圖解",
+    "disease_name": "Ultherapy 美國音波深層極線音波拉提療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 85,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "微聚焦超音波",
+      "筋膜層緊實",
+      "無創拉提"
+    ]
+  },
+  {
+    "index": 76,
+    "topic_key": "tree-picosecond-laser-rejuvenation",
+    "title": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑原理圖解",
+    "disease_name": "聚焦蜂巢皮秒雷射深層除斑與膚質重塑",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 86,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮秒雷射",
+      "蜂巢透鏡",
+      "光致空泡效應"
+    ]
+  },
+  {
+    "index": 77,
+    "topic_key": "tree-hyaluronic-acid-dermal-filler",
+    "title": "玻尿酸皮下填充微整形雕塑原理圖解",
+    "disease_name": "玻尿酸皮下填充微整形雕塑",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 87,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "玻尿酸填充",
+      "深層支撐",
+      "微整形雕塑"
+    ]
+  },
+  {
+    "index": 78,
+    "topic_key": "tree-nd-yag-laser-toning",
+    "title": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑原理圖解",
+    "disease_name": "Nd:YAG 銣雅鉻淨膚雷射均色淡斑",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 88,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "Nd:YAG雷射",
+      "黑色素代謝",
+      "肌膚均色"
+    ]
+  },
+  {
+    "index": 79,
+    "topic_key": "tree-triton-laser-hair-removal",
+    "title": "Triton 海神雙波長雷射除毛療程原理圖解",
+    "disease_name": "Triton 海神雙波長雷射除毛療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 89,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "雙波長雷射",
+      "藍寶石冷卻",
+      "毛囊週期"
+    ]
+  },
+  {
+    "index": 80,
+    "topic_key": "tree-mommy-makeover-reconstruction",
+    "title": "產後媽媽身形修復手術原理圖解",
+    "disease_name": "產後媽媽身形修復手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 90,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "腹直肌閉合",
+      "腹部拉皮",
+      "自體脂肪移植"
+    ]
+  },
+  {
+    "index": 81,
+    "topic_key": "tree-ultraformer-mpt-hifu",
+    "title": "Ultraformer MPT 媚必提微脈衝音波拉提療程原理圖解",
+    "disease_name": "Ultraformer MPT 媚必提微脈衝音波拉提療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 91,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "微脈衝音波",
+      "筋膜緊緻",
+      "無恢復期"
+    ]
+  },
+  {
+    "index": 82,
+    "topic_key": "tree-facial-bone-contouring",
+    "title": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）原理圖解",
+    "disease_name": "顏面輪廓削骨手術（顴骨弓內推縮窄與下顎骨角削減塑型）",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 92,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "顴骨內推",
+      "下顎角削減",
+      "口內隱痕"
+    ]
+  },
+  {
+    "index": 83,
+    "topic_key": "tree-qray-frx-fractional-laser",
+    "title": "QRAY FRX 雙波長微創飛梭雷射原理圖解",
+    "disease_name": "QRAY FRX 雙波長微創飛梭雷射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 93,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "二氧化碳雷射",
+      "微熱分解作用",
+      "膠原蛋白新生"
+    ]
+  },
+  {
+    "index": 84,
+    "topic_key": "tree-thermage-flx-rf",
+    "title": "Thermage FLX 鳳凰電波單極緊膚療程原理圖解",
+    "disease_name": "Thermage FLX 鳳凰電波單極緊膚療程",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 94,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "單極電波",
+      "膠原新生",
+      "智慧阻抗校準"
+    ]
+  },
+  {
+    "index": 85,
+    "topic_key": "tree-swan-neck-cervicoplasty",
+    "title": "天鵝頸闊頸肌縫合拉皮術原理圖解",
+    "disease_name": "天鵝頸闊頸肌縫合拉皮術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 95,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "闊頸肌縫合",
+      "微創隱痕",
+      "下顎輪廓"
+    ]
+  },
+  {
+    "index": 86,
+    "topic_key": "tree-mid-lower-smas-facelift",
+    "title": "中下臉 SMAS 筋膜深層拉皮手術原理圖解",
+    "disease_name": "中下臉 SMAS 筋膜深層拉皮手術",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 96,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "深層筋膜提拉",
+      "骨膜錨定",
+      "零張力縫合"
+    ]
+  },
+  {
+    "index": 87,
+    "topic_key": "tree-hifu-lifting",
+    "title": "音波拉提原理圖解",
+    "disease_name": "音波拉提",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 97,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "聚焦超音波",
+      "筋膜層緊緻",
+      "術後照護"
+    ]
+  },
+  {
+    "index": 88,
+    "topic_key": "tree-fractional-laser",
+    "title": "飛梭雷射原理圖解",
+    "disease_name": "飛梭雷射",
+    "category": "診所核心醫美與外科療程",
+    "icd10": null,
+    "is_v2_upgrade": true,
+    "existing_asset_id": 98,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "點陣光熱",
+      "膠原新生",
+      "皮膚修復"
+    ]
+  },
+  {
+    "index": 89,
+    "topic_key": "nhi-w001-j06-9",
+    "title": "急性上呼吸道感染（感冒）衛教圖解",
+    "disease_name": "急性上呼吸道感染（感冒）",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J06.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "鼻塞",
+      "流鼻水",
+      "咳嗽",
+      "喉嚨痛"
+    ]
+  },
+  {
+    "index": 90,
+    "topic_key": "nhi-w002-j02-9",
+    "title": "急性咽喉炎衛教圖解",
+    "disease_name": "急性咽喉炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J02.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "喉嚨痛",
+      "吞嚥困難",
+      "咽喉發紅"
+    ]
+  },
+  {
+    "index": 91,
+    "topic_key": "nhi-w003-j03-90",
+    "title": "急性扁桃腺炎衛教圖解",
+    "disease_name": "急性扁桃腺炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J03.90",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "高燒",
+      "喉嚨劇痛",
+      "扁桃腺腫大",
+      "化膿"
+    ]
+  },
+  {
+    "index": 92,
+    "topic_key": "nhi-w004-j01-90",
+    "title": "急性鼻竇炎衛教圖解",
+    "disease_name": "急性鼻竇炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J01.90",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "黃鼻涕",
+      "臉部脹痛",
+      "鼻涕倒流",
+      "頭痛"
+    ]
+  },
+  {
+    "index": 93,
+    "topic_key": "nhi-w005-j11-1",
+    "title": "流行性感冒（流感）衛教圖解",
+    "disease_name": "流行性感冒（流感）",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J11.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "突發高燒",
+      "全身肌肉痠痛",
+      "極度疲倦",
+      "寒顫"
+    ]
+  },
+  {
+    "index": 94,
+    "topic_key": "nhi-w006-u07-1",
+    "title": "新冠肺炎（COVID-19）輕症衛教圖解",
+    "disease_name": "新冠肺炎（COVID-19）輕症",
+    "category": "呼吸系統與急性感染",
+    "icd10": "U07.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "發燒",
+      "乾咳",
+      "嗅味覺異常",
+      "喉嚨痛"
+    ]
+  },
+  {
+    "index": 95,
+    "topic_key": "nhi-w007-a49-3",
+    "title": "黴漿菌感染衛教圖解",
+    "disease_name": "黴漿菌感染",
+    "category": "呼吸系統與急性感染",
+    "icd10": "A49.3",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "頑固乾咳",
+      "微燒",
+      "胸悶",
+      "夜咳"
+    ]
+  },
+  {
+    "index": 96,
+    "topic_key": "nhi-w008-j20-9",
+    "title": "急性支氣管炎衛教圖解",
+    "disease_name": "急性支氣管炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J20.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "深部咳嗽",
+      "黃綠色濃痰",
+      "胸骨後悶痛"
+    ]
+  },
+  {
+    "index": 97,
+    "topic_key": "nhi-w009-j21-9",
+    "title": "急性細支氣管炎衛教圖解",
+    "disease_name": "急性細支氣管炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J21.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "喘鳴聲",
+      "呼吸急促",
+      "鼻翼煽動",
+      "嬰幼兒常見"
+    ]
+  },
+  {
+    "index": 98,
+    "topic_key": "nhi-w010-j18-9",
+    "title": "社區型肺炎（輕症）衛教圖解",
+    "disease_name": "社區型肺炎（輕症）",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J18.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "持續高燒",
+      "發紺",
+      "呼吸困難",
+      "鐵鏽色痰"
+    ]
+  },
+  {
+    "index": 99,
+    "topic_key": "nhi-w011-j30-9",
+    "title": "過敏性鼻炎衛教圖解",
+    "disease_name": "過敏性鼻炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J30.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "打噴嚏",
+      "清晨流清鼻水",
+      "鼻子發癢",
+      "黑眼圈"
+    ]
+  },
+  {
+    "index": 100,
+    "topic_key": "nhi-w012-j30-0",
+    "title": "血管運動性鼻炎衛教圖解",
+    "disease_name": "血管運動性鼻炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J30.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "溫差刺激流鼻水",
+      "無明顯過敏原",
+      "鼻黏膜敏感"
+    ]
+  },
+  {
+    "index": 101,
+    "topic_key": "nhi-w013-j32-9",
+    "title": "慢性鼻竇炎衛教圖解",
+    "disease_name": "慢性鼻竇炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J32.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "嗅覺減退",
+      "長期鼻塞",
+      "慢性膿涕倒流"
+    ]
+  },
+  {
+    "index": 102,
+    "topic_key": "nhi-w014-j45-909",
+    "title": "支氣管氣喘衛教圖解",
+    "disease_name": "支氣管氣喘",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J45.909",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "呼氣喘鳴",
+      "夜間胸悶",
+      "呼吸困難",
+      "慢性咳嗽"
+    ]
+  },
+  {
+    "index": 103,
+    "topic_key": "nhi-w015-j44-9",
+    "title": "慢性阻塞性肺病（COPD）衛教圖解",
+    "disease_name": "慢性阻塞性肺病（COPD）",
+    "category": "呼吸系統與急性感染",
+    "icd10": "J44.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "吸菸史",
+      "慢性咳痰",
+      "活動性呼吸困難"
+    ]
+  },
+  {
+    "index": 104,
+    "topic_key": "nhi-w016-h66-90",
+    "title": "急性中耳炎衛教圖解",
+    "disease_name": "急性中耳炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H66.90",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "耳痛劇烈",
+      "聽力下降",
+      "耳鳴",
+      "耳膜充血"
+    ]
+  },
+  {
+    "index": 105,
+    "topic_key": "nhi-w017-h65-9",
+    "title": "漿液性中耳炎衛教圖解",
+    "disease_name": "漿液性中耳炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H65.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "耳內悶塞感",
+      "聽力悶悶的",
+      "自語過響"
+    ]
+  },
+  {
+    "index": 106,
+    "topic_key": "nhi-w018-h60-90",
+    "title": "急性外耳道炎衛教圖解",
+    "disease_name": "急性外耳道炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H60.90",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "拉扯耳廓劇痛",
+      "耳道紅腫",
+      "耳道分泌物"
+    ]
+  },
+  {
+    "index": 107,
+    "topic_key": "nhi-w019-h81-0",
+    "title": "梅尼爾氏症衛教圖解",
+    "disease_name": "梅尼爾氏症",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H81.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "旋轉性眩暈",
+      "單側聽力波動",
+      "耳鳴耳悶"
+    ]
+  },
+  {
+    "index": 108,
+    "topic_key": "nhi-w020-h81-20",
+    "title": "前庭神經炎衛教圖解",
+    "disease_name": "前庭神經炎",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H81.20",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "劇烈天旋地轉",
+      "噁心嘔吐",
+      "無聽力損傷",
+      "步態不穩"
+    ]
+  },
+  {
+    "index": 109,
+    "topic_key": "nhi-w021-h93-19",
+    "title": "耳鳴症候群衛教圖解",
+    "disease_name": "耳鳴症候群",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H93.19",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "持續高頻蟬鳴",
+      "夜間更明顯",
+      "睡眠干擾"
+    ]
+  },
+  {
+    "index": 110,
+    "topic_key": "nhi-w022-h81-10",
+    "title": "良性陣發性姿勢性眩暈（BPPV）衛教圖解",
+    "disease_name": "良性陣發性姿勢性眩暈（BPPV）",
+    "category": "呼吸系統與急性感染",
+    "icd10": "H81.10",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "翻身瞬間天旋地轉",
+      "持續數十秒",
+      "特定頭部角度引發"
+    ]
+  },
+  {
+    "index": 111,
+    "topic_key": "nhi-w023-i10",
+    "title": "原發性高血壓衛教圖解",
+    "disease_name": "原發性高血壓",
+    "category": "代謝與心血管慢性病",
+    "icd10": "I10",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "血壓偏高",
+      "後頸緊繃",
+      "晨起頭暈",
+      "無特定症狀"
+    ]
+  },
+  {
+    "index": 112,
+    "topic_key": "nhi-w024-i11-9",
+    "title": "高血壓性心臟病衛教圖解",
+    "disease_name": "高血壓性心臟病",
+    "category": "代謝與心血管慢性病",
+    "icd10": "I11.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "左心室肥厚",
+      "爬樓梯易喘",
+      "下肢輕微水腫"
+    ]
+  },
+  {
+    "index": 113,
+    "topic_key": "nhi-w025-e11-9",
+    "title": "第二型糖尿病衛教圖解",
+    "disease_name": "第二型糖尿病",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E11.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "多吃多喝多尿",
+      "體重不明下降",
+      "傷口難癒合",
+      "胰島素阻抗"
+    ]
+  },
+  {
+    "index": 114,
+    "topic_key": "nhi-w026-r73-03",
+    "title": "空腹血糖異常與耐糖不良衛教圖解",
+    "disease_name": "空腹血糖異常與耐糖不良",
+    "category": "代謝與心血管慢性病",
+    "icd10": "R73.03",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "空腹血糖偏高",
+      "糖化血色素微升",
+      "代謝減慢"
+    ]
+  },
+  {
+    "index": 115,
+    "topic_key": "nhi-w027-e78-00",
+    "title": "高膽固醇血症衛教圖解",
+    "disease_name": "高膽固醇血症",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E78.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "LDL-C偏高",
+      "血管動脈硬化風險",
+      "角膜弓"
+    ]
+  },
+  {
+    "index": 116,
+    "topic_key": "nhi-w028-e78-1",
+    "title": "高三酸甘油酯血症衛教圖解",
+    "disease_name": "高三酸甘油酯血症",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E78.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "TG過高",
+      "脂肪肝關聯",
+      "急性胰臟炎風險"
+    ]
+  },
+  {
+    "index": 117,
+    "topic_key": "nhi-w029-e88-81",
+    "title": "代謝症候群衛教圖解",
+    "disease_name": "代謝症候群",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E88.81",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "腹部肥胖腰圍超標",
+      "血壓血糖血脂異常",
+      "動脈硬化高風險"
+    ]
+  },
+  {
+    "index": 118,
+    "topic_key": "nhi-w030-e79-0",
+    "title": "高尿酸血症衛教圖解",
+    "disease_name": "高尿酸血症",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E79.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "血液尿酸值超標",
+      "普林代謝異常",
+      "痛風前期"
+    ]
+  },
+  {
+    "index": 119,
+    "topic_key": "nhi-w031-m10-9",
+    "title": "痛風性關節炎衛教圖解",
+    "disease_name": "痛風性關節炎",
+    "category": "代謝與心血管慢性病",
+    "icd10": "M10.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "大腳趾第一蹠趾關節",
+      "突發紅腫熱痛劇烈",
+      "尿酸結晶沈積"
+    ]
+  },
+  {
+    "index": 120,
+    "topic_key": "nhi-w032-i25-9",
+    "title": "缺血性心臟病（穩定型心絞痛）衛教圖解",
+    "disease_name": "缺血性心臟病（穩定型心絞痛）",
+    "category": "代謝與心血管慢性病",
+    "icd10": "I25.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "活動時胸骨壓迫感",
+      "輻射至左肩下巴",
+      "休息或舌下含片緩解"
+    ]
+  },
+  {
+    "index": 121,
+    "topic_key": "nhi-w033-i48-91",
+    "title": "心房顫動（門診穩定處方）衛教圖解",
+    "disease_name": "心房顫動（門診穩定處方）",
+    "category": "代謝與心血管慢性病",
+    "icd10": "I48.91",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "心跳絕對不規則",
+      "心悸心跳漏拍",
+      "中風高風險",
+      "抗凝血劑"
+    ]
+  },
+  {
+    "index": 122,
+    "topic_key": "nhi-w034-n18-9",
+    "title": "慢性腎臟病（第1-3期）衛教圖解",
+    "disease_name": "慢性腎臟病（第1-3期）",
+    "category": "代謝與心血管慢性病",
+    "icd10": "N18.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "腎絲球過濾率下降",
+      "小便泡沫多",
+      "血壓難控制",
+      "早期無明顯症狀"
+    ]
+  },
+  {
+    "index": 123,
+    "topic_key": "nhi-w035-r80-9",
+    "title": "微量蛋白尿症衛教圖解",
+    "disease_name": "微量蛋白尿症",
+    "category": "代謝與心血管慢性病",
+    "icd10": "R80.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "尿液白蛋白肌酸酐比超標",
+      "腎絲球微血管早期受損"
+    ]
+  },
+  {
+    "index": 124,
+    "topic_key": "nhi-w036-e05-90",
+    "title": "甲狀腺功能亢進衛教圖解",
+    "disease_name": "甲狀腺功能亢進",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E05.90",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "手抖心悸怕熱",
+      "食慾好體重反降",
+      "脖子腫大突眼"
+    ]
+  },
+  {
+    "index": 125,
+    "topic_key": "nhi-w037-e03-9",
+    "title": "甲狀腺功能低下衛教圖解",
+    "disease_name": "甲狀腺功能低下",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E03.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "極度怕冷易疲憊",
+      "體重莫名增加",
+      "便秘黏液水腫"
+    ]
+  },
+  {
+    "index": 126,
+    "topic_key": "nhi-w038-e04-1",
+    "title": "甲狀腺良性結節衛教圖解",
+    "disease_name": "甲狀腺良性結節",
+    "category": "代謝與心血管慢性病",
+    "icd10": "E04.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "吞嚥滑動腫塊",
+      "無痛結節",
+      "超音波定期追蹤"
+    ]
+  },
+  {
+    "index": 127,
+    "topic_key": "nhi-w039-a09",
+    "title": "急性感染性胃腸炎衛教圖解",
+    "disease_name": "急性感染性胃腸炎",
+    "category": "消化系統與腹部疾患",
+    "icd10": "A09",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "上吐下瀉",
+      "水樣腹瀉",
+      "腹部絞痛",
+      "微燒脫水"
+    ]
+  },
+  {
+    "index": 128,
+    "topic_key": "nhi-w040-k21-9",
+    "title": "胃食道逆流疾病（GERD）衛教圖解",
+    "disease_name": "胃食道逆流疾病（GERD）",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K21.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "火燒心胸口灼熱",
+      "喉嚨異物感慢性咳嗽",
+      "溢酸胃脹"
+    ]
+  },
+  {
+    "index": 129,
+    "topic_key": "nhi-w041-k30",
+    "title": "非潰瘍性功能性消化不良衛教圖解",
+    "disease_name": "非潰瘍性功能性消化不良",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K30",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "餐後飽脹早飽感",
+      "上腹悶痛隱隱作痛",
+      "胃鏡檢查正常"
+    ]
+  },
+  {
+    "index": 130,
+    "topic_key": "nhi-w042-k25-9",
+    "title": "胃潰瘍衛教圖解",
+    "disease_name": "胃潰瘍",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K25.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "進食後上腹灼痛",
+      "幽門螺旋桿菌",
+      "黑便柏油便警告"
+    ]
+  },
+  {
+    "index": 131,
+    "topic_key": "nhi-w043-k26-9",
+    "title": "十二指腸潰瘍衛教圖解",
+    "disease_name": "十二指腸潰瘍",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K26.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "空腹飢餓痛",
+      "半夜痛醒",
+      "吃東西後短暫緩解"
+    ]
+  },
+  {
+    "index": 132,
+    "topic_key": "nhi-w044-k29-70",
+    "title": "急性與慢性淺表性胃炎衛教圖解",
+    "disease_name": "急性與慢性淺表性胃炎",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K29.70",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "胃部隱痛",
+      "消化不良",
+      "噁心噯氣",
+      "黏膜充血水腫"
+    ]
+  },
+  {
+    "index": 133,
+    "topic_key": "nhi-w045-k58-9",
+    "title": "大腸激躁症（IBS）衛教圖解",
+    "disease_name": "大腸激躁症（IBS）",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K58.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "排便後腹痛緩解",
+      "腹瀉便秘交替",
+      "糞便帶黏液",
+      "緊張焦慮加重"
+    ]
+  },
+  {
+    "index": 134,
+    "topic_key": "nhi-w046-k59-00",
+    "title": "習慣性慢性便秘衛教圖解",
+    "disease_name": "習慣性慢性便秘",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K59.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "排便困難費力",
+      "糞便乾硬如羊屎",
+      "排便次數少於三次"
+    ]
+  },
+  {
+    "index": 135,
+    "topic_key": "nhi-w047-k76-0",
+    "title": "非酒精性脂肪肝衛教圖解",
+    "disease_name": "非酒精性脂肪肝",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K76.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "肝細胞脂肪浸潤",
+      "超音波強回音",
+      "多無自覺症狀",
+      "代謝症候群關聯"
+    ]
+  },
+  {
+    "index": 136,
+    "topic_key": "nhi-w048-b18-1",
+    "title": "慢性B型肝炎（穩定追蹤）衛教圖解",
+    "disease_name": "慢性B型肝炎（穩定追蹤）",
+    "category": "消化系統與腹部疾患",
+    "icd10": "B18.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "HBsAg陽性",
+      "定期追蹤GOT/GPT",
+      "胎兒蛋白肝癌篩檢"
+    ]
+  },
+  {
+    "index": 137,
+    "topic_key": "nhi-w049-b18-2",
+    "title": "慢性C型肝炎（穩定追蹤）衛教圖解",
+    "disease_name": "慢性C型肝炎（穩定追蹤）",
+    "category": "消化系統與腹部疾患",
+    "icd10": "B18.2",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "Anti-HCV抗體",
+      "直接抗病毒口服藥物",
+      "肝纖維化評估"
+    ]
+  },
+  {
+    "index": 138,
+    "topic_key": "nhi-w050-k80-20",
+    "title": "膽結石與慢性膽囊炎衛教圖解",
+    "disease_name": "膽結石與慢性膽囊炎",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K80.20",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "右上腹悶脹",
+      "飯後尤以高脂油膩後疼痛",
+      "右上腹輕壓痛"
+    ]
+  },
+  {
+    "index": 139,
+    "topic_key": "nhi-w051-k64-9",
+    "title": "痔瘡（內痔與外痔）衛教圖解",
+    "disease_name": "痔瘡（內痔與外痔）",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K64.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "排便無痛鮮血滴落",
+      "肛門異物感脫垂",
+      "肛門口肉球血栓疼痛"
+    ]
+  },
+  {
+    "index": 140,
+    "topic_key": "nhi-w052-k60-2",
+    "title": "肛裂衛教圖解",
+    "disease_name": "肛裂",
+    "category": "消化系統與腹部疾患",
+    "icd10": "K60.2",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "排便撕裂刀割般劇痛",
+      "衛生紙鮮血沾染",
+      "括約肌痙攣"
+    ]
+  },
+  {
+    "index": 141,
+    "topic_key": "nhi-w053-m17-9",
+    "title": "膝關節退化性關節炎衛教圖解",
+    "disease_name": "膝關節退化性關節炎",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M17.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "晨起關節僵硬",
+      "上下樓梯膝蓋痠軟無力",
+      "關節活動摩擦喀喀聲"
+    ]
+  },
+  {
+    "index": 142,
+    "topic_key": "nhi-w054-m16-9",
+    "title": "髖關節退化性關節炎衛教圖解",
+    "disease_name": "髖關節退化性關節炎",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M16.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "腹股溝內側隱痛",
+      "久坐起立跛行",
+      "關節外展內旋受限"
+    ]
+  },
+  {
+    "index": 143,
+    "topic_key": "nhi-w055-m51-26",
+    "title": "腰椎椎間盤突出症衛教圖解",
+    "disease_name": "腰椎椎間盤突出症",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M51.26",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "下背痛延伸至臀腿",
+      "前彎腰時疼痛加劇",
+      "咳嗽打噴嚏牽引痛"
+    ]
+  },
+  {
+    "index": 144,
+    "topic_key": "nhi-w056-m54-30",
+    "title": "坐骨神經痛衛教圖解",
+    "disease_name": "坐骨神經痛",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M54.30",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "單側臀部至小腿外側電擊刺痛",
+      "麻木灼熱感",
+      "直腿抬高試驗陽性"
+    ]
+  },
+  {
+    "index": 145,
+    "topic_key": "nhi-w057-m50-20",
+    "title": "頸椎神經根病變（頸椎病）衛教圖解",
+    "disease_name": "頸椎神經根病變（頸椎病）",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M50.20",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "頸部後仰痠痛",
+      "延伸至肩胛骨及手臂手指發麻",
+      "握力減退"
+    ]
+  },
+  {
+    "index": 146,
+    "topic_key": "nhi-w058-s93-409",
+    "title": "急性肌肉拉傷與軟組織挫傷衛教圖解",
+    "disease_name": "急性肌肉拉傷與軟組織挫傷",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "S93.409",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "運動受力拉扯",
+      "局部壓痛腫脹皮下瘀青",
+      "肌力抗阻測試痛"
+    ]
+  },
+  {
+    "index": 147,
+    "topic_key": "nhi-w059-s93-401",
+    "title": "踝關節韌帶扭傷衛教圖解",
+    "disease_name": "踝關節韌帶扭傷",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "S93.401",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "內翻外側前距腓韌帶腫痛",
+      "踩地負重困難",
+      "外踝瘀血發紫"
+    ]
+  },
+  {
+    "index": 148,
+    "topic_key": "nhi-w060-m75-10",
+    "title": "肩關節夾擠症候群與旋轉肌袖損傷衛教圖解",
+    "disease_name": "肩關節夾擠症候群與旋轉肌袖損傷",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M75.10",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "肩膀外展六十至一百二十度疼痛弧",
+      "手臂高舉無力",
+      "夜間壓痛"
+    ]
+  },
+  {
+    "index": 149,
+    "topic_key": "nhi-w061-m75-00",
+    "title": "沾黏性肩關節囊炎（五十肩）衛教圖解",
+    "disease_name": "沾黏性肩關節囊炎（五十肩）",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M75.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "梳頭穿衣摸背嚴重受限",
+      "各方向主動被動角度均僵硬",
+      "夜間熟睡痛醒"
+    ]
+  },
+  {
+    "index": 150,
+    "topic_key": "nhi-w062-m77-10",
+    "title": "外上髁炎（網球肘）衛教圖解",
+    "disease_name": "外上髁炎（網球肘）",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M77.10",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "手肘外側骨凸處明顯壓痛",
+      "握拳提重扭毛巾劇痛",
+      "手腕背屈阻抗痛"
+    ]
+  },
+  {
+    "index": 151,
+    "topic_key": "nhi-w063-m77-00",
+    "title": "內上髁炎（高爾夫球肘）衛教圖解",
+    "disease_name": "內上髁炎（高爾夫球肘）",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M77.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "手肘內側壓痛",
+      "手腕彎曲或前臂旋前用力疼痛",
+      "提重拉扯痛"
+    ]
+  },
+  {
+    "index": 152,
+    "topic_key": "nhi-w064-m72-2",
+    "title": "足底筋膜炎衛教圖解",
+    "disease_name": "足底筋膜炎",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M72.2",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "早晨起床下床第一步腳後跟劇痛",
+      "走動數步後稍緩解",
+      "踵骨前內側壓痛"
+    ]
+  },
+  {
+    "index": 153,
+    "topic_key": "nhi-w065-m65-4",
+    "title": "狹窄性腱鞘炎（媽媽手）衛教圖解",
+    "disease_name": "狹窄性腱鞘炎（媽媽手）",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M65.4",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "大拇指基部橈骨莖突劇痛腫脹",
+      "抱小孩擰抹布劇痛",
+      "芬可斯坦試驗陽性"
+    ]
+  },
+  {
+    "index": 154,
+    "topic_key": "nhi-w066-g56-00",
+    "title": "腕隧道症候群衛教圖解",
+    "disease_name": "腕隧道症候群",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "G56.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "大拇指食指中指麻木刺痛",
+      "半夜麻醒需甩手",
+      "大魚際肌肉萎縮"
+    ]
+  },
+  {
+    "index": 155,
+    "topic_key": "nhi-w067-m81-0",
+    "title": "骨質疏鬆症衛教圖解",
+    "disease_name": "骨質疏鬆症",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "M81.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "骨密度T值小於負二點五",
+      "駝背身高變矮超過四公分",
+      "輕微跌倒即骨折風險"
+    ]
+  },
+  {
+    "index": 156,
+    "topic_key": "nhi-w069-g44-209",
+    "title": "緊張型頭痛衛教圖解",
+    "disease_name": "緊張型頭痛",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "G44.209",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "像緊箍咒雙側壓迫帶緊繃感",
+      "肩頸僵硬牽引",
+      "持續數小時甚至數天"
+    ]
+  },
+  {
+    "index": 157,
+    "topic_key": "nhi-w070-e11-40",
+    "title": "糖尿病周邊神經病變衛教圖解",
+    "disease_name": "糖尿病周邊神經病變",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "E11.40",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "雙側手套襪套樣感覺遲鈍",
+      "夜間灼熱針刺如踩棉花",
+      "痛覺減退易忽略外傷"
+    ]
+  },
+  {
+    "index": 158,
+    "topic_key": "nhi-w071-b02-29",
+    "title": "帶狀皰疹後神經痛（PHN）衛教圖解",
+    "disease_name": "帶狀皰疹後神經痛（PHN）",
+    "category": "肌肉骨骼、關節與神經系統",
+    "icd10": "B02.29",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮疹痊癒後持續超過三個月劇痛",
+      "灼痛觸電痛皮膚輕觸即劇痛",
+      "神經敏化"
+    ]
+  },
+  {
+    "index": 159,
+    "topic_key": "nhi-w072-l20-9",
+    "title": "異位性皮膚炎衛教圖解",
+    "disease_name": "異位性皮膚炎",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L20.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "手肘膝窩彎曲處劇烈發癢",
+      "皮膚乾燥脫屑苔蘚化",
+      "反覆發作夜間抓搔抓破皮"
+    ]
+  },
+  {
+    "index": 160,
+    "topic_key": "nhi-w073-l25-9",
+    "title": "接觸性皮膚炎衛教圖解",
+    "disease_name": "接觸性皮膚炎",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L25.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "接觸金屬染髮劑膏藥特定部位紅斑",
+      "丘疹水泡邊界清楚",
+      "劇癢灼熱"
+    ]
+  },
+  {
+    "index": 161,
+    "topic_key": "nhi-w074-l21-9",
+    "title": "脂漏性皮膚炎衛教圖解",
+    "disease_name": "脂漏性皮膚炎",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L21.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "頭皮眉毛鼻翼兩側油膩黃色皮屑",
+      "紅斑脫屑",
+      "頭皮屑發癢"
+    ]
+  },
+  {
+    "index": 162,
+    "topic_key": "nhi-w075-l50-0",
+    "title": "急性蕁麻疹衛教圖解",
+    "disease_name": "急性蕁麻疹",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L50.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "全身突發水腫性膨疹如蚊子叮咬",
+      "奇癢無比",
+      "數小時內此起彼落消退不留疤"
+    ]
+  },
+  {
+    "index": 163,
+    "topic_key": "nhi-w076-l50-1",
+    "title": "慢性自發性蕁麻疹衛教圖解",
+    "disease_name": "慢性自發性蕁麻疹",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L50.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "反覆膨疹持續超過六週",
+      "找不到特定外在過敏原",
+      "自體免疫發炎因子"
+    ]
+  },
+  {
+    "index": 164,
+    "topic_key": "nhi-w077-l70-0",
+    "title": "尋常痤瘡（青春痘）衛教圖解",
+    "disease_name": "尋常痤瘡（青春痘）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L70.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "皮脂分泌旺盛毛孔角化",
+      "粉刺丘疹膿皰發炎",
+      "痤瘡桿菌感染"
+    ]
+  },
+  {
+    "index": 165,
+    "topic_key": "nhi-w078-l71-9",
+    "title": "酒糟肌（玫瑰痤瘡）衛教圖解",
+    "disease_name": "酒糟肌（玫瑰痤瘡）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L71.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "臉頰鼻子中央潮紅充血",
+      "遇熱吃辣情緒激動泛紅加劇",
+      "微血管擴張丘疹"
+    ]
+  },
+  {
+    "index": 166,
+    "topic_key": "nhi-w079-b35-3",
+    "title": "足癬（香港腳）衛教圖解",
+    "disease_name": "足癬（香港腳）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B35.3",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "腳趾縫脫皮糜爛浸漬發白",
+      "腳掌水泡型脫屑型",
+      "皮癬菌真菌感染劇癢"
+    ]
+  },
+  {
+    "index": 167,
+    "topic_key": "nhi-w080-b35-1",
+    "title": "甲癬（灰指甲）衛教圖解",
+    "disease_name": "甲癬（灰指甲）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B35.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "指甲變厚濁白變黃變脆",
+      "甲下角質堆積甲板分離",
+      "黴菌感染無明顯痛感"
+    ]
+  },
+  {
+    "index": 168,
+    "topic_key": "nhi-w081-b35-6",
+    "title": "股癬與體癬衛教圖解",
+    "disease_name": "股癬與體癬",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B35.6",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "大腿內側腹股溝環狀邊緣突起紅斑",
+      "中央自癒脫屑邊緣發癢",
+      "真菌感染"
+    ]
+  },
+  {
+    "index": 169,
+    "topic_key": "nhi-w082-b36-0",
+    "title": "花斑癬（汗斑）衛教圖解",
+    "disease_name": "花斑癬（汗斑）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B36.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "胸口背部汗水部位色素脫失或褐色斑",
+      "皮屑芽孢菌",
+      "夏日出汗加重"
+    ]
+  },
+  {
+    "index": 170,
+    "topic_key": "nhi-w083-b02-9",
+    "title": "帶狀皰疹（皮蛇）衛教圖解",
+    "disease_name": "帶狀皰疹（皮蛇）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B02.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "單側沿感覺神經節分佈叢生水泡",
+      "神經灼熱針刺痛",
+      "免疫力低下時病毒再活化"
+    ]
+  },
+  {
+    "index": 171,
+    "topic_key": "nhi-w084-b00-9",
+    "title": "單純皰疹（唇皰疹）衛教圖解",
+    "disease_name": "單純皰疹（唇皰疹）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B00.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "唇周黏膜紅腫微小水泡成群",
+      "刺痛灼熱感",
+      "熬夜發燒後復發"
+    ]
+  },
+  {
+    "index": 172,
+    "topic_key": "nhi-w085-b07-9",
+    "title": "病毒疣（尋常疣與足底疣）衛教圖解",
+    "disease_name": "病毒疣（尋常疣與足底疣）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B07.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "人類乳突病毒HPV感染",
+      "粗糙角化顆粒黑點微血管栓塞",
+      "垂直下壓會痛"
+    ]
+  },
+  {
+    "index": 173,
+    "topic_key": "nhi-w086-l84",
+    "title": "雞眼衛教圖解",
+    "disease_name": "雞眼",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L84",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "長期局部摩擦擠壓角質增厚",
+      "中央半透明倒圓錐硬角質栓",
+      "水平捏掐痛走路壓迫痛"
+    ]
+  },
+  {
+    "index": 174,
+    "topic_key": "nhi-w087-b86",
+    "title": "疥瘡衛教圖解",
+    "disease_name": "疥瘡",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "B86",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "夜間全身鑽心劇癢",
+      "指縫手腕生殖器丘疹隧道",
+      "群聚同住感染"
+    ]
+  },
+  {
+    "index": 175,
+    "topic_key": "nhi-w088-l57-8",
+    "title": "昆蟲叮咬性皮膚炎衛教圖解",
+    "disease_name": "昆蟲叮咬性皮膚炎",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L57.8",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "跳蚤小黑蚊叮咬紅腫硬結",
+      "極度搔癢甚至引發水泡",
+      "搔抓容易繼發細菌感染"
+    ]
+  },
+  {
+    "index": 176,
+    "topic_key": "nhi-w089-l03-90",
+    "title": "蜂窩性組織炎（輕症局部）衛教圖解",
+    "disease_name": "蜂窩性組織炎（輕症局部）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L03.90",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "真皮深層及皮下脂肪細菌感染",
+      "局部紅腫熱痛邊界不清",
+      "發燒畏寒需抗生素"
+    ]
+  },
+  {
+    "index": 177,
+    "topic_key": "nhi-w090-l02-92",
+    "title": "癤與癰（疔子）衛教圖解",
+    "disease_name": "癤與癰（疔子）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L02.92",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "單一或多個毛囊化膿深層發炎",
+      "堅硬紅腫結節中心化膿",
+      "金黃色葡萄球菌"
+    ]
+  },
+  {
+    "index": 178,
+    "topic_key": "nhi-w091-l40-9",
+    "title": "乾癬（牛皮癬）衛教圖解",
+    "disease_name": "乾癬（牛皮癬）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L40.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "邊界清楚紅色斑塊覆蓋厚銀白色鱗屑",
+      "頭皮手肘膝蓋背部",
+      "奧斯皮茨徵象"
+    ]
+  },
+  {
+    "index": 179,
+    "topic_key": "nhi-w092-l80",
+    "title": "白斑症衛教圖解",
+    "disease_name": "白斑症",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L80",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "黑色素細胞遭自體免疫破壞",
+      "皮膚呈現乳白色邊界分明脫色斑",
+      "毛髮亦可變白"
+    ]
+  },
+  {
+    "index": 180,
+    "topic_key": "nhi-w093-l64-9",
+    "title": "雄性禿（遺傳性落髮）衛教圖解",
+    "disease_name": "雄性禿（遺傳性落髮）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L64.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "二氫睪固酮DHT攻擊毛囊",
+      "頭頂髮旋稀疏前額髮線M型後退",
+      "毛囊逐漸萎縮細化"
+    ]
+  },
+  {
+    "index": 181,
+    "topic_key": "nhi-w094-l63-9",
+    "title": "圓禿（鬼剃頭）衛教圖解",
+    "disease_name": "圓禿（鬼剃頭）",
+    "category": "皮膚與皮下組織疾患",
+    "icd10": "L63.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "自體免疫淋巴球攻擊毛囊",
+      "界線分明圓形或橢圓形落髮空洞",
+      "頭皮平滑無疤痕發炎"
+    ]
+  },
+  {
+    "index": 182,
+    "topic_key": "nhi-w095-n30-00",
+    "title": "急性膀胱炎與泌尿道感染衛教圖解",
+    "disease_name": "急性膀胱炎與泌尿道感染",
+    "category": "泌尿與生殖系統",
+    "icd10": "N30.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "頻尿尿急小便灼痛刺痛",
+      "下腹悶脹排尿不乾淨感",
+      "尿液混濁大腸桿菌感染"
+    ]
+  },
+  {
+    "index": 183,
+    "topic_key": "nhi-w096-n40-0",
+    "title": "良性前列腺肥大（BPH）衛教圖解",
+    "disease_name": "良性前列腺肥大（BPH）",
+    "category": "泌尿與生殖系統",
+    "icd10": "N40.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "小便細弱無力需用力等待",
+      "夜間頻尿超過兩次",
+      "尿後滴瀝不盡殘尿感"
+    ]
+  },
+  {
+    "index": 184,
+    "topic_key": "nhi-w097-n41-1",
+    "title": "慢性前列腺炎衛教圖解",
+    "disease_name": "慢性前列腺炎",
+    "category": "泌尿與生殖系統",
+    "icd10": "N41.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "會陰部下腹部骨盆腔鈍痛",
+      "排尿不適射精疼痛",
+      "反覆發作"
+    ]
+  },
+  {
+    "index": 185,
+    "topic_key": "nhi-w098-n20-9",
+    "title": "尿路結石（腎結石與輸尿管結石）衛教圖解",
+    "disease_name": "尿路結石（腎結石與輸尿管結石）",
+    "category": "泌尿與生殖系統",
+    "icd10": "N20.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "突發劇烈腰腹單側絞痛",
+      "輻射至腹股溝陰囊",
+      "肉眼或顯微血尿噁心嘔吐"
+    ]
+  },
+  {
+    "index": 186,
+    "topic_key": "nhi-w099-b37-3",
+    "title": "外陰陰道念珠菌感染衛教圖解",
+    "disease_name": "外陰陰道念珠菌感染",
+    "category": "泌尿與生殖系統",
+    "icd10": "B37.3",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "外陰部劇烈發癢腫痛",
+      "白色豆腐渣樣或乳酪樣黏稠分泌物",
+      "真菌感染"
+    ]
+  },
+  {
+    "index": 187,
+    "topic_key": "nhi-w100-n76-0",
+    "title": "細菌性陰道炎衛教圖解",
+    "disease_name": "細菌性陰道炎",
+    "category": "泌尿與生殖系統",
+    "icd10": "N76.0",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "灰白色均勻水狀分泌物增加",
+      "魚腥味特別於性行為後明顯",
+      "陰道正常酸鹼菌叢失衡"
+    ]
+  },
+  {
+    "index": 188,
+    "topic_key": "nhi-w101-n94-4",
+    "title": "原發性經痛與月經不順衛教圖解",
+    "disease_name": "原發性經痛與月經不順",
+    "category": "泌尿與生殖系統",
+    "icd10": "N94.4",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "子宮前列腺素分泌過多肌肉強烈痙攣",
+      "下腹悶脹絞痛輻射腰薦椎",
+      "月經前一兩天最劇烈"
+    ]
+  },
+  {
+    "index": 189,
+    "topic_key": "nhi-w102-n95-1",
+    "title": "女性更年期症候群衛教圖解",
+    "disease_name": "女性更年期症候群",
+    "category": "泌尿與生殖系統",
+    "icd10": "N95.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "雌激素驟降熱潮紅夜間盜汗",
+      "情緒波動焦慮失眠",
+      "心悸陰道乾澀"
+    ]
+  },
+  {
+    "index": 190,
+    "topic_key": "nhi-w103-d25-9",
+    "title": "子宮平滑肌瘤（基層門診追蹤）衛教圖解",
+    "disease_name": "子宮平滑肌瘤（基層門診追蹤）",
+    "category": "泌尿與生殖系統",
+    "icd10": "D25.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "經血量過多經期延長血塊",
+      "骨盆壓迫感頻尿便秘",
+      "超音波定期測量大小"
+    ]
+  },
+  {
+    "index": 191,
+    "topic_key": "nhi-w104-n83-20",
+    "title": "良性卵巢囊腫（基層追蹤）衛教圖解",
+    "disease_name": "良性卵巢囊腫（基層追蹤）",
+    "category": "泌尿與生殖系統",
+    "icd10": "N83.20",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "功能性濾泡囊腫黃體囊腫",
+      "多數無症狀月經失調",
+      "定期超音波追蹤消長"
+    ]
+  },
+  {
+    "index": 192,
+    "topic_key": "nhi-w105-b30-9",
+    "title": "急性流行性結膜炎衛教圖解",
+    "disease_name": "急性流行性結膜炎",
+    "category": "眼科與精神神經專科",
+    "icd10": "B30.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "結膜充血鮮紅分泌物多眼屎多",
+      "異物感刺癢流淚畏光",
+      "腺病毒傳染性極高"
+    ]
+  },
+  {
+    "index": 193,
+    "topic_key": "nhi-w106-h10-45",
+    "title": "過敏性結膜炎衛教圖解",
+    "disease_name": "過敏性結膜炎",
+    "category": "眼科與精神神經專科",
+    "icd10": "H10.45",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "雙眼眼角劇癢難耐",
+      "結膜水腫充血黏稠絲狀分泌物",
+      "季節性花粉塵蟎"
+    ]
+  },
+  {
+    "index": 194,
+    "topic_key": "nhi-w107-h04-129",
+    "title": "乾眼症候群衛教圖解",
+    "disease_name": "乾眼症候群",
+    "category": "眼科與精神神經專科",
+    "icd10": "H04.129",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "淚液分泌不足或蒸發過快",
+      "眼睛乾澀灼熱異物感吹風流淚",
+      "視力模糊疲勞"
+    ]
+  },
+  {
+    "index": 195,
+    "topic_key": "nhi-w108-h25-9",
+    "title": "老年性白內障（基層評估與追蹤）衛教圖解",
+    "disease_name": "老年性白內障（基層評估與追蹤）",
+    "category": "眼科與精神神經專科",
+    "icd10": "H25.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "水晶體混濁硬化",
+      "漸進性無痛視力模糊霧茫感",
+      "夜間眩光畏光色彩褪色"
+    ]
+  },
+  {
+    "index": 196,
+    "topic_key": "nhi-w109-h40-10",
+    "title": "隅角開放型青光眼（門診穩定處方）衛教圖解",
+    "disease_name": "隅角開放型青光眼（門診穩定處方）",
+    "category": "眼科與精神神經專科",
+    "icd10": "H40.10",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "眼壓升高視神經盤凹陷萎縮",
+      "視野缺損周邊視野逐漸狹窄",
+      "早期無警訊視力小偷"
+    ]
+  },
+  {
+    "index": 197,
+    "topic_key": "nhi-w110-g47-00",
+    "title": "慢性失眠障礙衛教圖解",
+    "disease_name": "慢性失眠障礙",
+    "category": "眼科與精神神經專科",
+    "icd10": "G47.00",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "入睡困難超過三十分鐘",
+      "半夜易醒早醒無法再入睡",
+      "白天嗜睡注意力渙散情緒焦慮"
+    ]
+  },
+  {
+    "index": 198,
+    "topic_key": "nhi-w111-f41-1",
+    "title": "廣泛性焦慮症衛教圖解",
+    "disease_name": "廣泛性焦慮症",
+    "category": "眼科與精神神經專科",
+    "icd10": "F41.1",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "對日常瑣事過度擔憂失控",
+      "坐立難安肌肉緊繃易疲憊",
+      "自主神經亢進心悸腸胃不適"
+    ]
+  },
+  {
+    "index": 199,
+    "topic_key": "nhi-w112-f32-9",
+    "title": "輕至中度憂鬱症衛教圖解",
+    "disease_name": "輕至中度憂鬱症",
+    "category": "眼科與精神神經專科",
+    "icd10": "F32.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "持續兩週以上情緒低落無價值感",
+      "對過往愛好喪失興趣",
+      "體重食慾驟變無精打采"
+    ]
+  },
+  {
+    "index": 200,
+    "topic_key": "nhi-w113-g90-9",
+    "title": "自律神經失調症衛教圖解",
+    "disease_name": "自律神經失調症",
+    "category": "眼科與精神神經專科",
+    "icd10": "G90.9",
+    "is_v2_upgrade": false,
+    "existing_asset_id": null,
+    "clinic_id": "3503190424",
+    "keywords": [
+      "交感與副交感神經天秤失衡",
+      "全身遊走性不適檢查無器官病變",
+      "心悸胸悶胃脹呼吸不順手腳冰冷"
+    ]
+  }
+]

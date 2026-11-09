@@ -878,23 +878,40 @@ def get_admin_review_summary(
 
     trees_pending_total = 0
     trees_approved_total = 0
+    trees_rejected_total = 0
     try:
         cur.execute("SELECT COUNT(*) FROM page_index_trees WHERE review_status = 'pending'")
         trees_pending_total = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM page_index_trees WHERE review_status = 'approved'")
         trees_approved_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM page_index_trees WHERE review_status = 'rejected'")
+        trees_rejected_total = cur.fetchone()[0]
     except Exception:
         pass
 
     visuals_pending_total = 0
     visuals_approved_total = 0
+    visuals_rejected_total = 0
+    visuals_clinic_total = 0
+    visuals_general_total = 0
     try:
         cur.execute("SELECT COUNT(*) FROM visual_assets WHERE review_status = 'pending'")
         visuals_pending_total = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM visual_assets WHERE review_status = 'approved'")
         visuals_approved_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM visual_assets WHERE review_status = 'rejected'")
+        visuals_rejected_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM visual_assets WHERE clinic_id IS NOT NULL")
+        visuals_clinic_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM visual_assets WHERE clinic_id IS NULL")
+        visuals_general_total = cur.fetchone()[0]
     except Exception:
         pass
+
+    total_pending = pending_total + trees_pending_total + visuals_pending_total
+    total_approved = approved_total + trees_approved_total + visuals_approved_total
+    total_rejected = rejected_total + trees_rejected_total + visuals_rejected_total
+    total_assets = total_pending + total_approved + total_rejected
 
     return {
         "pending_total": pending_total,
@@ -906,8 +923,16 @@ def get_admin_review_summary(
         "soap_records_total": soap_records_total,
         "trees_pending_total": trees_pending_total,
         "trees_approved_total": trees_approved_total,
+        "trees_rejected_total": trees_rejected_total,
         "visuals_pending_total": visuals_pending_total,
         "visuals_approved_total": visuals_approved_total,
+        "visuals_rejected_total": visuals_rejected_total,
+        "visuals_clinic_total": visuals_clinic_total,
+        "visuals_general_total": visuals_general_total,
+        "total_pending": total_pending,
+        "total_approved": total_approved,
+        "total_rejected": total_rejected,
+        "total_assets": total_assets,
     }
 
 

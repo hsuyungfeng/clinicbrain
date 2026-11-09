@@ -94,6 +94,13 @@ function initTabNavigation() {
             if (targetId === "tab-review") loadReviewFaqs();
             if (targetId === "tab-trees") loadTrees();
             if (targetId === "tab-visuals") {
+                const sel = document.getElementById("visualsFilterStatus");
+                const pendText = document.getElementById("statVisualsPendingTotal")?.textContent || "0";
+                const pendCount = parseInt(pendText.replace(/[^0-9]/g, ""), 10) || 0;
+                if (sel && sel.value === "pending" && pendCount === 0) {
+                    sel.value = "approved";
+                    syncVisualPillButtons("approved");
+                }
                 loadVisuals();
                 loadApprovedTreesForVisualSelect();
             }
@@ -115,6 +122,7 @@ async function loadDashboardSummary() {
         if (!resp.ok) return;
         const data = await resp.json();
 
+        // 頂部指標卡片
         document.getElementById("statPendingTotal").textContent = data.pending_total ?? 0;
         const elTreePend = document.getElementById("statTreesPendingTotal");
         if (elTreePend) elTreePend.textContent = data.trees_pending_total ?? 0;
@@ -123,14 +131,86 @@ async function loadDashboardSummary() {
         document.getElementById("statApprovedTotal").textContent = data.approved_total ?? 0;
         const elTreeApp = document.getElementById("statTreesApprovedTotal");
         if (elTreeApp) elTreeApp.textContent = data.trees_approved_total ?? 0;
-        document.getElementById("statRejectedTotal").textContent = data.rejected_total ?? 0;
+        const elVisApp = document.getElementById("statVisualsApprovedTotal");
+        if (elVisApp) elVisApp.textContent = data.visuals_approved_total ?? 0;
+        document.getElementById("statRejectedTotal").textContent = data.total_rejected ?? data.rejected_total ?? 0;
         document.getElementById("statSoapTotal").textContent = data.soap_records_total ?? 0;
 
-        document.getElementById("statPendingSoapDistilled").textContent = data.pending_soap_distilled ?? 0;
-        document.getElementById("statPendingSpecial").textContent = data.pending_special ?? 0;
-        document.getElementById("statPendingGeneral").textContent = data.pending_general ?? 0;
+        // 待審草稿分類拆解 (FAQ)
+        const elSoapDist = document.getElementById("statPendingSoapDistilled");
+        if (elSoapDist) elSoapDist.textContent = data.pending_soap_distilled ?? 0;
+        const elSpec = document.getElementById("statPendingSpecial");
+        if (elSpec) elSpec.textContent = data.pending_special ?? 0;
+        const elGen = document.getElementById("statPendingGeneral");
+        if (elGen) elGen.textContent = data.pending_general ?? 0;
+
+        // 全景審核矩陣表格
+        const faqP = data.pending_total ?? 0;
+        const faqA = data.approved_total ?? 0;
+        const faqR = data.rejected_total ?? 0;
+        const faqT = faqP + faqA + faqR;
+        setMatrixRow("matrixFaq", faqP, faqA, faqR, faqT);
+
+        const treeP = data.trees_pending_total ?? 0;
+        const treeA = data.trees_approved_total ?? 0;
+        const treeR = data.trees_rejected_total ?? 0;
+        const treeT = treeP + treeA + treeR;
+        setMatrixRow("matrixTree", treeP, treeA, treeR, treeT);
+
+        const visP = data.visuals_pending_total ?? 0;
+        const visA = data.visuals_approved_total ?? 0;
+        const visR = data.visuals_rejected_total ?? 0;
+        const visT = visP + visA + visR;
+        setMatrixRow("matrixVis", visP, visA, visR, visT);
+
+        const soapTotal = data.soap_records_total ?? 0;
+        const elSoapApp = document.getElementById("matrixSoapApproved");
+        if (elSoapApp) elSoapApp.textContent = soapTotal;
+        const elSoapSum = document.getElementById("matrixSoapTotal");
+        if (elSoapSum) elSoapSum.textContent = soapTotal;
+
+        const allP = data.total_pending ?? (faqP + treeP + visP);
+        const allA = data.total_approved ?? (faqA + treeA + visA);
+        const allR = data.total_rejected ?? (faqR + treeR + visR);
+        const allT = data.total_assets ?? (allP + allA + allR + soapTotal);
+        setMatrixRow("matrixAll", allP, allA, allR, allT);
+
+        // 頂部導航徽章與動畫分頁快捷膠囊
+        const navVisBadge = document.getElementById("navVisualsBadge");
+        if (navVisBadge) {
+            navVisBadge.textContent = visP > 0 ? `${visP} 待審` : `${visA} 已發布`;
+            navVisBadge.className = visP > 0
+                ? "bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold"
+                : "bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold";
+        }
+
+        const pillPending = document.getElementById("pillVisCountPending");
+        if (pillPending) pillPending.textContent = visP;
+        const pillApproved = document.getElementById("pillVisCountApproved");
+        if (pillApproved) pillApproved.textContent = visA;
+        const pillRejected = document.getElementById("pillVisCountRejected");
+        if (pillRejected) pillRejected.textContent = visR;
+        const pillAll = document.getElementById("pillVisCountAll");
+        if (pillAll) pillAll.textContent = visT;
+
     } catch (e) {
         console.error("載入儀表板統計失敗", e);
+    }
+}
+
+function setMatrixRow(prefix, pending, approved, rejected, total) {
+    const elP = document.getElementById(`${prefix}Pending`);
+    if (elP) elP.textContent = pending.toLocaleString();
+    const elA = document.getElementById(`${prefix}Approved`);
+    if (elA) elA.textContent = approved.toLocaleString();
+    const elR = document.getElementById(`${prefix}Rejected`);
+    if (elR) elR.textContent = rejected.toLocaleString();
+    const elT = document.getElementById(`${prefix}Total`);
+    if (elT) elT.textContent = total.toLocaleString();
+    const elRate = document.getElementById(`${prefix}Rate`);
+    if (elRate) {
+        const rate = total > 0 ? ((approved / total) * 100).toFixed(1) + "%" : "0.0%";
+        elRate.textContent = rate;
     }
 }
 
@@ -1750,13 +1830,34 @@ function initVisualsSection() {
     if (btnRefresh) btnRefresh.addEventListener("click", loadVisuals);
 
     const selStatus = document.getElementById("visualsFilterStatus");
-    if (selStatus) selStatus.addEventListener("change", loadVisuals);
+    if (selStatus) {
+        selStatus.addEventListener("change", () => {
+            syncVisualPillButtons(selStatus.value);
+            loadVisuals();
+        });
+    }
 
     const selScope = document.getElementById("visualsFilterScope");
     if (selScope) selScope.addEventListener("change", loadVisuals);
 
     const btnAutodraft = document.getElementById("btnAutodraftVisual");
     if (btnAutodraft) btnAutodraft.addEventListener("click", handleAutodraftVisual);
+
+    // 快捷狀態切換膠囊
+    const pills = [
+        { id: "pillVisStatusPending", val: "pending" },
+        { id: "pillVisStatusApproved", val: "approved" },
+        { id: "pillVisStatusRejected", val: "rejected" },
+        { id: "pillVisStatusAll", val: "all" },
+    ];
+    pills.forEach(({ id, val }) => {
+        document.getElementById(id)?.addEventListener("click", () => {
+            const sel = document.getElementById("visualsFilterStatus");
+            if (sel) sel.value = val;
+            syncVisualPillButtons(val);
+            loadVisuals();
+        });
+    });
 
     document.getElementById("btnVisualSelectAll")?.addEventListener("click", () => {
         visualState.cards.forEach((entry, id) => {
@@ -1780,6 +1881,23 @@ function initVisualsSection() {
 
     document.getElementById("btnVisualBatchApprove")?.addEventListener("click", () => runVisualBatch("approve"));
     document.getElementById("btnVisualBatchReject")?.addEventListener("click", () => runVisualBatch("reject"));
+}
+
+function syncVisualPillButtons(activeVal) {
+    const pills = [
+        { id: "pillVisStatusPending", val: "pending" },
+        { id: "pillVisStatusApproved", val: "approved" },
+        { id: "pillVisStatusRejected", val: "rejected" },
+        { id: "pillVisStatusAll", val: "all" },
+    ];
+    pills.forEach(({ id, val }) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        const isActive = val === activeVal;
+        btn.className = isActive
+            ? "px-3 py-1.5 rounded-md transition bg-white text-indigo-700 shadow-sm font-bold"
+            : "px-3 py-1.5 rounded-md transition text-gray-600 hover:text-gray-900";
+    });
 }
 
 function syncVisualSelectionUi() {
@@ -1919,11 +2037,13 @@ async function loadVisuals() {
     syncVisualSelectionUi();
     container.replaceChildren(el("div", "skeleton"), el("div", "skeleton"));
 
-    const status = document.getElementById("visualsFilterStatus")?.value || "pending";
+    const status = document.getElementById("visualsFilterStatus")?.value || "approved";
     const scope = document.getElementById("visualsFilterScope")?.value || "all";
     const clinic = document.getElementById("visualsFilterClinic")?.value || "";
 
-    const params = new URLSearchParams({ status, scope, limit: "100" });
+    syncVisualPillButtons(status);
+
+    const params = new URLSearchParams({ status, scope, limit: "500" });
     if (clinic) params.set("clinic_id", clinic);
 
     try {
@@ -1937,11 +2057,35 @@ async function loadVisuals() {
         const data = await resp.json();
         const items = data.visuals || data.items || [];
         if (items.length === 0) {
-            setStatusBox(container, "🎬 目前無相符之視覺解說卡資產。", "empty");
+            if (status === "pending") {
+                const emptyBox = el("div", "bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center my-6 shadow-sm");
+                emptyBox.appendChild(el("div", "text-4xl mb-2", "🎉"));
+                emptyBox.appendChild(el("h3", "text-base font-bold text-emerald-900 mb-1", "目前無待簽核的視覺動畫草稿！"));
+                emptyBox.appendChild(el("p", "text-sm text-emerald-700 mb-4", "全部 3 幕 24 秒醫學解說動畫皆已完成審核並正式發布生效。"));
+                const btn = el("button", "bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-sm transition inline-flex items-center gap-1.5", "👉 立即查看已發布動畫列表");
+                btn.type = "button";
+                btn.addEventListener("click", () => {
+                    const sel = document.getElementById("visualsFilterStatus");
+                    if (sel) sel.value = "approved";
+                    syncVisualPillButtons("approved");
+                    loadVisuals();
+                });
+                emptyBox.appendChild(btn);
+                container.replaceChildren(emptyBox);
+            } else {
+                setStatusBox(container, "🎬 目前無相符之視覺解說卡資產。", "empty");
+            }
             return;
         }
 
         container.replaceChildren();
+
+        // 頂部統計提示列
+        const statusLabel = status === "approved" ? "已發布" : (status === "pending" ? "待簽核" : (status === "rejected" ? "已駁回" : "全部狀態"));
+        const infoBar = el("div", "flex items-center justify-between text-xs text-gray-500 mb-3 px-1");
+        infoBar.appendChild(el("span", "", `共顯示 ${items.length} 筆【${statusLabel}】醫學解說動畫${data.total ? `（資料庫共 ${data.total} 筆）` : ""}`));
+        container.appendChild(infoBar);
+
         items.forEach((item) => {
             const card = createVisualReviewCard(item);
             container.appendChild(card);

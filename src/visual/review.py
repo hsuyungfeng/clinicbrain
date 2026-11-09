@@ -87,7 +87,18 @@ def promote_visual_row(
 
     ir = json.loads(ir_json)
     ir["topic_key"] = general_key
-    keywords = json.loads(keywords_json)
+
+    # 確保昇華時外層 title 與 keywords 與 IR 內完全一致，避免 upsert_assets 拋出一致性驗證錯誤
+    promo_title = str(ir.get("title") or title)
+    ir["title"] = promo_title
+
+    promo_keywords = list(ir.get("keywords") or [])
+    if not promo_keywords:
+        try:
+            promo_keywords = json.loads(keywords_json) if keywords_json else []
+        except Exception:
+            promo_keywords = []
+    ir["keywords"] = promo_keywords
 
     meta: dict[str, Any] = {}
     try:
@@ -103,8 +114,8 @@ def promote_visual_row(
         [{
             "clinic_id": None,
             "topic_key": general_key,
-            "title": title,
-            "keywords": keywords,
+            "title": promo_title,
+            "keywords": promo_keywords,
             "ir": ir,
             "metadata": meta,
         }],

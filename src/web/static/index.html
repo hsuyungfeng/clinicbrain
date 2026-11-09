@@ -35,8 +35,9 @@
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-trees">
                 🌳 臨床推理樹簽核
             </button>
-            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-visuals">
-                🎬 待簽核動畫
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent flex items-center gap-1.5" data-tab="tab-visuals">
+                🎬 醫學動畫管理
+                <span id="navVisualsBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">--</span>
             </button>
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-upload">
                 📁 文件拖曳上傳中心
@@ -55,73 +56,157 @@
         <!-- 頁籤 1：總覽儀表板 -->
         <section id="tab-dashboard" class="tab-content block">
             <h2 class="text-lg font-bold text-gray-800 mb-4">系統狀態與統計摘要</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
-                    <div class="text-xs text-gray-500 font-medium">待簽核 FAQ 草稿</div>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
+                    <div class="text-xs text-gray-500 font-medium">待簽核 FAQ</div>
                     <div id="statPendingTotal" class="text-2xl font-bold text-amber-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">含專屬與 SOAP</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">含專屬與 SOAP</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-emerald-500">
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-emerald-500">
                     <div class="text-xs text-gray-500 font-medium">待簽核推理樹</div>
                     <div id="statTreesPendingTotal" class="text-2xl font-bold text-emerald-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">臨床決策樹草稿</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">臨床決策樹草稿</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
                     <div class="text-xs text-gray-500 font-medium">待簽核動畫</div>
                     <div id="statVisualsPendingTotal" class="text-2xl font-bold text-purple-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">解說卡動畫草稿</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">解說卡動畫草稿</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
-                    <div class="text-xs text-gray-500 font-medium">已發布衛教問答</div>
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
+                    <div class="text-xs text-gray-500 font-medium">已發布 FAQ</div>
                     <div id="statApprovedTotal" class="text-2xl font-bold text-green-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">快取短路庫生效</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">快取短路庫生效</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-teal-500">
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-teal-500">
                     <div class="text-xs text-gray-500 font-medium">已發布推理樹</div>
                     <div id="statTreesApprovedTotal" class="text-2xl font-bold text-teal-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">已納入 RAG 索引</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">已納入 RAG 索引</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-rose-500">
-                    <div class="text-xs text-gray-500 font-medium">已駁回項目</div>
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-indigo-500">
+                    <div class="text-xs text-gray-500 font-medium">已發布動畫</div>
+                    <div id="statVisualsApprovedTotal" class="text-2xl font-bold text-indigo-600 mt-1">--</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">3幕向量解說卡</div>
+                </div>
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-rose-500">
+                    <div class="text-xs text-gray-500 font-medium">全庫已駁回</div>
                     <div id="statRejectedTotal" class="text-2xl font-bold text-rose-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">未通過醫師審核</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">未通過醫師審核</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
-                    <div class="text-xs text-gray-500 font-medium">SOAP 病歷筆數</div>
+                <div class="bg-white p-3.5 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+                    <div class="text-xs text-gray-500 font-medium">SOAP 病歷</div>
                     <div id="statSoapTotal" class="text-2xl font-bold text-blue-600 mt-1">--</div>
-                    <div class="text-xs text-gray-400 mt-1">去識別化病歷</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">去識別化病歷</div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-gray-700 mb-3">待審草稿分類拆解</h3>
-                    <ul class="divide-y divide-gray-100 text-sm">
-                        <li class="py-2.5 flex justify-between">
-                            <span class="text-gray-600">SOAP 臨床病歷提煉草稿 (soap_distilled)</span>
-                            <span id="statPendingSoapDistilled" class="font-semibold text-amber-600">--</span>
-                        </li>
-                        <li class="py-2.5 flex justify-between">
-                            <span class="text-gray-600">診所專屬療程與文件草稿 (special)</span>
-                            <span id="statPendingSpecial" class="font-semibold text-amber-600">--</span>
-                        </li>
-                        <li class="py-2.5 flex justify-between">
-                            <span class="text-gray-600">通用醫學常識與衛教草稿 (general)</span>
-                            <span id="statPendingGeneral" class="font-semibold text-amber-600">--</span>
-                        </li>
-                    </ul>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- 臨床知識庫資產全景審核矩陣 -->
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 lg:col-span-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                            <span>📊</span> 臨床知識庫資產審核全景矩陣 (Knowledge Audit Matrix)
+                        </h3>
+                        <span class="text-xs text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full font-mono">Fail-Closed 嚴格隔離</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 bg-gray-50/80">
+                                    <th class="py-2.5 px-3">知識資產類別</th>
+                                    <th class="py-2.5 px-3 text-center">待簽核 (Pending)</th>
+                                    <th class="py-2.5 px-3 text-center">已發布 (Approved)</th>
+                                    <th class="py-2.5 px-3 text-center">已駁回 (Rejected)</th>
+                                    <th class="py-2.5 px-3 text-right">資產總計</th>
+                                    <th class="py-2.5 px-3 text-right">核准率</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-gray-700">
+                                <tr class="hover:bg-gray-50/50 transition">
+                                    <td class="py-2.5 px-3 font-medium flex items-center gap-1.5">
+                                        <span>📝</span> 衛教常見問答 (FAQ 快取庫)
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-amber-600" id="matrixFaqPending">0</td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-emerald-600" id="matrixFaqApproved">0</td>
+                                    <td class="py-2.5 px-3 text-center text-rose-500 font-mono" id="matrixFaqRejected">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-medium" id="matrixFaqTotal">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700" id="matrixFaqRate">--</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition">
+                                    <td class="py-2.5 px-3 font-medium flex items-center gap-1.5">
+                                        <span>🌳</span> 臨床決策推理樹 (PageIndex Trees)
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-amber-600" id="matrixTreePending">0</td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-emerald-600" id="matrixTreeApproved">0</td>
+                                    <td class="py-2.5 px-3 text-center text-rose-500 font-mono" id="matrixTreeRejected">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-medium" id="matrixTreeTotal">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700" id="matrixTreeRate">--</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition">
+                                    <td class="py-2.5 px-3 font-medium flex items-center gap-1.5">
+                                        <span>🎬</span> 3幕醫學解說動畫 (Visual Assets)
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-amber-600" id="matrixVisPending">0</td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-emerald-600" id="matrixVisApproved">0</td>
+                                    <td class="py-2.5 px-3 text-center text-rose-500 font-mono" id="matrixVisRejected">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-medium" id="matrixVisTotal">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700" id="matrixVisRate">--</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition">
+                                    <td class="py-2.5 px-3 font-medium flex items-center gap-1.5">
+                                        <span>🩺</span> 臨床語音病歷 (SOAP Records)
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center text-gray-400">-</td>
+                                    <td class="py-2.5 px-3 text-center font-bold text-blue-600" id="matrixSoapApproved">0</td>
+                                    <td class="py-2.5 px-3 text-center text-gray-400">-</td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-medium" id="matrixSoapTotal">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-xs text-gray-400">100%</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-t-2 border-gray-300 bg-slate-50/90 font-bold text-gray-800">
+                                    <td class="py-2.5 px-3">全庫知識資產合計</td>
+                                    <td class="py-2.5 px-3 text-center text-amber-600 font-mono" id="matrixAllPending">0</td>
+                                    <td class="py-2.5 px-3 text-center text-emerald-600 font-mono" id="matrixAllApproved">0</td>
+                                    <td class="py-2.5 px-3 text-center text-rose-600 font-mono" id="matrixAllRejected">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-indigo-700 text-base" id="matrixAllTotal">0</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-emerald-700 text-sm" id="matrixAllRate">--</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-gray-700 mb-3">系統安全與防禦機制說明</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed mb-2">
-                        • <strong>Fail-Closed 隔離性</strong>：未簽核之 pending 草稿絕對無法透過自然語言查詢與快取短路對外透露。
-                    </p>
-                    <p class="text-sm text-gray-600 leading-relaxed mb-2">
-                        • <strong>去識別化與價格防禦</strong>：所有檔案上傳與病歷均強制經由 <code>deidentify_text()</code> 與 <code>deep_mask_prices()</code> 處理。
-                    </p>
-                    <p class="text-sm text-gray-600 leading-relaxed">
-                        • <strong>唯讀資料庫保護</strong>：查詢操作全程採用 <code>PRAGMA query_only = ON;</code> 唯讀連線保護。
-                    </p>
+
+                <!-- 醫療法規與防禦機制 -->
+                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <span>🛡️</span> 系統安全與醫療合規防禦
+                        </h3>
+                        <ul class="space-y-3 text-sm text-gray-600 leading-relaxed">
+                            <li class="flex items-start gap-2">
+                                <span class="text-amber-500 font-bold text-base leading-none mt-0.5">🔒</span>
+                                <div>
+                                    <strong class="text-gray-800">Fail-Closed 隔離性</strong>：未簽核之 pending 草稿絕對無法透過自然語言查詢、快取短路或前台動畫對外洩漏。
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-500 font-bold text-base leading-none mt-0.5">🩺</span>
+                                <div>
+                                    <strong class="text-gray-800">去識別化與價格防禦</strong>：所有文字上傳與病歷均強制經由 <code>deidentify_text()</code> 與 <code>deep_mask_prices()</code> 遞迴清洗。
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-emerald-500 font-bold text-base leading-none mt-0.5">⚡</span>
+                                <div>
+                                    <strong class="text-gray-800">唯讀連線保護</strong>：前台對外查詢連線全程採用 <code>PRAGMA query_only = ON;</code> 唯讀保護。
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                        <span>待審草稿分類拆解 (FAQ)：</span>
+                        <span class="font-mono text-slate-700">SOAP <b id="statPendingSoapDistilled" class="text-amber-600">0</b> · 專屬 <b id="statPendingSpecial" class="text-amber-600">0</b> · 通用 <b id="statPendingGeneral" class="text-amber-600">0</b></span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -220,10 +305,32 @@
             </div>
         </section>
 
-        <!-- 頁籤：待簽核動畫 (Phase 31) -->
+        <!-- 頁籤：醫學解說動畫管理 (Phase 31 & Phase 39) -->
         <section id="tab-visuals" class="tab-content hidden">
-            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                <h2 class="text-lg font-bold text-gray-800">🎬 待簽核視覺解說動畫 (Visual Explainer Review)</h2>
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <span>🎬</span> 臨床視覺解說動畫管理 (Visual Explainer Hub)
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">3幕 24秒 向量動畫 · 支援牙科/中醫/內分泌/醫美圖元</p>
+                </div>
+
+                <!-- 狀態切換快捷膠囊按鈕 -->
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-medium">
+                    <button id="pillVisStatusPending" type="button" class="px-3 py-1.5 rounded-md transition text-gray-600 hover:text-gray-900">
+                        ⏳ 待簽核 (<span id="pillVisCountPending">0</span>)
+                    </button>
+                    <button id="pillVisStatusApproved" type="button" class="px-3 py-1.5 rounded-md transition text-gray-600 hover:text-gray-900">
+                        ✅ 已發布 (<span id="pillVisCountApproved">0</span>)
+                    </button>
+                    <button id="pillVisStatusRejected" type="button" class="px-3 py-1.5 rounded-md transition text-gray-600 hover:text-gray-900">
+                        ❌ 已駁回 (<span id="pillVisCountRejected">0</span>)
+                    </button>
+                    <button id="pillVisStatusAll" type="button" class="px-3 py-1.5 rounded-md transition text-gray-600 hover:text-gray-900">
+                        全部 (<span id="pillVisCountAll">0</span>)
+                    </button>
+                </div>
+
                 <div class="flex space-x-3 items-center flex-wrap gap-2">
                     <select id="visualsFilterClinic" aria-label="診所篩選" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
                         <option value="">全部診所</option>
@@ -495,8 +602,8 @@
         </div>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/admin/visual_engine.js"></script>
-    <script src="/admin/app.js"></script>
+    <script src="/admin/visual_engine.js?v=20261106-2"></script>
+    <script src="/admin/app.js?v=20261106-2"></script>
     <!-- 共用：新增診所對話框（任一機構代碼下拉選單選「＋ 新增診所」時開啟） -->
     <div id="clinicCreateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="clinicCreateTitle">
         <form id="clinicCreateForm" class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-lg p-6 space-y-3">

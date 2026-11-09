@@ -904,6 +904,36 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 2. **第二道防線（乾淨執行封裝腳本）**：提供 `~/.local/bin/run_clinic_test.sh`，隔離環境變數與自製臨時腳本死鎖。
 3. **第三道防線（Herdr 看門狗自動自癒）**：透過 `scripts/herdr_supervisor.py` 監控終端輸出，檢測到連續超載或無響應時自動發送中斷信號並執行 `/new` 重置。
 
+### 2.40 臺灣健保 200 大疾病動畫批次編譯與專科藍圖（Phase 39 新增）
+- **雙模型混合架構**：
+  1. 調用 DeepSeek 高效提煉疾病之精確解剖部位與三幕特徵卡（極低 Token 成本）。
+  2. 本地 Ornith-1.5-35B（Qwen2.5 衍生 @ localhost:8080）接收特徵事實卡，在本地安全環境將其編譯為合規 3 幕 × 8 秒（嚴格 24 秒循環）之 Typed IR。
+- **專科解剖圖元拓展**：
+  - 新增牙科口腔組織藍圖（`dental_oral`，支援牙釉質、牙本質、牙髓腔、齲洞充填與牙冠修復）。
+  - 新增中醫經絡穴位藍圖（`tcm_meridian`，支援經絡循行、穴位阻滯、針灸得氣與拔罐活血）。
+  - 第一幕 `pathology_mechanism` 深度綁定解剖器官（`anatomy_target`）與結構標記。
+
+### 2.41 臨床知識庫資產審核全景矩陣與批量核准強化（Phase 39 新增）
+- **批量審核與雙向一致性防禦**：
+  - `src/visual/review.py:promote_visual_row` 在將診所專屬資產昇華為通用資產時，強制將外層 `title` 與 `keywords` 深度對齊內部 `ir` 結構，杜絕 `ValueError: 外層 title 與 IR 內 title 不一致` 之報錯中斷。
+  - 重啟 API Server 同步載入最新專科藍圖檢驗器，徹底根除動態圖元 422 驗證失敗。
+- **後台管理儀表板升級（`index.html` & `app.js`）**：
+  - 頂部指標擴增為 8 大卡片，新增「🎬 已發布動畫」即時指標。
+  - 實裝「📊 臨床知識庫資產審核全景矩陣 (Knowledge Audit Matrix)」，將 FAQ、推理樹、醫學動畫、SOAP 病歷之待審、已發布、已駁回、總數與核准率全景對稱展示。
+  - 「🎬 醫學動畫管理」導航分頁搭載動態數量徽章與快捷狀態切換膠囊（`[⏳ 待簽核 (0)]` `[✅ 已發布 (198)]` `[❌ 已駁回 (2)]` `[全部 (200)]`），點擊時若待簽核為 0 自動導向已發布清單，徹底杜絕空白荒島體驗。
+
+### 2.42 視覺資產全庫去重與歷史舊版淘汰規範（Phase 39 新增）
+- **唯一權威主題原則**：
+  全庫視覺動畫資產嚴格落實「一項醫學主題僅保留唯一最新、最高品質之權威版本」，杜絕雙寫膨脹與舊版草稿殘留。
+- **去重優先順序法則**：
+  1. `is_24s`：具備 `[8, 8, 8]` 嚴格 24 秒循環者絕對優先。
+  2. `is_not_icd`：Phase 39 具備精確解剖機轉之新版資產絕對優先於 Phase 34 舊版 ICD-10 粗篩草稿。
+  3. `is_general`：通用昇華版本（`clinic_id IS NULL`）優先於特定診所舊列，確保全院區與匿名諮詢端點皆可檢索且後台列表不重複。
+  4. `content_version`、`updated_at`、`created_at`、流水號 `id` 依序擇優保留。
+- **維護與稽核工具**：
+  - 維護腳本：`scripts/dedup_visual_assets.py`（支援 `--dry-run` 預檢與安全批次刪除）。
+  - 實跑成效：全庫原始 359 筆 approved 資產，成功清理淘汰 161 筆歷史舊版與雙軌冗餘列，完美精簡為 **198 筆唯一權威醫學動畫**，合規率 100%、24 秒循環率 100%、重複率 0%。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：
@@ -1030,6 +1060,8 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `src/scraper/playwright_scraper.py`：Phase 38 Playwright 無頭 Chromium 動態網頁擷取器（`tests/test_playwright_scraper.py`）
 * `src/scraper/site_crawler.py`：Phase 38 同網域廣度探索爬蟲、Sitemap 種子與路徑優先級排序（`tests/test_site_crawler.py`）
 * `src/scraper/distill_pipeline.py`：Phase 38 智能知識提煉管線，由網頁內文自動生成 pending FAQ 與 PageIndex 推理樹（`tests/test_scraper_distill_pipeline.py`）
+* `scripts/dedup_visual_assets.py`：Phase 39 視覺資產全庫去重與歷史舊版淘汰腳本（支援 `--dry-run`）
+* `src/visual/nhi_dedup.py`：Phase 39 健保 200 大疾病去重篩檢器（`data/nhi_primary_care_200.json` 目錄比對）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
@@ -1047,9 +1079,11 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 
 ## 6. 未來里程碑規劃 (Future Roadmap & Next To Do)
 
-* **Phase 39：全自動爬蟲後台非同步工作 (Crawler Background Job & Admin UI Integration)**
-  - 在管理後台「文件拖曳上傳中心」新增「🌐 診所網站全自動爬取提煉」輸入框，輸入網址後以非同步工作（Background Worker）執行探索與提煉。
-  - 即時呈現進度條（已爬取頁數、提煉 FAQ 數、提煉推理樹數），完成後自動刷新審核清單。
+* **Phase 39（已交付）：健保 200 大疾病動畫批次編譯、全景審核矩陣與資產去重**
+  - 完成雙模型編譯流程（DeepSeek 提煉部位特徵 + 本地 8080 編譯 24 秒 IR）。
+  - 新增牙科 (`dental_oral`)、中醫 (`tcm_meridian`) 等專科圖元藍圖。
+  - 後台實裝「臨床知識庫資產審核全景矩陣」與「🎬 醫學動畫管理」快捷膠囊。
+  - 實施全庫視覺資產去重，剔除 161 筆歷史舊版，收斂為 198 筆唯一權威 24 秒醫學動畫。
 * **Phase 40：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
   - 在病人諮詢端點支援自適應推薦診所與院所特約醫師門診時段。
   - 動態關聯已昇華之基層 ICD-10 解說動畫卡，並強化門診就診預約引導。
