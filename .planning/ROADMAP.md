@@ -38,6 +38,8 @@
 | 31. 由 PageIndex 自動生成動畫草稿、待簽核動畫分頁、診所優先 | 5/5 | Complete | 2026-10-20 |
 | 32. 診所核准資產自動昇華一般醫學與語意動作繪圖引擎升級 | 2/2 | Complete | 2026-10-21 |
 | 33. 專科解剖對照與修復歷程語意繪圖全面升級 | 2/2 | Complete | 2026-10-21 |
+| 39. 台灣健保 200 大核心疾病視覺動畫規模化 | 4/4 | Complete | 2026-11-07 |
+| 40. 台灣健保 201-400 大次級盛行疾病動畫管線與全景索引擴充 | 4/4 | Complete | 2026-11-09 |
 
 ## Phase Details
 
@@ -297,7 +299,7 @@ Plans:
 ### Phase 39: 台灣健保 200 大核心疾病視覺動畫規模化（DeepSeek 提煉、24 秒三幕動畫、去重篩選與 Herdr 閉環）
 
 **Goal**: 導入健保署最新統計之台灣基層診所 200 大常見疾病目錄（西醫、中醫、牙醫），以自動化比對精確篩除現有已核准之 88 個主題，介接 DeepSeek API（支援本機 8080 雙模 Fallback）批次生成精確 24 秒（3 幕 × 8 秒）專科向量動畫草稿，並透過 herdr 協同調度 Hermes 監控測試與 Agy 查核修復，達成全自動化研發與醫療合規閉環。
-**Status**: Planned
+**Status**: Complete (commit 94663f3 全量核准入庫與去重收斂)
 **Depends on**: Phase 30（場景引擎）、Phase 32/33（語意動作與專科對照圖元）、Phase 37（基層臨床推理樹）
 **Requirements**: P39-CATALOG, P39-DEDUP, P39-DEEPSEEK, P39-24S-ENGINE, P39-SPECIALTY-DSL, P39-BATCH, P39-HERDR-LOOP
 **Plans**: 4 plans
@@ -305,7 +307,21 @@ Plans:
 - [x] 39-01-PLAN.md — 健保 200 疾病目錄建檔、88 既有資產篩除器與 DeepSeek API 客戶端（Wave 1）
 - [x] 39-02-PLAN.md — 24 秒三幕動畫藍圖擴展（牙科、中醫、內分泌專科圖元與嚴格 8 秒時長）（Wave 2）
 - [x] 39-03-PLAN.md — DeepSeek 驅動之批量生成管線與雙層自癒重試（Wave 3）
-- [ ] 39-04-PLAN.md — Herdr 多 Agent 協作驗收（Hermes 測試監控 → Agy 查核與自動修復）與全套回歸（Wave 4）
+- [x] 39-04-PLAN.md — Herdr 多 Agent 協作驗收（Hermes 測試監控 → Agy 查核與自動修復）與全套回歸（Wave 4）
+
+### Phase 40: 台灣健保第 201-400 項次級盛行疾病動畫擴充管線與權威輸入種子 (Complete)
+
+**Goal**: 延續 Phase 39 管線，建檔並擴充台灣健保基層門診第 201 至 400 項常見疾病（西醫 120 項、中醫 50 項、牙醫 30 項），精確與現有 200 大資產進行雙向去重篩選，升級次專科藍圖（眼科、耳鼻喉、泌尿、牙周 GTR、中醫特種針法），介接 DeepSeek / 本機雙模進行規模化 24 秒向量動畫草稿生成與 Herdr 審計入庫。
+**Status**: Complete (commit 驗收完成：400 筆全景索引入庫、5 大次專科藍圖擴展、自癒生成管線與 200 筆草稿入庫，總資產收斂為 400 筆)
+**Depends on**: Phase 39（台灣健保 200 大核心疾病動畫管線）
+**Requirements**: P40-CATALOG-400, P40-DEDUP-200, P40-SPECIALTY-BLUEPRINTS, P40-BATCH-SCALE, P40-HERDR-AUDIT
+**Plans**: 4 plans
+Plans:
+- [x] 40-01-PLAN.md — 健保 201-400 權威種子目錄建檔與全庫去重防禦契約（Wave 1）
+- [x] 40-02-PLAN.md — 201-400 專科圖元與藍圖語意擴充（眼科、耳鼻喉、泌尿、牙周再生與中醫特種療法）（Wave 2）
+- [x] 40-03-PLAN.md — 201-400 規模化編譯器與 DeepSeek/本機雙模自癒生成管線（Wave 3）
+- [x] 40-04-PLAN.md — Herdr 多代理協同驗收、Playwright 抽幀審計與全景矩陣草稿入庫（Wave 4）
+
 
 
 

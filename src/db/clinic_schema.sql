@@ -460,3 +460,30 @@ CREATE TABLE IF NOT EXISTS visual_stats (
 
 CREATE INDEX IF NOT EXISTS idx_visual_stats_date ON visual_stats(stat_date);
 -- ===== visual_assets END =====
+
+-- ===== nhi_catalog_1_400 BEGIN =====
+CREATE TABLE IF NOT EXISTS nhi_catalog_1_400 (
+    index_no INTEGER PRIMARY KEY,
+    id TEXT UNIQUE NOT NULL,
+    system TEXT NOT NULL,
+    category TEXT NOT NULL,
+    name TEXT NOT NULL,
+    icd10 TEXT,
+    alias TEXT,
+    keywords TEXT,
+    clinical_feature TEXT,
+    topic_key TEXT NOT NULL,
+    visual_available INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS nhi_catalog_fts USING fts5(
+    index_no UNINDEXED,
+    name,
+    icd10,
+    alias,
+    keywords,
+    clinical_feature,
+    tokenize='trigram'
+);
+-- ===== nhi_catalog_1_400 END =====

@@ -471,18 +471,21 @@
     else drawTimelineStructural(ctx, u);
   }
 
-  // Phase 33 & Phase 39：專科列舉常數（與 src/visual/blueprints.py 規格一致；白名單與繪製共用）
+  // Phase 33 & Phase 39 & Phase 40：專科列舉常數（與 src/visual/blueprints.py 規格一致；白名單與繪製共用）
   const CONTRAST_LEFT_SPECIALTY = [
     "tissue_trauma_torn_vessel", "scar_contracture_ectropion", "silicone_extrusion_erythema", "capsular_contracture_ball", "nodule_clumping",
-    "dental_caries_erosion", "tcm_qi_stagnation", "metabolic_insulin_resistance"
+    "dental_caries_erosion", "tcm_qi_stagnation", "metabolic_insulin_resistance",
+    "vitreous_drusen_degeneration", "airway_laryngeal_edema", "venous_plexus_reflux", "periodontal_bone_defect", "tcm_deep_adhesion"
   ];
   const CONTRAST_RIGHT_SPECIALTY = [
     "ultrasonic_emulsification", "transconjunctival_fat_reposition", "cartilage_triangular_strut", "dual_plane_natural_teardrop", "micro_droplet_diffusion",
-    "dental_sealing_restoration", "tcm_acupuncture_flow", "metabolic_glycemic_control"
+    "dental_sealing_restoration", "tcm_acupuncture_flow", "metabolic_glycemic_control",
+    "optical_barrier_shield", "airway_patency_restore", "venous_ligation_clear", "gtr_guided_regeneration", "acupotomy_micro_release"
   ];
   const TIMELINE_SPECIALTY = [
     "bone_healing", "bruise_metabolism", "scar_maturation", "nerve_regeneration", "skin_retraction",
-    "dental_pulp_healing", "tcm_meridian_harmony", "metabolic_vessel_stabilization"
+    "dental_pulp_healing", "tcm_meridian_harmony", "metabolic_vessel_stabilization",
+    "retinal_epithelium_repair", "airway_mucosa_calm", "pelvic_microflow_restore", "bone_graft_integration", "meridian_unblock_healing"
   ];
   const CONTRAST_LEFT_MODES = ["mass", "scattered", "wide_incision", "thermal_spread"].concat(CONTRAST_LEFT_SPECIALTY, CONTRAST_LEFT_BASE);
   const CONTRAST_RIGHT_MODES = ["layered", "mass", "minimal_incision", "targeted_energy"].concat(CONTRAST_RIGHT_SPECIALTY, CONTRAST_RIGHT_BASE);
@@ -570,6 +573,48 @@
         const gy = 230 + Math.floor(i / 4) * 35;
         ctx.circle({ cx: gx, cy: gy, r: 6, fill: "#eab308", opacity: 0.4 + 0.5 * u });
       }
+    } else if (mode === "vitreous_drusen_degeneration") {
+      // 眼底黃斑玻璃疣與玻璃體混濁：色素上皮層微小玻璃疣沉積，玻璃體懸浮暗點
+      ctx.path({ d: "M 100 180 C 130 140 290 140 320 180 C 330 250 290 320 210 330 C 130 320 90 250 100 180 Z", fill: "#0f172a", stroke: "#475569", "stroke-width": 2 });
+      ctx.path({ d: "M 120 220 Q 210 310 300 220", fill: "none", stroke: "#eab308", "stroke-width": 4 });
+      for (let d = 0; d < 6; d++) {
+        const dx = 150 + d * 24;
+        const dy = 265 - Math.sin((d / 5) * Math.PI) * 20;
+        ctx.circle({ cx: dx, cy: dy, r: 3 + 2 * u, fill: "#facc15", stroke: "#713f12", "stroke-width": 1 });
+      }
+      for (let f = 0; f < 4; f++) {
+        const fx = 160 + f * 30 + Math.sin(u * Math.PI * 2 + f) * 8;
+        const fy = 190 + (f % 2) * 25;
+        ctx.circle({ cx: fx, cy: fy, r: 4, fill: "#334155", opacity: 0.7 });
+      }
+    } else if (mode === "airway_laryngeal_edema") {
+      // 氣道喉頭水腫狹窄：聲門黏膜充血肥厚，兩側氣道受壓縮窄
+      ctx.rect({ x: 130, y: 150, width: 160, height: 180, rx: 12, fill: "#1e293b", stroke: "#64748b", "stroke-width": 2 });
+      const edema = 25 * u;
+      ctx.path({ d: "M 130 170 Q " + (170 + edema) + " 240 130 310", fill: "#ef4444", opacity: 0.8 });
+      ctx.path({ d: "M 290 170 Q " + (250 - edema) + " 240 290 310", fill: "#ef4444", opacity: 0.8 });
+      ctx.line({ x1: 210, y1: 160, x2: 210, y2: 320, stroke: "#38bdf8", "stroke-width": Math.max(2, 8 - 6 * u), "stroke-dasharray": "3 3" });
+    } else if (mode === "venous_plexus_reflux") {
+      // 蔓狀靜脈叢逆流怒張：瓣膜不全血液瘀滯，靜脈管腔迂曲盤旋
+      for (let v = 0; v < 4; v++) {
+        const vx = 160 + v * 30;
+        ctx.path({ d: "M " + vx + " 150 Q " + (vx + 18) + " 200 " + vx + " 240 T " + (vx + 15) + " 320", fill: "none", stroke: "#3b82f6", "stroke-width": 5 + 4 * u, opacity: 0.85 });
+      }
+      ctx.ellipse({ cx: 210, cy: 240, rx: 35 * u, ry: 20 * u, fill: "#1e3a8a", opacity: 0.5 });
+    } else if (mode === "periodontal_bone_defect") {
+      // 牙周骨內袋吸收缺損：牙根表面牙周袋向下破壞，齒槽骨呈角狀吸收
+      ctx.rect({ x: 180, y: 140, width: 60, height: 160, rx: 4, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+      ctx.path({ d: "M 140 220 L 180 " + (220 + 50 * u) + " L 180 300 L 140 300 Z", fill: "#7f1d1d", opacity: 0.8 });
+      ctx.path({ d: "M 280 220 L 240 " + (220 + 40 * u) + " L 240 300 L 280 300 Z", fill: "#7f1d1d", opacity: 0.8 });
+    } else if (mode === "tcm_deep_adhesion") {
+      // 中醫經筋深部沾黏：深層肌肉纖維沾黏緻密，筋結壓迫絡脈
+      ctx.line({ x1: 130, y1: 170, x2: 290, y2: 170, stroke: "#64748b", "stroke-width": 3 });
+      ctx.line({ x1: 130, y1: 310, x2: 290, y2: 310, stroke: "#64748b", "stroke-width": 3 });
+      for (let s = 0; s < 7; s++) {
+        const sx = 150 + s * 20;
+        ctx.line({ x1: sx, y1: 170, x2: sx + (s % 2 === 0 ? 10 : -10), y2: 310, stroke: "#475569", "stroke-width": 2 });
+      }
+      ctx.circle({ cx: 210, cy: 240, r: 18 + 12 * u, fill: "#78350f", stroke: "#b45309", "stroke-width": 2, opacity: 0.9 });
     }
   }
 
@@ -647,6 +692,48 @@
         ctx.line({ x1: cx, y1: 175, x2: cx, y2: 215, stroke: "#38bdf8", "stroke-width": 3, "stroke-linecap": "round" });
         ctx.circle({ cx: cx, cy: 200 + 40 * u, r: 5, fill: "#a7f3d0", opacity: 0.85 });
       }
+    } else if (mode === "optical_barrier_shield") {
+      // 視網膜光學屏障保護：抗氧化防護網覆蓋，色素上皮代謝平順穩定
+      ctx.path({ d: "M 500 180 C 530 140 690 140 720 180 C 730 250 690 320 610 330 C 530 320 490 250 500 180 Z", fill: "#0f172a", stroke: "#22c55e", "stroke-width": 2 });
+      ctx.path({ d: "M 520 220 Q 610 310 700 220", fill: "none", stroke: "#22c55e", "stroke-width": 5 });
+      ctx.circle({ cx: 610, cy: 235, r: 40 * u, fill: "none", stroke: "#38bdf8", "stroke-width": 2, opacity: 0.7 });
+      for (let s = 0; s < 6; s++) {
+        const sx = 550 + s * 24;
+        const sy = 265 - Math.sin((s / 5) * Math.PI) * 20;
+        ctx.circle({ cx: sx, cy: sy, r: 3, fill: "#86efac" });
+      }
+    } else if (mode === "airway_patency_restore") {
+      // 氣道水腫消退通暢：喉頭充血消退，氣道截面擴大恢復呼吸順暢
+      ctx.rect({ x: 530, y: 150, width: 160, height: 180, rx: 12, fill: "#1e293b", stroke: "#22c55e", "stroke-width": 2 });
+      const lumen = 35 * u;
+      ctx.path({ d: "M 530 170 Q " + (550 - lumen * 0.3) + " 240 530 310", fill: "#22c55e", opacity: 0.4 });
+      ctx.path({ d: "M 690 170 Q " + (670 + lumen * 0.3) + " 240 690 310", fill: "#22c55e", opacity: 0.4 });
+      ctx.line({ x1: 610, y1: 160, x2: 610, y2: 320, stroke: "#38bdf8", "stroke-width": 12 + 10 * u });
+    } else if (mode === "venous_ligation_clear") {
+      // 微創靜脈結紮排空：阻斷異常逆流血管，側支循環建立深部減壓
+      for (let v = 0; v < 4; v++) {
+        const vx = 560 + v * 30;
+        ctx.line({ x1: vx, y1: 150, x2: vx, y2: 320, stroke: "#60a5fa", "stroke-width": 3, "stroke-dasharray": "4 4" });
+      }
+      ctx.rect({ x: 550, y: 220, width: 110, height: 16, rx: 4, fill: "#facc15", stroke: "#ca8a04", "stroke-width": 1.5 });
+      ctx.text({ x: 605, y: 232, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#713f12" }, "阻斷返流");
+    } else if (mode === "gtr_guided_regeneration") {
+      // GTR 引導組織再生：再生屏障膜阻擋上皮細胞長入，引導齒槽骨定向生長
+      ctx.rect({ x: 580, y: 140, width: 60, height: 160, rx: 4, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+      ctx.line({ x1: 540, y1: 200, x2: 540, y2: 300, stroke: "#38bdf8", "stroke-width": 4 });
+      ctx.line({ x1: 680, y1: 200, x2: 680, y2: 300, stroke: "#38bdf8", "stroke-width": 4 });
+      ctx.rect({ x: 545, y: 220 + 40 * (1 - u), width: 30, height: 60 * u, fill: "#22c55e", opacity: 0.7 });
+      ctx.rect({ x: 645, y: 220 + 40 * (1 - u), width: 30, height: 60 * u, fill: "#22c55e", opacity: 0.7 });
+    } else if (mode === "acupotomy_micro_release") {
+      // 小針刀微創鬆解：微針刀縱向精準疏通剝離纖維沾黏，張力釋放經絡通達
+      ctx.line({ x1: 530, y1: 170, x2: 690, y2: 170, stroke: "#22c55e", "stroke-width": 3 });
+      ctx.line({ x1: 530, y1: 310, x2: 690, y2: 310, stroke: "#22c55e", "stroke-width": 3 });
+      for (let s = 0; s < 7; s++) {
+        const sx = 550 + s * 20;
+        ctx.line({ x1: sx, y1: 170, x2: sx, y2: 310, stroke: "#86efac", "stroke-width": 2 });
+      }
+      ctx.line({ x1: 610, y1: 140, x2: 610, y2: 240, stroke: "#facc15", "stroke-width": 3, "stroke-linecap": "round" });
+      ctx.circle({ cx: 610, cy: 240, r: 8 * u, fill: "none", stroke: "#facc15", "stroke-width": 2 });
     }
   }
 
@@ -691,6 +778,31 @@
       "代謝負荷失調初期，胰島素阻抗促使微血管承受滲透壓",
       "生活型態與醫療輔助介入，受體敏感度提升且血糖漸穩",
       "血管內皮細胞修復完整，長期維持平穩代謝降低器官負擔"
+    ],
+    retinal_epithelium_repair: [
+      "視網膜色素上皮層微小沉積清除，黃斑部代謝壓力減輕",
+      "抗氧化保護屏障重塑，感光細胞微結構功能維持穩定",
+      "視網膜中心血氧灌注順暢，視覺品質與感光功能持久平穩"
+    ],
+    airway_mucosa_calm: [
+      "急性期氣道黏膜充血水腫，溫和蒸氣與抗炎平撫患部",
+      "喉頭聲門黏膜發炎消退，通氣孔徑恢復原有寬鬆截面",
+      "上呼吸道黏膜上皮屏障健全，咳嗽平息呼吸自然通暢"
+    ],
+    pelvic_microflow_restore: [
+      "骨盆深部靜脈高壓減除，異常逆流血液停止返流",
+      "側支微循環網絡代償引流，會陰與下腹重墜脹感消退",
+      "微血管阻抗恢復正常生理平衡，骨盆腔深層循環舒暢"
+    ],
+    bone_graft_integration: [
+      "GTR 再生膜阻隔軟組織侵入，骨內袋填充物提供爬行支架",
+      "成骨細胞移行生長，新生齒槽骨與牙周膜纖維垂直附著",
+      "骨質緻密骨整合穩固，牙周囊袋深度縮減牙齒穩固健康"
+    ],
+    meridian_unblock_healing: [
+      "小針刀精準鬆解深部經筋筋結，釋放深層神經血管卡壓",
+      "穴位氣血重新灌注濡養，經絡循行通道阻滯消散",
+      "經筋柔韌恢復彈性，關節活動開闔自如無疼痛障礙"
     ],
     wound_healing: [
       "術後初期加壓保護傷口，冰敷輔助抑制組織腫脹",
@@ -1010,6 +1122,52 @@
         ctx.circle({ cx: 400, cy: 225, r: 25, fill: "none", stroke: "#38bdf8", "stroke-width": 2 });
         ctx.text({ x: 400, y: 232, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "血管內皮完整修復 長期穩定代謝目標");
       }
+    } else if (connector === "retinal_epithelium_repair") {
+      // 視網膜色素上皮修復歷程
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      ctx.path({ d: "M 120 180 Q 400 300 680 180", fill: "none", stroke: "#eab308", "stroke-width": 5 });
+      if (u < 0.35) {
+        ctx.text({ x: 400, y: 245, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fde68a" }, "清除感光代謝微沉積 減輕黃斑部負荷");
+      } else if (u < 0.70) {
+        ctx.path({ d: "M 120 180 Q 400 300 680 180", fill: "none", stroke: "#38bdf8", "stroke-width": 3, opacity: 0.8 });
+        ctx.text({ x: 400, y: 245, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#67e8f9" }, "色素上皮屏障重塑 感光微結構功能穩定");
+      } else {
+        ctx.circle({ cx: 400, cy: 235, r: 30, fill: "none", stroke: "#22c55e", "stroke-width": 2.5, opacity: 0.9 });
+        ctx.text({ x: 400, y: 245, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "視網膜微血流順暢 感光功能長效平穩");
+      }
+    } else if (connector === "airway_mucosa_calm") {
+      // 氣道黏膜消腫歷程
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      const lumenR = 15 + 40 * u;
+      ctx.ellipse({ cx: 400, cy: 225, rx: lumenR, ry: lumenR * 0.7, fill: "#0f172a", stroke: "#38bdf8", "stroke-width": 3 });
+      if (u < 0.35) {
+        ctx.text({ x: 400, y: 230, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fca5a5" }, "急性充血水腫 局部保濕抑制發炎");
+      } else if (u < 0.70) {
+        ctx.text({ x: 400, y: 230, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#7dd3fc" }, "喉頭腫脹退散 通氣截面漸進展開");
+      } else {
+        ctx.text({ x: 400, y: 230, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, "黏膜屏障健全復原 呼吸寬鬆通暢");
+      }
+    } else if (connector === "pelvic_microflow_restore") {
+      // 骨盆微循環回流恢復
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      for (let i = 0; i < 5; i++) {
+        const x = 200 + i * 100;
+        ctx.line({ x1: x, y1: 170, x2: x, y2: 280, stroke: "#3b82f6", "stroke-width": 3 + 2 * (1 - u), "stroke-dasharray": u > 0.5 ? "4 4" : "" });
+      }
+      ctx.text({ x: 400, y: 230, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: u > 0.7 ? "#ffffff" : "#93c5fd" }, u > 0.7 ? "靜脈回流暢通 骨盆腔深層循環舒暢" : "微血管阻抗恢復正常 異常返流停止");
+    } else if (connector === "bone_graft_integration") {
+      // 牙周骨整合修復
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      ctx.rect({ x: 370, y: 160, width: 60, height: 130, rx: 4, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+      ctx.rect({ x: 310, y: 200 + 40 * (1 - u), width: 50, height: 80 * u, fill: "#22c55e", opacity: 0.75 });
+      ctx.rect({ x: 440, y: 200 + 40 * (1 - u), width: 50, height: 80 * u, fill: "#22c55e", opacity: 0.75 });
+      ctx.text({ x: 400, y: 230, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#ffffff" }, u > 0.7 ? "齒槽骨緻密再生 牙齒穩固健康" : "成骨細胞攀爬生長 新生牙周骨整合");
+    } else if (connector === "meridian_unblock_healing") {
+      // 經絡疏通濡養
+      ctx.rect({ x: 90, y: 140, width: 620, height: 170, rx: 12, fill: "#1e293b", stroke: "#334155", "stroke-width": 1.5 });
+      ctx.path({ d: "M 150 225 Q 400 " + (225 - 40 * Math.sin(u * Math.PI)) + " 650 225", fill: "none", stroke: "#facc15", "stroke-width": 4 });
+      ctx.circle({ cx: 400, cy: 225, r: 25 * u, fill: "none", stroke: "#22c55e", "stroke-width": 2 });
+      ctx.text({ x: 400, y: 270, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#ffffff" }, u > 0.7 ? "經筋柔韌恢復彈性 氣血通達無痛" : "微創針刀鬆解卡壓 經穴氣血充盈濡養");
     }
   }
 
@@ -1147,7 +1305,7 @@
     ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
 
     // 頂部解剖專科標題與法規免責小字（y <= 55）
-    const isClinicalBase = TIMELINE_BASE.indexOf(params.connectors) >= 0 || params.connectors === "none";
+    const isClinicalBase = TIMELINE_BASE.indexOf(params.connectors) >= 0 || TIMELINE_SPECIALTY.indexOf(params.connectors) >= 0 || params.connectors === "none";
     ctx.text({ x: 50, y: 52, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" },
       isClinicalBase ? "【臨床病程演進與健康管理】" : "【生理修復歷程與組織成熟】");
     ctx.text({ x: 750, y: 52, "text-anchor": "end", "font-size": 11, fill: "#64748b" }, "實際結果因人而異，須由醫師當面評估");
@@ -1291,7 +1449,7 @@
     // 三個里程碑點與標籤（全部 y <= 405，嚴格在安全區內）
     const nodePositions = [110, 400, 690];
     const thresholds = [0.05, 0.48, 0.92];
-    const stageTimes = isClinicalBase ? ["病程初期", "病程中期", "長期追蹤"] : ["術後 1~3 天", "術後 1~4 週", "長期穩定"];
+    const stageTimes = isClinicalBase ? ["病程初期", "病程中期", "長期追蹤"] : ["術後初期", "修復重塑期", "長期穩定"];
 
     for (let mIdx = 0; mIdx < 3; mIdx++) {
       const nx = nodePositions[mIdx];
@@ -2887,6 +3045,69 @@
     ctx.text({ x: 120, y: 270, "font-size": 11, fill: "#cbd5e1" }, "牙齦黏膜");
   }
 
+  // Phase 40：次專科解剖圖元（眼底視網膜、耳鼻喉氣道、泌尿生殖、進階牙周、中醫特種針灸）
+  function pmOphthalmicRetina(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    ctx.path({ d: "M 90 140 C 200 120 360 120 470 140 L 470 320 C 360 300 200 300 90 320 Z", fill: "#1e293b", opacity: 0.6 });
+    ctx.path({ d: "M 90 280 Q 280 320 470 280", fill: "none", stroke: "#eab308", "stroke-width": 4 });
+    if (env.lvl > 0.05) {
+      for (let i = 0; i < 5; i++) {
+        ctx.circle({ cx: 160 + i * 60, cy: 295 - Math.sin(i) * 15, r: 4 + 3 * env.lvl, fill: "#facc15", stroke: "#713f12", "stroke-width": 1 });
+      }
+    }
+    if (env.rep > 0.05) {
+      ctx.circle({ cx: 280, cy: 220, r: 45, fill: "none", stroke: "#38bdf8", "stroke-width": 2, opacity: env.rep });
+    }
+    ctx.text({ x: 100, y: 135, "font-size": 11, fill: "#94a3b8" }, "玻璃體膠體");
+    ctx.text({ x: 100, y: 265, "font-size": 11, fill: "#fde68a" }, "視網膜色素上皮");
+  }
+
+  function pmENTAirway(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    const edema = 35 * env.lvl;
+    ctx.path({ d: "M 150 140 Q " + (200 + edema) + " 225 150 310", fill: "#ef4444", opacity: 0.75 });
+    ctx.path({ d: "M 410 140 Q " + (360 - edema) + " 225 410 310", fill: "#ef4444", opacity: 0.75 });
+    ctx.line({ x1: 280, y1: 130, x2: 280, y2: 320, stroke: "#38bdf8", "stroke-width": Math.max(4, 20 - edema) });
+    ctx.text({ x: 120, y: 135, "font-size": 11, fill: "#fca5a5" }, "喉頭黏膜聲門");
+    ctx.text({ x: 380, y: 135, "font-size": 11, fill: "#38bdf8" }, "氣道截面");
+  }
+
+  function pmUroGenital(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    for (let v = 0; v < 4; v++) {
+      const vx = 180 + v * 60;
+      ctx.path({ d: "M " + vx + " 130 Q " + (vx + 20) + " 220 " + vx + " 310", fill: "none", stroke: "#3b82f6", "stroke-width": 4 + 4 * env.lvl });
+    }
+    if (env.rep > 0.05) {
+      ctx.rect({ x: 150, y: 210, width: 260, height: 20, rx: 4, fill: "#10b981", opacity: env.rep * 0.7 });
+    }
+    ctx.text({ x: 100, y: 135, "font-size": 11, fill: "#93c5fd" }, "骨盆深部靜脈叢");
+  }
+
+  function pmDentalPeriodontal(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    ctx.rect({ x: 250, y: 130, width: 60, height: 180, rx: 6, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+    const defectH = 60 * env.lvl;
+    ctx.rect({ x: 190, y: 220, width: 55, height: defectH, fill: "#7f1d1d", opacity: 0.85 });
+    ctx.rect({ x: 315, y: 220, width: 55, height: defectH, fill: "#7f1d1d", opacity: 0.85 });
+    if (env.rep > 0.05) {
+      ctx.line({ x1: 180, y1: 215, x2: 180, y2: 300, stroke: "#38bdf8", "stroke-width": 3, opacity: env.rep });
+      ctx.line({ x1: 380, y1: 215, x2: 380, y2: 300, stroke: "#38bdf8", "stroke-width": 3, opacity: env.rep });
+    }
+    ctx.text({ x: 120, y: 140, "font-size": 11, fill: "#94a3b8" }, "牙周囊袋骨缺損");
+  }
+
+  function pmTCMSpecialAcup(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    ctx.line({ x1: 100, y1: 225, x2: 460, y2: 225, stroke: "#475569", "stroke-width": 6 });
+    ctx.circle({ cx: 280, cy: 225, r: 18 + 14 * env.lvl, fill: "#78350f", opacity: 0.85 });
+    if (env.rep > 0.05) {
+      ctx.line({ x1: 280, y1: 130, x2: 280, y2: 225, stroke: "#facc15", "stroke-width": 3, "stroke-linecap": "round", opacity: env.rep });
+      ctx.circle({ cx: 280, cy: 225, r: 28, fill: "none", stroke: "#22c55e", "stroke-width": 2, opacity: env.rep });
+    }
+    ctx.text({ x: 100, y: 140, "font-size": 11, fill: "#fde047" }, "督脈經穴與深筋膜");
+  }
+
   const PATHO_DRAWERS = {
     respiratory_mucosa: pmRespiratory,
     vascular_metabolic: pmVascular,
@@ -2896,7 +3117,12 @@
     uro_pelvic: pmUro,
     dental_oral: pmDental,
     tcm_meridian: pmTCM,
-    endocrine_receptor: pmEndocrine
+    endocrine_receptor: pmEndocrine,
+    ophthalmic_retina: pmOphthalmicRetina,
+    ent_airway: pmENTAirway,
+    uro_genital: pmUroGenital,
+    dental_periodontal: pmDentalPeriodontal,
+    tcm_special_acup: pmTCMSpecialAcup
   };
 
   // 依據解剖標記與器官系統派發專業解剖繪圖函式
@@ -2917,6 +3143,22 @@
     // 3. 牙科齒質剖面（牙釉質、牙本質、齲齒、窩洞、牙髓）
     if (p.organ_system === "dental_oral" || combined.indexOf("牙") >= 0 || combined.indexOf("齲") >= 0 || combined.indexOf("齒") >= 0) {
       return pmDentalCariesSection;
+    }
+    // 4. Phase 40 次專科分流
+    if (p.organ_system === "ophthalmic_retina" || combined.indexOf("眼") >= 0 || combined.indexOf("黃斑") >= 0 || combined.indexOf("視網膜") >= 0) {
+      return pmOphthalmicRetina;
+    }
+    if (p.organ_system === "ent_airway" || combined.indexOf("喉") >= 0 || combined.indexOf("聲帶") >= 0 || combined.indexOf("氣道") >= 0) {
+      return pmENTAirway;
+    }
+    if (p.organ_system === "uro_genital" || combined.indexOf("精索") >= 0 || combined.indexOf("膀胱") >= 0 || combined.indexOf("骨盆") >= 0) {
+      return pmUroGenital;
+    }
+    if (p.organ_system === "dental_periodontal" || combined.indexOf("牙周") >= 0 || combined.indexOf("骨袋") >= 0) {
+      return pmDentalPeriodontal;
+    }
+    if (p.organ_system === "tcm_special_acup" || combined.indexOf("長強") >= 0 || combined.indexOf("針刀") >= 0) {
+      return pmTCMSpecialAcup;
     }
 
     return PATHO_DRAWERS[p.organ_system] || pmRespiratory;

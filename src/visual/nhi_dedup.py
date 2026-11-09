@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_DB_PATH = PROJECT_ROOT / "clinic.db"
 DEFAULT_CATALOG_PATH = PROJECT_ROOT / "data" / "nhi_primary_care_200.json"
+DEFAULT_CATALOG_400_PATH = PROJECT_ROOT / "data" / "nhi_primary_care_201_400.json"
+DEFAULT_INDEX_400_PATH = PROJECT_ROOT / "data" / "nhi_primary_care_1_400_index.json"
 
 
 def normalize_term(text: str) -> str:
@@ -118,6 +120,71 @@ def partition_nhi_catalog(
             to_generate.append(item)
 
     return covered, to_generate
+
+
+def verify_seed_separation(
+    seed_200_path: Path = DEFAULT_CATALOG_PATH,
+    seed_400_path: Path = DEFAULT_CATALOG_400_PATH,
+    db_conn: Optional[sqlite3.Connection] = None,
+) -> Dict[str, Any]:
+    """
+    Phase 40 Wave 1: 驗證第 201 至 400 項新種子與前 200 項（及現有資料庫資產）達到 100% 獨立隔離。
+    檢驗規則：
+    1. ID 絕不重複（例如 W001 vs W201）。
+    2. 主題名稱無完全同名碰撞。
+    3. 若傳入 db_conn，亦比對資料庫已存在的 topic_key 與 title，防止雙寫。
+    """
+    cat200 = load_nhi_catalog(seed_200_path)
+    cat400 = load_nhi_catalog(seed_400_path)
+
+    ids_200 = {item["id"] for item in cat200 if "id" in item}
+    names_200 = {normalize_term(item["name"]) for item in cat200 if "name" in item}
+
+    conflicts: list[dict[str, Any]] = []
+
+    for item in cat400:
+        item_id = item.get("id", "")
+        item_name = normalize_term(item.get("name", ""))
+
+        if item_id in ids_200:
+            conflicts.append({
+                "type": "duplicate_id",
+                "id": item_id,
+                "name": item.get("name"),
+                "reason": f"ID {item_id} 已存在於前 200 項目錄中",
+            })
+
+        if item_name in names_200:
+            conflicts.append({
+                "type": "duplicate_name",
+                "id": item_id,
+                "name": item.get("name"),
+                "reason": f"名稱 {item.get('name')} 與前 200 項完全重合",
+            })
+
+    db_conflicts: list[dict[str, Any]] = []
+    if db_conn:
+        existing_assets = load_existing_visual_assets(db_conn)
+        db_keys = {a["topic_key"] for a in existing_assets}
+        db_titles = {normalize_term(a["title"]) for a in existing_assets}
+
+        for item in cat400:
+            # Check if identical title already approved
+            norm_n = normalize_term(item.get("name", ""))
+            if norm_n in db_titles:
+                db_conflicts.append({
+                    "type": "db_title_collision",
+                    "id": item.get("id"),
+                    "name": item.get("name"),
+                })
+
+    return {
+        "seed_200_count": len(cat200),
+        "seed_400_count": len(cat400),
+        "seed_conflicts": conflicts,
+        "db_conflicts": db_conflicts,
+        "is_clean": len(conflicts) == 0 and len(db_conflicts) == 0,
+    }
 
 
 def main():

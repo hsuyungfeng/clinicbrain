@@ -92,6 +92,12 @@
     - **臨床知識庫資產審核全景矩陣 (Knowledge Audit Matrix)**：管理後台首頁整合衛教問答 (936 筆)、推理樹 (88 筆)、醫學動畫 (198 筆)、SOAP 病歷之待審、已發布、已駁回、總數與核准率全景對稱展示。
     - **全庫資產去重與歷史舊版淘汰 (`scripts/dedup_visual_assets.py`)**：深度比對疾病 ICD-10 代碼與主題 slug，精準剔除 161 筆 Phase 34 舊版粗糙草稿與雙軌昇華舊列，達成 198 筆唯一權威主題，100% 通過 `validate_ir` 醫療法規與 24 秒循環驗證。
 
+17. **臺灣健保 1-400 大疾病資料庫全景索引與次級專科視覺管線 (Phase 40)**
+    - **1-400 全景疾病目錄與 FTS 檢索**：建立 `nhi_catalog_1_400` 與 `nhi_catalog_fts`（`tokenize='trigram'`）實體化資料表，涵蓋西醫 235 項、中醫 76 項、牙醫 48 項與專科手術，合計 400 筆標準化條目。
+    - **LLM 選取檢索模組 (`src/query/nhi_index.py`)**：支援 FTS5 trigram 與 LIKE 混合分流檢索，組裝結構化上下文供問診諮詢 LLM 引用選取最精準之疾病編碼與 3 幕動畫可用性（`visual_available`）。
+    - **次專科圖元與藍圖語意擴充**：擴充眼科黃斑部視網膜 (`ophthalmic_retina`)、耳鼻喉呼吸氣道狹窄 (`ent_airway`)、泌尿生殖骨盆微循環 (`uro_genital`)、進階牙周組織導引再生 GTR (`dental_periodontal`) 與中醫特種針刀挑刺 (`tcm_special_acup`)。
+    - **自癒生成管線與 Playwright 審計入庫**：建構任務清單編譯器 (`build_nhi400_manifest.py`)、雙模自癒批次生成器 (`generate_nhi400_visual_batch.py`) 與 Playwright 無頭 Chromium 抽幀審計測試 (`test_nhi400_browser_render.py`)，將 200 筆次專科動畫草稿以 pending 狀態入庫，資料庫總資產收斂為 400 筆無衝突項目（198 approved, 200 pending, 2 rejected）。
+
 ---
 
 ## 🏗️ 系統架構 (Architecture)

@@ -88,6 +88,9 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                         "mucosal_irritant_surge", "metabolic_mechanical_overload",
                         # Phase 39：牙科、中醫、內分泌專科病理對照
                         "dental_caries_erosion", "tcm_qi_stagnation", "metabolic_insulin_resistance",
+                        # Phase 40：次專科病理對照（眼底變性、氣道水腫、靜脈叢返流、牙周骨缺損、深部經筋沾黏）
+                        "vitreous_drusen_degeneration", "airway_laryngeal_edema", "venous_plexus_reflux",
+                        "periodontal_bone_defect", "tcm_deep_adhesion",
                     )},
                     "core_effect": {"type": "enum", "values": ("dim", "none")},
                     "core_label": {"type": "text", "max_len": 8},
@@ -109,6 +112,9 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                         "barrier_hydration_shield", "lifestyle_homeostasis_load",
                         # Phase 39：牙科充填洗牙、中醫針灸得氣、代謝糖分調控
                         "dental_sealing_restoration", "tcm_acupuncture_flow", "metabolic_glycemic_control",
+                        # Phase 40：次專科微創修護（光學屏障、氣道暢通、靜脈結紮排空、GTR導引再生、針刀微創鬆解）
+                        "optical_barrier_shield", "airway_patency_restore", "venous_ligation_clear",
+                        "gtr_guided_regeneration", "acupotomy_micro_release",
                     )},
                     "rows": {"type": "int", "min": 1, "max": 4},
                     "per_row": {"type": "int", "min": 3, "max": 8},
@@ -155,6 +161,9 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                 "mucosal_clearance", "homeostasis_control", "structural_rehab",
                 # Phase 39：牙科牙周修復、中醫經絡調和、代謝血管穩定
                 "dental_pulp_healing", "tcm_meridian_harmony", "metabolic_vessel_stabilization",
+                # Phase 40：次專科修復歷程（視網膜修復、氣道黏膜消腫、骨盆微循環回流、牙周骨粉骨整合、經絡疏通濡養）
+                "retinal_epithelium_repair", "airway_mucosa_calm", "pelvic_microflow_restore",
+                "bone_graft_integration", "meridian_unblock_healing",
             )},
             "units": {"type": "int", "min": 2, "max": 5},
             "unit_fill": {"type": "palette"},
@@ -458,6 +467,12 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                     "dental_oral",
                     "tcm_meridian",
                     "endocrine_receptor",
+                    # Phase 40：次專科解剖器官系統（眼底視網膜、耳鼻喉氣道、泌尿生殖、進階牙周、中醫特種針灸）
+                    "ophthalmic_retina",
+                    "ent_airway",
+                    "uro_genital",
+                    "dental_periodontal",
+                    "tcm_special_acup",
                 ),
             },
             "organ_label": {"type": "text", "max_len": 8},

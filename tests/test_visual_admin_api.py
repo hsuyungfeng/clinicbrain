@@ -389,3 +389,41 @@ def test_admin_review_summary_includes_visual_totals(test_client, isolated_db_pa
     assert "visuals_approved_total" in data
     assert isinstance(data["visuals_pending_total"], int)
     assert isinstance(data["visuals_approved_total"], int)
+
+
+def test_admin_visuals_batch_review(test_client, isolated_db_path):
+    """驗證 POST /api/v1/admin/visuals/batch 批量核准與駁回。"""
+    conn = sqlite3.connect(str(isolated_db_path))
+    try:
+        ir1 = _sample_ir(topic_key="batch-test-one", title="批量測試一")
+        ir2 = _sample_ir(topic_key="batch-test-two", title="批量測試二")
+        upsert_assets(
+            conn,
+            [
+                {"topic_key": "batch-test-one", "title": ir1["title"], "keywords": ir1["keywords"], "ir": ir1},
+                {"topic_key": "batch-test-two", "title": ir2["title"], "keywords": ir2["keywords"], "ir": ir2},
+            ],
+            source_type="manual",
+        )
+        cur = conn.cursor()
+        ids = [row[0] for row in cur.execute("SELECT id FROM visual_assets WHERE topic_key IN ('batch-test-one', 'batch-test-two')").fetchall()]
+    finally:
+        conn.close()
+
+    assert len(ids) == 2
+
+    # 1. 批量核准
+    res_app = test_client.post("/api/v1/admin/visuals/batch", json={"action": "approve", "asset_ids": ids})
+    assert res_app.status_code == 200
+    data_app = res_app.json()
+    assert data_app["status"] == "ok"
+    assert data_app["success_count"] == 2
+    assert set(data_app["processed_ids"]) == set(ids)
+
+    # 2. 批量駁回
+    res_rej = test_client.post("/api/v1/admin/visuals/batch", json={"action": "reject", "asset_ids": ids})
+    assert res_rej.status_code == 200
+    data_rej = res_rej.json()
+    assert data_rej["status"] == "ok"
+    assert data_rej["success_count"] == 2
+

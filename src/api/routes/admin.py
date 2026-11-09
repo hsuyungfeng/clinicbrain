@@ -167,6 +167,12 @@ class AutodraftVisualRequest(BaseModel):
     tree_id: StrictInt
 
 
+class VisualBatchReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["approve", "reject"]
+    asset_ids: list[StrictInt] = Field(..., min_length=1, max_length=200)
+
+
 router = APIRouter(
     prefix="/api/v1/admin",
     tags=["診所管理端點 (Admin Only)"],
@@ -1623,6 +1629,64 @@ def reject_admin_visual(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="找不到指定的視覺資產")
 
     return {"status": "ok", "id": asset_id, "review_status": "rejected"}
+
+
+@router.post("/visuals/batch", summary="批量核准／駁回視覺解說卡（單一交易）")
+def batch_admin_visuals_review(
+    req: VisualBatchReviewRequest,
+    conn: sqlite3.Connection = Depends(get_write_db),
+):
+    """單次最多 200 筆；在單一交易中逐筆核准或駁回視覺動畫資產。"""
+    from ...visual.review import adopt_v2_candidate, set_review_status
+    from ...visual.writer import has_visual_assets_table
+
+    if not has_visual_assets_table(conn):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="資料庫尚未建立 visual_assets 資料表",
+        )
+
+    processed_ids = []
+    failed_reasons = {}
+
+    for asset_id in req.asset_ids:
+        try:
+            if req.action == "approve":
+                row = conn.execute("SELECT topic_key FROM visual_assets WHERE id = ?", (asset_id,)).fetchone()
+                if row is not None and str(row[0] or "").endswith("-v2"):
+                    res = adopt_v2_candidate(conn, str(row[0]), asset_id=asset_id, commit=False)
+                else:
+                    res = set_review_status(conn, "", "approved", asset_id=asset_id, commit=False)
+            else:
+                res = set_review_status(conn, "", "rejected", asset_id=asset_id, commit=False)
+
+            if res.get("status") == "ok":
+                processed_ids.append(asset_id)
+            else:
+                failed_reasons[str(asset_id)] = res.get("code") or res.get("status") or "failed"
+        except Exception as e:
+            failed_reasons[str(asset_id)] = str(e)
+
+    conn.commit()
+
+    # 若有成功核准，同步更新 nhi_catalog_1_400 中的 visual_available 標記
+    if req.action == "approve" and processed_ids:
+        try:
+            conn.execute(
+                "UPDATE nhi_catalog_1_400 SET visual_available = 1 WHERE topic_key IN (SELECT topic_key FROM visual_assets WHERE review_status = 'approved')"
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+    return {
+        "status": "ok",
+        "action": req.action,
+        "success_count": len(processed_ids),
+        "failed_count": len(failed_reasons),
+        "processed_ids": processed_ids,
+        "failed_reasons": failed_reasons,
+    }
 
 
 @router.post("/visuals/autodraft", summary="自已核准臨床推理樹自動生成視覺解說卡草稿")

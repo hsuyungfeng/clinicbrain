@@ -1,0 +1,3602 @@
+[
+  {
+    "id": "W201",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "急性喉氣管炎與哮吼（Croup）",
+    "icd10": "J05.0",
+    "alias": [
+      "哮吼",
+      "急性喉氣管炎"
+    ],
+    "keywords": [
+      "幼兒犬吠咳",
+      "吸氣性喘鳴",
+      "喉頭黏膜水腫"
+    ],
+    "clinical_feature": "幼兒聲門下黏膜充血水腫氣道狹窄",
+    "recommended_blueprint": "skin_energy"
+  },
+  {
+    "id": "W202",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "慢性肥厚性鼻炎伴下鼻甲肥大",
+    "icd10": "J34.8",
+    "alias": [
+      "肥厚性鼻炎",
+      "下鼻甲肥厚"
+    ],
+    "keywords": [
+      "長期鼻塞",
+      "交替性鼻阻",
+      "黏膜增生"
+    ],
+    "clinical_feature": "下鼻甲海綿狀靜脈叢長期充血肥厚黏膜增生",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W203",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "鼻中隔彎曲伴繼發性鼻道狹窄",
+    "icd10": "J34.2",
+    "alias": [
+      "鼻中隔彎曲",
+      "鼻樑歪斜"
+    ],
+    "keywords": [
+      "單側持續鼻塞",
+      "鼻道氣流受阻",
+      "鼻中隔偏曲"
+    ],
+    "clinical_feature": "軟骨骨性結構偏曲造成單側鼻腔氣流狹窄",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W204",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "腺樣體肥大伴兒童睡眠呼吸中止",
+    "icd10": "J35.2",
+    "alias": [
+      "腺樣體肥大",
+      "咽扁桃體肥大"
+    ],
+    "keywords": [
+      "張口呼吸",
+      "打鼾夜醒",
+      "腺樣體面容"
+    ],
+    "clinical_feature": "鼻咽頂部淋巴組織病理性肥大阻塞後鼻孔",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W205",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "聲帶結節（長繭）與音聲障礙",
+    "icd10": "J38.2",
+    "alias": [
+      "聲帶長繭",
+      "聲帶息肉"
+    ],
+    "keywords": [
+      "聲音嘶啞",
+      "發聲疲勞",
+      "高音裂音"
+    ],
+    "clinical_feature": "長期用聲過度聲帶游離緣前中三分之一纖維增生",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W206",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "耳咽管開放症與功能障礙",
+    "icd10": "H69.8",
+    "alias": [
+      "耳咽管開放症",
+      "耳咽管異常"
+    ],
+    "keywords": [
+      "自聽增強",
+      "呼吸音傳入中耳",
+      "耳朵悶脹"
+    ],
+    "clinical_feature": "耳咽管周圍脂肪組織流失或管口無法正常關閉",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W207",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "耵聹栓塞與外耳道阻塞",
+    "icd10": "H61.0",
+    "alias": [
+      "耳屎嵌塞",
+      "耵聹栓塞"
+    ],
+    "keywords": [
+      "突發聽力悶脹",
+      "外耳道異物感",
+      "自語聲響"
+    ],
+    "clinical_feature": "皮脂腺與耳垢過度堆積硬化填滿外耳道",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W208",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "外耳道真菌感染（耳黴菌症）",
+    "icd10": "B36.9",
+    "alias": [
+      "耳黴菌症",
+      "外耳道真菌症"
+    ],
+    "keywords": [
+      "劇烈耳癢",
+      "潮濕多分泌物",
+      "棉絮樣菌絲"
+    ],
+    "clinical_feature": "真菌孢子於潮濕溫暖外耳道上皮深部繁殖",
+    "recommended_blueprint": "laser_action"
+  },
+  {
+    "id": "W209",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "反覆性口瘡性口炎（重度阿弗他潰瘍）",
+    "icd10": "K12.0",
+    "alias": [
+      "重度嘴破",
+      "復發性阿弗他"
+    ],
+    "keywords": [
+      "深部潰瘍",
+      "周邊紅暈劇痛",
+      "吞嚥受限"
+    ],
+    "clinical_feature": "自體免疫失調致口腔黏膜上皮深部局限壞死",
+    "recommended_blueprint": "dermal_support"
+  },
+  {
+    "id": "W210",
+    "system": "western",
+    "category": "呼吸、耳鼻喉與頭頸專科",
+    "name": "慢性咽喉反流症（LPRD 梅核氣）",
+    "icd10": "K21.9",
+    "alias": [
+      "咽喉逆流",
+      "咽喉梅核氣"
+    ],
+    "keywords": [
+      "喉嚨卡異物感",
+      "清喉嚨",
+      "早晨乾咳"
+    ],
+    "clinical_feature": "胃蛋白酶氣霧微粒逆流刺激杓狀軟骨黏膜紅腫",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W211",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "續發性高血壓（腎血管性與內分泌性）",
+    "icd10": "I15.0",
+    "alias": [
+      "腎血管性高血壓",
+      "原發性醛固酮症"
+    ],
+    "keywords": [
+      "頑固難控血壓",
+      "低血鉀肌無力",
+      "血管雜音"
+    ],
+    "clinical_feature": "腎動脈狹窄或腎上腺過量分泌留鹽激素升壓",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W212",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "糖尿病足初期病變與周邊微血管病變",
+    "icd10": "E11.51",
+    "alias": [
+      "糖尿病足前期",
+      "糖尿病周邊血管"
+    ],
+    "keywords": [
+      "足底麻木痛覺遲鈍",
+      "微血管缺血",
+      "皮膚乾裂"
+    ],
+    "clinical_feature": "長期高血糖導致微血管基底膜增厚血流灌注不足",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W213",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "姿勢性直立心搏過速症候群（POTS）",
+    "icd10": "G90.A",
+    "alias": [
+      "直立心搏過速",
+      "POTS症候群"
+    ],
+    "keywords": [
+      "站立時心悸狂跳",
+      "頭暈無力",
+      "平躺緩解"
+    ],
+    "clinical_feature": "下肢靜脈血液鬱積誘發交感神經過度反射收縮",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W214",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "二尖瓣脫垂症候群（MVP）",
+    "icd10": "I34.1",
+    "alias": [
+      "二尖瓣脫垂",
+      "MVP心悸"
+    ],
+    "keywords": [
+      "心悸心跳漏拍",
+      "非典型刺痛",
+      "呼吸短促"
+    ],
+    "clinical_feature": "左心室收縮時二尖瓣葉向左心房異常膨出脫垂",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W215",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "動脈粥狀硬化斑塊（無症狀頸動脈斑塊）",
+    "icd10": "I70.0",
+    "alias": [
+      "頸動脈硬化斑塊",
+      "動脈粥狀硬化"
+    ],
+    "keywords": [
+      "健檢頸動脈狹窄",
+      "內膜增厚",
+      "血流阻抗"
+    ],
+    "clinical_feature": "內皮細胞受損膽固醇脂質沉積纖維帽形成",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W216",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "慢性淋巴水腫（非絲蟲性肢體水腫）",
+    "icd10": "I89.0",
+    "alias": [
+      "淋巴水腫",
+      "皮下淋巴滯留"
+    ],
+    "keywords": [
+      "肢體沈重腫脹",
+      "不可凹性水腫",
+      "皮膚粗厚"
+    ],
+    "clinical_feature": "淋巴微管引流通道受阻皮下組織淋巴蛋白蓄積",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W217",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "缺鐵性貧血與血紅素合成障礙",
+    "icd10": "D50.9",
+    "alias": [
+      "缺鐵性貧血",
+      "小球性貧血"
+    ],
+    "keywords": [
+      "臉色蒼白易喘",
+      "匙狀指甲",
+      "容易疲累"
+    ],
+    "clinical_feature": "鐵質儲存耗盡血紅素合成原料不足紅血球細小",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W218",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "維生素B12缺乏性巨球性貧血",
+    "icd10": "D51.9",
+    "alias": [
+      "維生素B12缺乏",
+      "惡性貧血"
+    ],
+    "keywords": [
+      "手足末端刺麻",
+      "舌乳頭萎縮草莓舌",
+      "步態不穩"
+    ],
+    "clinical_feature": "DNA合成受阻細胞核成熟遲緩合併神經髓鞘脫失",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W219",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "原發性副甲狀腺功能亢進（輕症追蹤）",
+    "icd10": "E21.0",
+    "alias": [
+      "副甲狀腺亢進",
+      "高血鈣症"
+    ],
+    "keywords": [
+      "輕微骨質流失",
+      "易生泌尿結石",
+      "便秘倦怠"
+    ],
+    "clinical_feature": "副甲狀腺腺瘤自主過量分泌甲狀旁腺素升血鈣",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W220",
+    "system": "western",
+    "category": "代謝、內分泌與心血管系統",
+    "name": "高泌乳素血症與微泌乳素瘤追蹤",
+    "icd10": "E22.1",
+    "alias": [
+      "高泌乳素血症",
+      "泌乳素瘤"
+    ],
+    "keywords": [
+      "無故溢乳",
+      "月經稀發閉經",
+      "性慾低下"
+    ],
+    "clinical_feature": "腦下垂體前葉催乳素過量分泌抑制促性腺激素",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W221",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "食道裂孔疝氣與賁門失弛緩症初期",
+    "icd10": "K44.9",
+    "alias": [
+      "食道裂孔疝氣",
+      "賁門鬆弛"
+    ],
+    "keywords": [
+      "餐後胸骨後脹痛",
+      "橫臥逆流嘔酸",
+      "打嗝乾噎"
+    ],
+    "clinical_feature": "胃底穿過橫膈食道裂孔滑入胸腔破壞下食道括約肌",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W222",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "胃底腺息肉與增生性胃息肉（追蹤評估）",
+    "icd10": "D12.0",
+    "alias": [
+      "胃息肉",
+      "胃良性腫瘤"
+    ],
+    "keywords": [
+      "上腹無痛悶脹",
+      "胃鏡檢出隆起",
+      "慢性追蹤"
+    ],
+    "clinical_feature": "胃小凹上皮細胞過度反應性良性增生隆起",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W223",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "幽門螺旋桿菌感染（無潰瘍帶原根除治療）",
+    "icd10": "B96.81",
+    "alias": [
+      "幽門螺旋桿菌",
+      "胃幽門菌"
+    ],
+    "keywords": [
+      "上腹隱痛易脹",
+      "噯氣消化不良",
+      "口氣重"
+    ],
+    "clinical_feature": "螺旋桿菌分泌尿素酶破壞胃黏液層引起慢性發炎",
+    "recommended_blueprint": "laser_action"
+  },
+  {
+    "id": "W224",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "膽囊息肉與慢性無石性膽囊炎",
+    "icd10": "K82.4",
+    "alias": [
+      "膽囊息肉",
+      "膽囊良性病灶"
+    ],
+    "keywords": [
+      "右上腹隱隱作痛",
+      "厭油消化不良",
+      "膽囊收縮差"
+    ],
+    "clinical_feature": "膽固醇結晶或黏膜增生突入膽囊腔內定期超音波監控",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W225",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "大腸結腸憩室病（無急性發炎追蹤）",
+    "icd10": "K57.30",
+    "alias": [
+      "大腸憩室",
+      "結腸憩室症"
+    ],
+    "keywords": [
+      "左下腹偶發痙攣痛",
+      "便秘腹瀉交替",
+      "排氣頻繁"
+    ],
+    "clinical_feature": "腸壁肌層血管穿透孔薄弱點黏膜向外囊狀膨出",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W226",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "肛門周圍隱窩膿瘍與低位肛門廔管",
+    "icd10": "K61.0",
+    "alias": [
+      "肛門周圍膿瘍",
+      "肛門廔管"
+    ],
+    "keywords": [
+      "肛門旁紅腫跳痛",
+      "反覆排膿分泌物",
+      "硬結坐臥難安"
+    ],
+    "clinical_feature": "肛門腺體細菌感染化膿穿破括約肌形成慢性發炎管道",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W227",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "藥物性肝損傷（DILI 輕度轉氨酶過高）",
+    "icd10": "K71.9",
+    "alias": [
+      "藥物性肝炎",
+      "藥物肝指數偏高"
+    ],
+    "keywords": [
+      "疲倦食慾不振",
+      "GOTGPT微升",
+      "輕度黃疸"
+    ],
+    "clinical_feature": "藥物代謝物直接毒性或特異免疫反應破壞肝細胞膜",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W228",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "成人腹股溝疝氣（斜疝與直疝基層評估）",
+    "icd10": "K40.90",
+    "alias": [
+      "腹股溝疝氣",
+      "脫腸疝氣"
+    ],
+    "keywords": [
+      "腹股溝可復性隆起",
+      "站立用力變大",
+      "下墜脹痛"
+    ],
+    "clinical_feature": "腹橫筋膜缺損腹內壓力促使小腸大網膜滑入腹股溝管",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W229",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "慢性胰臟炎外分泌功能不全（輕症）",
+    "icd10": "K86.1",
+    "alias": [
+      "慢性胰臟炎",
+      "胰臟外分泌不足"
+    ],
+    "keywords": [
+      "進食脂肪油便漂浮",
+      "餐後上腹鈍痛",
+      "體重減輕"
+    ],
+    "clinical_feature": "反覆微發炎腺泡萎縮纖維化致胰脂酶分泌匱乏",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W230",
+    "system": "western",
+    "category": "消化系統、肝膽與外科",
+    "name": "小腸黏膜吸收不良症候群（乳糜瀉與黏膜鈍化）",
+    "icd10": "K90.0",
+    "alias": [
+      "吸收不良症候群",
+      "乳糜瀉"
+    ],
+    "keywords": [
+      "慢性慢性腹瀉水便",
+      "腹部飽脹產氣",
+      "營養不良消瘦"
+    ],
+    "clinical_feature": "小腸絨毛上皮萎縮平坦化養分吸收微表面積驟降",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W231",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "旋轉肌袖鈣化性肌腱炎（肩關節）",
+    "icd10": "M75.30",
+    "alias": [
+      "肩部鈣化肌腱炎",
+      "鈣化性肌腱炎"
+    ],
+    "keywords": [
+      "肩關節突發劇烈劇痛",
+      "手臂無法舉起",
+      "夜間痛醒"
+    ],
+    "clinical_feature": "棘上肌腱組織缺氧退變羥磷灰石鈣鹽晶體沉積發炎",
+    "recommended_blueprint": "laser_action"
+  },
+  {
+    "id": "W232",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "梨狀肌症候群（深臀神經壓迫）",
+    "icd10": "G57.0",
+    "alias": [
+      "梨狀肌症候群",
+      "深臀神經痛"
+    ],
+    "keywords": [
+      "臀部深層刺痛",
+      "延伸大腿後側",
+      "久坐加劇"
+    ],
+    "clinical_feature": "梨狀肌痙攣或肥大擠壓穿行於下方的坐骨神經幹",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W233",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "纖維肌痛症（全身中樞敏感化慢性疼痛）",
+    "icd10": "M79.7",
+    "alias": [
+      "纖維肌痛症",
+      "中樞敏感化"
+    ],
+    "keywords": [
+      "全身對稱廣泛痛點",
+      "晨僵疲勞失眠",
+      "認知腦霧"
+    ],
+    "clinical_feature": "大腦中樞痛覺訊號放大調節障礙與下行抑制途徑受損",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W234",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "髕骨軟骨軟化症（髕股疼痛症候群）",
+    "icd10": "M22.40",
+    "alias": [
+      "髕骨軟化",
+      "髕股關節磨損"
+    ],
+    "keywords": [
+      "久坐站起膝蓋酸軟",
+      "上下樓梯髕前痛",
+      "上下蹲摩擦感"
+    ],
+    "clinical_feature": "髕骨滑動軌跡向外偏斜關節軟骨面承受異常剪力毛化",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W235",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "膝關節半月板陳舊性撕裂（非手術性）",
+    "icd10": "M23.20",
+    "alias": [
+      "半月板撕裂",
+      "膝半月板損傷"
+    ],
+    "keywords": [
+      "特定屈伸角度彈響",
+      "關節交鎖卡住",
+      "內側縫壓痛"
+    ],
+    "clinical_feature": "纖維軟骨水平或退變性撕裂破壞膝關節緩衝力學分佈",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W236",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "腱鞘囊腫（手腕背側與足背局部隆起）",
+    "icd10": "M67.40",
+    "alias": [
+      "腱鞘囊腫",
+      "水瘤囊腫"
+    ],
+    "keywords": [
+      "手腕背側圓形硬凸起",
+      "按壓微酸韌感",
+      "透光性佳"
+    ],
+    "clinical_feature": "關節囊或腱鞘結締組織退變形成單向活瓣黏液積聚",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W237",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "類風濕性關節炎（基層抗體篩檢與定期處方）",
+    "icd10": "M05.9",
+    "alias": [
+      "類風濕性關節炎",
+      "RA自體免疫"
+    ],
+    "keywords": [
+      "雙手小關節對稱晨僵",
+      "關節滑膜腫脹",
+      "侵蝕性骨質破壞"
+    ],
+    "clinical_feature": "自體免疫抗體攻擊滑膜血管翳增生破壞關節軟骨",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W238",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "強直性脊椎炎（AS 薦腸關節炎與腰背僵硬）",
+    "icd10": "M45.9",
+    "alias": [
+      "強直性脊椎炎",
+      "AS脊椎僵硬"
+    ],
+    "keywords": [
+      "晨起腰背僵硬超過半小時",
+      "活動後舒緩",
+      "夜間背痛"
+    ],
+    "clinical_feature": "HLA-B27關聯附著點發炎導致韌帶骨化與骨橋融合",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W239",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "假性痛風（焦磷酸鈣晶體沉積關節病）",
+    "icd10": "M11.20",
+    "alias": [
+      "假性痛風",
+      "焦磷酸鈣關節炎"
+    ],
+    "keywords": [
+      "膝關節急性紅腫熱痛",
+      "關節軟骨線狀鈣化",
+      "菱形晶體"
+    ],
+    "clinical_feature": "關節軟骨基質焦磷酸鈣過飽和析出菱形晶體誘發發炎",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W240",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "頑固性尾骨痛（尾骨挫傷後遺症）",
+    "icd10": "M54.2",
+    "alias": [
+      "尾骨痛",
+      "尾骨損傷痛"
+    ],
+    "keywords": [
+      "久坐椅面刺痛難耐",
+      "起立瞬間劇痛",
+      "骨盆底緊繃"
+    ],
+    "clinical_feature": "外傷後尾骨過度前屈或韌帶牽拉伴隨提肛肌反射痙攣",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W241",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "扁平足與後脛肌腱功能不全（PTTD）",
+    "icd10": "M21.4",
+    "alias": [
+      "扁平足痛",
+      "後脛肌腱發炎"
+    ],
+    "keywords": [
+      "足內側足弓塌陷",
+      "走路足跟外翻",
+      "足弓內側酸脹"
+    ],
+    "clinical_feature": "後脛肌腱退變拉長失去支撐內側縱弓動態塌陷外翻",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W242",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "兒童生長痛（下肢夜間肌筋牽拉痛）",
+    "icd10": "R29.89",
+    "alias": [
+      "生長痛",
+      "兒童腿部生長痛"
+    ],
+    "keywords": [
+      "夜間小腿深部酸痛",
+      "白天活動自如",
+      "無紅腫無發燒"
+    ],
+    "clinical_feature": "兒童長骨生長板生長速率與周邊肌肉肌腱牽拉適應差",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W243",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "彈響髖症候群（髂脛束跳過大轉子摩擦）",
+    "icd10": "M70.60",
+    "alias": [
+      "彈響髖",
+      "髖關節卡卡彈響"
+    ],
+    "keywords": [
+      "走路或跨步髖側彈響",
+      "大轉子外側摩擦感",
+      "偶伴滑囊酸痛"
+    ],
+    "clinical_feature": "髂脛束後緣或臀大肌前緣肌腱過度緊繃滑動跳過骨突",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W244",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "鵝足肌腱滑囊炎（內側膝關節痛）",
+    "icd10": "M70.50",
+    "alias": [
+      "鵝足肌腱炎",
+      "鵝足滑囊炎"
+    ],
+    "keywords": [
+      "膝關節內側下方壓痛",
+      "上下樓梯加劇",
+      "局部微水腫"
+    ],
+    "clinical_feature": "縫匠肌股薄肌半腱肌三合肌腱反覆牽扯摩擦深部滑囊",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W245",
+    "system": "western",
+    "category": "骨骼、關節與軟組織（骨傷復健）",
+    "name": "掌腱膜攣縮症（Dupuytren 攣縮早期）",
+    "icd10": "M72.0",
+    "alias": [
+      "掌腱膜攣縮",
+      "手掌肌腱結節"
+    ],
+    "keywords": [
+      "手掌無痛堅硬結節",
+      "無名指小指彎曲受限",
+      "手掌放不平"
+    ],
+    "clinical_feature": "掌腱膜肌纖維母細胞良性增殖膠原纖維進行性攣縮",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W246",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "汗皰疹（掌蹠反覆發癢深層小水泡）",
+    "icd10": "L30.1",
+    "alias": [
+      "汗皰疹",
+      "手足小水泡濕疹"
+    ],
+    "keywords": [
+      "手掌指側深部小水泡",
+      "劇烈搔癢",
+      "水泡乾涸脫皮"
+    ],
+    "clinical_feature": "表皮深層海綿狀水腫小水泡伴隨自律神經與過敏誘發",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W247",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "結節性癢疹（慢性搔抓硬化性結節）",
+    "icd10": "L28.1",
+    "alias": [
+      "結節性癢疹",
+      "癢疹硬結"
+    ],
+    "keywords": [
+      "四肢伸側堅硬結節",
+      "劇癢難忍反覆抓破",
+      "角化肥厚"
+    ],
+    "clinical_feature": "長期機械搔抓引發表皮神經纖維增生與真皮膠原硬化",
+    "recommended_blueprint": "dermal_support"
+  },
+  {
+    "id": "W248",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "神經性皮炎（慢性單純苔癬）",
+    "icd10": "L28.0",
+    "alias": [
+      "神經性皮炎",
+      "單純苔癬"
+    ],
+    "keywords": [
+      "頸後手腕皮革樣肥厚",
+      "陣發性劇癢",
+      "皮膚紋理加深"
+    ],
+    "clinical_feature": "神經精神壓力與搔抓惡性循環致表皮棘層過度肥厚",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W249",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "乾皮症與缺脂性濕疹（冬季搔癢症）",
+    "icd10": "L85.3",
+    "alias": [
+      "冬季癢",
+      "缺脂性濕疹"
+    ],
+    "keywords": [
+      "皮膚乾裂如碎瓷紋",
+      "脫屑抓痕",
+      "洗熱水澡後劇癢"
+    ],
+    "clinical_feature": "皮脂腺分泌驟降角質層細胞間脂質流失經皮水分散失",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W250",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "錢幣狀濕疹（盤狀濕疹圓形斑）",
+    "icd10": "L30.0",
+    "alias": [
+      "錢幣狀濕疹",
+      "盤狀濕疹"
+    ],
+    "keywords": [
+      "硬幣大小圓形紅斑",
+      "密集丘疹水泡結痂",
+      "周界清晰劇癢"
+    ],
+    "clinical_feature": "皮膚屏障受損外在刺激誘發圓形盤狀表皮海綿水腫",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W251",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "大疱性類天疱瘡（基層早期辨識轉診）",
+    "icd10": "L12.0",
+    "alias": [
+      "類天疱瘡",
+      "大疱性皮膚病"
+    ],
+    "keywords": [
+      "全身張力性厚壁大水泡",
+      "水泡不易破裂",
+      "周邊紅斑癢感"
+    ],
+    "clinical_feature": "自體抗體攻擊表皮基底膜半橋粒造成表皮下大水泡",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W252",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "皮膚纖維瘤（良性真皮結節按壓微陷）",
+    "icd10": "D23.9",
+    "alias": [
+      "皮膚纖維瘤",
+      "良性纖維結節"
+    ],
+    "keywords": [
+      "四肢堅硬圓形小結節",
+      "兩側捏擠向下微陷",
+      "色素沉著"
+    ],
+    "clinical_feature": "真皮層組織球與纖維母細胞反應性良性過度膠原增生",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W253",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "化膿性汗腺炎（頂漿腺反覆竇道排膿）",
+    "icd10": "L73.2",
+    "alias": [
+      "化膿性汗腺炎",
+      "頂漿腺竇道"
+    ],
+    "keywords": [
+      "腋下鼠蹊紅腫硬結",
+      "破潰流膿形成竇道",
+      "蟹足樣疤痕"
+    ],
+    "clinical_feature": "毛囊漏斗角化阻塞頂漿腺破裂引發深部慢性肉芽發炎",
+    "recommended_blueprint": "subdermal_curettage"
+  },
+  {
+    "id": "W254",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "原發性局限多汗症（手掌與腋下）",
+    "icd10": "R61.0",
+    "alias": [
+      "手汗症",
+      "局部多汗症"
+    ],
+    "keywords": [
+      "雙手掌多汗滴水",
+      "緊張交感興奮加劇",
+      "社交困擾"
+    ],
+    "clinical_feature": "胸交感神經節過度亢進刺激小汗腺分泌大量水分",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "W255",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "黑色素細胞痣（良性痣皮膚鏡形態辨識）",
+    "icd10": "D22.9",
+    "alias": [
+      "黑色素痣",
+      "皮膚痣篩檢"
+    ],
+    "keywords": [
+      "對稱均勻色素斑塊",
+      "邊緣規則整齊",
+      "無突發潰爛出血"
+    ],
+    "clinical_feature": "良性黑色素細胞在表皮真皮交界處良性均勻巢狀聚集",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W256",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "老年性紫斑症（日光性血管脆性增加）",
+    "icd10": "L81.7",
+    "alias": [
+      "老年性紫斑",
+      "血管性紫斑"
+    ],
+    "keywords": [
+      "前臂手背暗紫色斑塊",
+      "輕微碰觸皮下出血",
+      "無發炎痛感"
+    ],
+    "clinical_feature": "真皮膠原蛋白萎縮日光性彈性纖維變性血管失去支撐",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W257",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "掌蹠角化過度症（足繭胼胝與皸裂）",
+    "icd10": "L85.1",
+    "alias": [
+      "厚繭皸裂",
+      "腳跟乾裂"
+    ],
+    "keywords": [
+      "腳後跟角質層極厚",
+      "深部裂隙疼痛出血",
+      "走路壓迫痛"
+    ],
+    "clinical_feature": "機械性長期摩擦擠壓引發角質細胞加速堆積無法脫落",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W258",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "尋常性魚鱗癬（後天性或輕度遺傳性）",
+    "icd10": "Q80.0",
+    "alias": [
+      "魚鱗癬",
+      "魚鱗病"
+    ],
+    "keywords": [
+      "四肢伸側多角形褐色鱗屑",
+      "冬重夏輕皮膚粗糙",
+      "手掌紋路加深"
+    ],
+    "clinical_feature": "絲聚蛋白基因突變或缺乏導致角質層緊密黏著脫屑障礙",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W259",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "汗管瘤（眼周微小膚色扁平丘疹）",
+    "icd10": "D23.5",
+    "alias": [
+      "汗管瘤",
+      "眼周肉芽"
+    ],
+    "keywords": [
+      "下眼皮多發性小顆粒",
+      "無痛不癢膚色黃色",
+      "隨年齡增加"
+    ],
+    "clinical_feature": "真皮淺層小汗腺導管分化良性增生腺管呈蝌蚪狀結構",
+    "recommended_blueprint": "laser_action"
+  },
+  {
+    "id": "W260",
+    "system": "western",
+    "category": "皮膚、附屬器與免疫過敏",
+    "name": "粟粒腫（表皮微小角質囊腫白芝麻）",
+    "icd10": "L72.0",
+    "alias": [
+      "粟粒腫",
+      "白頭小肉芽"
+    ],
+    "keywords": [
+      "眼周臉頰白色小珍珠顆粒",
+      "針尖挑除硬角質",
+      "無毛囊開口"
+    ],
+    "clinical_feature": "皮脂腺或毛囊漏斗部角質蛋白滯留包裹形成微小囊壁",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W261",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "應力性尿失禁（骨盆底肌筋膜鬆弛）",
+    "icd10": "N39.3",
+    "alias": [
+      "應力性尿失禁",
+      "咳嗽漏尿"
+    ],
+    "keywords": [
+      "咳嗽打噴嚏漏尿",
+      "大笑提重物不自主漏尿",
+      "護墊依賴"
+    ],
+    "clinical_feature": "骨盆底肌肉筋膜支撐力下降腹壓上升壓迫膀胱超過尿道閉合壓",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W262",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "膀胱過動症（急迫性尿意與頻尿）",
+    "icd10": "N32.81",
+    "alias": [
+      "膀胱過動症",
+      "OAB急尿頻尿"
+    ],
+    "keywords": [
+      "突發無法忍受強烈尿意",
+      "白天排尿逾八次",
+      "夜尿多次"
+    ],
+    "clinical_feature": "逼尿肌不自主抽搐收縮與膀胱感覺傳入神經高敏感性",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "W263",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "間質性膀胱炎（膀胱疼痛症候群）",
+    "icd10": "N30.10",
+    "alias": [
+      "間質性膀胱炎",
+      "膀胱疼痛症候群"
+    ],
+    "keywords": [
+      "膀胱脹尿恥骨上劇痛",
+      "排尿後短暫緩解",
+      "反覆尿檢無菌"
+    ],
+    "clinical_feature": "膀胱黏膜糖胺聚糖GAG保護屏障受損尿液高濃度鉀離子刺激神經",
+    "recommended_blueprint": "dermal_support"
+  },
+  {
+    "id": "W264",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "神經源性膀胱（神經傳導障礙性餘尿過多）",
+    "icd10": "N31.9",
+    "alias": [
+      "神經性膀胱",
+      "神經源性排尿障礙"
+    ],
+    "keywords": [
+      "解尿困難費力",
+      "餘尿感明顯斷斷續續",
+      "尿流細弱"
+    ],
+    "clinical_feature": "中樞或周邊自主神經損傷致逼尿肌括約肌協同失調",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W265",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "精索靜脈曲張（左側陰囊悶墜脹痛）",
+    "icd10": "I86.1",
+    "alias": [
+      "精索靜脈曲張",
+      "陰囊靜脈曲張"
+    ],
+    "keywords": [
+      "左側陰囊外觀如包囊蚯蚓",
+      "站立久下墜悶痛",
+      "平躺緩解"
+    ],
+    "clinical_feature": "精索內靜脈瓣膜不全血液返流鬱積靜脈叢擴張溫度上升",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W266",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "龜頭包皮炎伴包皮過長垢積發炎",
+    "icd10": "N48.1",
+    "alias": [
+      "包皮龜頭炎",
+      "龜頭發炎"
+    ],
+    "keywords": [
+      "龜頭紅斑腫痛脫皮",
+      "包皮內白色分泌物惡臭",
+      "排尿灼刺痛"
+    ],
+    "clinical_feature": "包皮囊腔潮濕閉塞念珠菌或厭氧菌滋生分解包皮垢刺激",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W267",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "男性勃起功能障礙（血管源性海綿體充血不足）",
+    "icd10": "F52.21",
+    "alias": [
+      "勃起功能障礙",
+      "男性血管性障礙"
+    ],
+    "keywords": [
+      "勃起硬度不足",
+      "持久度維持困難",
+      "微血管循環不良"
+    ],
+    "clinical_feature": "海綿體動脈內皮細胞一氧化氮合成障礙平滑肌舒張充血不全",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W268",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "慢性骨盆腔發炎性疾病（PID 慢性輕度黏連）",
+    "icd10": "N73.9",
+    "alias": [
+      "骨盆腔發炎",
+      "慢性PID"
+    ],
+    "keywords": [
+      "深部下腹隱痛",
+      "性交深處不適",
+      "白帶微黃增多"
+    ],
+    "clinical_feature": "病原體沿子宮內膜向上侵犯輸卵管卵巢引起慢性充血黏連",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W269",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "巴氏腺囊腫與輕度膿瘍（前庭大腺導管堵塞）",
+    "icd10": "N75.0",
+    "alias": [
+      "巴氏腺囊腫",
+      "前庭大腺囊腫"
+    ],
+    "keywords": [
+      "大陰唇後方單側無痛腫塊",
+      "行走摩擦壓迫感",
+      "繼發紅腫化膿"
+    ],
+    "clinical_feature": "前庭大腺排泄導管慢性發炎水腫堵塞黏液蓄積成囊",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W270",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "子宮頸外翻與子宮頸良性息肉",
+    "icd10": "N86",
+    "alias": [
+      "子宮頸外翻",
+      "子宮頸息肉"
+    ],
+    "keywords": [
+      "性交後少量點狀出血",
+      "黏液分泌物增多",
+      "內診見鮮紅息肉"
+    ],
+    "clinical_feature": "子宮頸管內柱狀上皮向外移行或局部黏膜間質局限增生",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W271",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "多囊性卵巢症候群（PCOS 卵泡停滯與胰島素阻抗）",
+    "icd10": "E28.2",
+    "alias": [
+      "多囊性卵巢",
+      "PCOS排卵障礙"
+    ],
+    "keywords": [
+      "月經數月不來",
+      "臉部痤瘡多毛肥胖",
+      "超音波項鍊狀小囊泡"
+    ],
+    "clinical_feature": "雄激素過高與高胰島素血症促使多顆竇狀卵泡發育停滯排卵失敗",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W272",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "排卵期出血與非月經期異常點狀出血",
+    "icd10": "N93.9",
+    "alias": [
+      "排卵期出血",
+      "月中微量出血"
+    ],
+    "keywords": [
+      "月經週期中間微量點狀出血",
+      "伴隨單側下腹排卵痛",
+      "兩三天自止"
+    ],
+    "clinical_feature": "成熟卵泡破裂後雌激素短暫撤退子宮內膜局部微量剝落",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W273",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "慢性附睪炎與睪丸鞘膜積液",
+    "icd10": "N45.1",
+    "alias": [
+      "附睪炎",
+      "陰囊鞘膜積液"
+    ],
+    "keywords": [
+      "附睪硬結腫痛",
+      "陰囊透光腫大",
+      "下墜不適感"
+    ],
+    "clinical_feature": "逆行性尿道感染波及附睪尾部鞘膜分泌吸收平衡失調積水",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W274",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "女性骨盆腔充血症候群（卵巢靜脈怒張）",
+    "icd10": "N94.89",
+    "alias": [
+      "骨盆腔充血症候群",
+      "卵巢靜脈曲張"
+    ],
+    "keywords": [
+      "站立整天後下腹深部重墜痛",
+      "性交後持續隱痛",
+      "經期前加重"
+    ],
+    "clinical_feature": "卵巢靜脈瓣膜不全逆流血液高壓鬱積骨盆腔深部靜脈叢怒張",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W275",
+    "system": "western",
+    "category": "泌尿系統與男女生殖專科",
+    "name": "停經後萎縮性陰道炎（雌激素缺乏黏膜變薄）",
+    "icd10": "N95.2",
+    "alias": [
+      "萎縮性陰道炎",
+      "老年性陰道炎"
+    ],
+    "keywords": [
+      "陰道乾澀劇烈灼痛",
+      "分泌物淡黃有異味",
+      "性交乾澀撕裂感"
+    ],
+    "clinical_feature": "停經後雌激素驟降陰道黏膜上皮變薄肝糖減少乳酸菌消失pH上升",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W276",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "社交焦慮障礙（社交恐懼症交感亢進）",
+    "icd10": "F40.10",
+    "alias": [
+      "社交焦慮症",
+      "社交恐懼症"
+    ],
+    "keywords": [
+      "公眾場合極度恐懼被審視",
+      "臉紅發抖心跳狂飆",
+      "迴避社交場合"
+    ],
+    "clinical_feature": "前額葉對杏仁核威脅感知抑制不足交感神經高反應性激活",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W277",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "強迫症（侵入性念頭與強迫儀式行為）",
+    "icd10": "F42.2",
+    "alias": [
+      "強迫症",
+      "OCD強迫行為"
+    ],
+    "keywords": [
+      "反覆洗手檢查門鎖",
+      "侵入性焦慮念頭揮之不去",
+      "儀式性行為暫時減壓"
+    ],
+    "clinical_feature": "皮質紋狀體視丘皮質迴路過度亢進血清素與多巴胺傳導失衡",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W278",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "創傷後壓力症候群（PTSD 侵入性閃回與高警覺）",
+    "icd10": "F43.10",
+    "alias": [
+      "創傷後壓力症",
+      "PTSD創傷恐懼"
+    ],
+    "keywords": [
+      "突發創傷場景閃回",
+      "強烈驚跳反應",
+      "惡夢情感麻木逃避"
+    ],
+    "clinical_feature": "創傷記憶無法由海馬迴正常情境化整合杏仁核持續處於恐懼警戒",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W279",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "兒童注意力不足過動症（ADHD 不專注型）",
+    "icd10": "F90.0",
+    "alias": [
+      "注意力不足過動症",
+      "ADHD不專注"
+    ],
+    "keywords": [
+      "上課容易分心發呆",
+      "交代事項丟三落四",
+      "組織作業困難"
+    ],
+    "clinical_feature": "前額葉皮質多巴胺與正腎上腺素神經元突觸傳導效率低下",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W280",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "輕度認知功能障礙（MCI 早期情節記憶減退）",
+    "icd10": "G31.84",
+    "alias": [
+      "輕度認知障礙",
+      "MCI記憶力衰退"
+    ],
+    "keywords": [
+      "頻繁忘記剛發生的事",
+      "日常生活尚能自理",
+      "定向力維持良好"
+    ],
+    "clinical_feature": "海馬迴與顳葉內側突觸連結密度微小退行性減少",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W281",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "不寧腿症候群（夜間下肢蟻走深部難耐感）",
+    "icd10": "G25.81",
+    "alias": [
+      "不寧腿症候群",
+      "腿部感覺異常"
+    ],
+    "keywords": [
+      "夜間靜臥雙下肢深部酸麻蟻爬",
+      "強烈衝動必須移動踢腿",
+      "活動後暫緩"
+    ],
+    "clinical_feature": "中樞神經系統鐵代謝異常合併多巴胺下行抑制途徑夜間失調",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W282",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "肋間神經痛（帶狀皰疹前或胸椎神經壓迫）",
+    "icd10": "M79.2",
+    "alias": [
+      "肋間神經痛",
+      "胸脅神經痛"
+    ],
+    "keywords": [
+      "沿肋骨走向呈帶狀針刺燒灼痛",
+      "深呼吸咳嗽牽扯加劇",
+      "皮膚輕碰刺痛"
+    ],
+    "clinical_feature": "胸神經根於椎間孔受壓或病毒侵害神經纖維發炎異位放電",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "W283",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "三叉神經痛（血管微動脈攀附壓迫型）",
+    "icd10": "G50.0",
+    "alias": [
+      "三叉神經痛",
+      "臉部閃電痛"
+    ],
+    "keywords": [
+      "洗臉刷牙觸發單側面頰閃電電擊痛",
+      "數秒劇烈刀割痛",
+      "無神經缺損"
+    ],
+    "clinical_feature": "微動脈搏動性壓迫三叉神經根部神經髓鞘局部脫失短路放電",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "W284",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "麥粒腫與霰粒腫（針眼與瞼板腺囊腫）",
+    "icd10": "H00.01",
+    "alias": [
+      "針眼麥粒腫",
+      "霰粒腫眼瞼囊腫"
+    ],
+    "keywords": [
+      "眼皮局部紅腫發熱壓痛",
+      "睫毛根部黃色膿點",
+      "無痛慢性硬粒"
+    ],
+    "clinical_feature": "瞼板腺排泄管口角化堵塞葡萄球菌感染化膿或肉芽腫性油脂包裹",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W285",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "瞼緣炎與蠕形蟎蟲性眼瞼炎",
+    "icd10": "H01.00",
+    "alias": [
+      "眼瞼炎",
+      "蟎蟲性眼瞼炎"
+    ],
+    "keywords": [
+      "睫毛根部油脂鱗屑袖套",
+      "早晨眼瞼黏住乾癢灼熱",
+      "睫毛易脫落"
+    ],
+    "clinical_feature": "瞼板腺功能障礙合併皮脂蠕形蟎蟲寄生造成慢性睫毛囊發炎",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W286",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "飛蚊症（玻璃體液化與後玻璃體剝離 PVD）",
+    "icd10": "H43.39",
+    "alias": [
+      "飛蚊症",
+      "玻璃體混濁"
+    ],
+    "keywords": [
+      "眼前點狀線狀如蚊蟲飛舞隨眼球飄移",
+      "白牆亮光下明顯",
+      "無閃光無黑影遮蔽"
+    ],
+    "clinical_feature": "玻璃體凝膠水分流失膠原纖維網凝聚脫水在視網膜投射陰影",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W287",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "老年性黃斑部病變（乾性玻璃疣 Drusen）",
+    "icd10": "H35.31",
+    "alias": [
+      "黃斑部病變",
+      "玻璃疣Drusen"
+    ],
+    "keywords": [
+      "中央視力漸進性模糊",
+      "看直線輕微彎曲",
+      "閱讀需更強光線"
+    ],
+    "clinical_feature": "視網膜色素上皮細胞代謝老化脂褐質微粒堆積於布魯克膜形成玻璃疣",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W288",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "翼狀贅肉（眼翳侵入角膜邊緣）",
+    "icd10": "H11.00",
+    "alias": [
+      "眼翳",
+      "翼狀贅肉"
+    ],
+    "keywords": [
+      "眼頭鼻側三角形粉紅肉膜侵入角膜",
+      "眼睛紅充血異物感",
+      "進展影響視力"
+    ],
+    "clinical_feature": "紫外線刺激球結膜幹細胞變性纖維血管結締組織慢性增生侵襲角膜",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W289",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "虹彩炎（前葡萄膜炎早期與睫狀充血）",
+    "icd10": "H20.00",
+    "alias": [
+      "虹彩炎",
+      "前葡萄膜炎"
+    ],
+    "keywords": [
+      "眼睛深部酸痛劇烈畏光",
+      "角膜周圍環形紫紅睫狀充血",
+      "瞳孔收縮變小"
+    ],
+    "clinical_feature": "虹膜與睫狀體血管通透性增加房水中發炎細胞蛋白微粒浮游閃輝",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W290",
+    "system": "western",
+    "category": "精神心理、神經與眼專科",
+    "name": "上鞏膜炎（局限性深部鞏膜血管網充血）",
+    "icd10": "H15.10",
+    "alias": [
+      "上鞏膜炎",
+      "鞏膜發炎"
+    ],
+    "keywords": [
+      "眼白扇形局部鮮紅斑塊",
+      "眼球轉動輕微鈍痛",
+      "無分泌物無視力下降"
+    ],
+    "clinical_feature": "上鞏膜深淺層血管網免疫性發炎充血血管可推動不浸潤眼球深層",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W291",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "慢性疲勞症候群（全身性勞力不耐症 SEID）",
+    "icd10": "R53.82",
+    "alias": [
+      "慢性疲勞",
+      "勞力不耐症"
+    ],
+    "keywords": [
+      "勞動後嚴重崩潰衰竭感超過半年",
+      "睡眠無法恢復精力",
+      "認知障礙肌肉酸痛"
+    ],
+    "clinical_feature": "粒線體氧化磷酸化障礙合併免疫自律神經系統慢性調節失衡",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W292",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "輕度阻塞性睡眠呼吸中止症（肥胖打鼾）",
+    "icd10": "G47.33",
+    "alias": [
+      "睡眠呼吸中止症",
+      "打鼾缺氧"
+    ],
+    "keywords": [
+      "夜間鼾聲如雷突發呼吸中止嗆醒",
+      "白天嗜睡疲倦",
+      "早晨頭痛血壓升"
+    ],
+    "clinical_feature": "睡眠時咽喉軟組織及舌根後墜鬆弛負壓導致上呼吸道完全或部分塌陷",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W293",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "小兒腹股溝陰囊水腫（開放性鞘狀突）",
+    "icd10": "N43.3",
+    "alias": [
+      "小兒陰囊水腫",
+      "陰囊鞘狀突未閉"
+    ],
+    "keywords": [
+      "幼兒單側陰囊透光腫大",
+      "早晨變小晚上哭鬧變大",
+      "無壓痛觸感柔軟"
+    ],
+    "clinical_feature": "腹膜鞘狀突發育未閉合腹腔積液經細小通道流注陰囊鞘膜腔內",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W294",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "兒童原發性夜尿症（單純性單症狀尿床）",
+    "icd10": "N39.44",
+    "alias": [
+      "兒童尿床",
+      "夜尿症"
+    ],
+    "keywords": [
+      "五歲以上夜間睡眠中不自覺尿床",
+      "白天排尿完全正常",
+      "喚醒困難深睡"
+    ],
+    "clinical_feature": "夜間抗利尿激素分泌節律未成熟合併睡眠大腦喚醒中樞閾值過高",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W295",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "小兒熱性痙攣（單純型良性熱痙攣）",
+    "icd10": "R56.00",
+    "alias": [
+      "熱性痙攣",
+      "發燒抽搐"
+    ],
+    "keywords": [
+      "體溫急速上升時突發對稱性全身抽搐",
+      "發作數分鐘內自行停止",
+      "發作後嗜睡清醒"
+    ],
+    "clinical_feature": "幼兒腦部發育未成熟神經元髓鞘化不足於體溫急遽攀升時異常放電",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W296",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "腸病毒咽峽炎（柯薩奇病毒小水泡）",
+    "icd10": "B08.5",
+    "alias": [
+      "腸病毒疱疹性咽峽炎",
+      "咽峽水泡潰瘍"
+    ],
+    "keywords": [
+      "懸雍垂兩側軟顎多發小水泡潰瘍",
+      "突發高燒吞嚥劇痛流口水",
+      "食慾不振拒食"
+    ],
+    "clinical_feature": "柯薩奇A型病毒侵犯口咽部黏膜上皮引發急性水泡壞死潰爛",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W297",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "兒童咳嗽變異性氣喘伴過敏體質",
+    "icd10": "J32.9",
+    "alias": [
+      "咳嗽變異型氣喘",
+      "過敏慢性咳嗽"
+    ],
+    "keywords": [
+      "夜間清晨反覆劇烈乾咳逾一個月",
+      "運動吹冷氣加劇",
+      "無明顯喘鳴痰音"
+    ],
+    "clinical_feature": "下呼吸道嗜酸性發炎氣道高反應性刺激黏膜下咳嗽受體敏感",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W298",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "青年期乳房纖維腺瘤（超音波良性定期追蹤）",
+    "icd10": "D24.9",
+    "alias": [
+      "乳房纖維腺瘤",
+      "良性乳房硬塊"
+    ],
+    "keywords": [
+      "乳房無痛圓形堅韌腫塊",
+      "邊界分明滑動性極佳",
+      "經期略腫脹"
+    ],
+    "clinical_feature": "乳腺小葉導管上皮與間質組織對雌激素過度敏感良性增生",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W299",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "男性女乳症（生理性青年期與藥物性）",
+    "icd10": "N62",
+    "alias": [
+      "男性女乳症",
+      "乳腺增生"
+    ],
+    "keywords": [
+      "男性乳暈下方圓盤狀腺體隆起",
+      "按壓微脹硬塊",
+      "乳頭敏感外突"
+    ],
+    "clinical_feature": "體內雌激素與雄激素比例失衡刺激男性退化乳腺導管間質增生",
+    "recommended_blueprint": "subdermal_curettage"
+  },
+  {
+    "id": "W300",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "髕骨下脂肪墊發炎候群（Hoffa 病）",
+    "icd10": "M79.89",
+    "alias": [
+      "髕下脂肪墊炎",
+      "Hoffa病"
+    ],
+    "keywords": [
+      "髕骨韌帶兩側深部壓痛",
+      "膝完全伸直時劇痛",
+      "脂肪墊水腫增厚"
+    ],
+    "clinical_feature": "髕骨下富含血管神經之脂肪組織於膝過度伸直時遭受夾擠發炎",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W301",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "網球腿（腓腸肌內側頭肌腱部分撕裂）",
+    "icd10": "S86.01",
+    "alias": [
+      "網球腿",
+      "小腿肌腱撕裂"
+    ],
+    "keywords": [
+      "運動蹬地瞬間小腿肚如被石擊劇痛",
+      "行走跛行踮腳劇痛",
+      "皮下瘀血水腫"
+    ],
+    "clinical_feature": "腓腸肌內側頭與肌腱接合處在過度偏心收縮時肌纖維發生撕裂出血",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W302",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "梨狀肌解剖變異神經卡壓（深臀走行異常）",
+    "icd10": "G57.0",
+    "alias": [
+      "坐骨神經解剖變異",
+      "梨狀肌卡壓"
+    ],
+    "keywords": [
+      "特定髖關節旋轉角度引發臀腿電擊刺痛",
+      "神經叩擊徵陽性",
+      "肌膜束縛"
+    ],
+    "clinical_feature": "坐骨神經幹直接穿過梨狀肌肌腹或分叉走行易在肌肉收縮時受壓",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W303",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "頸椎性頭痛（C1-C3 枕眼神經反射牽扯痛）",
+    "icd10": "M53.0",
+    "alias": [
+      "頸椎源性頭痛",
+      "枕眼神經痛"
+    ],
+    "keywords": [
+      "後枕部單側悶痛牽連同側太陽穴眼眶",
+      "轉動頸部時誘發加劇",
+      "枕下肌壓痛"
+    ],
+    "clinical_feature": "上頸椎小關節紊亂深部肌肉痙攣刺激枕大神經傳導匯聚於三叉神經核",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W304",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "胸廓出口症候群（TOS 神經血管束受壓）",
+    "icd10": "G54.0",
+    "alias": [
+      "胸廓出口症候群",
+      "TOS手麻無力"
+    ],
+    "keywords": [
+      "手臂高舉或後拉時手掌發白發涼麻木",
+      "前臂內側酸脹無力",
+      "脈搏變弱"
+    ],
+    "clinical_feature": "斜角肌間隙或鎖骨與第一肋骨間隙狹窄壓迫臂神經叢與鎖骨下動脈",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "W305",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "腕掌關節退化性關節炎（拇指基底關節磨損）",
+    "icd10": "M19.04",
+    "alias": [
+      "拇指腕掌關節炎",
+      "拇指基底關節磨損"
+    ],
+    "keywords": [
+      "手捏開瓶捏筆時拇指根部劇烈酸痛",
+      "基底骨突隆起變形",
+      "關節活動摩擦感"
+    ],
+    "clinical_feature": "第一腕掌關節馬鞍狀關節軟骨承受長期捏合剪力退變磨耗骨刺增生",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W306",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "屈指肌腱腱鞘囊腫（A1 滑車處珍珠結節）",
+    "icd10": "M67.44",
+    "alias": [
+      "屈指肌腱囊腫",
+      "手指珍珠結節"
+    ],
+    "keywords": [
+      "手掌遠端指褶紋處硬質小米粒結節",
+      "握拳提物微酸感",
+      "不影響屈伸跳動"
+    ],
+    "clinical_feature": "屈指肌腱與A1滑車腱鞘過度摩擦局限性膠原退化黏液聚集包裹",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "W307",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "莫頓神經瘤（Morton 蹠骨間神經纖維化膨大）",
+    "icd10": "G57.6",
+    "alias": [
+      "莫頓神經瘤",
+      "蹠骨間神經瘤"
+    ],
+    "keywords": [
+      "走動踩地時腳底如踩小石子燒灼銳痛",
+      "第三四腳趾麻木刺痛",
+      "脫鞋揉腳緩解"
+    ],
+    "clinical_feature": "深橫蹠韌帶下方的足底趾間神經反覆遭受相鄰蹠骨頭夾擠神經內膜纖維化",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W308",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "內側脛骨應力症候群（脛骨夾板痛 MTSS）",
+    "icd10": "M76.8",
+    "alias": [
+      "夾板痛",
+      "內側脛骨應力症"
+    ],
+    "keywords": [
+      "跑步跳躍時小腿內側下三分之一骨緣酸痛",
+      "脛骨內側骨膜壓痛",
+      "熱身後稍減"
+    ],
+    "clinical_feature": "比目魚肌與脛後肌筋膜過度牽拉脛骨後內側骨膜引發微損傷發炎",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W309",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "足副舟骨症候群（足內側先天骨突摩擦發炎）",
+    "icd10": "M21.6X",
+    "alias": [
+      "足副舟骨",
+      "副舟骨疼痛"
+    ],
+    "keywords": [
+      "足弓內側突出骨硬塊",
+      "穿硬鞋摩擦紅腫破皮",
+      "後脛肌腱拉扯痛"
+    ],
+    "clinical_feature": "舟狀骨內側先天未骨化副骨改變後脛肌腱力學走向易因磨擦牽拉發炎",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W310",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "跟骨骨後滑囊炎與阿基里斯腱附著部發炎",
+    "icd10": "M76.6",
+    "alias": [
+      "阿基里斯腱炎",
+      "跟骨滑囊炎"
+    ],
+    "keywords": [
+      "腳後跟阿基里斯腱附著點骨凸紅腫",
+      "踩地晨起腳跟後方僵痛",
+      "鞋後幫摩擦劇痛"
+    ],
+    "clinical_feature": "跟骨後上隆起骨刺反覆摩擦阿基里斯腱前方深層滑囊充血增厚",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W311",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "嗜酸性粒細胞性食道炎（EoE 氣管樣食道狹窄）",
+    "icd10": "K20.0",
+    "alias": [
+      "嗜酸性食道炎",
+      "EoE吞嚥困難"
+    ],
+    "keywords": [
+      "進食乾硬食物易哽噎卡喉",
+      "胸骨後胸痛",
+      "內診見食道環狀黏膜褶"
+    ],
+    "clinical_feature": "食物或吸入性過敏原引發第二型發炎反應嗜酸性白血球浸潤食道壁纖維化",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W312",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "嗜中性皮膚症（急性發熱性嗜中性皮病）",
+    "icd10": "L98.2",
+    "alias": [
+      "急性發熱皮病",
+      "嗜中性皮膚病"
+    ],
+    "keywords": [
+      "發燒伴隨四肢頭頸多發壓痛性紅斑斑塊",
+      "外觀如假性水泡",
+      "白血球升高"
+    ],
+    "clinical_feature": "成熟嗜中性白血球真皮層無菌性大量浸潤合併微血管通透性增加",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "W313",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "環狀肉芽腫（良性真皮膠原變性環狀丘疹）",
+    "icd10": "L92.0",
+    "alias": [
+      "環狀肉芽腫",
+      "環形皮膚丘疹"
+    ],
+    "keywords": [
+      "手背手背環狀排列微小膚色粉紅丘疹",
+      "中央平坦邊緣微隆起",
+      "無痛無癢"
+    ],
+    "clinical_feature": "真皮膠原纖維局部退變組織球巨噬細胞呈柵欄狀環形浸潤包圍",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W314",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "穿透性毛囊炎與摩擦倒生毛肉芽發炎",
+    "icd10": "L73.9",
+    "alias": [
+      "倒生毛毛囊炎",
+      "穿透性毛囊炎"
+    ],
+    "keywords": [
+      "鬍鬚區或大腿毛髮向內彎曲穿刺表皮",
+      "毛囊旁紅腫微化膿硬丘疹",
+      "反覆色素沉澱"
+    ],
+    "clinical_feature": "毛髮捲曲刺破毛囊上皮或表皮真皮引發異物肉芽腫發炎反應",
+    "recommended_blueprint": "laser_action"
+  },
+  {
+    "id": "W315",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "家族性高膽固醇血症（肌腱黃色瘤初期篩檢）",
+    "icd10": "E78.01",
+    "alias": [
+      "家族性高膽固醇",
+      "肌腱黃色瘤"
+    ],
+    "keywords": [
+      "早發性LDL極度偏高超標",
+      "阿基里斯腱伸肌腱結節增厚",
+      "眼角膜弓結膜黃斑"
+    ],
+    "clinical_feature": "低密度脂蛋白受體基因缺損清除受阻大量脂質被巨噬細胞吞噬沉積於肌腱",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W316",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "結核菌素測試陽性與潛伏性結核感染評估",
+    "icd10": "Z11.1",
+    "alias": [
+      "潛伏結核感染",
+      "IGRA陽性篩檢"
+    ],
+    "keywords": [
+      "LTBI抽血干擾素釋放檢驗陽性",
+      "胸部X光完全正常",
+      "無自覺咳嗽發燒症狀"
+    ],
+    "clinical_feature": "結核桿菌於肺泡巨噬細胞肉芽腫內處於休眠平衡狀態未發病具免疫記憶",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W317",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "物理性自體劃痕性蕁麻疹（人工蕁麻疹）",
+    "icd10": "L50.3",
+    "alias": [
+      "人工蕁麻疹",
+      "皮膚劃痕症"
+    ],
+    "keywords": [
+      "指甲或鈍物抓劃皮膚數分鐘內隆起浮腫紅線",
+      "劇癢伴隨風團",
+      "半小時至數小時消退"
+    ],
+    "clinical_feature": "機械性外力物理刺激引發肥大細胞高反應性瞬間去顆粒釋放組織胺",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W318",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "慢性萎縮性胃炎與腸化生（胃癌前兆篩檢追蹤）",
+    "icd10": "K29.40",
+    "alias": [
+      "萎縮性胃炎",
+      "胃黏膜腸化生"
+    ],
+    "keywords": [
+      "上腹消化不良早飽",
+      "胃鏡見黏膜變薄血管網透見",
+      "病理見杯狀細胞化生"
+    ],
+    "clinical_feature": "幽門菌長期發炎胃固有腺體萎縮退化被腸型分化上皮細胞替代",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "W319",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "膽固醇結石與膽囊膽沙微滯留（Sludge）",
+    "icd10": "K80.20",
+    "alias": [
+      "膽囊膽沙",
+      "膽泥滯留"
+    ],
+    "keywords": [
+      "餐後右上腹微脹不適",
+      "超音波見膽囊重力面無音影沉澱物",
+      "隨體位緩慢移動"
+    ],
+    "clinical_feature": "膽汁中膽固醇過飽和與黏蛋白結合析出微小結晶沉澱形成泥沙樣懸浮物",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "W320",
+    "system": "western",
+    "category": "綜合專科與兒科老年門診",
+    "name": "慢性骨盆腔前列腺痛與盆底肌筋膜功能失調",
+    "icd10": "N41.1",
+    "alias": [
+      "前列腺痛",
+      "骨盆底筋膜失調"
+    ],
+    "keywords": [
+      "會陰下腹陰莖根部反覆隱隱作痛",
+      "射精後骨盆酸楚",
+      "反覆前列腺液無菌"
+    ],
+    "clinical_feature": "骨盆底深層肌肉慢性痙攣神經致敏前列腺包膜受壓感覺神經放大",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "C321",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫顳顎關節紊亂症（牙關緊閉開闔有聲）",
+    "icd10": "M26.62",
+    "alias": [
+      "中醫顳顎障礙",
+      "頰車下關經筋拘急"
+    ],
+    "keywords": [
+      "張口咔咔彈響咀嚼疼痛",
+      "下頜關節酸脹開口受限",
+      "下關頰車穴針刺"
+    ],
+    "clinical_feature": "氣血凝滯頰車下關經筋拘攣失養下頜開闔失和",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C322",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫胸壁挫傷後遺症（久咳胸脅刺痛氣滯血瘀）",
+    "icd10": "S20.20",
+    "alias": [
+      "胸壁挫傷中醫",
+      "脅肋氣滯血瘀"
+    ],
+    "keywords": [
+      "胸脅固定刺痛拒按",
+      "深呼吸轉身咳嗽引痛",
+      "期門支溝行氣活血"
+    ],
+    "clinical_feature": "外力衝擊氣機阻滯血停脅肋局部絡脈受損凝瘀",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C323",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫腕骨綜合傷筋（橈骨小頭微小錯縫整復）",
+    "icd10": "M65.4",
+    "alias": [
+      "腕骨傷筋",
+      "橈骨小頭錯縫"
+    ],
+    "keywords": [
+      "手腕旋轉疼痛無力提重",
+      "橈骨遠端壓痛筋粗",
+      "旋轉牽引拔伸理筋整復"
+    ],
+    "clinical_feature": "腕部經筋扭挫骨縫微小失合滑膜嵌頓經絡氣血受阻",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "C324",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫尾椎外傷後遺症（跌坐傷及督脈尾骨痛）",
+    "icd10": "S39.9",
+    "alias": [
+      "尾椎痛中醫",
+      "督脈瘀阻尾骨痛"
+    ],
+    "keywords": [
+      "跌坐臀部後尾骨長期劇痛",
+      "久坐椅凳刺痛難忍",
+      "長強挑刺大腸俞艾灸"
+    ],
+    "clinical_feature": "外傷損及督脈氣血瘀滯尾閭穴周圍筋絡氣血不通則痛",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C325",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫陳舊性踝關節扭傷（外踝韌帶鬆弛氣血不濡）",
+    "icd10": "S93.401",
+    "alias": [
+      "陳舊踝扭傷中醫",
+      "外踝傷筋氣血虛"
+    ],
+    "keywords": [
+      "天候陰寒外踝酸軟重著",
+      "走路稍不平易再反覆扭傷",
+      "丘墟申脈溫針灸強筋"
+    ],
+    "clinical_feature": "扭傷日久絡脈受損氣血難以濡養外踝經筋鬆弛無力",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C326",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫顏面神經麻痺（面癱 Bell 麻痺黃金期針刺）",
+    "icd10": "G51.0",
+    "alias": [
+      "中醫面癱",
+      "口眼歪斜風邪入絡"
+    ],
+    "keywords": [
+      "單側額紋消失不能閉眼",
+      "口角下垂歪斜漏水",
+      "地倉透頰車陽白四白電針"
+    ],
+    "clinical_feature": "正氣虧虛脈絡空虛風寒或風熱之邪乘虛侵入少陽陽明經絡",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C327",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫三叉神經痛（面痛少陽陽明風熱阻絡）",
+    "icd10": "G50.0",
+    "alias": [
+      "三叉神經痛中藥針灸",
+      "面痛風熱"
+    ],
+    "keywords": [
+      "面部閃電樣抽搐劇痛",
+      "觸摸臉頰刷牙誘發",
+      "下關太陽太衝穴清瀉肝火"
+    ],
+    "clinical_feature": "陽明胃火少陽膽熱上攻面部脈絡風火相搏引發抽痛",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "C328",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫頸源性眩暈（經筋拘急寰樞椎微錯縫）",
+    "icd10": "M53.0",
+    "alias": [
+      "頸源性眩暈中醫",
+      "清陽不升頭目眩暈"
+    ],
+    "keywords": [
+      "轉動脖子誘發天旋地轉頭昏",
+      "後頸緊繃如負重石",
+      "風池百會天柱點穴按推"
+    ],
+    "clinical_feature": "頸後經筋僵凝筋束卡壓微小骨縫失衡阻遏清陽上達清竅",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C329",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫脊椎退行性滑脫傷筋（腰薦肌筋拘急督脈失充）",
+    "icd10": "M43.10",
+    "alias": [
+      "腰椎滑脫中醫",
+      "督脈虛損腰痛"
+    ],
+    "keywords": [
+      "久站久走腰部酸沉如折",
+      "向前微彎舒服後仰受阻",
+      "腎俞大腸俞次髎溫通"
+    ],
+    "clinical_feature": "先天稟賦不足或勞損傷腎督脈失固筋骨失約椎骨代償前移",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C330",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫胸椎小關節紊亂症（岔氣胸悶背痛整脊理筋）",
+    "icd10": "M99.02",
+    "alias": [
+      "胸椎小關節紊亂",
+      "岔氣背痛推拿"
+    ],
+    "keywords": [
+      "轉身咳嗽突發後背肩胛刺痛",
+      "深吸氣胸口掣痛難耐",
+      "胸背俞穴掌根按壓衝壓復位"
+    ],
+    "clinical_feature": "胸椎小關節滑膜嵌頓肋椎關節錯縫經氣阻滯背部經絡",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "C331",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫腓總神經麻痺足下垂（下肢痿證行路跛行）",
+    "icd10": "G57.30",
+    "alias": [
+      "足下垂中醫針灸",
+      "腓神經麻痺痿證"
+    ],
+    "keywords": [
+      "足背伸不能足下垂拖地走",
+      "小腿外側足背麻木",
+      "陽陵泉懸鐘足三里電針"
+    ],
+    "clinical_feature": "足少陽陽明經氣血運行受阻筋脈失於濡養肌肉痿軟無力",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C332",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫纖維肌痛症痺證（風寒濕雜至全身游走酸楚）",
+    "icd10": "M79.7",
+    "alias": [
+      "纖維肌痛中醫調理",
+      "全身痺證筋絡痛"
+    ],
+    "keywords": [
+      "全身關節筋絡游走酸楚重著",
+      "遇寒濕天氣加重身倦乏力",
+      "十四經絡巡經刮痧三陰交溫通"
+    ],
+    "clinical_feature": "衛外不固風寒濕三氣雜至客於肌表血行瘀滯不通則痛",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C333",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫股外側皮神經炎（皮痺大腿外側麻木燒灼感）",
+    "icd10": "G57.10",
+    "alias": [
+      "股外側皮神經痛",
+      "大腿麻木皮痺"
+    ],
+    "keywords": [
+      "大腿外側皮膚如布裹麻木",
+      "刺痛如火灼按之無知覺",
+      "風市環跳穴梅花針叩刺拔罐"
+    ],
+    "clinical_feature": "風寒濕邪阻滯少陽經絡皮毛氣血運行不暢肌膚失養而成皮痺",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C334",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫小兒轉骨期發育遲緩與膝踝酸楚（健脾益腎）",
+    "icd10": "R62.5",
+    "alias": [
+      "小兒轉骨調理",
+      "發育遲緩中醫助長"
+    ],
+    "keywords": [
+      "青春期生長速率落後同齡",
+      "雙下肢膝踝夜間酸軟無力",
+      "健脾補腎丸藥足三里湧泉點穴"
+    ],
+    "clinical_feature": "先天腎氣未充後天脾胃化生不足水穀精微不能充養筋骨骨格發育遲緩",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C335",
+    "system": "tcm",
+    "category": "中醫骨傷針灸與神經專科",
+    "name": "中醫掌腱膜攣縮筋結（手掌指屈曲經筋縮短針刀）",
+    "icd10": "M72.0",
+    "alias": [
+      "掌腱膜攣縮中藥針刀",
+      "手掌筋結拘急"
+    ],
+    "keywords": [
+      "手掌肉厚處硬結條索狀凸起",
+      "手指屈曲不能伸直",
+      "小針刀縱向疏通中藥薰洗"
+    ],
+    "clinical_feature": "寒濕凝滯手厥陰心包經筋筋絡日久失榮攣縮結聚成筋結",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "C336",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性疲勞症候群（虛勞氣陰兩虛脾腎雙虧）",
+    "icd10": "R53.82",
+    "alias": [
+      "慢性疲勞虛勞",
+      "氣陰兩虛中醫調養"
+    ],
+    "keywords": [
+      "長期神疲乏力動則氣短汗出",
+      "心悸失眠健忘納呆",
+      "補中益氣湯生脈飲雙向平衡"
+    ],
+    "clinical_feature": "長期思慮勞倦傷及心脾腎元虧耗氣不化精精不生氣",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C337",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫胃食道逆流（肝胃不和胃氣上逆吐酸燒心）",
+    "icd10": "K21.9",
+    "alias": [
+      "胃酸逆流中醫",
+      "吐酸胃氣上逆"
+    ],
+    "keywords": [
+      "胸膈灼熱泛吐酸水口苦噯氣",
+      "情志抑鬱後上腹悶痛更甚",
+      "左金丸合旋覆代赭湯和胃降逆"
+    ],
+    "clinical_feature": "情志不遂肝鬱化火橫逆犯胃胃失和降濁氣隨胃酸上逆食道",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C338",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫習慣性功能性便秘（陰虛腸燥血虛潤下無力）",
+    "icd10": "K59.00",
+    "alias": [
+      "虛性便秘中藥",
+      "腸燥便秘滋陰潤腸"
+    ],
+    "keywords": [
+      "大便乾結數日一行努掙出汗",
+      "口乾少津面色萎黃心悸",
+      "潤腸丸合麻子仁丸生津潤燥"
+    ],
+    "clinical_feature": "素體陰虛或年老津枯腸道失潤傳導功能減弱大便燥結無力運轉",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C339",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性五更瀉與結腸過敏（脾腎陽虛命門火衰）",
+    "icd10": "K58.0",
+    "alias": [
+      "五更瀉中醫",
+      "脾腎陽虛五更下痢"
+    ],
+    "keywords": [
+      "黎明前臍周隱痛腸鳴即瀉",
+      "瀉後痛減腹部喜溫喜按",
+      "四神丸合真武湯溫補脾腎命門"
+    ],
+    "clinical_feature": "腎陽不足命門火衰不能溫煦脾土脾失腐熟運化清濁不分致五更下痢",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C340",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫氣喘緩解期扶正固本（肺脾腎虧虛衛外不固）",
+    "icd10": "J45.9",
+    "alias": [
+      "氣喘緩解期中醫",
+      "肺脾腎三臟虧虛固本"
+    ],
+    "keywords": [
+      "平素易感冒惡風自汗",
+      "活動勞累後胸悶喘息短氣",
+      "玉屏風散合金匱腎氣丸冬病夏治"
+    ],
+    "clinical_feature": "宿痰內伏根於脾腎肺氣不宣緩解期重在補肺健脾益腎以絕生痰之源",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C341",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性頑固性濕疹（濕熱內蘊日久血虛風燥）",
+    "icd10": "L30.9",
+    "alias": [
+      "頑固濕疹中醫",
+      "血虛風燥濕疹"
+    ],
+    "keywords": [
+      "皮損肥厚皮革化粗糙脫屑",
+      "劇烈瘙癢夜間抓破滲血",
+      "當歸飲子合消風散養血祛風"
+    ],
+    "clinical_feature": "濕熱久稽傷陰耗血化生風燥肌膚失其濡養表皮肥厚粗糙劇癢",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C342",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫脂漏性皮膚炎（頭面油膩紅斑濕熱風毒上蒸）",
+    "icd10": "L21.9",
+    "alias": [
+      "脂漏性皮炎中藥",
+      "頭面濕熱風毒"
+    ],
+    "keywords": [
+      "頭皮多油脂厚屑髮癢易落",
+      "眉心鼻翼兩側油膩紅斑",
+      "茵陳蒿湯合清上防風湯清熱化濕"
+    ],
+    "clinical_feature": "過食辛辣甘肥胃腸積熱濕熱內蘊隨經絡上蒸頭面薰蒸肌膚",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C343",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫膽汁反流性胃炎（膽胃不和口苦嘈雜熱痛）",
+    "icd10": "K29.7",
+    "alias": [
+      "膽汁反流胃炎中醫",
+      "膽胃不和嘈雜"
+    ],
+    "keywords": [
+      "上腹燒灼熱痛口苦咽乾",
+      "泛吐苦水黃水噯氣嘈雜",
+      "溫膽湯合柴胡疏肝散清膽和胃"
+    ],
+    "clinical_feature": "情志失和肝膽失於疏泄膽汁不循常道橫逆犯胃濁熱內生",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C344",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性咽喉炎（梅核氣咽中如有炙臠氣滯痰阻）",
+    "icd10": "F45.8",
+    "alias": [
+      "梅核氣中醫",
+      "咽喉異物感半夏厚朴"
+    ],
+    "keywords": [
+      "喉中梗塞感吞之不下咯之不出",
+      "情志不暢胸悶嘆息則加重",
+      "半夏厚朴湯行氣化痰散結"
+    ],
+    "clinical_feature": "情志鬱結肝氣不舒脾失健運聚濕成痰痰氣互結於咽喉所致",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C345",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫血管神經性頭痛（肝陽上亢脈絡跳痛降逆）",
+    "icd10": "G44.1",
+    "alias": [
+      "神經性頭痛中醫",
+      "肝陽上亢頭痛"
+    ],
+    "keywords": [
+      "偏頭兩側抽搐跳痛眩暈耳鳴",
+      "心煩易怒口苦目赤",
+      "天麻鉤藤飲合鎮肝熄風湯平肝"
+    ],
+    "clinical_feature": "肝腎陰虧陰不制陽肝陽偏亢隨氣上衝上擾頭目清空經絡痙攣",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "C346",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫眩暈水飲內停（內淋巴水腫飲停心下溫陽）",
+    "icd10": "H81.0",
+    "alias": [
+      "中醫水飲眩暈",
+      "苓桂朮甘湯溫陽化水"
+    ],
+    "keywords": [
+      "天旋地轉泛惡嘔吐清稀涎沫",
+      "胸悶心悸心下動悸苔白滑",
+      "苓桂朮甘湯合澤瀉湯溫化水飲"
+    ],
+    "clinical_feature": "脾陽素虛不能運化水濕水飲停積心下清陽不升濁陰上冒清竅",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "C347",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性膽囊炎消化不良（肝膽濕熱右上腹脹痞）",
+    "icd10": "K81.1",
+    "alias": [
+      "膽囊炎中醫調理",
+      "肝膽濕熱右上腹痛"
+    ],
+    "keywords": [
+      "右上腹隱痛連及右肩背",
+      "厭食油膩口乾口苦大便黏滯",
+      "大柴胡湯清泄肝膽疏通氣機"
+    ],
+    "clinical_feature": "濕熱阻滯中焦膽氣鬱結疏泄失常膽汁排出不順消化受阻",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C348",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫甲狀腺良性結節癭瘤（氣滯痰凝血瘀結頸前）",
+    "icd10": "E04.1",
+    "alias": [
+      "中醫癭瘤結節",
+      "甲狀腺結節軟堅散結"
+    ],
+    "keywords": [
+      "頸前結塊隨吞嚥上下移動",
+      "胸悶不舒情志波動結塊脹滿",
+      "海藻玉壺湯合消瘰丸軟堅散結"
+    ],
+    "clinical_feature": "氣鬱傷肝津液凝聚成痰日久氣滯痰阻血瘀互結於頸前而成癭瘤",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "C349",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫代謝症候群肥胖（痰濕阻遏中焦身重嗜睡）",
+    "icd10": "E88.81",
+    "alias": [
+      "代謝症候群中醫",
+      "痰濕體質減重健脾"
+    ],
+    "keywords": [
+      "體態豐腴腹大下垂肢體沈重",
+      "晨起面目微浮口淡多痰黏",
+      "二陳湯合防己黃耆湯健脾化痰"
+    ],
+    "clinical_feature": "過食膏粱厚味脾氣受損運化無權水穀精微化為痰濕停滯肌膚臟腑",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "C350",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫下肢靜脈曲張青筋暴露（氣虛血瘀絡脈曲張）",
+    "icd10": "I86.8",
+    "alias": [
+      "靜脈曲張中藥調養",
+      "氣虛血瘀青筋曲張"
+    ],
+    "keywords": [
+      "小腿內側青筋盤曲成團重墜",
+      "久站下肢酸楚脹痛皮膚暗斑",
+      "補陽還五湯合活絡效靈丹益氣活血"
+    ],
+    "clinical_feature": "長久站立勞役過度耗傷元氣氣虛無力統攝血行絡脈瘀滯曲張",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C351",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫不孕症宮寒不調（下焦虛寒胞宮冷縮無法攝精）",
+    "icd10": "N97.9",
+    "alias": [
+      "宮寒不孕中醫",
+      "溫經暖宮助孕"
+    ],
+    "keywords": [
+      "經行小腹冰冷劇痛得熱則減",
+      "月經推遲經量稀少色黯夾血塊",
+      "溫經湯合艾附暖宮丸溫通胞脈"
+    ],
+    "clinical_feature": "命門火衰陰寒內盛胞宮失於溫煦氣血凝滯衝任受損難以攝精成孕",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C352",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫多囊性卵巢痰濕阻胞（閉經不孕形體肥胖）",
+    "icd10": "E28.2",
+    "alias": [
+      "多囊卵巢中醫調理",
+      "痰濕閉經蒼附導痰"
+    ],
+    "keywords": [
+      "月經延後數月甚至閉經不潮",
+      "體態豐腴多毛肌膚油垢",
+      "蒼附導痰丸燥濕化痰調和衝任"
+    ],
+    "clinical_feature": "痰濕內生下注衝任氣血運行不暢胞脈受阻不能按期排卵化經",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C353",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫崩漏子宮異常出血（氣不攝血衝任不固固崩）",
+    "icd10": "N93.8",
+    "alias": [
+      "崩漏中醫止血",
+      "氣虛不攝血固衝任"
+    ],
+    "keywords": [
+      "非經期陰道暴下如注或淋漓不盡",
+      "面色萎黃神疲倦怠頭暈心悸",
+      "固本止崩湯合震靈丹益氣攝血"
+    ],
+    "clinical_feature": "脾氣虛弱中氣下陷統攝失職衝任二脈不能固攝導致血崩或血漏",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C354",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫產後惡露不盡（瘀血阻滯胞宮兼氣虛生化）",
+    "icd10": "O72.2",
+    "alias": [
+      "產後惡露不盡中醫",
+      "生化湯行氣化瘀生新"
+    ],
+    "keywords": [
+      "產後三週惡露淋漓日久不絕",
+      "色紫黑有小血塊少腹隱隱作痛",
+      "生化湯加益母草化瘀止血生新"
+    ],
+    "clinical_feature": "產後氣虛胞宮失於收縮殘餘惡血凝滯阻於絡脈致新血不得歸經",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C355",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫產後缺乳少乳（氣血虧虛乳汁化生無源下乳）",
+    "icd10": "O92.5",
+    "alias": [
+      "產後缺乳中醫",
+      "通乳丹氣血生乳"
+    ],
+    "keywords": [
+      "分娩後乳房柔軟無脹痛感乳汁稀少",
+      "產後頭昏面色萎黃心悸食少",
+      "通乳丹合下乳湧泉散益氣補血通絡"
+    ],
+    "clinical_feature": "產時失血耗氣營血虧損脾胃虛弱乳汁無源化生或情志不遂厥陰氣滯",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C356",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫乳腺增生乳癖（經前乳房脹痛隨情志消長）",
+    "icd10": "N60.2",
+    "alias": [
+      "乳腺增生中藥",
+      "乳癖疏肝理氣軟堅"
+    ],
+    "keywords": [
+      "經前乳房脹痛觸摸有大小軟硬結節",
+      "心情鬱悶易怒隨月經來潮減輕",
+      "逍遙散合乳癖消疏肝理氣化痰"
+    ],
+    "clinical_feature": "情志內傷肝氣鬱結脾失運化痰濁內生氣滯痰瘀結聚於乳房經絡",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C357",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫慢性盆腔炎帶下量多（濕熱下注少腹隱痛）",
+    "icd10": "N73.9",
+    "alias": [
+      "慢性盆腔炎中醫",
+      "濕熱下注帶下病"
+    ],
+    "keywords": [
+      "帶下量多色黃質稠穢臭",
+      "下腹深處連及腰薦墜脹隱痛",
+      "止帶方合易黃湯清熱利濕健脾"
+    ],
+    "clinical_feature": "濕熱毒邪下注傷及任帶二脈氣血阻滯經絡不暢少腹及骨盆深部作痛",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C358",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫小兒反覆疳積厭食（脾胃虛弱乳食內積消瘦）",
+    "icd10": "K30",
+    "alias": [
+      "小兒疳積中藥",
+      "小兒消食捏脊健脾"
+    ],
+    "keywords": [
+      "小兒形體消瘦面黃髮稀腹部脹大",
+      "食慾不振夜睡不寧煩躁啼哭",
+      "肥兒丸合消食導滯捏脊療法"
+    ],
+    "clinical_feature": "餵養不節過食肥甘宿食積滯中焦損傷脾胃氣液運化失調而成疳積",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "C359",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫小兒夜啼心經積熱（夜間啼哭不止晝安夜叫）",
+    "icd10": "R68.1",
+    "alias": [
+      "小兒夜啼中醫",
+      "心經積熱導赤清心"
+    ],
+    "keywords": [
+      "入夜啼哭不休面赤唇紅啼淚如雨",
+      "白天精神安好小便短黃口氣熱",
+      "導赤散加減清心瀉火安神定驚"
+    ],
+    "clinical_feature": "孕母胎熱下移或護理過暖心經火熱伏於血脈夜間陽氣入陰伏火擾心",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C360",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫兒童妥瑞氏抽動症（風痰內動肝風擾絡平肝）",
+    "icd10": "F95.2",
+    "alias": [
+      "妥瑞氏抽動中藥",
+      "風痰內動平肝熄風"
+    ],
+    "keywords": [
+      "不自主眨眼聳肩搖頭清喉嚨發聲",
+      "緊張焦慮時發作頻繁睡眠自止",
+      "定癇丸合抑肝散平肝熄風化痰"
+    ],
+    "clinical_feature": "先天稟賦偏頗情志化火引動內風肝風攜痰上擾清空竅道經脈拘攣",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "C361",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫慢性男性前列腺炎（精濁敗精阻竅少腹抽痛）",
+    "icd10": "N41.1",
+    "alias": [
+      "前列腺炎精濁中藥",
+      "敗精阻竅化瘀通淋"
+    ],
+    "keywords": [
+      "尿道口滴白會陰及少腹隱痛重墜",
+      "小便澀痛不舒夜尿頻繁",
+      "八正散合前列腺湯化濁清利"
+    ],
+    "clinical_feature": "濕熱下注或房勞傷腎精液瘀濁停聚膀胱之邸血絡受阻氣機不暢",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C362",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫男性陽痿少精（命門火衰腎陽不足溫補宗筋）",
+    "icd10": "F52.2",
+    "alias": [
+      "中醫陽痿命門火衰",
+      "腎陽不足右歸溫通"
+    ],
+    "keywords": [
+      "宗筋弛縱不能振興畏寒肢冷",
+      "腰膝酸軟精神萎靡精清冷薄",
+      "右歸丸合贊育丹溫補腎陽填精"
+    ],
+    "clinical_feature": "房勞過度或年高體衰傷及真火命門火衰氣化無權宗筋失於溫煦濡養",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C363",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性腎病早期蛋白尿（脾腎陽虛水氣內停固澀）",
+    "icd10": "N18.9",
+    "alias": [
+      "慢性腎病中藥",
+      "脾腎陽虛蛋白尿固腎"
+    ],
+    "keywords": [
+      "面目下肢浮腫按之凹陷不起",
+      "尿中細小泡沫經久不散腰酸便溏",
+      "濟生腎氣丸合水陸二仙丹固澀"
+    ],
+    "clinical_feature": "脾虛失運腎虛失固精微物質下洩封藏失職水液代謝失衡泛溢肌膚",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C364",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫痛風石化期慢性關節畸形（濁毒瘀結洩濁通絡）",
+    "icd10": "M10.9",
+    "alias": [
+      "痛風石中醫調理",
+      "濁毒瘀結關節漫腫"
+    ],
+    "keywords": [
+      "關節周圍皮下硬結高突不平畸形",
+      "皮色紫暗穿潰溢流如石灰樣碎屑",
+      "四妙散加土茯苓威靈仙洩濁化瘀"
+    ],
+    "clinical_feature": "濕熱濁毒留著筋骨日久凝聚化痰成瘀濁毒凝結關節骨肉而成石",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C365",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫放射線治療後口咽乾燥（熱毒傷陰陰津耗劫生津）",
+    "icd10": "Z51.0",
+    "alias": [
+      "放療後口乾中醫",
+      "熱毒傷陰沙參麥冬生津"
+    ],
+    "keywords": [
+      "頭頸放療後口咽枯涸無唾不能嚥乾食",
+      "舌面紅絳乾裂無苔咽痛灼熱",
+      "沙參麥冬湯合增液湯甘寒滋陰生津"
+    ],
+    "clinical_feature": "射線屬熱毒之邪直中頭頸烙傷火熱耗劫津液胃陰肺津枯竭所致",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "C366",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫化學治療後白血球低下（骨髓抑制氣血雙虧補髓）",
+    "icd10": "D70.9",
+    "alias": [
+      "化療骨髓抑制中醫",
+      "白血球低下益氣補血"
+    ],
+    "keywords": [
+      "化療後全身軟弱無力極度易感冒",
+      "面色蒼白心悸自汗動則短氣",
+      "十全大補湯合阿膠補血膏填精生血"
+    ],
+    "clinical_feature": "化學藥物峻烈攻伐大傷脾胃生化之源腎元受損骨髓化生精血不足",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "C367",
+    "system": "tcm",
+    "category": "婦兒專科、男女調治與腫瘤輔助",
+    "name": "中醫癌症術後腸麻痺腸阻塞不全（術後腑氣不通理氣）",
+    "icd10": "K91.3",
+    "alias": [
+      "術後腸麻痹中藥",
+      "腑氣不通腹脹針灸"
+    ],
+    "keywords": [
+      "剖腹動刀後數日腹部脹滿如鼓無矢氣",
+      "噁心噯氣嘔吐不能進食",
+      "大承氣湯通腑灌腸配合天樞足三里電針"
+    ],
+    "clinical_feature": "手術動刀金刃創傷腹壁絡脈損傷氣血大虧致陽明腑氣不通腸麻痹塞",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "C368",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫慢性萎縮性鼻炎（鼻槁津虧鼻內乾燥結厚痂）",
+    "icd10": "J31.0",
+    "alias": [
+      "鼻槁萎縮性鼻炎中醫",
+      "陰虛肺燥鼻腔結痂"
+    ],
+    "keywords": [
+      "鼻腔極度乾燥灼熱結滿黑綠硬痂",
+      "鼻息惡臭嗅覺喪失擤出微血",
+      "養陰清肺湯潤燥濡鼻麻油塗敷"
+    ],
+    "clinical_feature": "肺燥陰虧或胃火上灼津液枯竭不能上濡鼻竅黏膜萎縮枯燥成槁",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "C369",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫暴發性神經性耳鳴耳聾（肝火上擾耳竅暴鳴如潮）",
+    "icd10": "H93.1",
+    "alias": [
+      "暴發性耳鳴中醫",
+      "肝火上擾龍膽清膽開竅"
+    ],
+    "keywords": [
+      "暴怒鬱悶後耳中突然巨響如海潮火車",
+      "聽力驟降伴頭目脹痛口苦面紅",
+      "龍膽瀉肝湯清瀉肝膽風火開竅"
+    ],
+    "clinical_feature": "情志過極肝膽暴火順經上逆充塞清竅少陽經絡氣機暴閉而發耳鳴暴聾",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "C370",
+    "system": "tcm",
+    "category": "中醫臟腑氣血與內科調理",
+    "name": "中醫糖尿病視網膜病變初期（消渴內障目昏陰虛絡瘀）",
+    "icd10": "E11.31",
+    "alias": [
+      "消渴目昏糖尿病眼病",
+      "陰虛絡瘀視網膜微出血"
+    ],
+    "keywords": [
+      "視物模糊昏渺眼前如黑蚊飛舞微出血",
+      "口乾消渴手足心熱腰膝酸軟",
+      "杞菊地黃丸合生蒲黃湯滋陰涼血化瘀"
+    ],
+    "clinical_feature": "消渴日久陰虛燥熱灼傷脈絡熱迫血溢絡脈瘀阻微細血脈滲血視網膜失養",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "D371",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "牙齒重度酸蝕症伴夜間磨牙損耗",
+    "icd10": "K03.2",
+    "alias": [
+      "牙齒酸蝕症",
+      "全口牙磨耗"
+    ],
+    "keywords": [
+      "全口牙齒酸軟敏感",
+      "切端透光磨平凹陷",
+      "象牙質廣泛暴露"
+    ],
+    "clinical_feature": "化學性酸性飲食侵蝕結合夜間磨牙機械重力損耗全口琺瑯質崩解",
+    "recommended_blueprint": "dermal_support"
+  },
+  {
+    "id": "D372",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "牙齒隱裂症候群（Cracked Tooth 微細牙裂）",
+    "icd10": "M26.69",
+    "alias": [
+      "牙隱裂症候群",
+      "不完全牙裂"
+    ],
+    "keywords": [
+      "咬到特定角度瞬間銳痛",
+      "冷熱劇烈刺激酸痛",
+      "外觀無明顯大蛀洞"
+    ],
+    "clinical_feature": "牙齒琺瑯質至象牙質深部微細結構應力裂紋咀嚼剪力伸展激發牙髓疼痛",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D373",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "特發性牙內吸收與牙頸部外吸收（Pink Tooth）",
+    "icd10": "K03.3",
+    "alias": [
+      "牙內吸收",
+      "粉紅牙齒外吸收"
+    ],
+    "keywords": [
+      "牙齒齒冠透出微粉紅斑影",
+      "牙髓神經活性異常",
+      "X光見髓腔不規則透射擴大"
+    ],
+    "clinical_feature": "破牙細胞受慢性刺激異常活性化破壞吸收牙齒象牙質管壁形成肉芽腔",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "D374",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "根管治療後頑固性根尖囊腫（顯微外科手術）",
+    "icd10": "K04.8",
+    "alias": [
+      "根尖囊腫顯微手術",
+      "根尖囊腫逆充填"
+    ],
+    "keywords": [
+      "咬合悶痛齒齦微凸無痛硬囊",
+      "牙根尖周圍骨質囊狀大吸收",
+      "常規抽神經不癒"
+    ],
+    "clinical_feature": "上皮殘留殘渣在發炎環境囊性變增生滲透壓增高膨脹壓迫破壞齒槽骨",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "D375",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "重度牙髓腔鈣化閉鎖（高倍顯微導航超音波探通）",
+    "icd10": "K04.99",
+    "alias": [
+      "牙髓腔鈣化",
+      "顯微根管鈣化探通"
+    ],
+    "keywords": [
+      "牙齒變黃暗灰無光澤",
+      "根管X光完全不見管腔",
+      "外傷老化繼發修復性牙本質填滿"
+    ],
+    "clinical_feature": "年齡老化或創傷刺激刺激成牙本質細胞大量過度沉積修復性牙本質堵塞根管",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D376",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "楔狀磨耗伴深部牙本質知覺過敏與近髓暴露",
+    "icd10": "K03.1",
+    "alias": [
+      "齒頸部楔狀缺損",
+      "深部牙本質過敏"
+    ],
+    "keywords": [
+      "牙刷毛碰觸或吸風牙齒極酸刺痛",
+      "齒頸部凹陷深刻V形槽",
+      "深層象牙質小管暴露"
+    ],
+    "clinical_feature": "橫向過度用力刷牙或咬合扭力應力集中於齒頸釉牙骨質界琺瑯質疲勞微崩",
+    "recommended_blueprint": "dermal_support"
+  },
+  {
+    "id": "D377",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "牙齒發育不全與釉質發育不良（Amelogenesis）",
+    "icd10": "K00.5",
+    "alias": [
+      "釉質發育不全",
+      "發育性脆弱牙"
+    ],
+    "keywords": [
+      "全口牙齒凹凸不平黃褐色斑塊",
+      "琺瑯質薄脆容易磨損崩解",
+      "廣泛易蛀牙敏感"
+    ],
+    "clinical_feature": "牙胚發育期成釉細胞功能障礙基質沉積或鈣化礦化不足琺瑯質薄弱多孔",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D378",
+    "system": "dental",
+    "category": "牙體硬組織與顯微牙髓",
+    "name": "全口放射線治療後猛暴性齲齒（放射性蛀牙）",
+    "icd10": "K02.61",
+    "alias": [
+      "放射性齲齒",
+      "放療後猛暴性蛀牙"
+    ],
+    "keywords": [
+      "牙齒頸部廣泛環狀黑化斷折",
+      "唾液極度黏稠口乾無自潔",
+      "短時間內多顆牙崩塌"
+    ],
+    "clinical_feature": "放療損害唾液腺分泌大量喪失自潔抑菌功能結合齒質受射線直接變脆腐爛",
+    "recommended_blueprint": "process_diagram"
+  },
+  {
+    "id": "D379",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "藥物性牙齦纖維性增生（抗癲癇降壓藥引起）",
+    "icd10": "K06.1",
+    "alias": [
+      "藥物性牙齦增生",
+      "牙齦過度肥厚"
+    ],
+    "keywords": [
+      "牙齦如粉紅結節漫過齒冠",
+      "刷牙流血咀嚼困難外觀變形",
+      "服用特定長期藥物"
+    ],
+    "clinical_feature": "特定藥物刺激牙齦纖維母細胞合成大量細胞外間質與膠原纖維過度增殖",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D380",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "懷孕期血管性牙齦瘤（妊娠期肉芽腫大出血）",
+    "icd10": "K06.8",
+    "alias": [
+      "妊娠期牙齦瘤",
+      "孕期化膿性肉芽腫"
+    ],
+    "keywords": [
+      "懷孕期牙間乳頭迅速長大呈草莓狀血腫",
+      "輕輕刷牙大出血不止",
+      "產後荷爾蒙下降縮小"
+    ],
+    "clinical_feature": "孕期高濃度雌激素黃體素劇增使局部牙菌斑刺激反應放大微血管高度增生",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D381",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "牙周牙髓聯合病變（Endo-Perio 混合深部病灶）",
+    "icd10": "K05.31",
+    "alias": [
+      "牙周牙髓聯合病變",
+      "EndoPerio深骨缺損"
+    ],
+    "keywords": [
+      "牙齒重度搖動深部牙周袋溢膿",
+      "牙髓神經壞死喪失活性",
+      "骨質全面透射吸收"
+    ],
+    "clinical_feature": "根尖感染向上突破與深部牙周囊袋向下破壞在牙根側面相通融為一體",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D382",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "口腔扁平苔蘚（頰黏膜對稱網狀白紋伴糜爛）",
+    "icd10": "L43.9",
+    "alias": [
+      "口腔扁平苔蘚",
+      "OLP網狀白斑"
+    ],
+    "keywords": [
+      "雙側頰黏膜對稱白色蕾絲網狀花紋",
+      "進食辛辣熱食刺痛灼痛",
+      "伴隨淺表糜爛潰瘍"
+    ],
+    "clinical_feature": "T淋巴細胞自體免疫介導攻擊口腔黏膜上皮基底細胞層引發慢性慢性發炎",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D383",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "口腔白斑與紅斑（臨床高度可疑癌前病變切片評估）",
+    "icd10": "K13.21",
+    "alias": [
+      "口腔白斑",
+      "口腔紅斑切片"
+    ],
+    "keywords": [
+      "舌緣頰黏膜擦不掉的粗糙白斑紅斑",
+      "微硬結微突顆粒邊緣不整",
+      "長期菸酒檳榔接觸史"
+    ],
+    "clinical_feature": "長期外在物理化學致癌物刺激黏膜上皮過度角化異常增生細胞異型性",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D384",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "口腔念珠菌症（假牙性口炎與鵝口瘡白色偽膜）",
+    "icd10": "B37.0",
+    "alias": [
+      "口腔念珠菌",
+      "假牙性口炎鵝口瘡"
+    ],
+    "keywords": [
+      "假牙覆蓋區黏膜鮮紅充血水腫",
+      "擦拭易剝離之凝乳狀白斑帶微滲血",
+      "口乾口淡刺痛感"
+    ],
+    "clinical_feature": "局部免疫力低下或長期假牙清潔不佳白色念珠菌菌絲侵襲黏膜表層",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D385",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "小唾液腺黏液囊腫（下唇咬傷外溢黏液小水泡）",
+    "icd10": "K11.6",
+    "alias": [
+      "黏液囊腫",
+      "下唇小水泡囊腫"
+    ],
+    "keywords": [
+      "下唇內側半透明藍紫色柔軟微凸水珠",
+      "咬破後反覆復發長大",
+      "無紅腫熱痛"
+    ],
+    "clinical_feature": "外傷咬破小唾液腺導管唾液黏液外溢至黏膜下結締組織中被肉芽纖維包裹",
+    "recommended_blueprint": "cyst_excision"
+  },
+  {
+    "id": "D386",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "拔牙後乾槽症（Dry Socket 骨槽血塊溶解劇痛）",
+    "icd10": "K10.3",
+    "alias": [
+      "乾槽症",
+      "拔牙後齒槽骨炎"
+    ],
+    "keywords": [
+      "拔牙三四天後劇烈放射至耳顳部跳痛",
+      "齒槽骨腔內空虛無血塊惡臭",
+      "骨壁暴露劇痛拒按"
+    ],
+    "clinical_feature": "纖維蛋白溶解酶過度活化溶解拔牙骨窩保護性血塊致齒槽骨壁及神經裸露",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "D387",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "齒槽骨骨髓炎（局限性慢性硬化性骨髓炎）",
+    "icd10": "M86.8X",
+    "alias": [
+      "局限性骨髓炎",
+      "硬化性骨炎"
+    ],
+    "keywords": [
+      "死牙周圍下顎骨鈍痛深部硬膨",
+      "X光見牙根周圍緻密棉絮狀骨硬化陰影",
+      "反覆牙齦小膿包"
+    ],
+    "clinical_feature": "低度毒性細菌長期自根尖外溢刺激周圍齒槽骨產生代償反應性硬化沉積",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D388",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "口咽咀嚼肌痙攣性牙關緊閉（Trismus 急性張口困難）",
+    "icd10": "M26.69",
+    "alias": [
+      "牙關緊閉",
+      "咀嚼肌痙攣開口困難"
+    ],
+    "keywords": [
+      "張口度不足兩指寬度強行張嘴劇痛",
+      "咬肌翼內肌深部劇烈痙攣硬塊",
+      "常由深部智齒發炎誘發"
+    ],
+    "clinical_feature": "發炎刺激或外傷反射性引發翼內肌與顳肌咀嚼肌群持續強直收縮",
+    "recommended_blueprint": "neuromuscular"
+  },
+  {
+    "id": "D389",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "口底舌下腺囊腫（蛤蟆腫 Ranula 造口引流）",
+    "icd10": "K11.6",
+    "alias": [
+      "蛤蟆腫",
+      "舌下腺囊腫造袋"
+    ],
+    "keywords": [
+      "口底單側巨大淡藍色柔軟半透明囊腫",
+      "將舌頭抬高影響言語吞嚥",
+      "破裂後很快再充盈"
+    ],
+    "clinical_feature": "舌下腺主導管或其微小腺泡破裂黏液大量滯留口底軟組織形成假性囊腫",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D390",
+    "system": "dental",
+    "category": "進階牙周、黏膜與顎面外科",
+    "name": "外生性骨隆凸（下顎舌側骨突壓迫假牙潰瘍）",
+    "icd10": "M26.69",
+    "alias": [
+      "骨隆凸",
+      "下顎骨外生贅骨修磨"
+    ],
+    "keywords": [
+      "下顎小臼齒舌側堅硬光滑骨質隆起",
+      "配戴活動假牙摩擦破皮刺痛潰瘍",
+      "雙側對稱良性凸骨"
+    ],
+    "clinical_feature": "遺傳性或咀嚼咬合重力刺激引發皮質骨板局限良性代償性緻密骨質增生",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D391",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "重度齒列擁擠與骨性雙顎前突（暴牙唇閉不全）",
+    "icd10": "M26.2",
+    "alias": [
+      "骨性暴牙",
+      "齒列嚴重擁擠前突"
+    ],
+    "keywords": [
+      "門牙前突外翻嘴唇自然放鬆無法閉合",
+      "笑時牙齦外露牙齒交疊錯位",
+      "咀嚼咬合接觸面積小"
+    ],
+    "clinical_feature": "牙弓骨骼容積不足以容納恆齒齒質骨骼三維發育不協調代償外暴",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D392",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "乳牙過早喪失與混合齒列期空間維持器製作",
+    "icd10": "K00.6",
+    "alias": [
+      "空間維持器",
+      "乳牙早失空間喪失"
+    ],
+    "keywords": [
+      "乳臼齒提早蛀爛拔除鄰近大臼齒前傾",
+      "下方恆牙胚萌發路徑被阻擋嵌埋",
+      "骨弓空間急速縮小"
+    ],
+    "clinical_feature": "第二乳臼齒過早缺失導致第一大臼齒受推進力前傾位移侵佔後續小臼齒萌發空間",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D393",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "上顎正中多生牙（Mesiodens 埋伏阻生開窗拔除）",
+    "icd10": "K00.1",
+    "alias": [
+      "多生牙",
+      "上顎正中贅生齒"
+    ],
+    "keywords": [
+      "上門牙長出後中間縫隙極大超過三毫米",
+      "正中門齒遲遲不萌出或方向歪斜",
+      "X光見兩門牙間多生小錐齒"
+    ],
+    "clinical_feature": "牙胚板過度活躍形成額外齒胚多生於上顎正中骨內阻擋或推擠恆門齒",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D394",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "恆牙遲萌與異位萌發阻生（犬齒骨內水平埋伏牽引）",
+    "icd10": "K00.6",
+    "alias": [
+      "犬齒埋伏阻生",
+      "恆牙異位萌發開窗牽引"
+    ],
+    "keywords": [
+      "乳犬齒未脫落恆犬齒遲遲未出",
+      "骨內水平卡在鄰牙牙根上方壓迫吸收",
+      "顎側觸摸堅硬骨隆起"
+    ],
+    "clinical_feature": "恆犬齒萌發路徑過長偏差被側門齒阻擋而在顎骨深部水平嵌埋無法自行萌出",
+    "recommended_blueprint": "timeline"
+  },
+  {
+    "id": "D395",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "顳顎關節盤不可復位性前移位（關節交鎖卡住閉鎖）",
+    "icd10": "M26.62",
+    "alias": [
+      "顳顎關節盤閉鎖",
+      "關節卡住不可復位"
+    ],
+    "keywords": [
+      "張嘴咔咔聲突然消失伴隨張口度劇降",
+      "下巴向患側歪斜劇烈劇痛",
+      "無法咬合咀嚼乾硬食物"
+    ],
+    "clinical_feature": "關節盤雙板區韌帶撕裂鬆弛關節盤完全向前移位髁頭無法向前滑行卡在盤後",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D396",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "全口無牙齒槽脊重度吸收萎縮（刀刃狀齒脊增量）",
+    "icd10": "K08.23",
+    "alias": [
+      "齒槽骨嚴重萎縮",
+      "全口缺牙刀刃狀齒脊"
+    ],
+    "keywords": [
+      "活動假牙完全無吸附力說話晃動脫落",
+      "齒槽脊吸收扁平刀刃狀壓痛",
+      "面部下三分之一高度凹陷"
+    ],
+    "clinical_feature": "長期缺牙骨質缺乏功能性咀嚼咬合力刺激破骨吸收齒槽突進行性不可逆萎縮",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D397",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "人工植體周圍炎（Peri-implantitis 植體骨質吸收）",
+    "icd10": "T85.79",
+    "alias": [
+      "植體周圍炎",
+      "植牙牙周病骨流失"
+    ],
+    "keywords": [
+      "植牙周圍牙齦紅腫刷牙流血溢膿",
+      "X光見植體螺紋周圍杯狀骨質破壞流失",
+      "植體微搖動咬合痛"
+    ],
+    "clinical_feature": "牙菌斑致病菌在植體粗糙表面定殖引發宿主激烈發炎破壞周圍骨整合骨質",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D398",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "植牙周圍角化牙齦不足（黏膜拉扯發炎與上皮移植）",
+    "icd10": "K06.8",
+    "alias": [
+      "角化牙齦不足",
+      "游離牙齦移植FGG"
+    ],
+    "keywords": [
+      "植牙頸部周圍全為活動黏膜刷牙易痛",
+      "唇繫帶牽拉植體邊緣漏縫紅腫",
+      "植體周圍炎高風險"
+    ],
+    "clinical_feature": "拔牙後齒槽突吸收角化黏膜寬度縮窄小於兩毫米缺乏抵抗機械摩擦之堅韌屏障",
+    "recommended_blueprint": "surgical_action"
+  },
+  {
+    "id": "D399",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "牙周骨內袋缺損與引導組織再生術（GTR 再生膜骨粉）",
+    "icd10": "K05.32",
+    "alias": [
+      "牙周骨內袋",
+      "引導組織再生術GTR"
+    ],
+    "keywords": [
+      "單顆牙齒深層垂直骨吸收牙周袋逾六毫米",
+      "咀嚼無力牙齦反覆浮腫",
+      "牙齒位移鬆動"
+    ],
+    "clinical_feature": "深部發炎破壞牙周膜與齒槽骨形成垂直骨窩透過屏障膜阻擋上皮引導骨再生",
+    "recommended_blueprint": "contrast"
+  },
+  {
+    "id": "D400",
+    "system": "dental",
+    "category": "齒顎矯正、發育與進階贗復",
+    "name": "牙冠增長術（生物學寬度不足與深部蛀牙殘根修整）",
+    "icd10": "K06.8",
+    "alias": [
+      "牙冠增長術",
+      "生物學寬度重塑"
+    ],
+    "keywords": [
+      "深部蛀牙或牙裂邊界深達齒槽骨邊緣",
+      "假牙裝戴後牙齦持續慢性紅腫發炎",
+      "齒質固位高度不足"
+    ],
+    "clinical_feature": "修復體邊緣侵犯齒槽脊頂上方兩毫米之結合上皮與結締組織附著生物寬度",
+    "recommended_blueprint": "surgical_action"
+  }
+]

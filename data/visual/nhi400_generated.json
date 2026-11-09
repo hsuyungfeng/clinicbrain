@@ -1,0 +1,565 @@
+{
+  "summary": {
+    "total": 5,
+    "success": 5,
+    "failed": 0,
+    "success_rate": "100.0%"
+  },
+  "results": [
+    {
+      "index": 201,
+      "topic_key": "nhi-w201-j05-0",
+      "title": "急性喉氣管炎與哮吼衛教圖解",
+      "ir": {
+        "topic_key": "nhi-w201-j05-0",
+        "title": "急性喉氣管炎與哮吼衛教圖解",
+        "keywords": [
+          "幼兒犬吠咳",
+          "吸氣性喘鳴",
+          "喉頭黏膜水腫"
+        ],
+        "scenes": [
+          {
+            "blueprint": "pathology_mechanism",
+            "title": "急性喉氣管炎與哮病理機轉",
+            "caption": "病理機轉呈現急性喉氣管炎與哮之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+            "labels": [
+              {
+                "text": "致病因子",
+                "tone": "warning"
+              },
+              {
+                "text": "解剖結構",
+                "tone": "neutral"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "organ_system": "ent_airway",
+              "organ_label": "急性喉氣管炎",
+              "lesion_label": "病理充血",
+              "trigger_label": "病因刺激",
+              "defense_label": "屏障修復",
+              "severity_level": 3,
+              "accent_fill": "warn",
+              "step_labels": [
+                "致病因子刺激",
+                "局部組織反應",
+                "屏障功能重塑"
+              ]
+            }
+          },
+          {
+            "blueprint": "contrast",
+            "title": "處置對照分析",
+            "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+            "labels": [
+              {
+                "text": "不良習慣",
+                "tone": "warning"
+              },
+              {
+                "text": "積極照護",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "left": {
+                "title": "延誤處置",
+                "note": "加重局部負擔",
+                "mode": "airway_laryngeal_edema",
+                "core_effect": "dim",
+                "core_label": "組織充血",
+                "footnote": "未及時正規處置",
+                "unit_fill": "warn"
+              },
+              "right": {
+                "title": "積極照護",
+                "note": "專科穩定支持",
+                "mode": "airway_patency_restore",
+                "rows": 3,
+                "per_row": 5,
+                "footnote": "建立健康微循環",
+                "unit_fill": "ok"
+              }
+            }
+          },
+          {
+            "blueprint": "timeline",
+            "title": "生理復原歷程",
+            "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+            "labels": [
+              {
+                "text": "門診評估",
+                "tone": "neutral"
+              },
+              {
+                "text": "定期追蹤",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "milestones": [
+                "門診評估",
+                "常規處置",
+                "定期追蹤"
+              ],
+              "unit_effect": "glow_restored",
+              "connectors": "airway_mucosa_calm",
+              "units": 3,
+              "unit_fill": "accent"
+            }
+          }
+        ]
+      },
+      "status": "passed",
+      "code": "ok"
+    },
+    {
+      "index": 202,
+      "topic_key": "nhi-w202-j34-8",
+      "title": "慢性肥厚性鼻炎伴下鼻甲肥衛教圖解",
+      "ir": {
+        "topic_key": "nhi-w202-j34-8",
+        "title": "慢性肥厚性鼻炎伴下鼻甲肥衛教圖解",
+        "keywords": [
+          "長期鼻塞",
+          "交替性鼻阻",
+          "黏膜增生"
+        ],
+        "scenes": [
+          {
+            "blueprint": "pathology_mechanism",
+            "title": "慢性肥厚性鼻炎伴病理機轉",
+            "caption": "病理機轉呈現慢性肥厚性鼻炎伴之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+            "labels": [
+              {
+                "text": "致病因子",
+                "tone": "warning"
+              },
+              {
+                "text": "解剖結構",
+                "tone": "neutral"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "organ_system": "ent_airway",
+              "organ_label": "慢性肥厚性鼻",
+              "lesion_label": "病理充血",
+              "trigger_label": "病因刺激",
+              "defense_label": "屏障修復",
+              "severity_level": 3,
+              "accent_fill": "warn",
+              "step_labels": [
+                "致病因子刺激",
+                "局部組織反應",
+                "屏障功能重塑"
+              ]
+            }
+          },
+          {
+            "blueprint": "contrast",
+            "title": "處置對照分析",
+            "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+            "labels": [
+              {
+                "text": "不良習慣",
+                "tone": "warning"
+              },
+              {
+                "text": "積極照護",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "left": {
+                "title": "延誤處置",
+                "note": "加重局部負擔",
+                "mode": "airway_laryngeal_edema",
+                "core_effect": "dim",
+                "core_label": "組織充血",
+                "footnote": "未及時正規處置",
+                "unit_fill": "warn"
+              },
+              "right": {
+                "title": "積極照護",
+                "note": "專科穩定支持",
+                "mode": "airway_patency_restore",
+                "rows": 3,
+                "per_row": 5,
+                "footnote": "建立健康微循環",
+                "unit_fill": "ok"
+              }
+            }
+          },
+          {
+            "blueprint": "timeline",
+            "title": "生理復原歷程",
+            "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+            "labels": [
+              {
+                "text": "門診評估",
+                "tone": "neutral"
+              },
+              {
+                "text": "定期追蹤",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "milestones": [
+                "門診評估",
+                "常規處置",
+                "定期追蹤"
+              ],
+              "unit_effect": "glow_restored",
+              "connectors": "airway_mucosa_calm",
+              "units": 3,
+              "unit_fill": "accent"
+            }
+          }
+        ]
+      },
+      "status": "passed",
+      "code": "ok"
+    },
+    {
+      "index": 203,
+      "topic_key": "nhi-w203-j34-2",
+      "title": "鼻中隔彎曲伴繼發性鼻道狹衛教圖解",
+      "ir": {
+        "topic_key": "nhi-w203-j34-2",
+        "title": "鼻中隔彎曲伴繼發性鼻道狹衛教圖解",
+        "keywords": [
+          "單側持續鼻塞",
+          "鼻道氣流受阻",
+          "鼻中隔偏曲"
+        ],
+        "scenes": [
+          {
+            "blueprint": "pathology_mechanism",
+            "title": "鼻中隔彎曲伴繼發病理機轉",
+            "caption": "病理機轉呈現鼻中隔彎曲伴繼發之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+            "labels": [
+              {
+                "text": "致病因子",
+                "tone": "warning"
+              },
+              {
+                "text": "解剖結構",
+                "tone": "neutral"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "organ_system": "ent_airway",
+              "organ_label": "鼻中隔彎曲伴",
+              "lesion_label": "病理充血",
+              "trigger_label": "病因刺激",
+              "defense_label": "屏障修復",
+              "severity_level": 3,
+              "accent_fill": "warn",
+              "step_labels": [
+                "致病因子刺激",
+                "局部組織反應",
+                "屏障功能重塑"
+              ]
+            }
+          },
+          {
+            "blueprint": "contrast",
+            "title": "處置對照分析",
+            "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+            "labels": [
+              {
+                "text": "不良習慣",
+                "tone": "warning"
+              },
+              {
+                "text": "積極照護",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "left": {
+                "title": "延誤處置",
+                "note": "加重局部負擔",
+                "mode": "airway_laryngeal_edema",
+                "core_effect": "dim",
+                "core_label": "組織充血",
+                "footnote": "未及時正規處置",
+                "unit_fill": "warn"
+              },
+              "right": {
+                "title": "積極照護",
+                "note": "專科穩定支持",
+                "mode": "airway_patency_restore",
+                "rows": 3,
+                "per_row": 5,
+                "footnote": "建立健康微循環",
+                "unit_fill": "ok"
+              }
+            }
+          },
+          {
+            "blueprint": "timeline",
+            "title": "生理復原歷程",
+            "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+            "labels": [
+              {
+                "text": "門診評估",
+                "tone": "neutral"
+              },
+              {
+                "text": "定期追蹤",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "milestones": [
+                "門診評估",
+                "常規處置",
+                "定期追蹤"
+              ],
+              "unit_effect": "glow_restored",
+              "connectors": "airway_mucosa_calm",
+              "units": 3,
+              "unit_fill": "accent"
+            }
+          }
+        ]
+      },
+      "status": "passed",
+      "code": "ok"
+    },
+    {
+      "index": 204,
+      "topic_key": "nhi-w204-j35-2",
+      "title": "腺樣體肥大伴兒童睡眠呼吸衛教圖解",
+      "ir": {
+        "topic_key": "nhi-w204-j35-2",
+        "title": "腺樣體肥大伴兒童睡眠呼吸衛教圖解",
+        "keywords": [
+          "張口呼吸",
+          "打鼾夜醒",
+          "腺樣體面容"
+        ],
+        "scenes": [
+          {
+            "blueprint": "pathology_mechanism",
+            "title": "腺樣體肥大伴兒童病理機轉",
+            "caption": "病理機轉呈現腺樣體肥大伴兒童之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+            "labels": [
+              {
+                "text": "致病因子",
+                "tone": "warning"
+              },
+              {
+                "text": "解剖結構",
+                "tone": "neutral"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "organ_system": "ent_airway",
+              "organ_label": "腺樣體肥大伴",
+              "lesion_label": "病理充血",
+              "trigger_label": "病因刺激",
+              "defense_label": "屏障修復",
+              "severity_level": 3,
+              "accent_fill": "warn",
+              "step_labels": [
+                "致病因子刺激",
+                "局部組織反應",
+                "屏障功能重塑"
+              ]
+            }
+          },
+          {
+            "blueprint": "contrast",
+            "title": "處置對照分析",
+            "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+            "labels": [
+              {
+                "text": "不良習慣",
+                "tone": "warning"
+              },
+              {
+                "text": "積極照護",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "left": {
+                "title": "延誤處置",
+                "note": "加重局部負擔",
+                "mode": "airway_laryngeal_edema",
+                "core_effect": "dim",
+                "core_label": "組織充血",
+                "footnote": "未及時正規處置",
+                "unit_fill": "warn"
+              },
+              "right": {
+                "title": "積極照護",
+                "note": "專科穩定支持",
+                "mode": "airway_patency_restore",
+                "rows": 3,
+                "per_row": 5,
+                "footnote": "建立健康微循環",
+                "unit_fill": "ok"
+              }
+            }
+          },
+          {
+            "blueprint": "timeline",
+            "title": "生理復原歷程",
+            "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+            "labels": [
+              {
+                "text": "門診評估",
+                "tone": "neutral"
+              },
+              {
+                "text": "定期追蹤",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "milestones": [
+                "門診評估",
+                "常規處置",
+                "定期追蹤"
+              ],
+              "unit_effect": "glow_restored",
+              "connectors": "airway_mucosa_calm",
+              "units": 3,
+              "unit_fill": "accent"
+            }
+          }
+        ]
+      },
+      "status": "passed",
+      "code": "ok"
+    },
+    {
+      "index": 205,
+      "topic_key": "nhi-w205-j38-2",
+      "title": "聲帶結節與音聲障礙衛教圖解",
+      "ir": {
+        "topic_key": "nhi-w205-j38-2",
+        "title": "聲帶結節與音聲障礙衛教圖解",
+        "keywords": [
+          "聲音嘶啞",
+          "發聲疲勞",
+          "高音裂音"
+        ],
+        "scenes": [
+          {
+            "blueprint": "pathology_mechanism",
+            "title": "聲帶結節與音聲障病理機轉",
+            "caption": "病理機轉呈現聲帶結節與音聲障之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+            "labels": [
+              {
+                "text": "致病因子",
+                "tone": "warning"
+              },
+              {
+                "text": "解剖結構",
+                "tone": "neutral"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "organ_system": "ent_airway",
+              "organ_label": "聲帶結節與音",
+              "lesion_label": "病理充血",
+              "trigger_label": "病因刺激",
+              "defense_label": "屏障修復",
+              "severity_level": 3,
+              "accent_fill": "warn",
+              "step_labels": [
+                "致病因子刺激",
+                "局部組織反應",
+                "屏障功能重塑"
+              ]
+            }
+          },
+          {
+            "blueprint": "contrast",
+            "title": "處置對照分析",
+            "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+            "labels": [
+              {
+                "text": "不良習慣",
+                "tone": "warning"
+              },
+              {
+                "text": "積極照護",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "left": {
+                "title": "延誤處置",
+                "note": "加重局部負擔",
+                "mode": "airway_laryngeal_edema",
+                "core_effect": "dim",
+                "core_label": "組織充血",
+                "footnote": "未及時正規處置",
+                "unit_fill": "warn"
+              },
+              "right": {
+                "title": "積極照護",
+                "note": "專科穩定支持",
+                "mode": "airway_patency_restore",
+                "rows": 3,
+                "per_row": 5,
+                "footnote": "建立健康微循環",
+                "unit_fill": "ok"
+              }
+            }
+          },
+          {
+            "blueprint": "timeline",
+            "title": "生理復原歷程",
+            "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+            "labels": [
+              {
+                "text": "門診評估",
+                "tone": "neutral"
+              },
+              {
+                "text": "定期追蹤",
+                "tone": "optimal"
+              }
+            ],
+            "duration_sec": 8.0,
+            "params": {
+              "milestones": [
+                "門診評估",
+                "常規處置",
+                "定期追蹤"
+              ],
+              "unit_effect": "glow_restored",
+              "connectors": "airway_mucosa_calm",
+              "units": 3,
+              "unit_fill": "accent"
+            }
+          }
+        ]
+      },
+      "status": "passed",
+      "code": "ok"
+    }
+  ]
+}

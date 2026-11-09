@@ -1932,26 +1932,36 @@ async function runVisualBatch(action) {
     syncVisualSelectionUi();
     let ok = 0;
     let failed = 0;
+    const reasons = new Set();
     try {
-        for (const id of ids) {
-            try {
-                const resp = await fetch(`/api/v1/admin/visuals/${id}/${action}`, {
-                    method: "POST",
-                    headers: getAuthHeaders(),
-                });
-                if (resp.ok) ok++;
-                else failed++;
-            } catch (e) {
-                failed++;
+        for (let k = 0; k < ids.length; k += 100) {
+            const chunk = ids.slice(k, k + 100);
+            const resp = await fetch("/api/v1/admin/visuals/batch", {
+                method: "POST",
+                headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify({ action, asset_ids: chunk }),
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                showToast(`批量${label}失敗：${apiErrorText(data, "格式不正確")}`, "error");
+                failed += chunk.length;
+                continue;
             }
+            ok += data.success_count || 0;
+            failed += data.failed_count || 0;
+            Object.values(data.failed_reasons || {}).forEach(r => reasons.add(String(r).split(":")[0]));
         }
         if (ok > 0) {
-            showToast(`已成功批量${label} ${ok} 筆動畫${failed > 0 ? `（${failed} 筆失敗）` : ""}`, "success");
+            const tail = failed ? `；${failed} 筆未通過（${Array.from(reasons).join("、") || "請逐筆檢視"}），仍保留於清單` : "";
+            showToast(`已成功批量${label} ${ok} 筆動畫${tail}`, failed > 0 ? "info" : "success");
         } else {
             showToast(`批量${label}失敗`, "error");
         }
         await loadVisuals();
         loadDashboardSummary();
+    } catch (e) {
+        console.error("批量審核異常:", e);
+        showToast("批量審核網路異常", "error");
     } finally {
         visualState.busy = false;
         syncVisualSelectionUi();

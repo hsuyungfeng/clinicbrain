@@ -934,6 +934,24 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 維護腳本：`scripts/dedup_visual_assets.py`（支援 `--dry-run` 預檢與安全批次刪除）。
   - 實跑成效：全庫原始 359 筆 approved 資產，成功清理淘汰 161 筆歷史舊版與雙軌冗餘列，完美精簡為 **198 筆唯一權威醫學動畫**，合規率 100%、24 秒循環率 100%、重複率 0%。
 
+### 2.43 臺灣健保 1-400 大基層疾病資料庫索引與 LLM 檢索對齊（Phase 40 新增）
+- **1-400 全景疾病目錄與索引架構**：
+  - 資料表：`nhi_catalog_1_400`（收錄前 200 項核心診斷與第 201 至 400 項次級盛行疾病，覆蓋西醫 120 項、中醫 50 項、牙醫 30 項，合計 400 筆標準化條目）。
+  - 全文檢索：`nhi_catalog_fts` 虛擬表（`tokenize='trigram'`），索引 `name`、`icd10`、`alias`、`keywords`、`clinical_feature` 等多維度臨床資訊。
+  - 權威種子檔案：
+    - `data/nhi_primary_care_1_400_index.json`：全量 400 筆疾病索引資料庫對應檔。
+    - `data/nhi_primary_care_201_400.json`：第 201 至 400 項專科種子目錄。
+- **LLM 檢索與選取模組 (`src/query/nhi_index.py`)**：
+  - 混合分流：查詢詞 $\ge 3$ 字元走 FTS5 trigram 檢索，小於 3 字元走多欄位 LIKE 備援。
+  - 精準查找：支援以編號（1～400）、ID（如 `W201`、`C321`、`D371`）或 `topic_key` 單筆檢索。
+  - 結構化提示組裝：`format_nhi_context_for_llm` 將檢索結果輸出為精簡專業之參考索引，標註疾病代碼、分類、核心機轉與 3 幕動畫可用性（`visual_available`），供門診諮詢 LLM 引用選取。
+- **次專科動畫規模化管線與安全入庫 (Phase 40 擴充)**：
+  - 專門支援第 201 至 400 項特異性臨床主題（眼科、耳鼻喉、泌尿生殖、牙周 GTR、中醫特種針法）。
+  - 擴充靜態藍圖規格（`src/visual/blueprints.py`）與向量引擎繪圖（`src/web/static/visual_engine.js`），全面支援 5 大次專科器官、次專科病理對照模式與時序修復連接。
+  - 建構任務清單編譯器 (`scripts/build_nhi400_manifest.py`) 與自癒批次生成器 (`scripts/generate_nhi400_visual_batch.py`)，嚴格達成零阿拉伯數字、無保證療效、24 秒三幕循環與自動自癒重試。
+  - 完成 Playwright 無頭 Chromium 抽幀審計測試 (`tests/test_nhi400_browser_render.py`)，確認各關鍵影格無半形數字殘留且 forward/reverse seek 100% 確定性。
+  - 透過安全入庫腳本 (`scripts/stage_nhi400_to_db.py`) 將 200 筆次專科草稿以 `review_status='pending'` 冪等寫入正式 `clinic.db`，使全庫總資產達到 400 筆（198 approved, 200 pending, 2 rejected），與 1-400 全景索引完美對齊。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：
@@ -1062,6 +1080,9 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
 * `src/scraper/distill_pipeline.py`：Phase 38 智能知識提煉管線，由網頁內文自動生成 pending FAQ 與 PageIndex 推理樹（`tests/test_scraper_distill_pipeline.py`）
 * `scripts/dedup_visual_assets.py`：Phase 39 視覺資產全庫去重與歷史舊版淘汰腳本（支援 `--dry-run`）
 * `src/visual/nhi_dedup.py`：Phase 39 健保 200 大疾病去重篩檢器（`data/nhi_primary_care_200.json` 目錄比對）
+* `data/nhi_primary_care_1_400_index.json`：Phase 40 臺灣健保基層門診 1-400 大疾病標準索引目錄（全景 400 筆，西醫 235、中醫 76、牙醫 48 與專科手術）
+* `data/nhi_primary_care_201_400.json`：Phase 40 第 201 至 400 項次級盛行疾病專科目錄（200 筆標準種子）
+* `src/query/nhi_index.py`：Phase 40 健保 1-400 疾病全景索引檢索與 LLM 選取模組（FTS5 trigram 混合分流，`tests/test_nhi_index.py`）
 * `OriginalData/`：NHI 原始資料（gitignored，261MB，唯讀參考）
 * `.planning/`：GSD 工作流程狀態（`HANDOFF.json`、`phases/`、`VISION-EXPANSION.md` 願景規劃）
 
@@ -1084,9 +1105,13 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 新增牙科 (`dental_oral`)、中醫 (`tcm_meridian`) 等專科圖元藍圖。
   - 後台實裝「臨床知識庫資產審核全景矩陣」與「🎬 醫學動畫管理」快捷膠囊。
   - 實施全庫視覺資產去重，剔除 161 筆歷史舊版，收斂為 198 筆唯一權威 24 秒醫學動畫。
-* **Phase 40：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
+* **Phase 40（已交付）：臺灣健保 201-400 大次級盛行疾病動畫管線與全景索引擴充 (NHI 201-400 Scale & Index Expansion)**
+  - 建立 1-400 大基層疾病資料庫全景索引（`nhi_catalog_1_400` + `nhi_catalog_fts`），提供 LLM 在診所諮詢時精準引用。
+  - 擴充第 201 至 400 項次專科解剖圖元（眼科黃斑部、耳鼻喉哮吼聲帶、泌尿精索、牙周 GTR、中醫特種針法）。
+  - DeepSeek 與本機雙模自癒生成 200 筆 24 秒動畫草稿，完成 Playwright 抽幀審計與 200 筆 pending 入庫（全庫收斂為 400 筆資產）。
+* **Phase 41：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
   - 在病人諮詢端點支援自適應推薦診所與院所特約醫師門診時段。
   - 動態關聯已昇華之基層 ICD-10 解說動畫卡，並強化門診就診預約引導。
-* **Phase 41：自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)**
+* **Phase 42：自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)**
   - 整合 `demo/visual/render_video.py` 與批次排程，將已審核通過之動畫卡自動渲染為 MP4 短片。
   - 供診所電視看板、衛教平板離線循環播放與社群媒體短影音推播。
