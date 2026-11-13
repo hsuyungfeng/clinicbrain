@@ -6,7 +6,7 @@ Wants=llama-server.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/hsu/Desktop/clinicbrain
+WorkingDirectory=/home/hsuyungfeng/DevSoft/clinicbrain
 Environment=PYTHONUNBUFFERED=1
 Nice=10
 IOSchedulingClass=idle
@@ -19,4 +19,4 @@ TimeoutStartSec=7200
 # 5. 建議先使用 --dry-run 在複本進行預演確認。
 # 6. 批次結束碼 0 代表正常完成或優雅略過（例如 LLM 離線），不視為服務失敗。
 # 7. 本專案絕不代為啟用或啟動任何系統服務，請使用者依系統管理指引自行規劃。
-ExecStart=/usr/bin/python3 /home/hsu/Desktop/clinicbrain/scripts/run_nightly_batch.py --db /home/hsu/Desktop/clinicbrain/clinic.db --allow-prod-db --max-faq-topics 5 --max-trees 3 --time-budget-seconds 3600
+ExecStart=/home/hsuyungfeng/DevSoft/clinicbrain/.venv/bin/python3 /home/hsuyungfeng/DevSoft/clinicbrain/scripts/run_nightly_batch.py --db /home/hsuyungfeng/DevSoft/clinicbrain/clinic.db --allow-prod-db --max-faq-topics 5 --max-trees 3 --time-budget-seconds 3600

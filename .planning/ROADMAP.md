@@ -42,7 +42,9 @@
 | 40. 台灣健保 201-400 大次級盛行疾病動畫管線與全景索引擴充 | 4/4 | Complete | 2026-11-09 |
 | 41. 動態規格標準化與 3D 臨床解剖探索 | 3/3 | Complete | 2026-11-11 |
 | 43. 自動化動態解說動畫影片佇列 | 3/3 | Complete | 2026-11-12 |
-| 44. 次世代生動向量視覺引擎全面升級 | 0/3 | In Progress | 2026-11-11 |
+| 44. 次世代生動向量視覺引擎全面升級 | 3/3 | Complete | 2026-11-11 |
+| 45. 3D 臨床解剖 WebGL 檢視組件實裝 | 3/3 | Complete | 2026-11-13 |
+| 46. 系統衛生、安全加固與回歸修復 | 3/3 | Complete | 2026-11-13 |
 
 ## Phase Details
 
@@ -372,6 +374,19 @@ Plans:
 - [x] 45-01-PLAN.md — 3D 解剖資產配置與 `<clinic-anatomy-viewer>` Web Component 核心渲染器實裝
 - [x] 45-02-PLAN.md — PageIndex 臨床推理樹關聯契約、事件匯流排與法規防線
 - [x] 45-03-PLAN.md — 前端 Web 整合、2D 確定性降級防線與 Hermes 獨立測試驗收
+
+### Phase 46: 系統衛生、安全加固與回歸修復 (System Hygiene, Security Hardening & Regression Recovery)
+
+**Goal**: 依據 `hydrogenimprovement.md` 之全維度體檢報告，修復 P0 測試回歸（DOM 安全與批次錯誤統計連坐）、補齊正式資料庫 `sync_logs` 表結構、收緊 API CORS 與常數時間金鑰認證、解除上傳端點事件迴圈阻塞、補齊 `pyproject.toml` 等基礎設施，並透過 herdr 協同調度獨立 Agent Hermes (`wA:p3`) 進行端到端獨立測試驗收。
+**Status**: In Progress
+**Depends on**: Phase 43（影片佇列）、Phase 45（3D 解剖檢視組件）
+**Requirements**: P46-P0-REGRESSION-FIX, P46-SECURITY-HARDENING, P46-ENGINEERING-INFRA, P46-HERMES-VERIFY
+**Plans**: 3 plans
+Plans:
+- [ ] 46-01-PLAN.md — P0 回歸修復、安全 DOM 重構與資料庫結構同步（Wave 1）
+- [ ] 46-02-PLAN.md — P0/P1 API 安全防禦加固、非同步事件迴圈解鎖與背景渲染護欄（Wave 2）
+- [ ] 46-03-PLAN.md — P1 工程基礎設施補齊、Systemd 路徑修復與 Herdr Hermes 獨立驗收（Wave 3）
+
 
 
 

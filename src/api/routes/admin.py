@@ -16,6 +16,7 @@ from typing import Any, Literal, Optional
 import unicodedata
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ...ingestion.convert_chinese import to_traditional
@@ -305,6 +306,107 @@ def _text_to_faq_drafts(
     return faqs_to_insert, len(paragraphs), rejected_paragraphs
 
 
+def _process_admin_upload_sync(
+    tmp_path: Path,
+    filename: str,
+    ext: str,
+    clean_clinic_id: Optional[str],
+    name: Optional[str],
+    preview_only: bool,
+    conn: sqlite3.Connection,
+) -> dict:
+    """在 threadpool 中同步處理檔案解析、文本萃取與資料庫寫入，不阻塞 FastAPI 事件迴圈。"""
+    raw_text = ""
+    # 優先嘗試 markitdown 轉 Markdown
+    try:
+        from ...ingestion.markdown_convert import convert_to_markdown
+        raw_text = convert_to_markdown(tmp_path)
+    except Exception:
+        raw_text = ""
+
+    # Fallback 萃取
+    if not raw_text:
+        if ext == ".docx":
+            try:
+                raw_text = extract_docx_text(tmp_path)
+            except Exception as e:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"無法解析 {filename}") from e
+        elif ext == ".xlsx":
+            try:
+                data_dict = extract_xlsx_text(tmp_path)
+            except Exception as e:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"無法解析 {filename}") from e
+            lines = []
+            for sheet, rows in data_dict.items():
+                lines.append(f"【工作表: {sheet}】")
+                for row in rows:
+                    row_str = " ; ".join(f"{k}: {v}" for k, v in row.items())
+                    lines.append(row_str)
+            raw_text = "\n".join(lines)
+        elif ext == ".pdf":
+            try:
+                import fitz  # PyMuPDF
+                doc = fitz.open(str(tmp_path))
+                pdf_lines = []
+                for page in doc:
+                    pdf_lines.append(page.get_text())
+                raw_text = "\n".join(pdf_lines)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"PDF 內文萃取失敗 ({filename}): 無法讀取文字層",
+                ) from e
+
+    if not raw_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"未能在檔案 {filename} 中萃取到有效文字內容",
+        )
+
+    name_clean = validate_display_name(name)
+    doc_topic = name_clean if name_clean else Path(filename).stem[:80]
+
+    faqs_to_insert, extracted_paragraphs_count, rejected_paragraphs = _text_to_faq_drafts(
+        raw_text=raw_text,
+        topic=doc_topic,
+        clinic_id=clean_clinic_id,
+    )
+
+    if preview_only:
+        return {
+            "status": "ok",
+            "preview_only": True,
+            "filename": filename,
+            "clinic_id": clean_clinic_id,
+            "extracted_paragraphs_count": extracted_paragraphs_count,
+            "rejected_paragraphs": rejected_paragraphs,
+            "faqs_preview": faqs_to_insert,
+        }
+
+    # 6. 寫入 faq_cache：web_upload 為審核閘門來源，唯一權威寫入路徑直接以 pending 寫入
+    try:
+        inserted, updated, unchanged = upsert_faqs(conn, faqs_to_insert, source_type="web_upload")
+    except RuntimeError as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="資料庫尚未完成審核欄位遷移，暫無法接收上傳",
+        ) from e
+
+    return {
+        "status": "ok",
+        "preview_only": False,
+        "filename": filename,
+        "clinic_id": clean_clinic_id,
+        "inserted": inserted,
+        "updated": updated,
+        "unchanged": unchanged,
+        "total_faqs": len(faqs_to_insert),
+        "rejected_paragraphs": rejected_paragraphs,
+        "review_status": "pending",
+    }
+
+
 @router.post("/upload", summary="診所衛教與項目文件上傳解析")
 async def upload_admin_file(
     file: UploadFile = File(...),
@@ -364,95 +466,16 @@ async def upload_admin_file(
         tmp_path = Path(tmp.name)
 
     try:
-        raw_text = ""
-        # 優先嘗試 markitdown 轉 Markdown
-        try:
-            from ...ingestion.markdown_convert import convert_to_markdown
-            raw_text = convert_to_markdown(tmp_path)
-        except Exception:
-            raw_text = ""
-
-        # Fallback 萃取
-        if not raw_text:
-            if ext == ".docx":
-                try:
-                    raw_text = extract_docx_text(tmp_path)
-                except Exception as e:
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"無法解析 {filename}") from e
-            elif ext == ".xlsx":
-                try:
-                    data_dict = extract_xlsx_text(tmp_path)
-                except Exception as e:
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"無法解析 {filename}") from e
-                lines = []
-                for sheet, rows in data_dict.items():
-                    lines.append(f"【工作表: {sheet}】")
-                    for row in rows:
-                        row_str = " ; ".join(f"{k}: {v}" for k, v in row.items())
-                        lines.append(row_str)
-                raw_text = "\n".join(lines)
-            elif ext == ".pdf":
-                try:
-                    import fitz  # PyMuPDF
-                    doc = fitz.open(str(tmp_path))
-                    pdf_lines = []
-                    for page in doc:
-                        pdf_lines.append(page.get_text())
-                    raw_text = "\n".join(pdf_lines)
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"PDF 內文萃取失敗 ({filename}): 無法讀取文字層",
-                    ) from e
-
-        if not raw_text.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"未能在檔案 {filename} 中萃取到有效文字內容",
-            )
-
-        name_clean = validate_display_name(name)
-        doc_topic = name_clean if name_clean else Path(filename).stem[:80]
-
-        faqs_to_insert, extracted_paragraphs_count, rejected_paragraphs = _text_to_faq_drafts(
-            raw_text=raw_text,
-            topic=doc_topic,
-            clinic_id=clean_clinic_id,
+        return await run_in_threadpool(
+            _process_admin_upload_sync,
+            tmp_path,
+            filename,
+            ext,
+            clean_clinic_id,
+            name,
+            preview_only,
+            conn,
         )
-
-        if preview_only:
-            return {
-                "status": "ok",
-                "preview_only": True,
-                "filename": filename,
-                "clinic_id": clean_clinic_id,
-                "extracted_paragraphs_count": extracted_paragraphs_count,
-                "rejected_paragraphs": rejected_paragraphs,
-                "faqs_preview": faqs_to_insert,
-            }
-
-        # 6. 寫入 faq_cache：web_upload 為審核閘門來源，唯一權威寫入路徑直接以 pending 寫入
-        try:
-            inserted, updated, unchanged = upsert_faqs(conn, faqs_to_insert, source_type="web_upload")
-        except RuntimeError as e:
-            conn.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="資料庫尚未完成審核欄位遷移，暫無法接收上傳",
-            ) from e
-
-        return {
-            "status": "ok",
-            "preview_only": False,
-            "filename": filename,
-            "clinic_id": clinic_id,
-            "inserted": inserted,
-            "updated": updated,
-            "unchanged": unchanged,
-            "total_faqs": len(faqs_to_insert),
-            "rejected_paragraphs": rejected_paragraphs,
-            "review_status": "pending",
-        }
     finally:
         if tmp_path.exists():
             try:

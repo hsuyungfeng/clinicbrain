@@ -41,10 +41,13 @@ def create_app() -> FastAPI:
     )
 
     # 跨來源資源共享 (CORS) 設定
+    # 安全防護：禁止 allow_origins=["*"] 與 allow_credentials=True 並存（防止反射憑證漏洞）
+    cors_origins = config.cors_origins
+    is_wildcard = "*" in cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=cors_origins,
+        allow_credentials=not is_wildcard,
         allow_methods=["*"],
         allow_headers=["*"],
     )

@@ -69,7 +69,7 @@ class BatchConfig:
     prefill_seed_path: Optional[Path] = None
     now_fn: Optional[Callable[[], datetime]] = None
     prefill_llm_call: Optional[Callable[[str], str]] = None
-    skip_video_render: bool = False
+    skip_video_render: bool = True
     video_render_limit: Optional[int] = None
     video_render_aspect: str = "landscape"
 
@@ -616,7 +616,7 @@ def run_batch(
                 summary.videos_rendered = v_res.get("rendered", 0)
                 summary.videos_skipped = v_res.get("skipped", 0)
                 summary.videos_failed = v_res.get("failed", 0)
-                summary.errors += v_res.get("failed", 0)
+                # 影片渲染為多媒體輸出階段，失敗獨立記錄於 videos_failed，不連坐污染核心知識庫 errors 統計
                 logger.info(
                     "video_render_stage_completed",
                     rendered=summary.videos_rendered,
@@ -625,7 +625,6 @@ def run_batch(
                 )
             except Exception as e:
                 summary.videos_failed += 1
-                summary.errors += 1
                 logger.warning("video_render_stage_failed", error=str(e))
 
         summary.status = "completed"

@@ -1672,20 +1672,19 @@ async function loadTrees() {
         if (trees.length === 0) {
             if (status === "pending") {
                 const emptyBox = el("div", "p-8 text-center bg-white rounded-lg border border-slate-200 shadow-sm my-4");
-                emptyBox.innerHTML = `
-                    <div class="text-3xl mb-2">🎉</div>
-                    <h4 class="font-bold text-slate-800 text-base mb-1">目前無待簽核的臨床決策樹</h4>
-                    <p class="text-xs text-slate-500 mb-4">所有臨床決策推理樹皆已通過審核並正式發布上線。</p>
-                    <button type="button" id="btnSwitchApprovedTrees" class="btn btn-primary px-4 py-2 text-xs font-semibold">
-                        👉 立即查看已發布決策樹 (88 筆)
-                    </button>
-                `;
-                container.replaceChildren(emptyBox);
-                document.getElementById("btnSwitchApprovedTrees")?.addEventListener("click", () => {
+                const icon = el("div", "text-3xl mb-2", "🎉");
+                const title = el("h4", "font-bold text-slate-800 text-base mb-1", "目前無待簽核的臨床決策樹");
+                const desc = el("p", "text-xs text-slate-500 mb-4", "所有臨床決策推理樹皆已通過審核並正式發布上線。");
+                const btn = el("button", "btn btn-primary px-4 py-2 text-xs font-semibold", "👉 立即查看已發布決策樹");
+                btn.type = "button";
+                btn.id = "btnSwitchApprovedTrees";
+                btn.addEventListener("click", () => {
                     const sel = document.getElementById("treesFilterStatus");
                     if (sel) sel.value = "approved";
                     loadTrees();
                 });
+                emptyBox.append(icon, title, desc, btn);
+                container.replaceChildren(emptyBox);
             } else {
                 setStatusBox(container, "🌱 目前無相符之臨床決策推理樹草稿。", "empty");
             }

@@ -20,6 +20,13 @@ def _read_patient_clinic_id() -> Optional[str]:
     return s if s else None
 
 
+def _read_cors_origins() -> list[str]:
+    val = os.getenv("CLINICBRAIN_CORS_ORIGINS", "").strip()
+    if not val:
+        return ["http://127.0.0.1:8000", "http://localhost:8000", "http://127.0.0.1:8080"]
+    return [s.strip() for s in val.split(",") if s.strip()]
+
+
 @dataclass
 class APIConfig:
     host: str = os.getenv("CLINICBRAIN_HOST", "127.0.0.1")
@@ -31,6 +38,7 @@ class APIConfig:
     cache_stats_enabled: bool = os.getenv("CLINICBRAIN_CACHE_STATS", "true").lower() in ("true", "1", "yes")
     db_path: Path = Path(os.getenv("CLINICBRAIN_DB_PATH", str(PROJECT_ROOT / "clinic.db")))
     enable_docs: bool = os.getenv("CLINICBRAIN_ENABLE_DOCS", "true").lower() in ("true", "1", "yes")
+    cors_origins: list[str] = field(default_factory=_read_cors_origins)
 
     # 匿名病人諮詢（/api/v1/general/consult）固定診所範圍：
     # 顯式設定的窄例外，沒有預設值（無字面值）；由伺服器設定而非請求決定；

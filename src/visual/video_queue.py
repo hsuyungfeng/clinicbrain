@@ -39,6 +39,10 @@ DEFAULT_CLINIC_INFO = {
 
 AspectType = Literal["landscape", "portrait"]
 
+# 背景渲染防重入互斥鎖
+_rendering_topics: set[str] = set()
+_rendering_lock = threading.Lock()
+
 
 def compute_ir_sha256(ir_data: Any) -> str:
     """計算 IR 結構的標準化 SHA-256 雜湊值。"""
@@ -173,7 +177,14 @@ def render_asset_to_video(
         except Exception:
             pass
 
-    # 4. 啟動臨時 HTTP 伺服器並掛載記憶體動態 Bundle
+    # 4. 防重入檢查：確認同一主題與規格未在進行中
+    task_key = f"{topic_key}_{aspect}"
+    with _rendering_lock:
+        if task_key in _rendering_topics:
+            raise RuntimeError(f"主題 {topic_key} ({aspect}) 正在背景渲染中，請勿重複提交")
+        _rendering_topics.add(task_key)
+
+    # 5. 啟動臨時 HTTP 伺服器並掛載記憶體動態 Bundle
     # 命名符合 player.js 的 BUNDLE_PATTERN (字母開頭，以 .json 結尾)
     bundle_rel_path = f"dynamic/{topic_key}_{aspect}.json"
     bundle_url_path = f"/{bundle_rel_path}"
@@ -186,6 +197,7 @@ def render_asset_to_video(
     server_thread.start()
 
     tmp_dir = Path(tempfile.mkdtemp(prefix=f"vid_{topic_key}_{aspect}_"))
+    tmp_mp4 = out_dir / f".{mp4_filename}.tmp"
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch()
@@ -254,10 +266,16 @@ def render_asset_to_video(
             "fast",
             "-movflags",
             "+faststart",
-            str(mp4_path),
+            str(tmp_mp4),
         ]
 
-        subprocess.run(ffmpeg_cmd, check=True)
+        try:
+            subprocess.run(ffmpeg_cmd, check=True, timeout=180)
+            tmp_mp4.replace(mp4_path)
+        except Exception:
+            if tmp_mp4.exists():
+                tmp_mp4.unlink(missing_ok=True)
+            raise
 
         # 6. 寫入 metadata sidecar
         meta_data = {
@@ -282,6 +300,8 @@ def render_asset_to_video(
             "size_bytes": mp4_path.stat().st_size,
         }
     finally:
+        with _rendering_lock:
+            _rendering_topics.discard(task_key)
         shutil.rmtree(tmp_dir, ignore_errors=True)
         server.shutdown()
         server.server_close()
