@@ -1735,19 +1735,6 @@ function createTreeCard(tree) {
         const box = el("div", "tree-section-box");
         const headRow = el("div", "flex items-center justify-between mb-1");
         headRow.appendChild(el("div", "tree-section-name", s.name));
-        const btnFocus = el("button", "text-[11px] text-sky-600 hover:text-sky-800 hover:underline cursor-pointer", "🎯 聚焦 3D 解剖");
-        btnFocus.type = "button";
-        btnFocus.addEventListener("click", () => {
-            // 自動展開該卡片的 3D 檢視器（若尚未展開）
-            const existingViewer = card.querySelector("clinic-anatomy-viewer");
-            if (!existingViewer) {
-                btnToggle3D.click();
-            }
-            window.dispatchEvent(new CustomEvent("anatomy:focus-step", {
-                detail: { doc_id: tree.doc_id, step_key: s.key }
-            }));
-        });
-        headRow.appendChild(btnFocus);
         box.appendChild(headRow);
 
         box.appendChild(el("div", "tree-section-content", s.content || "（無內容）"));
@@ -1761,10 +1748,6 @@ function createTreeCard(tree) {
     });
     card.appendChild(grid);
 
-    // 3D 解剖檢視容器（預設摺疊）
-    const anatomyContainer = el("div", "tree-anatomy-wrapper hidden mt-3 p-2 bg-slate-900 rounded-xl border border-slate-700");
-    card.appendChild(anatomyContainer);
-
     // Summary Box
     if (tree.summary_text) {
         const sumBox = el("div", "tree-summary-box");
@@ -1775,28 +1758,6 @@ function createTreeCard(tree) {
 
     // Actions
     const actions = el("div", "tree-card-actions");
-
-    const btnToggle3D = el("button", "btn btn-soft text-sky-700 border-sky-200 hover:bg-sky-50", "🧬 3D 臨床解剖視圖");
-    btnToggle3D.type = "button";
-    btnToggle3D.addEventListener("click", () => {
-        if (anatomyContainer.classList.contains("hidden")) {
-            anatomyContainer.classList.remove("hidden");
-            btnToggle3D.textContent = "🧬 收起 3D 視圖";
-            btnToggle3D.classList.add("bg-sky-100");
-            if (!anatomyContainer.querySelector("clinic-anatomy-viewer")) {
-                const viewer = document.createElement("clinic-anatomy-viewer");
-                viewer.setAttribute("doc-id", tree.doc_id);
-                viewer.style.height = "420px";
-                viewer.style.display = "block";
-                anatomyContainer.appendChild(viewer);
-            }
-        } else {
-            anatomyContainer.classList.add("hidden");
-            btnToggle3D.textContent = "🧬 3D 臨床解剖視圖";
-            btnToggle3D.classList.remove("bg-sky-100");
-        }
-    });
-    actions.appendChild(btnToggle3D);
 
     const btnEdit = el("button", "btn btn-soft", "✏️ 編輯 / 填寫醫囑");
     btnEdit.addEventListener("click", () => openTreeEditModal(tree));
