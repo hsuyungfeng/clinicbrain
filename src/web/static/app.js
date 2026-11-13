@@ -1768,7 +1768,6 @@ function createTreeCard(tree) {
             if (!anatomyContainer.querySelector("clinic-anatomy-viewer")) {
                 const viewer = document.createElement("clinic-anatomy-viewer");
                 viewer.setAttribute("doc-id", tree.doc_id);
-                viewer.setAttribute("model-src", "/static/anatomy/neurovascular.glb");
                 viewer.style.height = "420px";
                 anatomyContainer.appendChild(viewer);
             }

@@ -66,6 +66,15 @@ class TestAnatomyCatalog:
         assert meta["disclaimer"] == STATUTORY_ANATOMY_DISCLAIMER_ZH_TW
         assert "個人體質差異" in meta["disclaimer"]
 
+    def test_canonicalize_prefix_and_synonyms(self):
+        """驗證機構代碼前綴 (如 3503264627-paronychia-matrixectomy) 與別名自動對應。"""
+        meta_prefix = get_anatomy_metadata("3503264627-paronychia-matrixectomy")
+        assert meta_prefix["anatomy_target"] == "nail_germinal_matrix"
+        assert "甲床" in meta_prefix["specialty_zh"]
+
+        meta_pico = get_anatomy_metadata("picosecond-laser-rejuvenation")
+        assert meta_pico["anatomy_target"] == "epidermal_dermal_junction"
+
     def test_get_anatomy_metadata_unknown_fallback(self):
         """查詢未知 doc_id 保守回傳預設通用解剖設定（Fail-Safe）。"""
         meta = get_anatomy_metadata("non-existent-surgery-xyz")

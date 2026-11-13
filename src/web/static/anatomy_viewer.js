@@ -392,14 +392,14 @@ export class ClinicAnatomyViewer extends HTMLElement {
       fillLight.position.set(-3, -2, -2);
       this.scene.add(fillLight);
 
-      // 7. 載入模型與配置
-      await this._loadModel();
-
-      // 8. 載入並套用元資料 (若有)
+      // 7. 先載入並套用解剖中繼資料 (取得該療程特定的 model_src、相機視角與解剖層次)
       const docId = this.getAttribute('doc-id');
       if (docId) {
         await this.loadAnatomyForDoc(docId);
       }
+
+      // 8. 依據中繼資料載入專屬 3D 模型與光影
+      await this._loadModel();
 
       this._initialized = true;
       loader.classList.add('hidden');
@@ -425,7 +425,7 @@ export class ClinicAnatomyViewer extends HTMLElement {
   }
 
   async _loadModel() {
-    const modelSrc = this.getAttribute('model-src') || '/static/anatomy/neurovascular.glb';
+    const modelSrc = this.getAttribute('model-src') || (this._metadata && this._metadata.model_src) || '/static/anatomy/neurovascular.glb';
     const loader = new GLTFLoader();
 
     return new Promise((resolve, reject) => {
@@ -702,49 +702,259 @@ export class ClinicAnatomyViewer extends HTMLElement {
     ctx.fillStyle = '#090d16';
     ctx.fillRect(0, 0, w, h);
 
-    // 繪製解剖剖面示意圖 (表皮 -> 真皮 -> 皮下脂肪 -> SMAS筋膜 -> 肌肉)
-    const layers = [
-      { name: '表皮層 (Epidermis, 0.1mm)', color: '#fed7aa', y: 40, h: 25 },
-      { name: '真皮層 (Dermis, 1.5mm)', color: '#fdba74', y: 70, h: 40 },
-      { name: '皮下脂肪層 (Subcutaneous Fat, 3.0mm)', color: '#fef08a', y: 115, h: 55 },
-      { name: '淺筋膜層 (SMAS Layer, 4.5mm)', color: '#38bdf8', y: 175, h: 30, isTarget: true },
-      { name: '深層肌肉與神經走行區 (Deep Muscle & Nerve)', color: '#f87171', y: 210, h: 65, isWarning: true }
-    ];
+    const target = (this._metadata && this._metadata.anatomy_target) || 'facial_smas';
 
-    layers.forEach((layer) => {
-      ctx.fillStyle = layer.color;
-      ctx.globalAlpha = layer.isTarget ? 0.95 : 0.4;
-      ctx.fillRect(60, layer.y, w - 120, layer.h);
-
-      ctx.strokeStyle = layer.isTarget ? '#38bdf8' : (layer.isWarning ? '#ef4444' : '#64748b');
-      ctx.lineWidth = layer.isTarget ? 2 : 1;
-      ctx.strokeRect(60, layer.y, w - 120, layer.h);
-
-      ctx.globalAlpha = 1.0;
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(layer.name, 75, layer.y + layer.h / 2 + 4);
-    });
-
-    // 繪製治療探頭聚焦點或穿透向量
-    ctx.fillStyle = '#38bdf8';
-    ctx.beginPath();
-    ctx.arc(w / 2, 190, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = '#38bdf8';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(w / 2, 20);
-    ctx.lineTo(w / 2, 190);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (target === 'nail_germinal_matrix') {
+      // 甲溝炎甲床解剖示意圖
+      this._drawNailAnatomy(ctx, w, h, stepKey, action);
+    } else if (target === 'apocrine_gland_dermal_junction') {
+      // 頂漿汗腺狐臭解剖示意圖
+      this._drawApocrineAnatomy(ctx, w, h, stepKey, action);
+    } else if (target === 'epidermoid_cyst_capsule') {
+      // 粉瘤囊壁解剖示意圖
+      this._drawCystAnatomy(ctx, w, h, stepKey, action);
+    } else if (target === 'epidermal_dermal_junction') {
+      // 表皮黑色素與雷射解剖示意圖
+      this._drawLaserDermisAnatomy(ctx, w, h, stepKey, action);
+    } else if (target === 'neuromuscular_junction') {
+      // 神經肌肉接合處解剖示意圖
+      this._drawNMJAnatomy(ctx, w, h, stepKey, action);
+    } else {
+      // 筋膜層與深層組織剖面示意圖
+      this._drawFascialLayersAnatomy(ctx, w, h, stepKey, action);
+    }
 
     // 步驟解說文字
     ctx.fillStyle = '#94a3b8';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`【當前步驟：${stepKey}】 ${caption}`, w / 2, h - 25);
+    ctx.fillText(`【當前步驟：${stepKey}】 ${caption}`, w / 2, h - 20);
+  }
+
+  _drawFascialLayersAnatomy(ctx, w, h, stepKey, action) {
+    const layers = [
+      { name: '表皮層 (Epidermis, 0.1mm)', color: '#fed7aa', y: 35, h: 25 },
+      { name: '真皮層 (Dermis, 1.5mm)', color: '#fdba74', y: 65, h: 40 },
+      { name: '皮下脂肪層 (Subcutaneous Fat, 3.0mm)', color: '#fef08a', y: 110, h: 50 },
+      { name: '淺筋膜層 (SMAS Layer, 4.5mm)', color: '#38bdf8', y: 165, h: 32, isTarget: true },
+      { name: '深層肌肉與顏面神經走行 (Muscle & Nerve Branch)', color: '#f87171', y: 202, h: 65, isWarning: true }
+    ];
+
+    layers.forEach((layer) => {
+      ctx.fillStyle = layer.color;
+      ctx.globalAlpha = layer.isTarget ? 0.95 : 0.4;
+      ctx.fillRect(50, layer.y, w - 100, layer.h);
+
+      ctx.strokeStyle = layer.isTarget ? '#38bdf8' : (layer.isWarning ? '#ef4444' : '#64748b');
+      ctx.lineWidth = layer.isTarget ? 2 : 1;
+      ctx.strokeRect(50, layer.y, w - 100, layer.h);
+
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(layer.name, 65, layer.y + layer.h / 2 + 4);
+    });
+
+    // 治療能量焦點
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(w / 2, 180, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(w / 2, 20);
+    ctx.lineTo(w / 2, 180);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  _drawNailAnatomy(ctx, w, h, stepKey, action) {
+    // 指甲縱切面解剖
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(50, 40, w - 100, 220);
+
+    // 末節指骨
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.roundRect(100, 170, w - 200, 60, 16);
+    ctx.fill();
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('末節趾骨 (Distal Phalanx)', 120, 205);
+
+    // 甲床 (Nail Bed)
+    ctx.fillStyle = '#fca5a5';
+    ctx.fillRect(140, 105, 300, 35);
+    ctx.fillStyle = '#991b1b';
+    ctx.fillText('甲床 (Nail Bed)', 160, 128);
+
+    // 側甲襞 / 發炎肉芽腫
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(120, 110, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('卷甲嵌入/肉芽腫', 80, 85);
+
+    // 甲基質生長中心 (Germinal Matrix)
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(80, 105, 55, 45);
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(80, 105, 55, 45);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('甲基質生長點', 70, 162);
+
+    // 甲板 (Nail Plate)
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(100, 92, 340, 12);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('甲板 (Nail Plate)', 240, 101);
+  }
+
+  _drawApocrineAnatomy(ctx, w, h, stepKey, action) {
+    // 腋下頂漿腺解剖
+    ctx.fillStyle = '#fed7aa'; // 表皮
+    ctx.fillRect(50, 40, w - 100, 25);
+    ctx.fillStyle = '#fdba74'; // 真皮
+    ctx.fillRect(50, 68, w - 100, 65);
+    ctx.fillStyle = '#fef08a'; // 皮下脂肪
+    ctx.fillRect(50, 136, w - 100, 95);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('表皮與真皮層 (Epidermis & Dermis)', 70, 75);
+    ctx.fillText('皮下脂肪層 (Subcutaneous Layer)', 70, 160);
+
+    // 頂漿汗腺團塊 (黃色腺體)
+    ctx.fillStyle = '#eab308';
+    for (let x = 120; x < w - 120; x += 36) {
+      ctx.beginPath();
+      ctx.arc(x, 134, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ca8a04';
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#854d0e';
+    ctx.fillText('🎯 頂漿腺體分佈區 (微創旋轉刀刨除層面)', 140, 120);
+
+    // 深層血管與神經 (禁刮警告區)
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(80, 205, w - 160, 20);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('⚠️ 深層腋動靜脈與神經叢安全邊界', 120, 219);
+  }
+
+  _drawCystAnatomy(ctx, w, h, stepKey, action) {
+    // 粉瘤囊腫解剖
+    ctx.fillStyle = '#fed7aa';
+    ctx.fillRect(50, 40, w - 100, 30);
+    ctx.fillStyle = '#fdba74';
+    ctx.fillRect(50, 72, w - 100, 170);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('皮膚真皮與皮下組織', 70, 62);
+
+    // 開口 punctum
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.arc(w / 2, 42, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 粉瘤囊腫 (角質內容物 + 上皮囊壁)
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(w / 2, 145, 52, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.fillStyle = '#78350f';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('角質皮脂內容物', w / 2, 140);
+    ctx.fillText('(完整微創旋轉抽吸)', w / 2, 156);
+
+    ctx.fillStyle = '#b45309';
+    ctx.fillText('圍繞之完整角質囊壁 (必須整顆剝除防復發)', w / 2, 215);
+  }
+
+  _drawLaserDermisAnatomy(ctx, w, h, stepKey, action) {
+    // 雷射除斑與膚質重塑
+    ctx.fillStyle = '#fed7aa';
+    ctx.fillRect(50, 40, w - 100, 40);
+    ctx.fillStyle = '#fdba74';
+    ctx.fillRect(50, 82, w - 100, 160);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('表皮基底層 (Basal Layer)', 70, 65);
+    ctx.fillText('真皮乳突層與網狀層 (Papillary & Reticular Dermis)', 70, 110);
+
+    // 黑色素母細胞與黑素小體
+    ctx.fillStyle = '#3f3f46';
+    for (let x = 100; x < w - 100; x += 28) {
+      ctx.beginPath();
+      ctx.arc(x, 80, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#18181b';
+    ctx.fillText('黑色素團塊 (Melanin Cluster)', 120, 96);
+
+    // 雷射脈衝光束 (光震波空泡 LIOB)
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 20, 20);
+    ctx.lineTo(w / 2 - 5, 80);
+    ctx.moveTo(w / 2 + 20, 20);
+    ctx.lineTo(w / 2 + 5, 80);
+    ctx.stroke();
+
+    ctx.fillStyle = '#06b6d4';
+    ctx.beginPath();
+    ctx.arc(w / 2, 80, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0891b2';
+    ctx.fillText('⚡ 皮秒光震波粉碎與空泡化反應 (LIOB)', w / 2 + 18, 84);
+  }
+
+  _drawNMJAnatomy(ctx, w, h, stepKey, action) {
+    // 肉毒桿菌神經肌肉接合處 NMJ
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fillRect(50, 40, w - 100, 220);
+
+    // 運動神經突觸
+    ctx.fillStyle = '#818cf8';
+    ctx.beginPath();
+    ctx.arc(w / 2, 90, 45, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('運動神經末梢 (Motor Nerve Axon)', w / 2, 75);
+
+    // 乙醯膽鹼囊泡 (被肉毒阻斷)
+    ctx.fillStyle = '#c084fc';
+    for (let ox = -25; ox <= 25; ox += 12) {
+      ctx.beginPath();
+      ctx.arc(w / 2 + ox, 96, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#f43f5e';
+    ctx.fillText('🛑 肉毒桿菌素阻斷乙醯膽鹼 (ACh) 釋放', w / 2, 120);
+
+    // 肌肉纖維
+    ctx.fillStyle = '#e11d48';
+    ctx.fillRect(80, 140, w - 160, 80);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('目標咀嚼肌/表情肌纖維 (放鬆微縮小)', w / 2, 185);
   }
 
   _animate() {
