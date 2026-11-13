@@ -1670,7 +1670,25 @@ async function loadTrees() {
         const data = await resp.json();
         const trees = data.trees || [];
         if (trees.length === 0) {
-            setStatusBox(container, "🌱 目前無相符之臨床決策推理樹草稿。", "empty");
+            if (status === "pending") {
+                const emptyBox = el("div", "p-8 text-center bg-white rounded-lg border border-slate-200 shadow-sm my-4");
+                emptyBox.innerHTML = `
+                    <div class="text-3xl mb-2">🎉</div>
+                    <h4 class="font-bold text-slate-800 text-base mb-1">目前無待簽核的臨床決策樹</h4>
+                    <p class="text-xs text-slate-500 mb-4">所有臨床決策推理樹皆已通過審核並正式發布上線。</p>
+                    <button type="button" id="btnSwitchApprovedTrees" class="btn btn-primary px-4 py-2 text-xs font-semibold">
+                        👉 立即查看已發布決策樹 (88 筆)
+                    </button>
+                `;
+                container.replaceChildren(emptyBox);
+                document.getElementById("btnSwitchApprovedTrees")?.addEventListener("click", () => {
+                    const sel = document.getElementById("treesFilterStatus");
+                    if (sel) sel.value = "approved";
+                    loadTrees();
+                });
+            } else {
+                setStatusBox(container, "🌱 目前無相符之臨床決策推理樹草稿。", "empty");
+            }
             return;
         }
         container.replaceChildren();

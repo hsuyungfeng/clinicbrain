@@ -283,8 +283,8 @@
                 <div class="flex space-x-3 items-center flex-wrap gap-2">
                     <select id="treesFilterClinic" aria-label="診所篩選" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white"><option value="">全部診所</option></select>
                     <select id="treesFilterStatus" class="text-sm border border-gray-300 rounded px-3 py-1.5 bg-white">
+                        <option value="approved" selected>已發布 (approved)</option>
                         <option value="pending">待簽核 (pending)</option>
-                        <option value="approved">已發布 (approved)</option>
                         <option value="rejected">已駁回 (rejected)</option>
                         <option value="all">全部狀態 (all)</option>
                     </select>
@@ -605,9 +605,9 @@
         </div>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/admin/visual_engine.js?v=20261106-2"></script>
-    <script type="module" src="/admin/anatomy_viewer.js?v=20261113"></script>
-    <script src="/admin/app.js?v=20261106-2"></script>
+    <script src="/admin/visual_engine.js?v=20261113-5"></script>
+    <script type="module" src="/admin/anatomy_viewer.js?v=20261113-5"></script>
+    <script src="/admin/app.js?v=20261113-5"></script>
     <!-- 共用：新增診所對話框（任一機構代碼下拉選單選「＋ 新增診所」時開啟） -->
     <div id="clinicCreateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="clinicCreateTitle">
         <form id="clinicCreateForm" class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-lg p-6 space-y-3">

@@ -418,14 +418,24 @@ export class ClinicAnatomyViewer extends HTMLElement {
   async _loadModel() {
     const target = (this._metadata && this._metadata.anatomy_target) || 'facial_smas';
 
-    // 專科客製 3D 解剖模型：若非顱顏大體模型，直接建構生動逼真的專屬立體器官/組織結構
-    if (
-      target === 'nail_germinal_matrix' ||
-      target === 'apocrine_gland_dermal_junction' ||
-      target === 'epidermoid_cyst_capsule' ||
-      target === 'epidermal_dermal_junction' ||
-      target === 'neuromuscular_junction'
-    ) {
+    // 專科客製 3D 解剖模型：涵蓋 13 大臨床專科目標，建構逼真且獨一無二的專屬立體解剖結構
+    const specialtyTargets = [
+      'nail_germinal_matrix',
+      'apocrine_gland_dermal_junction',
+      'epidermoid_cyst_capsule',
+      'epidermal_dermal_junction',
+      'neuromuscular_junction',
+      'eyelid_levator_aponeurosis',
+      'nasal_cartilage_framework',
+      'mandibular_nerve_canal',
+      'facial_smas',
+      'subdermal_optical_fiber_smas',
+      'lipoma_fibrous_capsule',
+      'dermal_fibrous_septa',
+      'periosteal_supra_fat'
+    ];
+
+    if (specialtyTargets.includes(target)) {
       this._createSpecialty3DAnatomyMesh(target);
       return;
     }
@@ -705,19 +715,270 @@ export class ClinicAnatomyViewer extends HTMLElement {
       bulbMesh.name = 'synaptic_terminal';
       group.add(bulbMesh);
 
-    } else {
-      // 預設 SMAS 筋膜幾何層次
-      const fasciaGeo = new THREE.BoxGeometry(2.0, 0.15, 1.4);
-      const fasciaMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.5 });
-      const fasciaMesh = new THREE.Mesh(fasciaGeo, fasciaMat);
-      fasciaMesh.name = 'mesh_smas_layer';
-      group.add(fasciaMesh);
+    } else if (target === 'eyelid_levator_aponeurosis') {
+      // 👁️ 6. 雙眼皮與提眼瞼肌：瞼板、提眼瞼肌腱膜、眶隔脂肪、雙眼皮固定折線
+      // 瞼板 (Tarsal Plate - 緻密半月形結締組織)
+      const tarsalGeo = new THREE.CylinderGeometry(0.9, 0.9, 0.2, 32, 1, false, 0, Math.PI);
+      const tarsalMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.3 });
+      const tarsalMesh = new THREE.Mesh(tarsalGeo, tarsalMat);
+      tarsalMesh.rotation.x = Math.PI / 2;
+      tarsalMesh.position.set(0, -0.2, 0.2);
+      tarsalMesh.name = 'tarsal_plate';
+      group.add(tarsalMesh);
 
-      const deepGeo = new THREE.BoxGeometry(2.0, 0.6, 1.4);
-      const deepMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+      // 提眼瞼肌腱膜 (Levator Aponeurosis - 扇形粉紅肌腱附著)
+      const levatorGeo = new THREE.PlaneGeometry(1.6, 1.2, 8, 8);
+      const levatorMat = new THREE.MeshStandardMaterial({
+        color: 0xf43f5e,
+        emissive: 0x9f1239,
+        emissiveIntensity: 0.4,
+        side: THREE.DoubleSide
+      });
+      const levatorMesh = new THREE.Mesh(levatorGeo, levatorMat);
+      levatorMesh.rotation.x = -Math.PI / 4;
+      levatorMesh.position.set(0, 0.4, -0.2);
+      levatorMesh.name = 'levator_aponeurosis';
+      group.add(levatorMesh);
+
+      // 眶隔脂肪 (Orbital Fat - 內側與中間脂肪囊)
+      for (const x of [-0.45, 0.45]) {
+        const fatGeo = new THREE.SphereGeometry(0.22, 16, 16);
+        const fatMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 });
+        const fatMesh = new THREE.Mesh(fatGeo, fatMat);
+        fatMesh.position.set(x, 0.1, -0.05);
+        fatMesh.name = 'orbital_fat';
+        group.add(fatMesh);
+      }
+
+      // 眼瞼表皮與固定縫合點 (Skin Fold / Suture Line)
+      const skinGeo = new THREE.BoxGeometry(2.0, 0.08, 0.8);
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xfdba74, transparent: true, opacity: 0.7 });
+      const skinMesh = new THREE.Mesh(skinGeo, skinMat);
+      skinMesh.position.set(0, -0.15, 0.4);
+      skinMesh.name = 'eyelid_skin';
+      group.add(skinMesh);
+
+    } else if (target === 'nasal_cartilage_framework') {
+      // 👃 7. 結構式隆鼻：鼻骨、外側軟骨、大翼軟骨與鼻中膈支撐柱
+      // 堅硬鼻骨 (Nasal Bone)
+      const nasalBoneGeo = new THREE.ConeGeometry(0.5, 0.9, 4);
+      const nasalBoneMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2 });
+      const nasalBoneMesh = new THREE.Mesh(nasalBoneGeo, nasalBoneMat);
+      nasalBoneMesh.position.set(0, 0.7, 0);
+      nasalBoneMesh.rotation.y = Math.PI / 4;
+      nasalBoneMesh.name = 'nasal_bone';
+      group.add(nasalBoneMesh);
+
+      // 外側軟骨 (Upper Lateral Cartilages)
+      const ulcGeo = new THREE.BoxGeometry(0.65, 0.7, 0.4);
+      const ulcMat = new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.85 });
+      const ulcMesh = new THREE.Mesh(ulcGeo, ulcMat);
+      ulcMesh.position.set(0, 0.1, 0.1);
+      ulcMesh.name = 'lateral_cartilage';
+      group.add(ulcMesh);
+
+      // 鼻翼大軟骨 (Lower Alar Cartilage - 雙側海鷗形翼)
+      for (const side of [-1, 1]) {
+        const alarGeo = new THREE.TorusGeometry(0.24, 0.08, 12, 24, Math.PI);
+        const alarMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.5 });
+        const alarMesh = new THREE.Mesh(alarGeo, alarMat);
+        alarMesh.position.set(side * 0.26, -0.35, 0.3);
+        alarMesh.rotation.z = side * 0.4;
+        alarMesh.name = 'alar_cartilage';
+        group.add(alarMesh);
+      }
+
+      // 鼻中膈延長支撐柱 (Septal Extension Graft - 關鍵立體支撐柱)
+      const strutGeo = new THREE.BoxGeometry(0.12, 1.1, 0.55);
+      const strutMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.6 });
+      const strutMesh = new THREE.Mesh(strutGeo, strutMat);
+      strutMesh.position.set(0, -0.15, 0.15);
+      strutMesh.name = 'septal_strut';
+      group.add(strutMesh);
+
+    } else if (target === 'mandibular_nerve_canal') {
+      // 🦷 8. 下顎削骨與阻生齒：下顎骨體、下齒槽神經管走向與安全邊界
+      // 下顎骨主體 (Mandibular Body)
+      const jawGeo = new THREE.BoxGeometry(2.4, 1.1, 0.9);
+      const jawMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.3 });
+      const jawMesh = new THREE.Mesh(jawGeo, jawMat);
+      jawMesh.position.set(0, 0, 0);
+      jawMesh.name = 'mandible_body';
+      group.add(jawMesh);
+
+      // 下齒槽神經管 (Inferior Alveolar Canal - 絕對禁區鮮黃導管)
+      const canalGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.2, 16);
+      const canalMat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        emissive: 0xeab308,
+        emissiveIntensity: 0.8
+      });
+      const canalMesh = new THREE.Mesh(canalGeo, canalMat);
+      canalMesh.rotation.z = Math.PI / 2;
+      canalMesh.position.set(0, -0.18, 0.05);
+      canalMesh.name = 'inferior_alveolar_nerve';
+      group.add(canalMesh);
+
+      // 下顎角骨切除引導線 (Safe Osteotomy Line)
+      const cutLineGeo = new THREE.BoxGeometry(0.08, 1.0, 0.95);
+      const cutLineMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0xdc2626,
+        emissiveIntensity: 0.7,
+        wireframe: true
+      });
+      const cutLineMesh = new THREE.Mesh(cutLineGeo, cutLineMat);
+      cutLineMesh.position.set(0.7, -0.05, 0);
+      cutLineMesh.rotation.z = 0.35;
+      cutLineMesh.name = 'osteotomy_line';
+      group.add(cutLineMesh);
+
+    } else if (target === 'lipoma_fibrous_capsule') {
+      // 🟡 9. 脂肪瘤微創切除：深部肌肉層、包覆之完整纖維囊袋與分葉脂肪核心
+      // 深部肌肉基底
+      const muscleGeo = new THREE.BoxGeometry(2.2, 0.4, 1.6);
+      const muscleMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 });
+      const muscleMesh = new THREE.Mesh(muscleGeo, muscleMat);
+      muscleMesh.position.set(0, -0.6, 0);
+      muscleMesh.name = 'deep_muscle_fascia';
+      group.add(muscleMesh);
+
+      // 脂肪瘤分葉本體 (Lobulated Lipoma)
+      const lipomaGeo = new THREE.DodecahedronGeometry(0.65, 1);
+      const lipomaMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.6 });
+      const lipomaMesh = new THREE.Mesh(lipomaGeo, lipomaMat);
+      lipomaMesh.position.set(0, 0.05, 0);
+      lipomaMesh.name = 'lipoma_core';
+      group.add(lipomaMesh);
+
+      // 完整薄層纖維包膜 (Fibrous Capsule - 剝離界面)
+      const capGeo = new THREE.SphereGeometry(0.78, 20, 20);
+      const capMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.2,
+        side: THREE.DoubleSide
+      });
+      const capMesh = new THREE.Mesh(capGeo, capMat);
+      capMesh.position.set(0, 0.05, 0);
+      capMesh.name = 'fibrous_capsule';
+      group.add(capMesh);
+
+    } else if (target === 'dermal_fibrous_septa') {
+      // ⚡ 10. 電波拉皮：真皮層、立體垂直纖維中隔、皮下小葉與能量容積加熱柱
+      const dermisGeo = new THREE.BoxGeometry(2.2, 0.3, 1.4);
+      const dermisMat = new THREE.MeshStandardMaterial({ color: 0xfdba74, roughness: 0.4 });
+      const dermisMesh = new THREE.Mesh(dermisGeo, dermisMat);
+      dermisMesh.position.set(0, 0.5, 0);
+      dermisMesh.name = 'dermis_layer';
+      group.add(dermisMesh);
+
+      // 垂直纖維中隔 (Fibrous Septa)
+      for (let x = -0.7; x <= 0.7; x += 0.35) {
+        const septaGeo = new THREE.BoxGeometry(0.04, 0.7, 1.2);
+        const septaMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.3 });
+        const septaMesh = new THREE.Mesh(septaGeo, septaMat);
+        septaMesh.position.set(x, 0.0, 0);
+        septaMesh.name = 'fibrous_septa';
+        group.add(septaMesh);
+      }
+
+      // 容積式加熱柱 (Volumetric RF Heat Column)
+      const heatGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.75, 16);
+      const heatMat = new THREE.MeshStandardMaterial({
+        color: 0xf97316,
+        emissive: 0xea580c,
+        emissiveIntensity: 0.7,
+        transparent: true,
+        opacity: 0.8
+      });
+      const heatMesh = new THREE.Mesh(heatGeo, heatMat);
+      heatMesh.position.set(0, 0.0, 0);
+      heatMesh.name = 'rf_thermal_column';
+      group.add(heatMesh);
+
+    } else if (target === 'periosteal_supra_fat') {
+      // 💉 11. 骨膜上深層玻尿酸注射：顱骨基底、骨膜、深層脂肪墊與深部支撐團塊
+      // 骨質表面
+      const boneGeo = new THREE.BoxGeometry(2.2, 0.3, 1.4);
+      const boneMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.2 });
+      const boneMesh = new THREE.Mesh(boneGeo, boneMat);
+      boneMesh.position.set(0, -0.6, 0);
+      boneMesh.name = 'periosteal_bone';
+      group.add(boneMesh);
+
+      // 骨膜 (Periosteum)
+      const perioGeo = new THREE.PlaneGeometry(2.2, 1.4);
+      const perioMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, side: THREE.DoubleSide });
+      const perioMesh = new THREE.Mesh(perioGeo, perioMat);
+      perioMesh.rotation.x = -Math.PI / 2;
+      perioMesh.position.set(0, -0.44, 0);
+      perioMesh.name = 'periosteum_membrane';
+      group.add(perioMesh);
+
+      // 骨膜上玻尿酸支撐柱 (Deep Supraperiosteal Bolus)
+      const bolusGeo = new THREE.SphereGeometry(0.32, 20, 20);
+      const bolusMat = new THREE.MeshStandardMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.7,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.9
+      });
+      const bolusMesh = new THREE.Mesh(bolusGeo, bolusMat);
+      bolusMesh.position.set(0, -0.22, 0);
+      bolusMesh.name = 'hyaluronic_bolus';
+      group.add(bolusMesh);
+
+      // 淺層脂肪墊
+      const fatGeo = new THREE.BoxGeometry(2.2, 0.3, 1.4);
+      const fatMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, transparent: true, opacity: 0.6 });
+      const fatMesh = new THREE.Mesh(fatGeo, fatMat);
+      fatMesh.position.set(0, 0.1, 0);
+      fatMesh.name = 'superficial_fat';
+      group.add(fatMesh);
+
+    } else {
+      // 🧬 12. 音波拉提／超能電漿 (SMAS 表淺肌腱膜系統立體網格與面神經分支)
+      // 表皮與皮下脂肪層
+      const skinGeo = new THREE.BoxGeometry(2.2, 0.2, 1.4);
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xfdba74, roughness: 0.5 });
+      const skinMesh = new THREE.Mesh(skinGeo, skinMat);
+      skinMesh.position.set(0, 0.5, 0);
+      skinMesh.name = 'facial_skin';
+      group.add(skinMesh);
+
+      // SMAS 淺表肌腱膜系統 (具金屬微光之高彈性深層膜)
+      const smasGeo = new THREE.BoxGeometry(2.2, 0.08, 1.4);
+      const smasMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.5,
+        roughness: 0.3
+      });
+      const smasMesh = new THREE.Mesh(smasGeo, smasMat);
+      smasMesh.position.set(0, 0.0, 0);
+      smasMesh.name = 'smas_layer';
+      group.add(smasMesh);
+
+      // 音波聚焦點 (Thermal Coagulation Points, TCP)
+      for (let x = -0.6; x <= 0.6; x += 0.3) {
+        const tcpGeo = new THREE.SphereGeometry(0.08, 12, 12);
+        const tcpMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.9 });
+        const tcpMesh = new THREE.Mesh(tcpGeo, tcpMat);
+        tcpMesh.position.set(x, 0.0, 0);
+        tcpMesh.name = 'thermal_coagulation_points';
+        group.add(tcpMesh);
+      }
+
+      // 深層表情肌底
+      const deepGeo = new THREE.BoxGeometry(2.2, 0.4, 1.4);
+      const deepMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.6 });
       const deepMesh = new THREE.Mesh(deepGeo, deepMat);
-      deepMesh.position.set(0, -0.4, 0);
-      deepMesh.name = 'deep_muscle';
+      deepMesh.position.set(0, -0.35, 0);
+      deepMesh.name = 'facial_expression_muscle';
       group.add(deepMesh);
     }
 
