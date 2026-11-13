@@ -1707,15 +1707,31 @@ function createTreeCard(tree) {
     const grid = el("div", "tree-sections-grid");
 
     const sections = [
-        { name: "1. 術前評估 (Pre-Op)", content: tree.pre_op, notes: tree.pre_op_physician_notes },
-        { name: "2. 療程原理 (Procedure)", content: tree.procedure, notes: tree.procedure_physician_notes },
-        { name: "3. 術後照護 (Post-Op Short)", content: tree.post_op_short, notes: tree.post_op_short_physician_notes },
-        { name: "4. 長期維持 (Maintenance)", content: tree.maintenance, notes: tree.maintenance_physician_notes },
+        { key: "pre_op", name: "1. 術前評估 (Pre-Op)", content: tree.pre_op, notes: tree.pre_op_physician_notes },
+        { key: "procedure", name: "2. 療程原理 (Procedure)", content: tree.procedure, notes: tree.procedure_physician_notes },
+        { key: "post_op_short", name: "3. 術後照護 (Post-Op Short)", content: tree.post_op_short, notes: tree.post_op_short_physician_notes },
+        { key: "maintenance", name: "4. 長期維持 (Maintenance)", content: tree.maintenance, notes: tree.maintenance_physician_notes },
     ];
 
     sections.forEach(s => {
         const box = el("div", "tree-section-box");
-        box.appendChild(el("div", "tree-section-name", s.name));
+        const headRow = el("div", "flex items-center justify-between mb-1");
+        headRow.appendChild(el("div", "tree-section-name", s.name));
+        const btnFocus = el("button", "text-[11px] text-sky-600 hover:text-sky-800 hover:underline cursor-pointer", "🎯 聚焦 3D 解剖");
+        btnFocus.type = "button";
+        btnFocus.addEventListener("click", () => {
+            // 自動展開該卡片的 3D 檢視器（若尚未展開）
+            const existingViewer = card.querySelector("clinic-anatomy-viewer");
+            if (!existingViewer) {
+                btnToggle3D.click();
+            }
+            window.dispatchEvent(new CustomEvent("anatomy:focus-step", {
+                detail: { doc_id: tree.doc_id, step_key: s.key }
+            }));
+        });
+        headRow.appendChild(btnFocus);
+        box.appendChild(headRow);
+
         box.appendChild(el("div", "tree-section-content", s.content || "（無內容）"));
         if (s.notes) {
             const noteEl = el("div", "tree-physician-note");
@@ -1727,6 +1743,10 @@ function createTreeCard(tree) {
     });
     card.appendChild(grid);
 
+    // 3D 解剖檢視容器（預設摺疊）
+    const anatomyContainer = el("div", "tree-anatomy-wrapper hidden mt-3 p-2 bg-slate-900 rounded-xl border border-slate-700");
+    card.appendChild(anatomyContainer);
+
     // Summary Box
     if (tree.summary_text) {
         const sumBox = el("div", "tree-summary-box");
@@ -1737,6 +1757,28 @@ function createTreeCard(tree) {
 
     // Actions
     const actions = el("div", "tree-card-actions");
+
+    const btnToggle3D = el("button", "btn btn-soft text-sky-700 border-sky-200 hover:bg-sky-50", "🧬 3D 臨床解剖視圖");
+    btnToggle3D.type = "button";
+    btnToggle3D.addEventListener("click", () => {
+        if (anatomyContainer.classList.contains("hidden")) {
+            anatomyContainer.classList.remove("hidden");
+            btnToggle3D.textContent = "🧬 收起 3D 視圖";
+            btnToggle3D.classList.add("bg-sky-100");
+            if (!anatomyContainer.querySelector("clinic-anatomy-viewer")) {
+                const viewer = document.createElement("clinic-anatomy-viewer");
+                viewer.setAttribute("doc-id", tree.doc_id);
+                viewer.setAttribute("model-src", "/static/anatomy/neurovascular.glb");
+                viewer.style.height = "420px";
+                anatomyContainer.appendChild(viewer);
+            }
+        } else {
+            anatomyContainer.classList.add("hidden");
+            btnToggle3D.textContent = "🧬 3D 臨床解剖視圖";
+            btnToggle3D.classList.remove("bg-sky-100");
+        }
+    });
+    actions.appendChild(btnToggle3D);
 
     const btnEdit = el("button", "btn btn-soft", "✏️ 編輯 / 填寫醫囑");
     btnEdit.addEventListener("click", () => openTreeEditModal(tree));
@@ -2292,10 +2334,45 @@ function createVisualReviewCard(asset) {
     const btnScene1 = el("button", "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition", "場景 1");
     const btnScene2 = el("button", "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition", "場景 2");
     const btnScene3 = el("button", "btn-scene-jump px-2 py-0.5 text-xs text-gray-200 bg-slate-700 hover:bg-slate-600 rounded transition", "場景 3");
+    const btnAnatomy3D = el("button", "btn-anatomy-toggle px-2 py-0.5 text-xs text-sky-300 bg-sky-950 hover:bg-sky-900 border border-sky-600 rounded transition flex items-center gap-1", "🧬 3D 解剖");
     scenesNav.appendChild(btnScene1);
     scenesNav.appendChild(btnScene2);
     scenesNav.appendChild(btnScene3);
+    scenesNav.appendChild(btnAnatomy3D);
     controls.appendChild(scenesNav);
+
+    // 3D 檢視容器
+    const anatomyCardBox = el("div", "visual-anatomy-box hidden w-full my-2");
+    playerBox.appendChild(anatomyCardBox);
+
+    btnAnatomy3D.addEventListener("click", () => {
+        if (anatomyCardBox.classList.contains("hidden")) {
+            anatomyCardBox.classList.remove("hidden");
+            btnAnatomy3D.textContent = "⚡ 2D 視圖";
+            btnAnatomy3D.classList.remove("text-sky-300", "bg-sky-950");
+            btnAnatomy3D.classList.add("text-amber-300", "bg-amber-950", "border-amber-600");
+            if (!anatomyCardBox.querySelector("clinic-anatomy-viewer")) {
+                const viewer = document.createElement("clinic-anatomy-viewer");
+                viewer.setAttribute("doc-id", asset.topic_key || "default-general");
+                viewer.style.height = "380px";
+                anatomyCardBox.appendChild(viewer);
+            }
+        } else {
+            anatomyCardBox.classList.add("hidden");
+            btnAnatomy3D.textContent = "🧬 3D 解剖";
+            btnAnatomy3D.classList.remove("text-amber-300", "bg-amber-950", "border-amber-600");
+            btnAnatomy3D.classList.add("text-sky-300", "bg-sky-950");
+        }
+    });
+
+    [btnScene1, btnScene2, btnScene3].forEach((btn, idx) => {
+        btn.addEventListener("click", () => {
+            const stepKeys = ["pre_op", "procedure", "post_op_short"];
+            window.dispatchEvent(new CustomEvent("anatomy:focus-step", {
+                detail: { doc_id: asset.topic_key, step_key: stepKeys[idx] }
+            }));
+        });
+    });
 
     playerBox.appendChild(controls);
     card.appendChild(playerBox);

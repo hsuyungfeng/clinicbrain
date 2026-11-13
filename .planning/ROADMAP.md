@@ -361,6 +361,19 @@ Plans:
 - [x] 43-02-PLAN.md — 夜間批次離峰排程整合、增量快取跳過與 CLI 工具（Wave 2）
 - [x] 43-03-PLAN.md — 管理端 API、Web 後台全景矩陣影片狀態與下載預覽（Wave 3）
 
+### Phase 45: 3D 臨床解剖 WebGL 檢視組件實裝 (3D Clinical Anatomy WebGL Viewer Component)
+
+**Goal**: 實裝輕量化原生 Web Component `<clinic-anatomy-viewer>`，支援 Three.js WebGL 3D 臨床解剖渲染、PageIndex 臨床推理樹關聯契約（`anatomy_metadata`）、步驟事件聯動（`anatomy:focus-step` 平滑運鏡與層次高亮）、2D 向量動畫確定性降級防線（`visual_engine.js`）、嚴格醫療法規防禦（零價格洩漏 `deep_mask_prices`、法定體質差異免責聲明、台灣繁體醫學術語）與 100% 離線本地自託管。並透過 herdr 調度待命中的獨立 Agent Hermes (wA:p3) 進行獨立驗證。
+**Status**: Complete
+**Depends on**: Phase 41（3D 解剖探索與架構規格）、Phase 44（次世代生動向量視覺引擎）
+**Requirements**: P45-ANATOMY-VIEWER, P45-PAGEINDEX-LINKAGE, P45-2D-FALLBACK, P45-LEGAL-GUARDRAILS, P45-HERMES-VERIFY
+**Plans**: 3 plans
+Plans:
+- [x] 45-01-PLAN.md — 3D 解剖資產配置與 `<clinic-anatomy-viewer>` Web Component 核心渲染器實裝
+- [x] 45-02-PLAN.md — PageIndex 臨床推理樹關聯契約、事件匯流排與法規防線
+- [x] 45-03-PLAN.md — 前端 Web 整合、2D 確定性降級防線與 Hermes 獨立測試驗收
+
+
 
 
 

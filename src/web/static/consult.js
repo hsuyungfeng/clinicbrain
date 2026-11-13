@@ -338,8 +338,41 @@
         var stepIndicator = document.createElement("span");
         stepIndicator.className = "visual-step-indicator";
 
+        var btnToggle3D = document.createElement("button");
+        btnToggle3D.type = "button";
+        btnToggle3D.className = "btn-visual-nav";
+        btnToggle3D.style.fontSize = "11px";
+        btnToggle3D.style.padding = "3px 8px";
+        btnToggle3D.style.marginLeft = "auto";
+        btnToggle3D.textContent = "🧬 3D 解剖視角";
+
+        var anatomyBox = document.createElement("div");
+        anatomyBox.style.display = "none";
+        anatomyBox.style.width = "100%";
+        anatomyBox.style.height = "360px";
+        anatomyBox.style.marginBottom = "12px";
+
+        btnToggle3D.addEventListener("click", function() {
+            if (anatomyBox.style.display === "none") {
+                anatomyBox.style.display = "block";
+                sceneBox.style.display = "none";
+                btnToggle3D.textContent = "⚡ 2D 向量動畫";
+                if (!anatomyBox.querySelector("clinic-anatomy-viewer")) {
+                    var v = document.createElement("clinic-anatomy-viewer");
+                    v.setAttribute("doc-id", topicKey || "default-general");
+                    v.style.height = "100%";
+                    anatomyBox.appendChild(v);
+                }
+            } else {
+                anatomyBox.style.display = "none";
+                sceneBox.style.display = "block";
+                btnToggle3D.textContent = "🧬 3D 解剖視角";
+            }
+        });
+
         headerEl.appendChild(titleEl);
         headerEl.appendChild(stepIndicator);
+        headerEl.appendChild(btnToggle3D);
 
         var sceneBox = document.createElement("div");
         sceneBox.className = "visual-scene-box";
@@ -393,6 +426,7 @@
         disclaimerEl.textContent = VISUAL_FIXED_DISCLAIMER;
 
         visualCard.appendChild(headerEl);
+        visualCard.appendChild(anatomyBox);
         visualCard.appendChild(sceneBox);
         visualCard.appendChild(controlsEl);
         visualCard.appendChild(disclaimerEl);
@@ -447,6 +481,15 @@
             stepIndicator.textContent = (currentIndex + 1) + " / " + scenes.length;
             sceneTitle.textContent = sc.title ? String(sc.title) : "";
             sceneCaption.textContent = sc.caption ? String(sc.caption) : "";
+
+            // 聯動 3D 解剖檢視器步驟
+            var stepKeys = ["pre_op", "procedure", "post_op_short", "maintenance"];
+            var targetStep = stepKeys[currentIndex] || "procedure";
+            try {
+                window.dispatchEvent(new CustomEvent("anatomy:focus-step", {
+                    detail: { doc_id: topicKey, step_key: targetStep }
+                }));
+            } catch (e) {}
 
             cancelActiveAnim();
 

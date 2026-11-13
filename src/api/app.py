@@ -16,6 +16,7 @@ from .routes.health import router as health_router
 from .routes.query import router as query_router
 from .routes.soap import router as soap_router
 from .routes.sync import router as sync_router
+from .routes.visual import router as visual_router
 from .security import build_dev_warning, check_auth_config
 
 
@@ -72,11 +73,13 @@ def create_app() -> FastAPI:
     app.include_router(general_router)
     app.include_router(soap_router)
     app.include_router(admin_router)
+    app.include_router(visual_router)
 
-    # 掛載靜態資源 (Web 管理介面)
+    # 掛載靜態資源 (Web 管理介面與 3D 視覺組件)
     static_dir = Path(__file__).resolve().parent.parent / "web" / "static"
     if static_dir.exists():
         app.mount("/admin", StaticFiles(directory=str(static_dir), html=True), name="admin")
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     @app.get("/", tags=["根端點"], summary="服務根端點資訊")
     def root():
