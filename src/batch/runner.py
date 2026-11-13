@@ -69,6 +69,9 @@ class BatchConfig:
     prefill_seed_path: Optional[Path] = None
     now_fn: Optional[Callable[[], datetime]] = None
     prefill_llm_call: Optional[Callable[[str], str]] = None
+    skip_video_render: bool = False
+    video_render_limit: Optional[int] = None
+    video_render_aspect: str = "landscape"
 
     def __post_init__(self) -> None:
         # 互斥旗標防護（CLI 之外的程式化呼叫同樣適用；矛盾組合直接拒絕，不靜默擇一）
@@ -115,6 +118,9 @@ class BatchSummary:
     prefill_skipped_budget: int = 0
     prefill_skipped_no_title: int = 0
     prefill_backlog: int = 0
+    videos_rendered: int = 0
+    videos_skipped: int = 0
+    videos_failed: int = 0
     errors: int = 0
 
     def as_dict(self) -> dict:
@@ -594,6 +600,33 @@ def run_batch(
                 summary.status = "budget_exhausted"
                 logger.info("batch_summary", **summary.as_dict())
                 return summary
+
+        # ---------------------------------------------------------------------
+        # 9. 動態醫學解說動畫影片佇列渲染階段 (Phase 43 Automated Video Queue)
+        # ---------------------------------------------------------------------
+        if not cfg.skip_video_render and not cfg.soap_only and not cfg.general_only and not cfg.dry_run:
+            try:
+                from src.visual.video_queue import batch_render_queue
+                v_res = batch_render_queue(
+                    conn,
+                    limit=cfg.video_render_limit,
+                    aspect=cfg.video_render_aspect,
+                    force=False,
+                )
+                summary.videos_rendered = v_res.get("rendered", 0)
+                summary.videos_skipped = v_res.get("skipped", 0)
+                summary.videos_failed = v_res.get("failed", 0)
+                summary.errors += v_res.get("failed", 0)
+                logger.info(
+                    "video_render_stage_completed",
+                    rendered=summary.videos_rendered,
+                    skipped=summary.videos_skipped,
+                    failed=summary.videos_failed,
+                )
+            except Exception as e:
+                summary.videos_failed += 1
+                summary.errors += 1
+                logger.warning("video_render_stage_failed", error=str(e))
 
         summary.status = "completed"
         logger.info("batch_summary", **summary.as_dict())

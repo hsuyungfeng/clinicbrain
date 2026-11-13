@@ -952,6 +952,57 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 完成 Playwright 無頭 Chromium 抽幀審計測試 (`tests/test_nhi400_browser_render.py`)，確認各關鍵影格無半形數字殘留且 forward/reverse seek 100% 確定性。
   - 透過安全入庫腳本 (`scripts/stage_nhi400_to_db.py`) 將 200 筆次專科草稿以 `review_status='pending'` 冪等寫入正式 `clinic.db`，使全庫總資產達到 400 筆（198 approved, 200 pending, 2 rejected），與 1-400 全景索引完美對齊。
 
+### 2.44 動態規格標準化與 3D 臨床解剖探索（Phase 41 新增，2026-11-11 核准）
+
+為進一步提升 PageIndex 臨床推理樹之 3 幕向量動畫解說卡（`clinic-visual-batch`）品質，並評估醫美/外科專科之 3D 互動可視化諮詢潛力，自 Phase 41 起實施三階段推進規範：
+
+1. **第一步（立即實施，高投報）：`motion-prompt` 動態規格與緩動預設抽取整合**
+   - 將 `showheyohtaki/motion-prompt` 的 144 個精選動效標準名稱、鏡頭運動（camera zoom/pan）、純 Canvas 2D/CSS 緩動曲線（easing curves）規格抽取為輕量模組，收斂至 `.agents/skills/clinic-visual-batch/resources/motion_vocab.json` 與相關規範文件。
+   - 讓本地大模型（Qwen3.8-27B-FP8 / 3.8 Flash）在生成「PageIndex 3 幕衛教卡片」與專科動畫草稿時，具備精確的動效參數與確定性時序，根除文字描述模糊、動態僵硬或抽搐旋轉等缺陷，立即可見品質提升與一次性通過率躍升。
+   - 保持純純量與零外部肥大框架依賴，符合診所內網離線輕量渲染與安全性規範。
+
+2. **第二步（沙盒概念驗證 PoC）：`FreedomIntelligence/BodyVista` 專科解剖評估**
+   - 於隔離沙盒環境 clone `FreedomIntelligence/BodyVista`，實測檢視其 3D WebGL 模型檔案體積（GLTF/GLB）、載入延遲與資產結構。
+   - **專科精細度抽查**：抽查 1~2 個緻妍診所核心療程（例如：顏面拉皮／音波拉提的臉部 SMAS 筋膜層與顏面神經血管走向，或是自體脂肪隆乳／假體植入之胸大肌／乳腺腔隙層次），對比醫美與整形外科臨床衛教需求，評估現有模型是否過於宏觀，或是足以支撐臨床溝通。
+   - **法規與環境合規檢核**：
+     - 繁簡名詞與台灣醫療術語核對（CUHK-SZ 簡體術語必須經由台灣醫學會名詞庫校準，禁止生搬大陸用語）。
+     - 離線自託管可行性（必須 100% 區域網路本機運行，嚴禁外連未授權第三方雲端服務或遙測）。
+
+3. **第三步（架構整合規劃）：3D 解剖檢視器獨立組件與 PageIndex 關聯設計**
+   - 若 PoC 評估通過，規劃將 3D 解剖檢視器封裝為獨立前端組件（Consultation 3D Viewer），與病患諮詢前台（`patient_consult`）整合。
+   - 建立推理樹 `doc_id` 與 3D 解剖實體 ID（`anatomy_id`）之映射標準，當病患或醫師查詢特定療程時，可自動連動 3D 視角旋轉、層次剝離與病灶/施作部位高亮。
+   - **價格與法規防禦線**：3D 組件連動展示之任何文字標籤與解說，一律受到既有 `deep_mask_prices()` 價格清洗與「禁止保證療效」防護機制控管。
+
+### 2.45 自動化動態解說動畫影片佇列（Phase 43 新增，2026-11-11 核准）
+
+為將資料庫已核准之 24 秒醫學向量動畫（398 筆 approved 資產）延伸應用至診間實體多媒體與衛教宣導，自 Phase 43 起建立影片批次渲染佇列：
+1. **多媒體應用場景與輸出規格**：
+   - **診所電視／看板 (16:9 橫屏)**：解析度 1920×1080，24fps，H.264 MP4（yuv420p），結尾預留 2.5 秒預約卡畫面，支援門診候診區無縫循環播放。
+   - **社群媒體／衛教短影音 (9:16 豎屏)**：解析度 1080×1920，供 Instagram Reels、LINE 官方帳號與衛教平板直立觀看。
+2. **自動化佇列引擎 (`src/visual/video_queue.py`)**：
+   - 直接從 `clinic.db` 之 `visual_assets` 讀取已核准的 `ir_json`，動態生成記憶體/暫存 bundle，透過無頭 Chromium 逐格 seek 渲染，零手動導出負擔。
+   - **增量渲染與快取跳過 (Idempotent Cache)**：比對 `ir_json` 之 SHA-256 雜湊與影片輸出檔；若 IR 未改動且影片已存在，自動跳過，杜絕重複消耗 CPU/GPU 資源。
+3. **離峰批次與後台整合**：
+   - 整合至夜間批次排程（`src/batch/runner.py`）之可選階段，於夜間離峰無人看診時段自動渲染新核准之動畫資產。
+   - 管理後台與 API 支援單題即時預覽、影片下載與手動排程。
+
+### 2.46 次世代生動向量視覺引擎全面升級（Phase 44 新增，2026-11-11 核准）
+
+為徹底解決已發布 398 筆醫學動畫卡視覺生硬與機械化線性運動之痛點，在**資料庫零改動、398 筆 Typed IR 零搬遷**的前提下，對純函式確定性繪圖引擎 `src/web/static/visual_engine.js` 實施五大次世代升級：
+1. **物理動態數學庫 (`ClinicMotion`)**：
+   - 封裝非線性緩動（`easeOutCubic`, `easeInOutQuad`）、組織彈性過衝（`springGentle`，過衝係數 $1.05 \to 1.0$）與蓄力爆發（`anticipate`）。
+   - 封裝確定性器官呼吸微動（`createBreathingPulse(u, freq, amp)`，$\pm 1.2\%$ 尺度微搏動）。
+2. **2.5D 擬真體積光影與解剖層次**：
+   - 導入柔和雙層半透明徑向漸層（Radial Gradient），呈現活體生物組織溫潤透光感（Subsurface Scattering）。
+   - 筋膜與器械切口邊緣動態高光流動（Shimmer Sweep）與深淺環境遮擋陰影（Ambient Occlusion）。
+3. **活體動態微環境**：
+   - 同心圓擴散能量漣漪（Ripple Waves）、血液與脂肪微粒之布朗有機微擾動。
+4. **資訊動態聚光燈與階梯浮現**：
+   - 動態 Spotlight 跟隨當前執行步驟，相機平滑微推拉（Zoom in 1.15x），標籤文字以 `ease_out_quad` 柔和向上浮現。
+5. **對照場景與時間軸趣味演繹**：
+   - Scene 2 傳統側警示紅光顫動 vs 微創側翡翠綠流光屏障；Scene 3 里程碑激活爆發金色修復微粒子（Sparkle Dust）。
+   - **實施順序策略**：優先完成 Phase 44 引擎升級，使 398 部動畫立即可見生動升級；接續執行的 Phase 43（MP4 離線渲染佇列）將直接產出具備次世代光影與動態之高解析度宣傳短影音。
+
 ## 3. ⚠️ 嚴格安全與合規規則
 
 這些規則優先於任何其他指令，包括使用者要求的功能實作方式：
@@ -1109,9 +1160,18 @@ Phase 03 Stage 2 的「圖片 OCR 不自動化」結案決策維持不變。
   - 建立 1-400 大基層疾病資料庫全景索引（`nhi_catalog_1_400` + `nhi_catalog_fts`），提供 LLM 在診所諮詢時精準引用。
   - 擴充第 201 至 400 項次專科解剖圖元（眼科黃斑部、耳鼻喉哮吼聲帶、泌尿精索、牙周 GTR、中醫特種針法）。
   - DeepSeek 與本機雙模自癒生成 200 筆 24 秒動畫草稿，完成 Playwright 抽幀審計與 200 筆 pending 入庫（全庫收斂為 400 筆資產）。
-* **Phase 41：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
+* **Phase 41：動態規格標準化與 3D 臨床解剖探索 (Motion-Prompt Integration & BodyVista 3D Anatomy PoC)**
+  - 將 `motion-prompt` 動態規格與緩動預設抽取為輕量模組整合至 `clinic-visual-batch`。
+  - 本機 clone `FreedomIntelligence/BodyVista` 執行沙盒 PoC，評估 3D 解剖模型檔案體積與醫美專科精細度。
+  - 若 PoC 通過，規劃 3D 解剖檢視器前端組件與 PageIndex `doc_id` 自動連動架構。
+* **Phase 44：次世代生動向量視覺引擎全面升級 (Next-Gen Dynamic Vector Visual Engine)（優先執行中）**
+  - 在 `visual_engine.js` 封裝 `ClinicMotion` 物理數學庫（非線性緩動、果凍回彈、呼吸微律動）。
+  - 全量升級 11 大專科藍圖（2.5D 半透明體積漸層、高光掃過、深層環境陰影與同心圓漣漪）。
+  - 對照場景顫動與修復時間軸金色粒子綻放演繹。
+  - Playwright 確定性渲染驗證，零資料庫遷移，使全庫 398 部動畫立竿見影煥然一新。
+* **Phase 43：自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)（Phase 44 完成後接續）**
+  - 整合 `demo/visual/render_video.py` 與夜間批次排程，將已升級次世代光影之 24 秒動畫自動渲染為 1080p H.264 MP4（16:9 橫屏與 9:16 豎屏雙規格）。
+  - 供診所電視看板、衛教平板離線循環播放與社群媒體短影音推播。
+* **Phase 42：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
   - 在病人諮詢端點支援自適應推薦診所與院所特約醫師門診時段。
   - 動態關聯已昇華之基層 ICD-10 解說動畫卡，並強化門診就診預約引導。
-* **Phase 42：自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)**
-  - 整合 `demo/visual/render_video.py` 與批次排程，將已審核通過之動畫卡自動渲染為 MP4 短片。
-  - 供診所電視看板、衛教平板離線循環播放與社群媒體短影音推播。

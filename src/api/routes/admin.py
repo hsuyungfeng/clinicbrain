@@ -914,6 +914,14 @@ def get_admin_review_summary(
     except Exception:
         pass
 
+    visuals_videos_rendered_total = 0
+    from ...visual.video_queue import DEFAULT_VIDEO_DIR
+    if DEFAULT_VIDEO_DIR.exists():
+        try:
+            visuals_videos_rendered_total = len(list(DEFAULT_VIDEO_DIR.glob("*_landscape.mp4")))
+        except Exception:
+            pass
+
     total_pending = pending_total + trees_pending_total + visuals_pending_total
     total_approved = approved_total + trees_approved_total + visuals_approved_total
     total_rejected = rejected_total + trees_rejected_total + visuals_rejected_total
@@ -935,6 +943,7 @@ def get_admin_review_summary(
         "visuals_rejected_total": visuals_rejected_total,
         "visuals_clinic_total": visuals_clinic_total,
         "visuals_general_total": visuals_general_total,
+        "visuals_videos_rendered_total": visuals_videos_rendered_total,
         "total_pending": total_pending,
         "total_approved": total_approved,
         "total_rejected": total_rejected,
@@ -1743,3 +1752,137 @@ def autodraft_admin_visual(
             return {"status": "ok", "asset": full_asset, **full_asset}
 
     return {"status": "ok", "asset": res, **res}
+
+
+# =============================================================================
+# Phase 43: 自動化動態解說動畫影片佇列 API
+# =============================================================================
+
+TOPIC_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _render_video_in_background(topic_key: str, aspect: str, force: bool, db_path: str) -> None:
+    """背景非同步執行影片逐格錄製與 H.264 合成。"""
+    import sqlite3
+    from ...visual.video_queue import render_asset_to_video
+
+    conn = sqlite3.connect(db_path)
+    try:
+        aspects = ["landscape", "portrait"] if aspect == "both" else [aspect]
+        for asp in aspects:
+            render_asset_to_video(conn, topic_key=topic_key, aspect=asp, force=force)
+    except Exception as e:
+        logger.error(f"背景渲染影片失敗 {topic_key} ({aspect}): {e}")
+    finally:
+        conn.close()
+
+
+@router.get("/visuals/videos/{topic_key}", summary="查詢指定主題的 MP4 影片狀態與資訊")
+def get_admin_visual_video_status(
+    topic_key: str,
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    """查詢該主題 16:9 橫屏與 9:16 豎屏 MP4 影片是否已生成、檔案大小與時長。"""
+    if not TOPIC_KEY_RE.match(topic_key) or ".." in topic_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無效的主題代碼格式")
+
+    from ...visual.video_queue import DEFAULT_VIDEO_DIR
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT title, review_status FROM visual_assets WHERE topic_key = ?", (topic_key,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"找不到視覺資產：{topic_key}")
+
+    title, review_status = row
+
+    res = {
+        "topic_key": topic_key,
+        "title": title,
+        "review_status": review_status,
+        "landscape": {"available": False},
+        "portrait": {"available": False},
+    }
+
+    for asp in ("landscape", "portrait"):
+        mp4_path = DEFAULT_VIDEO_DIR / f"{topic_key}_{asp}.mp4"
+        meta_path = DEFAULT_VIDEO_DIR / f"{topic_key}_{asp}.meta.json"
+        if mp4_path.exists() and mp4_path.stat().st_size > 0:
+            meta = {}
+            if meta_path.exists():
+                try:
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+            res[asp] = {
+                "available": True,
+                "size_bytes": mp4_path.stat().st_size,
+                "duration_sec": meta.get("duration_sec"),
+                "fps": meta.get("fps", 24),
+                "download_url": f"/api/v1/admin/visuals/videos/{topic_key}/download?aspect={asp}",
+            }
+
+    return res
+
+
+@router.post("/visuals/videos/{topic_key}/render", summary="手動觸發指定主題之影片背景渲染")
+def trigger_admin_visual_video_render(
+    topic_key: str,
+    background_tasks: BackgroundTasks,
+    aspect: str = Query("landscape", pattern="^(landscape|portrait|both)$", description="規格：landscape, portrait, 或 both"),
+    force: bool = Query(False, description="是否強制重新渲染 (略過快取)"),
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    """將指定視覺解說動畫送入背景渲染佇列。"""
+    if not TOPIC_KEY_RE.match(topic_key) or ".." in topic_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無效的主題代碼格式")
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT review_status FROM visual_assets WHERE topic_key = ?", (topic_key,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"找不到視覺資產：{topic_key}")
+
+    review_status = row[0]
+    if review_status != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"該資產審核狀態為 '{review_status}'，僅已核准 (approved) 的資產可渲染為影片",
+        )
+
+    background_tasks.add_task(_render_video_in_background, topic_key, aspect, force, config.db_path)
+
+    return {
+        "status": "queued",
+        "topic_key": topic_key,
+        "aspect": aspect,
+        "force": force,
+        "message": "影片渲染任務已加入背景佇列",
+    }
+
+
+@router.get("/visuals/videos/{topic_key}/download", summary="下載或在線播放已渲染之 MP4 影片")
+def download_admin_visual_video(
+    topic_key: str,
+    aspect: str = Query("landscape", pattern="^(landscape|portrait)$", description="規格：landscape 或 portrait"),
+):
+    """以串流方式回傳 H.264 MP4 影片檔案，支援在線播放或下載。"""
+    if not TOPIC_KEY_RE.match(topic_key) or ".." in topic_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無效的主題代碼格式")
+
+    from fastapi.responses import FileResponse
+    from ...visual.video_queue import DEFAULT_VIDEO_DIR
+
+    mp4_path = DEFAULT_VIDEO_DIR / f"{topic_key}_{aspect}.mp4"
+    if not mp4_path.exists() or mp4_path.stat().st_size == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"主題 '{topic_key}' 之 {aspect} 影片尚未生成，請先觸發渲染",
+        )
+
+    return FileResponse(
+        path=str(mp4_path),
+        media_type="video/mp4",
+        filename=f"{topic_key}_{aspect}.mp4",
+    )
+

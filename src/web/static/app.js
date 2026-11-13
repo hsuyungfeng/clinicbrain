@@ -133,6 +133,8 @@ async function loadDashboardSummary() {
         if (elTreeApp) elTreeApp.textContent = data.trees_approved_total ?? 0;
         const elVisApp = document.getElementById("statVisualsApprovedTotal");
         if (elVisApp) elVisApp.textContent = data.visuals_approved_total ?? 0;
+        const elVisVid = document.getElementById("pillVisCountVideos");
+        if (elVisVid) elVisVid.textContent = data.visuals_videos_rendered_total ?? 0;
         document.getElementById("statRejectedTotal").textContent = data.total_rejected ?? data.rejected_total ?? 0;
         document.getElementById("statSoapTotal").textContent = data.soap_records_total ?? 0;
 
@@ -2163,6 +2165,32 @@ function buildTemplateOverrideRow(asset) {
     return row;
 }
 
+function openVideoLightbox(topicKey, title) {
+    const overlay = el("div", "fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4");
+    const box = el("div", "bg-slate-900 border border-slate-700 rounded-xl p-4 max-w-4xl w-full shadow-2xl relative");
+
+    const head = el("div", "flex items-center justify-between mb-3 text-white");
+    head.appendChild(el("h3", "font-bold text-base", `🎬 ${title || topicKey}（H.264 MP4 預覽）`));
+    const btnClose = el("button", "text-gray-400 hover:text-white text-lg font-bold px-2", "✕");
+    btnClose.addEventListener("click", () => overlay.remove());
+    head.appendChild(btnClose);
+    box.appendChild(head);
+
+    const video = document.createElement("video");
+    video.src = `/api/v1/admin/visuals/videos/${encodeURIComponent(topicKey)}/download?aspect=landscape`;
+    video.controls = true;
+    video.autoplay = true;
+    video.className = "w-full rounded-lg bg-black";
+    video.style.maxHeight = "70vh";
+    box.appendChild(video);
+
+    overlay.appendChild(box);
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+}
+
 function createVisualReviewCard(asset) {
     const card = el("div", "visual-review-card");
 
@@ -2458,6 +2486,55 @@ function createVisualReviewCard(asset) {
     }
 
     actionsRow.appendChild(statusActions);
+
+    // Phase 43: 影片下載與預覽按鈕組 (已核准發布資產)
+    if (asset.review_status === "approved") {
+        const videoGroup = el("div", "flex items-center gap-1.5 ml-auto border-l border-gray-200 pl-3");
+        const btnPlayVideo = el("button", "btn btn-outline text-xs px-2.5 py-1 text-sky-600 border-sky-300 hover:bg-sky-50 flex items-center gap-1", "▶ 預覽 MP4");
+        btnPlayVideo.addEventListener("click", () => openVideoLightbox(asset.topic_key, asset.title));
+
+        const btnDl169 = el("a", "btn btn-outline text-xs px-2 py-1 text-slate-700 border-gray-300 hover:bg-gray-100", "📹 16:9");
+        btnDl169.href = `/api/v1/admin/visuals/videos/${asset.topic_key}/download?aspect=landscape`;
+        btnDl169.target = "_blank";
+        btnDl169.title = "下載 1080p 橫屏看板影片";
+
+        const btnDl916 = el("a", "btn btn-outline text-xs px-2 py-1 text-slate-700 border-gray-300 hover:bg-gray-100", "📱 9:16");
+        btnDl916.href = `/api/v1/admin/visuals/videos/${asset.topic_key}/download?aspect=portrait`;
+        btnDl916.target = "_blank";
+        btnDl916.title = "下載 9:16 Reels / LINE 豎屏短影音";
+
+        const btnRender = el("button", "btn btn-secondary text-xs px-2 py-1 text-gray-700", "⚙️ 渲染");
+        btnRender.title = "排程將此動畫渲染為 MP4 影片";
+        btnRender.addEventListener("click", async () => {
+            btnRender.disabled = true;
+            btnRender.textContent = "排程中...";
+            try {
+                const resp = await fetch(`/api/v1/admin/visuals/videos/${asset.topic_key}/render?aspect=both`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                });
+                if (resp.ok) {
+                    showToast("已加入背景渲染佇列，稍後即可下載", "success");
+                    loadDashboardSummary();
+                } else {
+                    const d = await resp.json().catch(() => ({}));
+                    showToast(apiErrorText(d, "加入渲染失敗"), "error");
+                }
+            } catch (e) {
+                showToast("連線異常", "error");
+            } finally {
+                btnRender.disabled = false;
+                btnRender.textContent = "⚙️ 渲染";
+            }
+        });
+
+        videoGroup.appendChild(btnPlayVideo);
+        videoGroup.appendChild(btnDl169);
+        videoGroup.appendChild(btnDl916);
+        videoGroup.appendChild(btnRender);
+        actionsRow.appendChild(videoGroup);
+    }
+
     card.appendChild(actionsRow);
 
     // 5. 動畫播放控制與事件綁定

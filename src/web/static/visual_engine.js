@@ -36,6 +36,63 @@
     return v - Math.floor(v);
   }
 
+  // ClinicMotion 物理動態數學庫（純數學、零外部依賴、100% 確定性）
+  const ClinicMotion = Object.freeze({
+    bezier: function (x1, y1, x2, y2, t) {
+      t = clampNumber(t, 0, 1);
+      if (x1 === y1 && x2 === y2) return t;
+      let s = t;
+      for (let i = 0; i < 5; i++) {
+        const slope = 3 * (1 - 3 * x2 + 3 * x1) * s * s + 2 * (3 * x2 - 6 * x1) * s + 3 * x1;
+        if (Math.abs(slope) < 1e-5) break;
+        const curX = (1 - 3 * x2 + 3 * x1) * s * s * s + (3 * x2 - 6 * x1) * s * s + (3 * x1) * s - t;
+        s -= curX / slope;
+      }
+      s = clampNumber(s, 0, 1);
+      return (1 - 3 * y2 + 3 * y1) * s * s * s + (3 * y2 - 6 * y1) * s * s + (3 * y1) * s;
+    },
+    easeOutCubic: function (t) {
+      t = clampNumber(t, 0, 1);
+      const inv = 1 - t;
+      return 1 - inv * inv * inv;
+    },
+    easeInOutQuad: function (t) {
+      t = clampNumber(t, 0, 1);
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    },
+    springGentle: function (t) {
+      t = clampNumber(t, 0, 1);
+      if (t === 0) return 0;
+      if (t === 1) return 1;
+      const c4 = (2 * Math.PI) / 3;
+      return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    },
+    anticipate: function (t) {
+      t = clampNumber(t, 0, 1);
+      const tension = 1.70158;
+      return t * t * ((tension + 1) * t - tension);
+    },
+    breathing: function (u, freq, amp) {
+      const f = freq || 2.0;
+      const a = amp !== undefined ? amp : 0.015;
+      return 1.0 + Math.sin(u * Math.PI * 2 * f) * a;
+    },
+    ripple: function (u, phaseOffset, maxRadius) {
+      const p = ((u * 2.5 + (phaseOffset || 0)) % 1.0);
+      const r = p * (maxRadius || 36);
+      const alpha = Math.sin(p * Math.PI) * 0.75;
+      return { radius: r, opacity: clampNumber(alpha, 0, 1) };
+    },
+    brownian: function (seed, idx, u, scale) {
+      const s = scale || 4;
+      const h1 = deterministicHash(seed, idx * 3 + 1);
+      const h2 = deterministicHash(seed, idx * 3 + 2);
+      const dx = Math.sin(u * Math.PI * 4 + h1 * Math.PI * 2) * s;
+      const dy = Math.cos(u * Math.PI * 4 + h2 * Math.PI * 2) * s;
+      return { dx: dx, dy: dy };
+    }
+  });
+
   function createCtx(parentGroup) {
     function makeElement(name, attrs, parent) {
       const el = document.createElementNS(SVG_NS, name);
@@ -90,7 +147,8 @@
         return PALETTE[token] || fallback || PALETTE.neutral;
       },
       clamp: clampNumber,
-      hash: deterministicHash
+      hash: deterministicHash,
+      motion: ClinicMotion
     };
   }
 
@@ -135,6 +193,75 @@
       { offset: "0%", color: "#0f172a", opacity: 0.8 },
       { offset: "100%", color: "#090f1d", opacity: 0.85 }
     ]);
+
+    function addRadialGradient(id, cx, cy, r, stops) {
+      const rg = document.createElementNS(SVG_NS, "radialGradient");
+      rg.setAttribute("id", id);
+      rg.setAttribute("cx", cx);
+      rg.setAttribute("cy", cy);
+      rg.setAttribute("r", r);
+      for (let i = 0; i < stops.length; i++) {
+        const st = document.createElementNS(SVG_NS, "stop");
+        st.setAttribute("offset", stops[i].offset);
+        st.setAttribute("stop-color", stops[i].color);
+        if (stops[i].opacity !== undefined) {
+          st.setAttribute("stop-opacity", String(stops[i].opacity));
+        }
+        rg.appendChild(st);
+      }
+      defs.appendChild(rg);
+    }
+
+    addRadialGradient("grad-tissue-subsurface", "40%", "40%", "65%", [
+      { offset: "0%", color: "#fde9a8", opacity: 0.95 },
+      { offset: "60%", color: "#f6b93b", opacity: 0.9 },
+      { offset: "100%", color: "#d97706", opacity: 0.85 }
+    ]);
+    addRadialGradient("grad-energy-core", "50%", "50%", "50%", [
+      { offset: "0%", color: "#ffffff", opacity: 1 },
+      { offset: "35%", color: "#38bdf8", opacity: 0.85 },
+      { offset: "100%", color: "#0284c7", opacity: 0 }
+    ]);
+    addRadialGradient("grad-healing-glow", "50%", "50%", "50%", [
+      { offset: "0%", color: "#fef08a", opacity: 0.85 },
+      { offset: "65%", color: "#eab308", opacity: 0.4 },
+      { offset: "100%", color: "#ca8a04", opacity: 0 }
+    ]);
+    addRadialGradient("grad-mucosa-inflamed", "45%", "45%", "55%", [
+      { offset: "0%", color: "#fca5a5", opacity: 0.95 },
+      { offset: "65%", color: "#ef4444", opacity: 0.85 },
+      { offset: "100%", color: "#991b1b", opacity: 0.9 }
+    ]);
+    addLinearGradient("grad-fascia-sheen", "0%", "0%", "100%", "100%", [
+      { offset: "0%", color: "#e2e8f0" },
+      { offset: "50%", color: "#ffffff" },
+      { offset: "100%", color: "#94a3b8" }
+    ]);
+    addLinearGradient("grad-fascia-highlight", "0%", "0%", "100%", "0%", [
+      { offset: "0%", color: "#f59e0b", opacity: 0.1 },
+      { offset: "50%", color: "#ffffff", opacity: 0.8 },
+      { offset: "100%", color: "#f59e0b", opacity: 0.1 }
+    ]);
+    addLinearGradient("grad-energy-beam", "0%", "0%", "0%", "100%", [
+      { offset: "0%", color: "#38bdf8", opacity: 0.85 },
+      { offset: "65%", color: "#0284c7", opacity: 0.35 },
+      { offset: "100%", color: "#fef08a", opacity: 0.95 }
+    ]);
+
+    const filterSoft = document.createElementNS(SVG_NS, "filter");
+    filterSoft.setAttribute("id", "filter-drop-shadow-soft");
+    filterSoft.setAttribute("x", "-15%");
+    filterSoft.setAttribute("y", "-15%");
+    filterSoft.setAttribute("width", "130%");
+    filterSoft.setAttribute("height", "130%");
+    const dropSoft = document.createElementNS(SVG_NS, "feDropShadow");
+    dropSoft.setAttribute("dx", "0");
+    dropSoft.setAttribute("dy", "3");
+    dropSoft.setAttribute("stdDeviation", "4");
+    dropSoft.setAttribute("flood-color", "#000000");
+    dropSoft.setAttribute("flood-opacity", "0.45");
+    filterSoft.appendChild(dropSoft);
+    defs.appendChild(filterSoft);
 
     const filter = document.createElementNS(SVG_NS, "filter");
     filter.setAttribute("id", "soft-shadow");
@@ -217,7 +344,7 @@
     // 左側組織來源
     const sourceFill = ctx.palette(params.source.fill, PALETTE.skin);
     ctx.rect({ x: 50, y: 100, width: 200, height: 250, rx: 14, fill: sourceFill, stroke: "#cbd5e1", "stroke-width": 2 });
-    ctx.rect({ x: 65, y: 140, width: 170, height: 170, rx: 10, fill: "#fde9a8", stroke: "#f6b93b", "stroke-width": 1.5 });
+    ctx.rect({ x: 65, y: 140, width: 170, height: 170, rx: 10, fill: "url(#grad-tissue-subsurface)", stroke: "#f6b93b", "stroke-width": 1.5 });
     ctx.text({ x: 150, y: 235, "text-anchor": "middle", "font-size": 16, "font-weight": "bold", fill: "#8a6d00" }, params.source.label);
 
     // 抽取針管（往返伸縮由進度 u 正弦波計算，純函式）
@@ -225,15 +352,16 @@
     ctx.rect({ x: 185 + shift, y: 220, width: 110, height: 10, rx: 4, fill: "#94a3b8" });
     ctx.rect({ x: 290 + shift, y: 215, width: 26, height: 20, rx: 4, fill: "#475569" });
 
-    // 沿弧線流向右側容器的粒子
+    // 沿弧線流向右側容器的粒子（注入有機布朗微擾）
     const particleCount = params.particles;
     for (let i = 0; i < particleCount; i++) {
       const pOffset = i / particleCount;
       const progress = (u * 2.2 + pOffset) % 1.0;
       if (u < 0.65) {
-        const px = 280 + progress * 290;
+        const jitter = ctx.motion ? ctx.motion.brownian(particleCount, i, u, 3.0) : { dx: 0, dy: 0 };
+        const px = 280 + progress * 290 + jitter.dx;
         const arc = Math.sin(progress * Math.PI) * 55;
-        const py = 225 - arc + progress * (115 - 225);
+        const py = 225 - arc + progress * (115 - 225) + jitter.dy;
         let alpha = 1.0;
         if (progress < 0.12) alpha = progress / 0.12;
         if (progress > 0.88) alpha = (1.0 - progress) / 0.12;
@@ -260,29 +388,29 @@
 
     if (u < 0.4) {
       const fillHeight = innerTotalH * Math.min(1, u / 0.35);
-      ctx.rect({ x: innerX, y: innerBottom - fillHeight, width: innerW, height: fillHeight, fill: "#e9a35a", opacity: 0.95 });
+      ctx.rect({ x: innerX, y: innerBottom - fillHeight, width: innerW, height: fillHeight, fill: "url(#grad-tissue-subsurface)", opacity: 0.95 });
     } else {
       const stratProgress = Math.min(1, (u - 0.4) / 0.35);
       let currentTop = innerBottom - innerTotalH * stratProgress;
       for (let i = 0; i < layers.length; i++) {
         const layer = layers[i];
         const layerH = (layer.weight / totalWeight) * innerTotalH * stratProgress;
-        const color = ctx.palette(layer.fill, PALETTE.fat);
+        const color = layer.keep ? "url(#grad-tissue-subsurface)" : ctx.palette(layer.fill, PALETTE.fat);
         ctx.rect({ x: innerX, y: currentTop, width: innerW, height: layerH, fill: color });
 
-        // 保留層 강조框（u 達 0.75 後亮起）
+        // 保留層脈衝光環（u 達 0.75 後呼吸律動亮起）
         if (layer.keep && u >= 0.75) {
-          const pulse = 0.5 + 0.5 * Math.sin((u - 0.75) * Math.PI * 6);
+          const pulse = ctx.motion ? ctx.motion.breathing(u, 2.5, 0.35) : (0.5 + 0.5 * Math.sin((u - 0.75) * Math.PI * 6));
           ctx.rect({
             x: innerX - 6,
             y: currentTop - 2,
             width: innerW + 12,
             height: layerH + 4,
             rx: 6,
-            fill: "none",
+            fill: "url(#grad-healing-glow)",
             stroke: PALETTE.ok,
             "stroke-width": 3,
-            opacity: 0.4 + 0.6 * pulse
+            opacity: clampNumber(0.35 + 0.45 * (pulse - 1.0), 0.15, 0.9)
           });
         }
         currentTop += layerH;
@@ -1175,13 +1303,21 @@
     ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
     ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
 
-    // 中線分隔
-    ctx.line({ x1: 400, y1: 50, x2: 400, y2: 430, stroke: "#334155", "stroke-width": 2, "stroke-dasharray": "6 6" });
+    // 中線能量流動虛線與 VS 亮點標記
+    const dashShift = (u * 40) % 12;
+    ctx.line({ x1: 400, y1: 50, x2: 400, y2: 430, stroke: "#475569", "stroke-width": 2, "stroke-dasharray": "6 6", "stroke-dashoffset": String(dashShift) });
+    if (u >= 0.35) {
+      const vsPulse = ctx.motion ? ctx.motion.breathing(u, 3, 0.15) : 1.0;
+      ctx.circle({ cx: 400, cy: 240, r: 16 * vsPulse, fill: "#0f172a", stroke: "#fbbf24", "stroke-width": 1.5 });
+      ctx.text({ x: 400, y: 244, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#fbbf24" }, "VS");
+    }
 
-    // 左側面板（對照側）
+    // 左側面板（對照側：加入病理不安微顫動與警示）
+    const tremorX = Math.sin(u * Math.PI * 14) * 0.8;
+    const tremorY = Math.cos(u * Math.PI * 18) * 0.6;
     ctx.text({ x: 210, y: 65, "text-anchor": "middle", "font-size": 18, "font-weight": "bold", fill: PALETTE.warn }, params.left.title);
     ctx.text({ x: 210, y: 92, "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" }, params.left.note);
-    ctx.rect({ x: 50, y: 115, width: 320, height: 250, rx: 12, fill: "#273549", stroke: "#384a62" });
+    ctx.rect({ x: 50 + tremorX, y: 115 + tremorY, width: 320, height: 250, rx: 12, fill: "#273549", stroke: "#ef4444", "stroke-width": 1.5 });
 
     const leftFill = PALETTE[params.left.unit_fill] || PALETTE.fat;
     const leftStroke = strokeFor(params.left.unit_fill);
@@ -1241,10 +1377,14 @@
     }
     ctx.text({ x: 210, y: 395, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: PALETTE.warn }, params.left.footnote);
 
-    // 右側面板（推薦側）
-    ctx.text({ x: 590, y: 65, "text-anchor": "middle", "font-size": 18, "font-weight": "bold", fill: PALETTE.ok }, params.right.title);
-    ctx.text({ x: 590, y: 92, "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" }, params.right.note);
-    ctx.rect({ x: 430, y: 115, width: 320, height: 250, rx: 12, fill: "#273549", stroke: "#384a62" });
+    // 右側面板（推薦側：注入翡翠綠流光防護屏障與時間差順滑破局）
+    const rightAppear = clampNumber((u - 0.12) / 0.28, 0, 1);
+    const rightEase = ctx.motion ? ctx.motion.easeOutCubic(rightAppear) : rightAppear;
+    ctx.text({ x: 590, y: 65, "text-anchor": "middle", "font-size": 18, "font-weight": "bold", fill: PALETTE.ok, opacity: 0.35 + 0.65 * rightEase }, params.right.title);
+    ctx.text({ x: 590, y: 92, "text-anchor": "middle", "font-size": 13, fill: "#94a3b8", opacity: 0.35 + 0.65 * rightEase }, params.right.note);
+    ctx.rect({ x: 430, y: 115, width: 320, height: 250, rx: 12, fill: "#273549", stroke: PALETTE.ok, "stroke-width": 2 });
+    const shieldPulse = ctx.motion ? ctx.motion.breathing(u, 2.5, 0.15) : 1.0;
+    ctx.rect({ x: 428, y: 113, width: 324, height: 254, rx: 14, fill: "none", stroke: "#6ee7b7", "stroke-width": 1.5, opacity: clampNumber(0.45 * shieldPulse * rightEase, 0.15, 0.8) });
 
     if (params.right.mode === "layered") {
       const rows = params.right.rows;
@@ -1332,8 +1472,10 @@
     const stageDescText = descs[stageIdx] || "";
     ctx.text({ x: 310, y: 84, "font-size": 13, "font-weight": "bold", fill: "#f1f5f9" }, stageDescText);
 
-    // 中央組織基質主畫布（y: 102..332，高 230）
-    ctx.rect({ x: 50, y: 102, width: 700, height: 230, rx: 14, fill: "#273549", stroke: "#384a62" });
+    // 中央組織基質主畫布（y: 102..332，高 230，隨階段注入微色溫演色）
+    const matrixFills = ["#262d3d", "#2c2f3b", "#223348"];
+    const curMatrixFill = matrixFills[stageIdx] || "#273549";
+    ctx.rect({ x: 50, y: 102, width: 700, height: 230, rx: 14, fill: curMatrixFill, stroke: "#384a62" });
 
     // 專科修復歷程繪製
     const isSpecialty = TIMELINE_SPECIALTY.indexOf(params.connectors) >= 0;
@@ -1446,19 +1588,41 @@
     const currentProgX = 110 + (690 - 110) * u;
     ctx.line({ x1: 110, y1: 355, x2: currentProgX, y2: 355, stroke: PALETTE.accent, "stroke-width": 6, "stroke-linecap": "round" });
 
-    // 三個里程碑點與標籤（全部 y <= 405，嚴格在安全區內）
+    // 三個里程碑點與標籤設定（全部 y <= 405，嚴格在安全區內）
     const nodePositions = [110, 400, 690];
     const thresholds = [0.05, 0.48, 0.92];
     const stageTimes = isClinicalBase ? ["病程初期", "病程中期", "長期追蹤"] : ["術後初期", "修復重塑期", "長期穩定"];
+
+    // 進度線頂部動態時間跟隨膠囊 (Floating Time Bubble，嚴格在字幕與幾何安全區內)
+    const bubbleX = clampNumber(currentProgX, 150, 650);
+    const bubbleText = stageTimes[stageIdx] || "生理修復期";
+    ctx.rect({ x: bubbleX - 38, y: 333, width: 76, height: 16, rx: 4, fill: "#0f172a", stroke: sc.stroke, "stroke-width": 1, opacity: 0.85 });
+    ctx.text({ x: bubbleX, y: 345, "text-anchor": "middle", "font-size": 10, "font-weight": "bold", fill: sc.textFill }, bubbleText);
 
     for (let mIdx = 0; mIdx < 3; mIdx++) {
       const nx = nodePositions[mIdx];
       const isReached = u >= thresholds[mIdx];
       const isActive = (mIdx === stageIdx);
 
-      // 當前活躍階段動態脈動光環
+      // 當前活躍階段動態脈動光環與金色修復微粒子綻放（Sparkle Dust）
       if (isActive) {
-        ctx.circle({ cx: nx, cy: 355, r: 15, fill: "none", stroke: sc.stroke, "stroke-width": 2, opacity: 0.85 });
+        const pulseR = ctx.motion ? (15 + 3 * (ctx.motion.breathing(u, 3, 0.3) - 1.0)) : 15;
+        ctx.circle({ cx: nx, cy: 355, r: pulseR, fill: "url(#grad-healing-glow)", opacity: 0.75 });
+        ctx.circle({ cx: nx, cy: 355, r: pulseR, fill: "none", stroke: sc.stroke, "stroke-width": 2, opacity: 0.85 });
+
+        // 8 顆金色微粒子隨進度向外散開淡出（100% 確定性數學運算）
+        const nodeProgress = clampNumber((u - thresholds[mIdx]) / 0.35, 0, 1);
+        if (nodeProgress > 0 && nodeProgress < 0.95) {
+          const sparkU = ctx.motion ? ctx.motion.easeOutCubic(nodeProgress) : nodeProgress;
+          for (let sp = 0; sp < 8; sp++) {
+            const ang = (sp / 8) * Math.PI * 2 + u * 1.5;
+            const dist = 14 + sparkU * 16;
+            const spx = nx + Math.cos(ang) * dist;
+            const spy = 355 + Math.sin(ang) * dist * 0.75;
+            const spAlpha = Math.sin(nodeProgress * Math.PI) * 0.8;
+            ctx.circle({ cx: spx, cy: spy, r: 2.2, fill: "#fef08a", opacity: clampNumber(spAlpha, 0, 1) });
+          }
+        }
       }
 
       ctx.circle({ cx: nx, cy: 355, r: 10, fill: isReached ? PALETTE.accent : "#334155", stroke: "#ffffff", "stroke-width": 2 });
@@ -1488,6 +1652,12 @@
         },
         stageTimes[mIdx]
       );
+    }
+
+    // 結尾預約卡切入前的柔和暗角過渡 (Vignette Transition)
+    if (u >= 0.94) {
+      const vAlpha = (u - 0.94) / 0.06;
+      ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#000000", opacity: clampNumber(vAlpha * 0.35, 0, 0.35) });
     }
   }
 
@@ -1533,42 +1703,44 @@
     ctx.rect({ x: 90, y: 284, width: 620, height: 64, rx: 6, fill: "#1e3a5f", stroke: eColor, "stroke-width": 2 });
     ctx.text({ x: 145, y: 321, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#e2e8f0" }, layers[2] || "筋膜層");
 
-    // 探頭隨進度 u 沿表皮上方水平移動 (x: 240..620)
-    const probeX = 240 + Math.min(1, u / 0.8) * 380;
+    // 探頭隨進度 u 沿表皮上方水平移動 (x: 240..620，注入平滑減速緩動)
+    const probeProgress = ctx.motion ? ctx.motion.easeInOutQuad(Math.min(1, u / 0.8)) : Math.min(1, u / 0.8);
+    const probeX = 240 + probeProgress * 380;
     ctx.rect({ x: probeX - 48, y: 66, width: 96, height: 42, rx: 8, fill: "#475569", stroke: "#cbd5e1", "stroke-width": 2 });
     ctx.rect({ x: probeX - 36, y: 108, width: 72, height: 18, rx: 4, fill: eColor });
     ctx.text({ x: probeX, y: 92, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#ffffff" }, params.probe_label);
 
     const nPoints = params.focal_points || 5;
     if (params.mode === "volumetric") {
-      // 電波容積式加熱：由探頭向真皮層發散扇形熱場波弧
+      // 電波容積式加熱：由探頭向真皮層發散扇形熱場波弧（注入呼吸微律動）
+      const heatPulse = ctx.motion ? ctx.motion.breathing(u, 2.8, 0.12) : 1.0;
       for (let w = 1; w <= 3; w++) {
         const wy = 165 + w * 32;
-        const spread = 45 + w * 22;
+        const spread = (45 + w * 22) * heatPulse;
         ctx.path({
           d: "M " + (probeX - spread) + " " + wy + " Q " + probeX + " " + (wy + 24) + " " + (probeX + spread) + " " + wy,
           fill: "none",
           stroke: PALETTE.warn,
           "stroke-width": 3,
-          opacity: 0.75
+          opacity: clampNumber(0.75 * heatPulse, 0.3, 0.95)
         });
       }
-      // 已掃過的真皮層均勻溫熱區
+      // 已掃過的真皮層均勻溫熱區（注入 2.5D 透光能量光球）
       for (let i = 0; i < nPoints; i++) {
         const fx = 240 + (380 / (nPoints - 1 || 1)) * i;
         const threshold = (i / nPoints) * 0.75;
         if (u >= threshold) {
           const glow = Math.min(1, (u - threshold) / 0.15);
-          ctx.circle({ cx: fx, cy: 232, r: 22 * glow, fill: PALETTE.fat, opacity: 0.35 * glow });
+          ctx.circle({ cx: fx, cy: 232, r: 24 * glow, fill: "url(#grad-energy-core)", opacity: 0.65 * glow });
           ctx.circle({ cx: fx, cy: 232, r: 9 * glow, fill: PALETTE.warn, opacity: 0.85 * glow });
         }
       }
     } else {
-      // 音波聚焦模式：穿透表皮與真皮，精準匯聚於 SMAS 筋膜層形成熱凝結點
+      // 音波聚焦模式：穿透表皮與真皮，精準匯聚於 SMAS 筋膜層形成熱凝結點（2.5D 高光聚焦波束）
       ctx.path({
         d: "M " + (probeX - 30) + " 126 L " + probeX + " 316 L " + (probeX + 30) + " 126 Z",
-        fill: eColor,
-        opacity: 0.28,
+        fill: "url(#grad-energy-beam)",
+        opacity: 0.45,
         stroke: eColor,
         "stroke-width": 1.5,
         "stroke-dasharray": "4 3"
@@ -1578,6 +1750,7 @@
         const threshold = (i / nPoints) * 0.75;
         if (u >= threshold) {
           const p = Math.min(1, (u - threshold) / 0.12);
+          ctx.circle({ cx: fx, cy: 316, r: 18 * p, fill: "url(#grad-healing-glow)", opacity: 0.85 });
           ctx.circle({ cx: fx, cy: 316, r: 15 * p, fill: "none", stroke: PALETTE.ok, "stroke-width": 2, opacity: 0.8 });
           ctx.circle({ cx: fx, cy: 316, r: 7 * p, fill: "#fde9a8", stroke: PALETTE.warn, "stroke-width": 1.5 });
         }
@@ -1619,33 +1792,35 @@
     ctx.text({ x: 420, y: 82, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#ffffff" }, params.beam_label);
 
     if (params.mode === "fractional") {
-      // 飛梭分段微創模式：發射多道平行微創光柱，保留柱間健康組織橋樑
+      // 飛梭分段微創模式：發射多道平行微創光柱，保留柱間健康組織橋樑（注入能量光柱漸層）
       const cols = 6;
       for (let c = 0; c < cols; c++) {
         const cx = 250 + c * 68;
         const fireP = Math.max(0, Math.min(1, (u - c * 0.08) / 0.25));
         if (fireP > 0) {
           const beamH = 175 * fireP;
-          ctx.rect({ x: cx - 5, y: 98, width: 10, height: beamH, rx: 3, fill: bColor, opacity: 0.75 });
-          // 真皮新生修復光圈
+          ctx.rect({ x: cx - 5, y: 98, width: 10, height: beamH, rx: 3, fill: "url(#grad-energy-beam)", opacity: 0.85 });
+          // 真皮新生修復光圈（注入癒合光暈）
           if (u >= 0.45) {
             const healP = Math.min(1, (u - 0.45) / 0.4);
-            ctx.circle({ cx: cx, cy: 255, r: 16 * healP, fill: PALETTE.ok, opacity: 0.45 * healP });
+            ctx.circle({ cx: cx, cy: 255, r: 18 * healP, fill: "url(#grad-healing-glow)", opacity: 0.8 * healP });
+            ctx.circle({ cx: cx, cy: 255, r: 12 * healP, fill: PALETTE.ok, opacity: 0.5 * healP });
           }
         }
       }
       ctx.text({ x: 420, y: 332, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: PALETTE.ok }, params.target_label);
     } else {
-      // 皮秒光震波擊碎色素模式
-      // 脈衝光束 (u: 0.1..0.65)
+      // 皮秒光震波擊碎色素模式（注入同心圓光震波漣漪）
       if (u >= 0.08 && u <= 0.72) {
         const pulseOp = Math.sin(((u - 0.08) / 0.64) * Math.PI);
-        ctx.rect({ x: 412, y: 96, width: 16, height: 155, fill: bColor, opacity: 0.85 * pulseOp });
-        ctx.circle({ cx: 420, cy: 255, r: 28 + (u - 0.08) * 65, fill: "none", stroke: "#fde9a8", "stroke-width": 2.5, opacity: pulseOp });
+        ctx.rect({ x: 412, y: 96, width: 16, height: 155, fill: "url(#grad-energy-beam)", opacity: 0.9 * pulseOp });
+        const rip = ctx.motion ? ctx.motion.ripple(u, 0.1, 75) : { radius: (u - 0.08) * 65, opacity: pulseOp };
+        ctx.circle({ cx: 420, cy: 255, r: 24 + rip.radius, fill: "none", stroke: "#fde9a8", "stroke-width": 2.5, opacity: clampNumber(rip.opacity * pulseOp, 0, 1) });
       }
 
       // 黑色素團塊 (u < 0.35 完整團塊 -> u >= 0.35 震碎為 14 顆微細粉塵向外散開並淡化)
-      const shatterP = Math.max(0, Math.min(1, (u - 0.32) / 0.58));
+      const rawShatterP = Math.max(0, Math.min(1, (u - 0.32) / 0.58));
+      const shatterP = ctx.motion ? ctx.motion.easeOutCubic(rawShatterP) : rawShatterP;
       if (shatterP < 0.45) {
         const bigScale = 1 - shatterP * 1.4;
         ctx.circle({ cx: 420, cy: 255, r: Math.max(8, 36 * bigScale), fill: "#78350f", stroke: "#f6b93b", "stroke-width": 2, opacity: 1 - shatterP });
@@ -1681,10 +1856,11 @@
     ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
     ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
 
-    const relaxP = Math.max(0, Math.min(1, (u - 0.25) / 0.65));
+    const rawRelaxP = Math.max(0, Math.min(1, (u - 0.25) / 0.65));
+    const relaxP = ctx.motion ? ctx.motion.easeOutCubic(rawRelaxP) : rawRelaxP;
     const bColor = ctx.palette(params.blocker_fill, PALETTE.ok);
 
-    // 1. 頂部表皮動態紋曲線（隨 relaxP 逐漸撫平）
+    // 1. 頂部表皮動態紋曲線（隨 relaxP 逐漸平順舒展撫平）
     const foldDepth = 24 * (1 - 0.82 * relaxP);
     const skinPath =
       "M 120 98 L 280 98 Q 310 " + (98 + foldDepth) + " 340 98 " +
@@ -1693,12 +1869,13 @@
     ctx.path({ d: skinPath, fill: "none", stroke: "#f7d9c4", "stroke-width": 6, "stroke-linecap": "round" });
     ctx.text({ x: 615, y: 82, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#f7d9c4" }, params.surface_label);
 
-    // 2. 中央運動神經末梢（軸突終端球體）
+    // 2. 中央運動神經末梢（軸突終端球體，注入活體微律動）
+    const nervePulse = ctx.motion ? ctx.motion.breathing(u, 2.0, 0.03) : 1.0;
     ctx.rect({ x: 382, y: 118, width: 36, height: 42, fill: "#64748b" });
-    ctx.circle({ cx: 400, cy: 175, r: 38, fill: "#334155", stroke: "#94a3b8", "stroke-width": 2.5 });
+    ctx.circle({ cx: 400, cy: 175, r: 38 * nervePulse, fill: "#334155", stroke: "#94a3b8", "stroke-width": 2.5 });
     ctx.text({ x: 265, y: 178, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#cfe0f5" }, params.nerve_label);
 
-    // 神經傳導訊號點 vs 阻斷保護層
+    // 神經傳導訊號點 vs 阻斷保護層（注入癒合微光）
     for (let i = 0; i < 5; i++) {
       const sx = 330 + i * 35;
       if (u < 0.45) {
@@ -1711,7 +1888,8 @@
       }
       if (u >= 0.25) {
         const shieldP = Math.min(1, (u - 0.25) / 0.3);
-        ctx.rect({ x: sx - 12, y: 232, width: 24, height: 8, rx: 4, fill: bColor, opacity: shieldP });
+        ctx.rect({ x: sx - 12, y: 232, width: 24, height: 8, rx: 4, fill: "url(#grad-healing-glow)", opacity: 0.9 * shieldP });
+        ctx.rect({ x: sx - 12, y: 232, width: 24, height: 8, rx: 4, fill: bColor, opacity: 0.65 * shieldP });
       }
     }
 
@@ -1743,13 +1921,14 @@
 
     const layers = params.layer_labels || ["表皮輪廓層", "真皮皮下層"];
     const fColor = ctx.palette(params.filler_fill, PALETTE.gel);
-    const liftP = Math.max(0, Math.min(1, (u - 0.15) / 0.7));
+    const rawLiftP = Math.max(0, Math.min(1, (u - 0.15) / 0.7));
+    const liftP = ctx.motion ? ctx.motion.springGentle(rawLiftP) : rawLiftP;
 
     // 真皮與皮下組織基底框
     ctx.rect({ x: 90, y: 155, width: 620, height: 190, rx: 10, fill: "#273549", stroke: "#475569", "stroke-width": 1.5 });
     ctx.text({ x: 155, y: 325, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#94a3b8" }, layers[1] || "真皮皮下層");
 
-    // 頂部表皮輪廓線（初始中央凹陷，隨凝膠支撐平順隆起）
+    // 頂部表皮輪廓線（初始中央凹陷，隨凝膠支撐平順隆起，注入生物彈性回彈）
     const dipY = 215 - liftP * 62;
     ctx.path({
       d: "M 90 150 L 230 150 Q 400 " + dipY + " 570 150 L 710 150",
@@ -1760,8 +1939,9 @@
     });
     ctx.text({ x: 155, y: 132, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#f7d9c4" }, layers[0] || "表皮輪廓層");
 
-    // 分層凝膠微滴支撐點
+    // 分層凝膠微滴支撐點（注入 2.5D 半透明晶瑩凝膠與微律動）
     const count = params.droplets || 6;
+    const gelBreathing = ctx.motion ? ctx.motion.breathing(u, 2.2, 0.06) : 1.0;
     for (let i = 0; i < count; i++) {
       const row = i % 2;
       const col = Math.floor(i / 2);
@@ -1770,8 +1950,9 @@
       const gy = row === 0 ? 235 : 285;
       const appearP = Math.max(0, Math.min(1, (u - i * 0.09) / 0.2));
       if (appearP > 0) {
-        ctx.circle({ cx: gx, cy: gy, r: 20 * appearP, fill: fColor, opacity: 0.35 * appearP });
-        ctx.circle({ cx: gx, cy: gy, r: 12 * appearP, fill: fColor, stroke: "#ffffff", "stroke-width": 1.5, opacity: 0.9 * appearP });
+        ctx.circle({ cx: gx, cy: gy, r: 24 * appearP * gelBreathing, fill: "url(#grad-energy-core)", opacity: 0.5 * appearP });
+        ctx.circle({ cx: gx, cy: gy, r: 14 * appearP, fill: fColor, opacity: 0.55 * appearP });
+        ctx.circle({ cx: gx, cy: gy, r: 9 * appearP, fill: "#ffffff", opacity: 0.7 * appearP });
       }
     }
 
@@ -1824,16 +2005,18 @@
     const baseCy = 255;
 
     if (u < 0.35) {
-      // 階段 1：微創切口定位與局部麻醉浸潤，飽滿囊腫與完整包膜
+      // 階段 1：微創切口定位與局部麻醉浸潤，飽滿囊腫與完整包膜（注入活體微呼吸）
       const p1 = u / 0.35;
       const toolY = 60 + p1 * 55;
+      const cystPulse = ctx.motion ? ctx.motion.breathing(u, 1.8, 0.03) : 1.0;
       // 微創打孔刀具
       ctx.rect({ x: 393, y: toolY, width: 14, height: 45, rx: 3, fill: "#94a3b8", stroke: "#ffffff", "stroke-width": 1.5 });
       ctx.polygon({ points: "393," + (toolY + 45) + " 407," + (toolY + 45) + " 400," + (toolY + 54), fill: sFill });
       ctx.text({ x: 400, y: toolY - 8, "text-anchor": "middle", "font-size": 12, fill: "#e2e8f0" }, "微旋轉打孔");
 
-      // 飽滿粉瘤囊腫 (r=62)
-      ctx.circle({ cx: cx, cy: baseCy, r: 62, fill: "#332220", stroke: sFill, "stroke-width": 3.5 });
+      // 飽滿粉瘤囊腫 (r=62，注入 2.5D 半透明組織漸層)
+      ctx.circle({ cx: cx, cy: baseCy, r: 62 * cystPulse, fill: "url(#grad-tissue-subsurface)", opacity: 0.9 });
+      ctx.circle({ cx: cx, cy: baseCy, r: 62 * cystPulse, fill: "#332220", opacity: 0.55, stroke: sFill, "stroke-width": 3.5 });
       // 內部角質碎屑核
       for (let k = 0; k < 9; k++) {
         const ang = (k / 9) * Math.PI * 2;
@@ -1844,8 +2027,9 @@
       ctx.text({ x: cx + 75, y: baseCy - 30, "text-anchor": "start", "font-size": 11, fill: sFill }, params.sac_label);
       ctx.line({ x1: cx + 45, y1: baseCy - 20, x2: cx + 72, y2: baseCy - 28, stroke: sFill, "stroke-width": 1.2 });
     } else if (u < 0.70) {
-      // 階段 2：減壓排空與引流，角質碎屑經微創孔流暢抽吸，囊壁塌陷
-      const p2 = (u - 0.35) / 0.35;
+      // 階段 2：減壓排空與引流，角質碎屑經微創孔流暢抽吸，囊壁塌陷（注入減速平滑收縮）
+      const rawP2 = (u - 0.35) / 0.35;
+      const p2 = ctx.motion ? ctx.motion.easeOutCubic(rawP2) : rawP2;
       const rNow = 62 - p2 * 32;
 
       // 負壓引流管
@@ -1866,13 +2050,15 @@
       }
       ctx.text({ x: cx, y: baseCy + 4, "text-anchor": "middle", "font-size": 11, fill: "#fde047" }, params.core_label);
     } else {
-      // 階段 3：完整薄膜囊袋剝離抽出，傷口極小密合，防復發
-      const p3 = (u - 0.70) / 0.30;
+      // 階段 3：完整薄膜囊袋剝離抽出，傷口極小密合，防復發（注入金色癒合光暈）
+      const rawP3 = (u - 0.70) / 0.30;
+      const p3 = ctx.motion ? ctx.motion.easeOutCubic(rawP3) : rawP3;
       // 微創鑷子
       ctx.path({ d: "M 390 50 L 398 120 M 410 50 L 402 120", fill: "none", stroke: "#94a3b8", "stroke-width": 2 });
 
       // 被完整夾出開口的囊膜
       const sacY = 180 - p3 * 65;
+      ctx.circle({ cx: cx, cy: sacY, r: 24, fill: "url(#grad-healing-glow)", opacity: 0.8 });
       ctx.circle({ cx: cx, cy: sacY, r: 18, fill: "none", stroke: PALETTE.ok, "stroke-width": 3 });
       ctx.text({ x: cx + 40, y: sacY + 4, "text-anchor": "start", "font-size": 12, "font-weight": "bold", fill: PALETTE.ok }, "完整囊壁已剝離");
 
@@ -2085,11 +2271,12 @@
     ctx.line({ x1: 512, y1: 170, x2: 512, y2: 270, stroke: PALETTE.accent, "stroke-width": 2.5, "stroke-dasharray": "4 3" });
     ctx.text({ x: 519, y: 176, "text-anchor": "start", "font-size": 11, "font-weight": "bold", fill: PALETTE.accent }, "微創隱痕切口");
 
-    // 計算筋膜上提與緊實位移 (45度向量提拉)
+    // 計算筋膜上提與緊實位移 (45度向量提拉，注入生物筋膜彈性回彈)
     let liftX = 0;
     let liftY = 0;
     if (u >= 0.35 && u < 0.70) {
-      const p2 = (u - 0.35) / 0.35;
+      const rawP2 = (u - 0.35) / 0.35;
+      const p2 = ctx.motion ? ctx.motion.springGentle(rawP2) : rawP2;
       liftX = p2 * 32;
       liftY = -p2 * 32;
     } else if (u >= 0.70) {
@@ -2097,7 +2284,7 @@
       liftY = -32;
     }
 
-    // 2. SMAS 筋膜瓣與面頰組織 (琥珀金色筋膜層)
+    // 2. SMAS 筋膜瓣與面頰組織 (琥珀金色 2.5D 高光筋膜層)
     const cheekX = 260 + liftX;
     const cheekY = 240 + liftY;
     const jowlX = 320 + liftX * 0.8;
@@ -2105,8 +2292,8 @@
 
     ctx.path({
       d: "M " + (cheekX + 30) + " 170 Q " + (cheekX - 60) + " " + cheekY + " " + jowlX + " " + jowlY + " Q 410 " + (330 + liftY * 0.5) + " 490 285 L 490 190 Z",
-      fill: "#d97706",
-      opacity: 0.45,
+      fill: "url(#grad-fascia-sheen)",
+      opacity: 0.55,
       stroke: "#fbbf24",
       "stroke-width": 2
     });
@@ -2208,11 +2395,12 @@
     ctx.line({ x1: midX - 25, y1: 125, x2: midX + 25, y2: 125, stroke: PALETTE.accent, "stroke-width": 3 });
     ctx.text({ x: midX, y: 140, "text-anchor": "middle", "font-size": 10, "font-weight": "bold", fill: PALETTE.accent }, "2cm微創隱痕切口");
 
-    // 兩側闊頸肌分離寬度 (Diastasis Gap)
+    // 兩側闊頸肌分離寬度 (Diastasis Gap，注入肌肉彈力拉攏回彈)
     let halfGap = 36;
     if (u >= 0.35 && u < 0.70) {
-      const p2 = (u - 0.35) / 0.35;
-      halfGap = 36 * (1 - p2);
+      const rawP2 = (u - 0.35) / 0.35;
+      const p2 = ctx.motion ? ctx.motion.springGentle(rawP2) : rawP2;
+      halfGap = Math.max(0, 36 * (1 - p2));
     } else if (u >= 0.70) {
       halfGap = 0;
     }
@@ -2364,12 +2552,13 @@
       ctx.text({ x: 400, y: 135, "text-anchor": "middle", "font-size": 11, fill: "#93c5fd", opacity: p1 }, "骨膜下微創剝離顯露");
     }
 
-    // 3. 截骨位移計算
+    // 3. 截骨位移計算（注入物理質量減速滑移）
     let slideX = 0;
     let slideY = 0;
     const maxSlide = shiftMm * 3.5;
     if (u >= 0.35 && u < 0.70) {
-      const p2 = (u - 0.35) / 0.35;
+      const rawP2 = (u - 0.35) / 0.35;
+      const p2 = ctx.motion ? ctx.motion.easeOutCubic(rawP2) : rawP2;
       slideX = p2 * maxSlide;
       slideY = p2 * (maxSlide * 0.3);
     } else if (u >= 0.70) {
@@ -2390,6 +2579,9 @@
     ctx.line({ x1: 210, y1: 232, x2: 570, y2: 232, stroke: "#f43f5e", "stroke-width": 2, "stroke-dasharray": "4 3" });
     if (u < 0.35) {
       ctx.text({ x: 595, y: 236, "font-size": 11, "font-weight": "bold", fill: "#fb7185" }, "超音波截骨線");
+    } else if (u >= 0.70) {
+      // 截骨癒合交界面金色癒合微光
+      ctx.rect({ x: 230, y: 228, width: 320, height: 8, rx: 4, fill: "url(#grad-healing-glow)", opacity: 0.85 });
     }
 
     // 4. 重要神經路徑與安全保護光暈
@@ -2402,13 +2594,13 @@
     const nerveEndY = 270 + slideY * 0.35;
 
     if (isProtected) {
-      const glowPulse = 0.35 + 0.25 * Math.sin(u * 6.28);
+      const glowPulse = ctx.motion ? (0.35 + 0.25 * (ctx.motion.breathing(u, 2.5, 0.3) - 1.0)) : (0.35 + 0.25 * Math.sin(u * 6.28));
       ctx.path({
         d: "M " + nerveOriginX + " " + nerveOriginY + " Q " + (nerveOriginX + 40) + " " + (nerveOriginY + 45) + " " + nerveEndX + " " + nerveEndY,
         fill: "none",
         stroke: "#38bdf8",
         "stroke-width": 10,
-        opacity: glowPulse
+        opacity: clampNumber(glowPulse, 0.2, 0.8)
       });
     }
 
@@ -2526,15 +2718,18 @@
     }
   }
 
-  // 右側微觀機轉面板（x 535..745, y 85..345）：細胞群、病灶點與修復環
+  // 右側微觀機轉面板（x 535..745, y 85..345）：細胞群、病灶點與修復環（注入活體微律動與發炎同心漣漪）
   function pmDrawMicro(ctx, env, p) {
     ctx.rect({ x: 535, y: 85, width: 210, height: 260, rx: 12, fill: "#0f172a", stroke: "#334155", "stroke-width": 1.5 });
     ctx.text({ x: 640, y: 106, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#cbd5e1" }, "微觀機轉");
     ctx.circle({ cx: 640, cy: 205, r: 70, fill: "#1e293b", stroke: "#475569", "stroke-width": 1.5 });
+
+    // 細胞群呼吸微律動
+    const cPulse = ctx.motion ? ctx.motion.breathing(env.u, 2.0, 0.05) : 1.0;
     const cells = [[606, 184], [674, 184], [640, 212], [606, 240], [674, 240]];
     cells.forEach(function (c) {
-      ctx.circle({ cx: c[0], cy: c[1], r: 18, fill: PALETTE.pale, opacity: 0.35 + 0.25 * (1 - env.lvl) });
-      ctx.circle({ cx: c[0], cy: c[1], r: 6, fill: PALETTE.skin, opacity: 0.8 });
+      ctx.circle({ cx: c[0], cy: c[1], r: 18 * cPulse, fill: PALETTE.pale, opacity: 0.35 + 0.25 * (1 - env.lvl) });
+      ctx.circle({ cx: c[0], cy: c[1], r: 6 * cPulse, fill: PALETTE.skin, opacity: 0.8 });
     });
     for (let k = 0; k < 8; k++) {
       const a = k * Math.PI / 4 + 0.3;
@@ -2546,19 +2741,33 @@
         opacity: Math.min(1, env.lvl * env.amp * 1.3)
       });
     }
+
+    // 發炎紅腫同心擴散光波
+    if (env.lvl > 0.15 && ctx.motion) {
+      const rip = ctx.motion.ripple(env.u, 0, 60);
+      ctx.circle({
+        cx: 640, cy: 205, r: 15 + rip.radius, fill: "none",
+        stroke: PALETTE.warn, "stroke-width": 2, opacity: clampNumber(rip.opacity * env.lvl, 0, 0.8)
+      });
+    }
+
     ctx.circle({
       cx: 640, cy: 205, r: 30 + 26 * env.lvl, fill: "none",
       stroke: ctx.palette(p.accent_fill, PALETTE.warn), "stroke-width": 2.5, opacity: 0.4 + 0.5 * env.lvl
     });
+    // 屏障修復環注入金色光暈
+    if (env.rep > 0.2) {
+      ctx.circle({ cx: 640, cy: 205, r: 58, fill: "url(#grad-healing-glow)", opacity: 0.45 * env.rep });
+    }
     ctx.circle({ cx: 640, cy: 205, r: 58, fill: "none", stroke: PALETTE.ok, "stroke-width": 3, opacity: env.rep });
     ctx.text({ x: 640, y: 318, "text-anchor": "middle", "font-size": 13, fill: "#e2e8f0" }, pmStageText(env.u));
   }
 
-  // 呼吸道黏膜：管腔切面、纖毛上皮、病原微粒與黏膜腫脹
+  // 呼吸道黏膜：管腔切面、纖毛上皮、病原微粒與黏膜腫脹（注入 2.5D 黏膜發炎透光漸層）
   function pmRespiratory(ctx, env) {
     const wt = 20 + 26 * env.lvl;
     ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: PALETTE.pale, opacity: 0.9 });
-    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: PALETTE.blood, opacity: env.lvl * 0.45 });
+    ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: "url(#grad-mucosa-inflamed)", opacity: env.lvl * 0.75 });
     ctx.rect({ x: 70, y: 150, width: 430, height: 130, rx: 10, fill: PALETTE.ok, opacity: env.rep * 0.25 });
     ctx.rect({ x: 70, y: 150 + wt, width: 430, height: 130 - 2 * wt, fill: "#0b1324" });
     const yt = 150 + wt;
@@ -3702,7 +3911,8 @@
     PALETTE: PALETTE,
     resolveParams: resolveParams,
     sceneDuration: sceneDuration,
-    mount: mount
+    mount: mount,
+    motion: ClinicMotion
   };
 
   root.ClinicVisual = ClinicVisual;

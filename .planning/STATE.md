@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 24（上傳中心增強：名稱欄位與網址解析選項）-- COMPLETED
-Plan: 24-01、24-02、24-03 均已實作、加固與 86/86 專屬測試通過
-Status: Milestone v1.5 In Progress (Phase 23、Phase 24 完成)
-Last activity: 2026-10-14 -- 完成上傳中心增強（名稱欄位驗證與共用管線抽出、POST /api/v1/admin/upload-url 雙層 SSRF 防禦、Phase 23 適配器、前端來源切換/名稱欄位/Node 行為測試全數通過）
+Phase: 43（自動化動態解說動畫影片佇列：Automated Explainer Video Queue）-- COMPLETED
+Plan: 43-01、43-02、43-03 全數完成（13 項核心渲染、CLI 批次、API 與端到端測試 100% 通過）
+Status: Milestone v1.5 In Progress (Phase 41, Phase 44, Phase 43 全數完工交付)
+Last activity: 2026-11-12 -- 圓滿完成 Phase 43 自動化動態解說動畫影片佇列：實作核心佇列引擎 `src/visual/video_queue.py` 直接自資料庫 IR 逐格無頭截圖並合成 H.264 MP4（16:9 橫屏 1920×1080 與 9:16 豎屏 1080×1920 雙尺寸）、SHA-256 增量快取防重染、專屬 CLI `scripts/run_video_render_queue.py`（支援 --dry-run 盤點）、夜間批次第 9 階段離峰自動排程、FastAPI 管理端狀態/非同步觸發/安全下載 API，以及 Web 後台 HTML5 影片燈箱即時預覽與雙尺寸一鍵下載。全庫 398 筆次世代醫學向量動畫具備完整 MP4 實體化能力。
 
 Progress: [██████████] 100%
 

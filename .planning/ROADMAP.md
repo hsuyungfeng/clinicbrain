@@ -40,6 +40,9 @@
 | 33. 專科解剖對照與修復歷程語意繪圖全面升級 | 2/2 | Complete | 2026-10-21 |
 | 39. 台灣健保 200 大核心疾病視覺動畫規模化 | 4/4 | Complete | 2026-11-07 |
 | 40. 台灣健保 201-400 大次級盛行疾病動畫管線與全景索引擴充 | 4/4 | Complete | 2026-11-09 |
+| 41. 動態規格標準化與 3D 臨床解剖探索 | 3/3 | Complete | 2026-11-11 |
+| 44. 次世代生動向量視覺引擎全面升級 | 0/3 | In Progress | 2026-11-11 |
+| 43. 自動化動態解說動畫影片佇列 | 0/3 | Planned | 2026-11-11 |
 
 ## Phase Details
 
@@ -321,6 +324,44 @@ Plans:
 - [x] 40-02-PLAN.md — 201-400 專科圖元與藍圖語意擴充（眼科、耳鼻喉、泌尿、牙周再生與中醫特種療法）（Wave 2）
 - [x] 40-03-PLAN.md — 201-400 規模化編譯器與 DeepSeek/本機雙模自癒生成管線（Wave 3）
 - [x] 40-04-PLAN.md — Herdr 多代理協同驗收、Playwright 抽幀審計與全景矩陣草稿入庫（Wave 4）
+
+### Phase 41: 動態規格標準化與 3D 臨床解剖探索 (Motion-Prompt Integration & BodyVista 3D Anatomy PoC)
+
+**Goal**: 抽取 `motion-prompt` 動態規格與緩動預設整合至 `clinic-visual-batch` 技能庫提升 3 幕解說卡品質；於沙盒環境評估 `FreedomIntelligence/BodyVista` 3D 模型檔案體積與醫美專科精細度，並完成 3D 前端組件架構規劃與 PageIndex 關聯設計。
+**Status**: Complete (commit 驗收完成：motion-prompt 字典整合、BodyVista 專科 PoC 與 3D 前端架構設計完成，Tester Hermes 獨立驗收 6/6 PASS)
+**Depends on**: Phase 30（場景引擎）、Phase 31（由推理樹自動生成動畫草稿）、Phase 40（1-400 全景索引）
+**Requirements**: P41-MOTION-PROMPT, P41-BODYVISTA-POC, P41-ANATOMY-ROADMAP
+**Plans**: 3 plans
+Plans:
+- [x] 41-01-PLAN.md — motion-prompt 動態規格字典與緩動預設模組整合至 clinic-visual-batch（Wave 1）
+- [x] 41-02-PLAN.md — FreedomIntelligence/BodyVista 沙盒概念驗證（PoC）與專科精細度評估（Wave 2）
+- [x] 41-03-PLAN.md — 3D 臨床解剖檢視器前端組件架構與 PageIndex 關聯設計（Wave 3）
+
+### Phase 44: 次世代生動向量視覺引擎全面升級 (Next-Gen Dynamic Vector Visual Engine)
+
+**Goal**: 在資料庫零改動、398 筆已發布 Typed IR 零搬遷的前提下，升級 `visual_engine.js` 純函式確定性繪圖引擎，實裝 `ClinicMotion` 物理動態庫（非線性緩動、果凍回彈、呼吸微律動）、升級 11 大專科藍圖（2.5D 半透明體積漸層、高光掃過、深層環境陰影與同心圓漣漪）、對照場景顫動與修復時間軸金色粒子綻放演繹，使全庫 398 部動畫立竿見影變得生動活潑。
+**Status**: Complete
+**Depends on**: Phase 30（場景引擎）、Phase 41（motion-prompt 動態字典）
+**Requirements**: P44-CLINIC-MOTION, P44-VOLUMETRIC-SHADING, P44-BREATHING-PULSE, P44-PARTICLE-BURST
+**Plans**: 3 plans
+Plans:
+- [x] 44-01-PLAN.md — ClinicMotion 物理動態數學庫實裝（緩動、果凍回彈、呼吸微律動、漣漪）
+- [x] 44-02-PLAN.md — 11 大專科藍圖 2.5D 光影、體積漸層與活體微環境全面升級
+- [x] 44-03-PLAN.md — 對照場景震顫、修復時間軸金色粒子綻放與 Playwright 確定性全套驗收
+
+### Phase 43: 自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)
+
+**Goal**: 將資料庫中已核准之 398 筆 24 秒醫學向量動畫資產轉化為院所實體多媒體與社群短影音素材，支援離線自動批次渲染為 1080p H.264 MP4（16:9 電視看板與 9:16 Reels/LINE 豎屏雙規格）、SHA-256 增量快取與夜間離峰排程整合。
+**Status**: Complete
+**Depends on**: Phase 30（場景引擎與 MP4 匯出原型）、Phase 39/40（1-400 全景資產）
+**Requirements**: P43-VIDEO-QUEUE, P43-DUAL-ASPECT, P43-NIGHTLY-INTEGRATION, P43-ADMIN-SERVE
+**Plans**: 3 plans
+Plans:
+- [x] 43-01-PLAN.md — 影片佇列引擎實作、直接讀取資料庫 IR 渲染與雙尺寸支援（Wave 1）
+- [x] 43-02-PLAN.md — 夜間批次離峰排程整合、增量快取跳過與 CLI 工具（Wave 2）
+- [x] 43-03-PLAN.md — 管理端 API、Web 後台全景矩陣影片狀態與下載預覽（Wave 3）
+
+
 
 
 

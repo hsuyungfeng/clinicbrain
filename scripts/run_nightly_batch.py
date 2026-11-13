@@ -109,6 +109,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="略過 24 小時預先生成主體醫學資訊階段",
     )
+    parser.add_argument(
+        "--skip-video-render",
+        action="store_true",
+        help="略過動態解說動畫影片佇列渲染階段",
+    )
     soap_mode = parser.add_mutually_exclusive_group()
     soap_mode.add_argument(
         "--skip-soap",
@@ -310,6 +315,7 @@ def main(
             max_pending=args.max_pending,
             time_budget_seconds=args.time_budget_seconds,
             enable_patient_prefill=not args.skip_patient_prefill,
+            skip_video_render=args.skip_video_render,
             prefill_llm_call=prefill_llm,
         )
 

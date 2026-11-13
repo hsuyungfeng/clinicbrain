@@ -64,7 +64,23 @@ Scene 3 呈現動態三階段生理修復進程，具備頂部動態階段看板
 - **組織單元效果**：可選用 `unit_effect: "glow_restored"`（組織活力全面復原金色光環）。
 - **免責條款強制**：Scene 3 的 `caption` 結尾**必須包含**：「恢復程度因人而異，需由醫師當面評估。」或「實際因人而異需由醫師當面評估。」
 
-### 2.5 嚴格法規與格式鐵則 (Hard Constraints)
+### 2.5 動態規格與緩動預設規範（Motion & Camera Presets from motion-prompt）
+為根除過去 LLM 生成動畫時口語描述模糊（如「讓針劑淡入」、「探頭發光」）導致的抽搐或不自然問題，自 Phase 41 起引進 `showheyohtaki/motion-prompt` 規格庫：
+1. **標準動效字典庫**：收錄於 `.agents/skills/clinic-visual-batch/resources/motion_vocab.json`。
+2. **標準緩動曲線（Easings）**：
+   - `ease_out_cubic` (`[0.215, 0.61, 0.355, 1.0]`)：用於組織層次展開、病灶高亮放大。
+   - `ease_out_quad` (`[0.25, 0.46, 0.45, 0.94]`)：用於手術器械平滑推進定位、微滴均勻沉降。
+   - `ease_in_out_quad` (`[0.455, 0.03, 0.515, 0.955]`)：用於 Scene 2 對照左右切換與相機水平橫搖。
+   - `spring_gentle` (`[0.175, 0.885, 0.32, 1.1]`)：用於彈力組織復位、皮下微滴與組織平滑交融。
+   - `anticipate` (`[0.36, 0.0, 0.66, -0.56]`)：用於雷射/音波聚能蓄勢與震波擊碎。
+3. **臨床動作詞彙（Motions）**：
+   - 外科操作：`slice_dissect`（層次切開）、`retraction_tighten`（拉提緊縮）。
+   - 微整注射：`droplet_diffuse`（多層微滴擴散）。
+   - 光電儀器：`vibration_shatter`（震波擊碎）、`pulse_glow`（光暈脈動）。
+   - 生理演進：`metabolism_dissolve`（代謝消解）、`stagger_reveal`（階梯漸入）。
+4. **生成約束**：Prompt 指引 LLM 在編寫動效參數時，動作與時序描述必須符合上述詞典標準，杜絕天馬行空的不合規動態。
+
+### 2.6 嚴格法規與格式鐵則 (Hard Constraints)
 1. **零阿拉伯數字鐵則**：全文本（`title`、`caption`、`labels`、`params` 所有字串）**嚴禁出現任何半形或全形阿拉伯數字（0-9、０-９）**！一律使用中文數字（如「二公分」、「九十度」、「五毫米」）。
 2. **零價格洩漏**：嚴禁提及任何收費金額、促銷或費用字眼。
 3. **零違規保證療效**：嚴禁使用「保證有效」、「保證根除」、「百分之百」、「零風險」、「完全不復發」等違反台灣醫療法之禁用詞彙。

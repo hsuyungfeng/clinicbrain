@@ -1,0 +1,146 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "ClinicBrain 專科解剖與病理向量動畫標準動態字典（參考 showheyohtaki/motion-prompt 標準化規格）",
+    "source_reference": "showheyohtaki/motion-prompt & clinicbrain clinic-visual-batch",
+    "duration_cycle_seconds": 24.0,
+    "scenes_count": 3,
+    "scene_duration_seconds": 8.0,
+    "compliance": {
+      "traditional_chinese_only": true,
+      "zero_price_leakage": true,
+      "no_guarantee_of_cure": true
+    }
+  },
+  "easings": {
+    "linear": {
+      "name": "等速",
+      "bezier": [0.0, 0.0, 1.0, 1.0],
+      "use_case": "持續自轉或恆定微粒流動"
+    },
+    "ease_out_quad": {
+      "name": "平滑淡出減速",
+      "bezier": [0.25, 0.46, 0.45, 0.94],
+      "use_case": "手術器械推進定位、微滴沉降"
+    },
+    "ease_out_cubic": {
+      "name": "立方漸慢緩動",
+      "bezier": [0.215, 0.61, 0.355, 1.0],
+      "use_case": "組織層次自然展開、病灶高亮放大"
+    },
+    "ease_in_out_quad": {
+      "name": "雙向平滑過渡",
+      "bezier": [0.455, 0.03, 0.515, 0.955],
+      "use_case": "對照場景左右平移切換、鏡頭水平橫搖"
+    },
+    "spring_gentle": {
+      "name": "柔和彈性回彈",
+      "bezier": [0.175, 0.885, 0.32, 1.1],
+      "use_case": "彈力組織復位、皮下微滴平滑交融"
+    },
+    "anticipate": {
+      "name": "預備反拉蓄勢",
+      "bezier": [0.36, 0.0, 0.66, -0.56],
+      "use_case": "雷射脈衝聚能、針劑施打前微縮"
+    }
+  },
+  "motions": {
+    "pulse_glow": {
+      "name": "光暈脈動",
+      "category": "highlight",
+      "default_easing": "ease_in_out_quad",
+      "duration_range": [0.6, 1.2],
+      "description": "神經保護環、病灶發炎熱區、活性光芒節奏閃爍"
+    },
+    "focus_zoom": {
+      "name": "焦點推進",
+      "category": "camera",
+      "default_easing": "ease_out_cubic",
+      "duration_range": [0.8, 1.5],
+      "description": "鏡頭拉近特寫病理切面或細胞/筋膜微觀結構"
+    },
+    "stagger_reveal": {
+      "name": "階梯漸入",
+      "category": "transition",
+      "default_easing": "ease_out_quad",
+      "duration_range": [0.3, 0.6],
+      "description": "微滴均勻擴散、骨痂階段生長、時間軸多節點依序浮現"
+    },
+    "camera_pan": {
+      "name": "鏡頭橫搖",
+      "category": "camera",
+      "default_easing": "ease_in_out_quad",
+      "duration_range": [1.0, 2.0],
+      "description": "由左側傳統風險平移至右側微創處置對照"
+    },
+    "wipe_reveal": {
+      "name": "擦除顯露",
+      "category": "transition",
+      "default_easing": "ease_out_cubic",
+      "duration_range": [0.8, 1.2],
+      "description": "組織切開顯露深層筋膜、水腫消退顯露平整肌理"
+    },
+    "slice_dissect": {
+      "name": "層次切開",
+      "category": "surgical",
+      "default_easing": "ease_out_quad",
+      "duration_range": [0.5, 1.0],
+      "description": "外科手術刀或超音波刀精準切分皮下與 SMAS"
+    },
+    "metabolism_dissolve": {
+      "name": "代謝消解",
+      "category": "physiological",
+      "default_easing": "ease_out_cubic",
+      "duration_range": [1.0, 1.8],
+      "description": "暗紫瘀血逐漸轉化褪色、結節團塊溶解"
+    },
+    "vibration_shatter": {
+      "name": "震波擊碎",
+      "category": "energy",
+      "default_easing": "anticipate",
+      "duration_range": [0.4, 0.8],
+      "description": "超音波乳化脂肪、皮秒雷射光震波擊碎色素"
+    },
+    "droplet_diffuse": {
+      "name": "微滴擴散",
+      "category": "injection",
+      "default_easing": "ease_out_quad",
+      "duration_range": [0.6, 1.2],
+      "description": "玻尿酸多層次微滴均勻分佈組織間隙"
+    },
+    "retraction_tighten": {
+      "name": "拉提緊縮",
+      "category": "surgical",
+      "default_easing": "ease_out_cubic",
+      "duration_range": [0.8, 1.5],
+      "description": "筋膜懸吊收緊、皮膚回彈貼合"
+    }
+  },
+  "camera_actions": {
+    "zoom_in": {
+      "name": "鏡頭推進",
+      "scale_target": 1.25,
+      "default_easing": "ease_out_cubic"
+    },
+    "pan_horizontal": {
+      "name": "水平搖鏡",
+      "translation_x": 0.35,
+      "default_easing": "ease_in_out_quad"
+    },
+    "tilt_vertical": {
+      "name": "垂直俯仰",
+      "translation_y": 0.2,
+      "default_easing": "ease_out_quad"
+    },
+    "static_framing": {
+      "name": "靜態定焦",
+      "default_easing": "linear"
+    }
+  },
+  "guardrails": [
+    "所有動態單次持續時間不得超過所屬場景總長度 8.0 秒",
+    "所有貝茲曲線數值需符合確定性實體數值規範",
+    "動態效果不得出現誇大、扭曲或不實之瞬間痊癒表現",
+    "所有文字說明必須使用台灣繁體正體中文"
+  ]
+}

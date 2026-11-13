@@ -185,6 +185,46 @@ Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
 
 ---
 
+## 6B. Phase 22 ~ 40 摘要與 Phase 41 規劃（2026-11-11 更新）
+
+### 6B.1 近期里程碑（Phase 22 ~ 40）進展摘要
+- **Phase 22~28**：RAG 提問檢索優化（BM25 排序）、網址與檔案上傳中心增強、病人端先答後導與對話式諮詢。
+- **Phase 29~34**：一般醫學視覺解說卡、確定性場景引擎（`visual_engine.js`）、推理樹自動生成動畫草稿、自動昇華機制與審核加固。
+- **Phase 35~37**：臺灣基層門診 36 項常見疾病（ICD-10-CM）知識庫、病理機制藍圖、ClinicBrain Native Harness² 雙層遞迴自進化架構與文本蒸餾。
+- **Phase 38~40**：全自動診所網站爬取與智能知識提煉引擎、臺灣健保 200 大核心疾病規模化與資產去重、1-400 全景疾病目錄與次專科動畫草稿入庫（全庫總資產達到 400 筆）。
+
+### 6B.2 Phase 41：動態規格標準化與 3D 臨床解剖探索（進行中，2026-11-11 新增）
+
+為持續升級 PageIndex 臨床推理樹之 3 幕向量動畫卡品質，並佈局醫美與整形外科 3D 臨床可視化，本階段規劃三步驟工作：
+
+| 步驟 | 主題 | 核心任務與驗收要求 |
+|---|---|---|
+| **第一步（立即實施，高投報）** | `motion-prompt` 動態規格與緩動預設抽取整合 | 抽取 `showheyohtaki/motion-prompt` 的 144 個精選動效標準名稱、鏡頭運動（camera zoom/pan）、純 Canvas 2D/CSS 緩動曲線（easing curves）規格為輕量模組，收斂至 `.agents/skills/clinic-visual-batch/resources/motion_vocab.json`；讓本地大模型生成「PageIndex 3 幕衛教卡片」具備精確動效參數，立即可見品質提升。 |
+| **第二步（沙盒概念驗證 PoC）** | `FreedomIntelligence/BodyVista` 專科解剖評估 | 於沙盒環境 clone `FreedomIntelligence/BodyVista`，實測檢視 3D 模型檔案體積（GLTF/GLB）與 WebGL 資源結構；抽查 1~2 個緻妍診所核心療程（例如：顏面拉皮／音波的臉部 SMAS 層與神經血管走向，或是胸大肌／乳腺腔隙），評估其解剖模型精細度是否達到整形外科衛教水準。 |
+| **第三步（架構整合規劃）** | 3D 解剖檢視器前端組件與 PageIndex 關聯設計 | 若 PoC 評估通過，規劃將 3D 解剖檢視器封裝為獨立前端組件，透過推理樹 `doc_id` 對應之解剖 ID 自動連動旋轉與視角聚焦；確保符合繁體中文、零價格洩漏與禁止保證療效之醫療法規防線。 |
+
+### 6B.3 Phase 43：自動化動態解說動畫影片佇列（進行中，2026-11-11 新增）
+
+將全庫已核准之 398 筆 24 秒醫學動畫轉化為院所實體多媒體看板與社群推播短影音：
+
+| 任務代號 | 任務主題 | 核心工作與驗收要求 |
+|---|---|---|
+| **43-01** | 自動化影片佇列引擎 (`src/visual/video_queue.py`) | 支援直接從資料庫 `visual_assets` 讀取 IR、動態記憶體合成、多尺寸輸出（16:9 橫屏 1920×1080、9:16 豎屏 1080×1920）、SHA-256 增量快取防重複渲染。 |
+| **43-02** | 夜間批次排程與 CLI 工具 | 整合至 `src/batch/runner.py` 離峰階段，提供 CLI 入口 `scripts/run_video_render_queue.py`，支援 `--batch`、`--limit`、`--topic-key` 與斷點續跑。 |
+| **43-03** | 管理端 API 與 Web App 預覽下載 | 提供 `POST /api/v1/admin/visual/render-video` 與後台全景矩陣「🎬 影片狀態」快捷標籤、支援在線預覽與一鍵下載 MP4。 |
+
+### 6B.4 Phase 44：次世代生動向量視覺引擎全面升級（優先執行中，2026-11-11 新增）
+
+在資料庫零改動、398 筆已發布 Typed IR 零搬遷的前提下，升級 `visual_engine.js` 向量繪圖引擎，注入 `motion-prompt` 物理動態學與 2.5D 生物組織光影，使全庫 398 部動畫立竿見影變得生動活潑；完成後接續執行 Phase 43（MP4 離線渲染佇列）：
+
+| 任務代號 | 任務主題 | 核心工作與驗收要求 |
+|---|---|---|
+| **44-01** | `ClinicMotion` 物理動態數學庫實裝 | 在 `visual_engine.js` 封裝非線性緩動（`easeOutCubic`, `easeInOutQuad`）、組織彈力過衝（`springGentle`）、預備蓄力（`anticipate`）與呼吸微律動（`createBreathingPulse`）。 |
+| **44-02** | 11 大專科藍圖 2.5D 光影與微環境升級 | 升級 `drawPathologyMechanism`、`drawProcessDiagram`、`drawSurgicalAction` 等繪圖函式，導入雙層半透明徑向漸層、高光掃過線、體積陰影與同心圓漣漪。 |
+| **44-03** | 對照顫動、修復粒子與確定性全套驗收 | 升級 Scene 2 風險震顫與 Scene 3 金色粒子綻放；執行 Playwright 60fps seek 確定性測試與 398 筆無迴歸驗證。 |
+
+---
+
 ## 7. 重要背景與教訓（避免重蹈覆轍）
 
 1. **舊系統 `DrtoolboxLocalServer` 已經做過類似的事**，不是從零開始設計。同一台機器本機路徑
