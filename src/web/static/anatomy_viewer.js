@@ -71,18 +71,12 @@ export class ClinicAnatomyViewer extends HTMLElement {
       return;
     }
 
-    // 延遲載入 (Lazy Load)
-    if ('IntersectionObserver' in window) {
-      this._observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !this._initialized) {
-          this._initViewer();
-          this._observer.disconnect();
-        }
-      }, { threshold: 0.1 });
-      this._observer.observe(this);
-    } else {
-      this._initViewer();
-    }
+    // 立即於下一影格初始化渲染（確保父容器佈局完成，並消除 IntersectionObserver 邊界視口延遲）
+    requestAnimationFrame(() => {
+      if (!this._initialized && !this._isLoading) {
+        this._initViewer();
+      }
+    });
   }
 
   disconnectedCallback() {
@@ -1029,6 +1023,17 @@ export class ClinicAnatomyViewer extends HTMLElement {
       }
       if (this.controls) this.controls.update();
     }
+  }
+
+  _onWindowResize() {
+    if (!this.renderer || !this.camera) return;
+    const container = this.shadowRoot?.getElementById('container');
+    if (!container) return;
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 420;
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height);
   }
 
   _onFocusStep(event) {

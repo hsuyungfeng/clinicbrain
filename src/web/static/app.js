@@ -1787,6 +1787,7 @@ function createTreeCard(tree) {
                 const viewer = document.createElement("clinic-anatomy-viewer");
                 viewer.setAttribute("doc-id", tree.doc_id);
                 viewer.style.height = "420px";
+                viewer.style.display = "block";
                 anatomyContainer.appendChild(viewer);
             }
         } else {
@@ -2372,6 +2373,7 @@ function createVisualReviewCard(asset) {
                 const viewer = document.createElement("clinic-anatomy-viewer");
                 viewer.setAttribute("doc-id", asset.topic_key || "default-general");
                 viewer.style.height = "380px";
+                viewer.style.display = "block";
                 anatomyCardBox.appendChild(viewer);
             }
         } else {
