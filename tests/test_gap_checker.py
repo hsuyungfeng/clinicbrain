@@ -188,3 +188,38 @@ def test_run_gap_check_dry_run_and_pending_queue_write():
         assert meta["clinic_rank"] == 1
         assert meta["gap_status"] == "uncovered"
         assert meta["needs_answer"] is True
+
+
+def test_runner_stage_gap_check_integration(tmp_path):
+    from src.batch.run_log import RunLogger
+    from src.batch.runner import BatchConfig, BatchContext, _BATCH_STAGES, _stage_gap_check
+
+    assert any(s.name == "gap_check" for s in _BATCH_STAGES)
+    stage_names = [s.name for s in _BATCH_STAGES]
+    assert stage_names.index("gap_check") < stage_names.index("autofill_answers")
+
+    conn = _make_gap_db()
+    icd_file = tmp_path / "icd.json"
+    icd_file.write_text(json.dumps([{"icd10": "J06.9", "count": 12}]), encoding="utf-8")
+
+    cfg = BatchConfig(
+        seed_path=tmp_path / "seeds.json",
+        snapshot_dir=tmp_path / "snaps",
+        enable_gap_check=True,
+        gap_icd_json_path=icd_file,
+    )
+    ctx = BatchContext(
+        conn=conn,
+        cfg=cfg,
+        llm_call=lambda _p: "",
+        health_check=lambda: None,
+        logger=RunLogger(),
+        clock=lambda: 0.0,
+        start_time=0.0,
+    )
+    should_stop = _stage_gap_check(ctx)
+    assert should_stop is False
+    assert ctx.summary.gap_topics_checked == 1
+    assert ctx.summary.gap_uncovered == 1
+    assert ctx.summary.gap_inserted_pending == 5
+

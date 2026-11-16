@@ -72,6 +72,11 @@ class BatchConfig:
     skip_video_render: bool = True
     video_render_limit: Optional[int] = None
     video_render_aspect: str = "landscape"
+    enable_gap_check: bool = True
+    gap_icd_json_path: Optional[Path] = None
+    gap_trend_urls: tuple[str, ...] = ()
+    gap_allowlist_path: Optional[Path] = None
+    gap_max_topics: int = 10
 
     def __post_init__(self) -> None:
         # 互斥旗標防護（CLI 之外的程式化呼叫同樣適用；矛盾組合直接拒絕，不靜默擇一）
@@ -121,6 +126,11 @@ class BatchSummary:
     videos_rendered: int = 0
     videos_skipped: int = 0
     videos_failed: int = 0
+    gap_topics_checked: int = 0
+    gap_covered: int = 0
+    gap_partial: int = 0
+    gap_uncovered: int = 0
+    gap_inserted_pending: int = 0
     errors: int = 0
 
     def as_dict(self) -> dict:
@@ -598,6 +608,49 @@ def _stage_video_render(ctx: BatchContext) -> bool:
     return False
 
 
+def _stage_gap_check(ctx: BatchContext) -> bool:
+    """7.5. 高頻診斷碼與每日趨勢衛教覆蓋率檢查階段（寫入 pending 待審）。"""
+    cfg, summary, logger = ctx.cfg, ctx.summary, ctx.logger
+    if not cfg.enable_gap_check or cfg.soap_only or cfg.skip_faq or cfg.dry_run:
+        return False
+
+    try:
+        import json as _json
+        from src.batch.gap_checker import run_gap_check
+
+        agg_data = None
+        if cfg.gap_icd_json_path and Path(cfg.gap_icd_json_path).is_file():
+            agg_data = _json.loads(Path(cfg.gap_icd_json_path).read_text(encoding="utf-8"))
+
+        g_rep = run_gap_check(
+            ctx.conn,
+            clinic_id=cfg.soap_clinic_id,
+            aggregated_icd10=agg_data,
+            trend_urls=cfg.gap_trend_urls,
+            allowlist_path=cfg.gap_allowlist_path,
+            llm_call=None,
+            dry_run=False,
+            max_topics=cfg.gap_max_topics,
+        )
+        summary.gap_topics_checked = g_rep.total_topics
+        summary.gap_covered = g_rep.covered
+        summary.gap_partial = g_rep.partial
+        summary.gap_uncovered = g_rep.uncovered
+        summary.gap_inserted_pending = g_rep.inserted_pending
+        logger.info(
+            "gap_check_stage_completed",
+            checked=summary.gap_topics_checked,
+            covered=summary.gap_covered,
+            partial=summary.gap_partial,
+            uncovered=summary.gap_uncovered,
+            inserted_pending=summary.gap_inserted_pending,
+        )
+    except Exception as e:
+        summary.errors += 1
+        logger.warning("gap_check_stage_failed", error=str(e))
+    return False
+
+
 _BATCH_STAGES: tuple[BatchStage, ...] = (
     BatchStage("soap", _stage_soap),
     BatchStage("plan_faq", _stage_plan_faq),
@@ -606,6 +659,7 @@ _BATCH_STAGES: tuple[BatchStage, ...] = (
     BatchStage("health_check", _stage_health_check),
     BatchStage("generate_faq", _stage_generate_faq),
     BatchStage("rebuild_trees", _stage_rebuild_trees),
+    BatchStage("gap_check", _stage_gap_check),
     BatchStage("autofill_answers", _stage_autofill_answers),
     BatchStage("patient_prefill", _stage_patient_prefill),
     BatchStage("video_render", _stage_video_render),
