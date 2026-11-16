@@ -399,6 +399,17 @@ Plans:
 - [x] 47-02-PLAN.md — admin.py 子套件拆分、runner.py 管線化與 autodraft.py 拆解（Wave 2）
 - [x] 47-03-PLAN.md — 前端 CSS 離線化、統一遷移器、文件瘦身與 Herdr Hermes 獨立驗收（Wave 3）
 
+### Phase 48: 診斷碼高頻統計、每日網路趨勢與衛教覆蓋率檢查 (ICD-10 Stats, Daily Trend & Gap Checker)
+
+**Goal**: 建立「診所高頻診斷碼 + 每日網路最新醫療討論主題」與一般醫學衛教庫的自動對齊閉環：於 `src/soap/icd10_stats.py` 實作 ICD-10 診斷碼擷取、頻率排行與 `nhi_catalog_1_400` 對齊；於 `src/batch/gap_checker.py` 實作每日趨勢與衛教對話覆蓋度盤點（`covered` / `partial` / `uncovered`），將缺漏題單透過 `faq_writer.upsert_faqs()` 送入「📝 待審衛教草稿簽核」待審隊列，並透過 herdr 指派獨立 Agent Hermes (`wA:p3`) 擔任 Tester 驗證計畫與基線。
+**Status**: Executed（48-01~48-02 實作完成，交付 Hermes 獨立驗收）
+**Depends on**: Phase 47（架構重構與 `runner.py` 管線化）, Phase 35/40（ICD-10 與健保 1–400 目錄）, Phase 15/20（SOAP 提煉與衛教簽核流）
+**Requirements**: P48-ICD10-STATS, P48-TREND-GAP-CHECKER, P48-PENDING-QUEUE-WIRE, P48-HERMES-TESTER
+**Plans**: 2 plans
+Plans:
+- [x] 48-01-PLAN.md — `src/soap/icd10_stats.py`：ICD-10 擷取、高頻排行與 `nhi_catalog_1_400` 對齊（Wave 1）
+- [x] 48-02-PLAN.md — `src/batch/gap_checker.py`：每日趨勢與覆蓋率盤點（covered/partial/uncovered）及待審佇列串接（Wave 2）
+
 
 
 
