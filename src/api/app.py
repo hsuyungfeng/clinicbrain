@@ -59,7 +59,7 @@ def create_app() -> FastAPI:
         if request.url.path.startswith("/admin"):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; script-src 'self'; "
-                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline'; "
                 "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
             )
             response.headers["X-Content-Type-Options"] = "nosniff"

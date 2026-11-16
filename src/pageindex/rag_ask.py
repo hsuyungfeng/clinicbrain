@@ -104,27 +104,44 @@ def _render_evidence(
     return "\n\n".join(blocks), sources
 
 
-def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str) -> tuple[str, list[dict]]:
+def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str | None) -> tuple[str, list[dict]]:
     """回傳 (給 LLM 的資料文字, 來源清單)。僅含對外可見（已核准）資料。"""
-    resp = handle_query(conn, question, clinic_id, limit=MAX_FAQ, cache_shortcut=False)
+    from ..query.router import _CLINIC_OPS_KEYWORDS, _search_terms_merged, extract_search_terms
+    from ..query.search import search_faq_cache, search_page_index_trees
 
-    faq_candidates = list(resp.faq_hits[:MAX_FAQ])
+    search_terms = extract_search_terms(question)
+
+    try:
+        resp = handle_query(conn, question, clinic_id, limit=MAX_FAQ, cache_shortcut=False)
+        faq_candidates = list(resp.faq_hits[:MAX_FAQ])
+        tree_candidates = list(resp.page_index_hits)
+        note_candidates = list(resp.clinic_custom_notes.items())[:3]
+        clinic_info = resp.clinic_info
+    except ValueError:
+        # 管理端「全部診所（一般醫學管理）」未指定 clinic_id：
+        # 僅診所營運資訊（營業時間/地址/電話）仍要求指定診所；療程與衛教問題改採全平台一般醫學／已核准共用知識作答
+        if clinic_id is not None or any(kw in question for kw in _CLINIC_OPS_KEYWORDS):
+            raise
+        faq_candidates = list(
+            _search_terms_merged(search_faq_cache, conn, search_terms, MAX_FAQ, clinic_id=None)[:MAX_FAQ]
+        )
+        tree_candidates = []
+        note_candidates = []
+        clinic_info = None
+
     # Phase 37：同時納入一般醫學共用推理樹（clinic_id IS NULL），診所專屬樹優先排在前面
-    from ..query.search import search_page_index_trees
-
-    tree_candidates = list(resp.page_index_hits)
     seen_tree_ids = {getattr(h, "row_id", None) for h in tree_candidates}
     try:
-        general_hits = search_page_index_trees(conn, question, limit=MAX_TREES, clinic_id=clinic_id, include_general=True)
+        general_hits = _search_terms_merged(
+            search_page_index_trees, conn, search_terms, MAX_TREES, clinic_id=clinic_id, include_general=True
+        )
     except sqlite3.OperationalError:
         general_hits = []
     for hit in general_hits:
-        if hit.row_id not in seen_tree_ids and hit.fields.get("clinic_id") is None:
+        if hit.row_id not in seen_tree_ids and (clinic_id is None or hit.fields.get("clinic_id") is None):
             seen_tree_ids.add(hit.row_id)
             tree_candidates.append(hit)
     tree_candidates = tree_candidates[:MAX_TREES]
-    note_candidates = list(resp.clinic_custom_notes.items())[:3]
-    clinic_info = resp.clinic_info
 
     # 1. 嘗試以標準預算渲染 (budget_ratio = 1.0)
     context, sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=1.0, question=question)

@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 import time
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from src.batch.faq_generator import (
     TopicGenResult,
@@ -127,6 +127,491 @@ class BatchSummary:
         return asdict(self)
 
 
+@dataclass
+class BatchContext:
+    """批次管線共享執行上下文。"""
+
+    conn: sqlite3.Connection
+    cfg: BatchConfig
+    llm_call: Callable[[str], str]
+    health_check: Callable[[], Optional[str]]
+    logger: RunLogger
+    clock: Callable[[], float]
+    start_time: float
+    summary: BatchSummary = field(default_factory=BatchSummary)
+    seed: Any = None
+    planned_topics: list[tuple[SelectedTopic, list[str]]] = field(default_factory=list)
+    planned_trees: list[tuple[dict, Optional[str]]] = field(default_factory=list)
+
+    def budget_exhausted(self) -> bool:
+        return (self.clock() - self.start_time) >= self.cfg.time_budget_seconds
+
+
+@dataclass(frozen=True)
+class BatchStage:
+    """標準化批次階段定義；回傳 True 表示已完成並應提前結束管線。"""
+
+    name: str
+    run: Callable[[BatchContext], bool]
+
+
+def _stage_soap(ctx: BatchContext) -> bool:
+    """0. SOAP 臨床居家照護衛教提煉與前置同步階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    soap_stage = (cfg.enable_soap_distill or cfg.soap_only) and not cfg.general_only
+
+    if soap_stage and cfg.soap_sync_url and not cfg.dry_run:
+        try:
+            from src.sync.soap_sync_runner import sync_soap_records_before_batch
+
+            sync_res = sync_soap_records_before_batch(
+                conn,
+                cfg.soap_clinic_id,
+                remote_url=cfg.soap_sync_url,
+                api_key=cfg.soap_sync_api_key,
+            )
+            summary.soap_sync_status = sync_res.status
+            if sync_res.status != "completed":
+                summary.errors += 1
+            logger.info(
+                "soap_presync_done",
+                status=sync_res.status,
+                inserted=sync_res.inserted,
+                updated=sync_res.updated,
+                unchanged=sync_res.unchanged,
+                skipped_unsafe=sync_res.skipped_unsafe,
+            )
+        except Exception as e:
+            conn.rollback()
+            summary.soap_sync_status = "failed"
+            summary.errors += 1
+            logger.error("soap_presync_failed", error_type=type(e).__name__)
+
+    if soap_stage:
+        try:
+            from src.soap.distiller import distill_soap_records
+
+            distill_res = distill_soap_records(
+                conn,
+                clinic_id=cfg.soap_clinic_id,
+                min_occurrences=cfg.soap_min_occurrences,
+                dry_run=cfg.dry_run,
+            )
+            summary.soap_distilled_count = distill_res.get("distilled_count", 0)
+            summary.soap_conditions = distill_res.get("conditions", [])
+            logger.info(
+                "soap_distill_done",
+                distilled_count=summary.soap_distilled_count,
+                conditions=summary.soap_conditions,
+                dry_run=cfg.dry_run,
+            )
+        except Exception as e:
+            conn.rollback()
+            summary.errors += 1
+            logger.error("soap_distill_failed", error_type=type(e).__name__)
+
+    if cfg.soap_only:
+        logger.info("soap_only_complete", **summary.as_dict())
+        return True
+
+    ctx.seed = load_seed_file(cfg.seed_path)
+    return False
+
+
+def _stage_plan_faq(ctx: BatchContext) -> bool:
+    """1. FAQ 規劃階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    if cfg.skip_faq:
+        return False
+
+    has_review = has_review_status(conn)
+    if not has_review:
+        if not cfg.dry_run:
+            raise BatchPreflightError(
+                "資料庫尚未完成審核欄位遷移，請先執行 scripts/migrate_faq_review_status.py"
+            )
+        logger.warning("unmigrated_database_dry_run", reason="missing_review_status")
+
+    pending_count = count_by_status(conn).get("pending", 0) if has_review else 0
+    if pending_count >= cfg.max_pending:
+        logger.warning("faq_backlog_skip", pending_count=pending_count, max_pending=cfg.max_pending)
+        summary.faq_topics_planned = len(ctx.planned_topics)
+        return False
+
+    selection = select_topics(
+        ctx.seed,
+        conn,
+        since_days=cfg.since_days,
+        min_miss_count=cfg.min_miss_count,
+        max_topics=None,
+    )
+    logger.info(
+        "topic_selection_info",
+        stats_available=selection.stats_available,
+        unmapped_count=len(selection.unmapped_keywords),
+    )
+    if selection.unmapped_keywords:
+        logger.info("unmapped_keywords", keywords=[kw for kw, _ in selection.unmapped_keywords[:10]])
+
+    marked_rows = regen_marked_rows(conn) if has_review else []
+    marked_keys = {(r["clinic_id"], r["topic_key"]) for r in marked_rows}
+    seed_topic_map = {(t.clinic_id, t.topic_key): t for t in ctx.seed.topics}
+
+    unmatched_marked_count = 0
+    marked_selected_topics = []
+    for clinic_id, topic_key in marked_keys:
+        if (clinic_id, topic_key) in seed_topic_map:
+            marked_selected_topics.append(
+                SelectedTopic(topic=seed_topic_map[(clinic_id, topic_key)], reason="regen_marked", hot_count=0)
+            )
+        else:
+            unmatched_marked_count += 1
+    if unmatched_marked_count > 0:
+        logger.warning("unmatched_regen_marked_topics", count=unmatched_marked_count)
+
+    seen_topic_idents = set()
+    all_candidate_topics = []
+    for st in (*marked_selected_topics, *selection.topics):
+        ident = (st.topic.clinic_id, st.topic.topic_key)
+        if ident not in seen_topic_idents:
+            seen_topic_idents.add(ident)
+            all_candidate_topics.append(st)
+
+    if cfg.general_only:
+        all_candidate_topics = [st for st in all_candidate_topics if st.topic.category == "general"]
+    elif cfg.skip_general:
+        all_candidate_topics = [st for st in all_candidate_topics if st.topic.category != "general"]
+
+    for st in all_candidate_topics:
+        topic = st.topic
+        existing = existing_questions(conn, topic.clinic_id, topic.topic_key, exclude_regen_marked=True)
+        pending_q = [q for q in topic.questions if q.strip() not in existing]
+        if topic.category == "general":
+            summary.general_skipped_count += len(topic.questions) - len(pending_q)
+        if not pending_q:
+            continue
+        ctx.planned_topics.append((st, pending_q))
+        logger.info(
+            "faq_plan",
+            topic_key=topic.topic_key,
+            reason=st.reason,
+            pending_questions_count=len(pending_q),
+        )
+        if len(ctx.planned_topics) >= cfg.max_faq_topics:
+            break
+
+    summary.faq_topics_planned = len(ctx.planned_topics)
+    return False
+
+
+def _stage_plan_trees(ctx: BatchContext) -> bool:
+    """2. 樹重建規劃階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    if cfg.skip_trees or cfg.general_only:
+        return False
+    marked_trees = find_marked_trees(conn, limit=cfg.max_trees)
+    summary.trees_planned = len(marked_trees)
+    for tree_info in marked_trees:
+        doc_id = tree_info["doc_id"]
+        proc_name = ctx.seed.tree_procedure_names.get(doc_id)
+        logger.info("tree_plan", doc_id=doc_id, has_procedure_name=proc_name is not None)
+        ctx.planned_trees.append((tree_info, proc_name))
+    return False
+
+
+def _stage_dry_run_check(ctx: BatchContext) -> bool:
+    """3. Dry-Run 判定階段。"""
+    cfg, summary, logger = ctx.cfg, ctx.summary, ctx.logger
+    if not cfg.dry_run:
+        return False
+    if cfg.enable_patient_prefill and not cfg.soap_only and not cfg.general_only:
+        from src.batch.patient_prefill import run_prefill_stage
+
+        effective_now = (cfg.now_fn or _utc_now)()
+        prefill_seed = cfg.prefill_seed_path or cfg.seed_path
+        prefill_res = run_prefill_stage(
+            ctx.conn,
+            cfg,
+            ctx.llm_call,
+            now=effective_now,
+            clock=ctx.clock,
+            logger=logger,
+            seed_path=prefill_seed,
+            start_time=ctx.start_time,
+        )
+        summary.prefill_topics_planned = prefill_res.topics_planned
+        summary.prefill_backlog = prefill_res.backlog
+        summary.prefill_skipped_no_title = prefill_res.skipped_no_title
+        summary.prefill_protected_skipped = prefill_res.protected_skipped
+
+    logger.info("dry_run_done", llm_status="dry-run 未檢查")
+    summary.status = "dry_run"
+    logger.info("batch_summary", **summary.as_dict())
+    return True
+
+
+def _stage_health_check(ctx: BatchContext) -> bool:
+    """4. 非 dry-run：LLM 健康檢查。"""
+    try:
+        ctx.health_check()
+        return False
+    except LocalLLMUnavailableError as e:
+        ctx.logger.warning("llm_unavailable", error_type=type(e).__name__)
+        ctx.summary.status = "llm_unavailable"
+        ctx.logger.info("batch_summary", **ctx.summary.as_dict())
+        return True
+
+
+def _stage_generate_faq(ctx: BatchContext) -> bool:
+    """5. FAQ 生成與寫入階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    if cfg.skip_faq:
+        return False
+
+    for st, _ in ctx.planned_topics:
+        if ctx.budget_exhausted():
+            logger.warning("budget_exhausted", stage="faq", topic_key=st.topic.topic_key)
+            summary.status = "budget_exhausted"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+
+        topic = st.topic
+        try:
+            gen_res = generate_topic_faqs(conn, topic, ctx.llm_call)
+            ins, upd, _unc = write_topic_faqs(conn, gen_res.valid)
+            summary.faq_topics_processed += 1
+            summary.faq_inserted += ins
+            summary.faq_rejected += len(gen_res.rejected)
+            summary.faq_skipped_existing += gen_res.skipped_existing
+
+            if topic.category == "general":
+                summary.general_generated_count += ins + upd
+
+            settle_details: dict = {}
+            settle = settle_regen_flags(conn, topic, gen_res, details=settle_details)
+            summary.faq_regen_regenerated += settle["regenerated"]
+            summary.faq_regen_unchanged += settle["unchanged"]
+            summary.faq_regen_failed += settle["failed"]
+
+            reason_counts = dict(Counter(rej.get("code", "other") for rej in gen_res.rejected))
+            logger.info(
+                "faq_topic_done",
+                topic_key=topic.topic_key,
+                inserted=ins,
+                rejected_count=len(gen_res.rejected),
+                rejected_reasons=reason_counts,
+                skipped_existing=gen_res.skipped_existing,
+                faq_regen_regenerated=settle["regenerated"],
+                faq_regen_unchanged=settle["unchanged"],
+                faq_regen_failed=settle["failed"],
+                faq_regen_unchanged_ids=settle_details.get("unchanged_ids", []),
+                faq_regen_failed_ids=settle_details.get("failed_ids", []),
+            )
+        except LocalLLMUnavailableError as e:
+            logger.warning("llm_unavailable", error_type=type(e).__name__, topic_key=topic.topic_key)
+            summary.status = "llm_unavailable"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+        except Exception as e:
+            summary.errors += 1
+            logger.error("faq_topic_failed", topic_key=topic.topic_key, error_type=type(e).__name__)
+            try:
+                marked_for_this_topic = [
+                    r["question"]
+                    for r in regen_marked_rows(conn)
+                    if r["clinic_id"] == topic.clinic_id and r["topic_key"] == topic.topic_key
+                ]
+                if marked_for_this_topic:
+                    dummy_res = TopicGenResult(
+                        topic_key=topic.topic_key,
+                        requested=len(topic.questions),
+                        skipped_existing=0,
+                        valid=[],
+                        rejected=[],
+                        regen_questions=marked_for_this_topic,
+                    )
+                    settle = settle_regen_flags(conn, topic, dummy_res)
+                    summary.faq_regen_failed += settle["failed"]
+            except Exception:
+                pass
+    return False
+
+
+def _stage_rebuild_trees(ctx: BatchContext) -> bool:
+    """6. 樹重建階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    if cfg.skip_trees:
+        return False
+
+    for tree_info, proc_name in ctx.planned_trees:
+        doc_id = tree_info["doc_id"]
+        if not proc_name:
+            summary.trees_skipped += 1
+            logger.info("tree_skipped", doc_id=doc_id, reason="missing_procedure_name")
+            continue
+
+        if ctx.budget_exhausted():
+            logger.warning("budget_exhausted", stage="trees", doc_id=doc_id)
+            summary.status = "budget_exhausted"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+
+        try:
+            rebuild_res = rebuild_tree(conn, doc_id, proc_name, ctx.llm_call, snapshot_dir=cfg.snapshot_dir)
+            if rebuild_res.status == "rebuilt":
+                summary.trees_rebuilt += 1
+                if rebuild_res.previous_source_type in ("manual", "clinic_upload"):
+                    summary.trees_overwrote_handwritten += 1
+                    logger.warning(
+                        "tree_overwrote_handwritten",
+                        doc_id=doc_id,
+                        previous_source_type=rebuild_res.previous_source_type,
+                    )
+            elif rebuild_res.status == "unchanged":
+                summary.trees_unchanged += 1
+            elif rebuild_res.status == "rejected":
+                summary.trees_rejected += 1
+            elif rebuild_res.status == "error":
+                summary.errors += 1
+
+            snapshot_name = Path(rebuild_res.snapshot_path).name if rebuild_res.snapshot_path else None
+            logger.info(
+                "tree_done",
+                doc_id=doc_id,
+                status=rebuild_res.status,
+                reason=rebuild_res.reason,
+                changed_fields=rebuild_res.changed_fields,
+                snapshot_name=snapshot_name,
+            )
+        except LocalLLMUnavailableError as e:
+            logger.warning("llm_unavailable", error_type=type(e).__name__, doc_id=doc_id)
+            summary.status = "llm_unavailable"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+        except Exception as e:
+            summary.errors += 1
+            logger.error("tree_failed", doc_id=doc_id, error_type=type(e).__name__)
+    return False
+
+
+def _stage_autofill_answers(ctx: BatchContext) -> bool:
+    """7. 自動補齊待審答案階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    if not (cfg.enable_autofill_answers and not cfg.soap_only and not cfg.dry_run):
+        return False
+
+    from ..pageindex.answer_generator import GenerationError, generate_answer_for_faq
+    from ..pageindex.batch_answer_job import get_pending_unanswered_ids
+
+    for u_id in get_pending_unanswered_ids(conn, limit=cfg.max_pending):
+        if ctx.budget_exhausted():
+            logger.warning("budget_exhausted", stage="autofill", faq_id=u_id)
+            summary.status = "budget_exhausted"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+        try:
+            generate_answer_for_faq(conn, u_id, ctx.llm_call)
+            summary.autofill_answers_count += 1
+            logger.info("autofill_faq_done", faq_id=u_id)
+        except LocalLLMUnavailableError as e:
+            logger.warning("llm_unavailable", error_type=type(e).__name__, faq_id=u_id)
+            summary.status = "llm_unavailable"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+        except GenerationError as ge:
+            logger.info("autofill_faq_skipped", faq_id=u_id, reason=str(ge))
+        except Exception as e:
+            summary.errors += 1
+            logger.warning("autofill_faq_failed", faq_id=u_id, error=str(e))
+    return False
+
+
+def _stage_patient_prefill(ctx: BatchContext) -> bool:
+    """8. 24 小時預先生成主體醫學資訊階段。"""
+    cfg, summary, logger = ctx.cfg, ctx.summary, ctx.logger
+    if not (cfg.enable_patient_prefill and not cfg.soap_only and not cfg.general_only):
+        return False
+
+    from src.batch.patient_prefill import run_prefill_stage
+
+    effective_now = (cfg.now_fn or _utc_now)()
+    effective_prefill_llm = cfg.prefill_llm_call or ctx.llm_call
+    prefill_seed = cfg.prefill_seed_path or cfg.seed_path
+
+    prefill_res = run_prefill_stage(
+        ctx.conn,
+        cfg,
+        effective_prefill_llm,
+        now=effective_now,
+        clock=ctx.clock,
+        logger=logger,
+        seed_path=prefill_seed,
+        start_time=ctx.start_time,
+    )
+
+    summary.prefill_topics_planned = prefill_res.topics_planned
+    summary.prefill_generated = prefill_res.generated
+    summary.prefill_refreshed = prefill_res.refreshed_unchanged
+    summary.prefill_rejected = prefill_res.rejected
+    summary.prefill_rejected_warning = prefill_res.rejected_warning
+    summary.prefill_rejected_insufficient = prefill_res.rejected_insufficient
+    summary.prefill_protected_skipped = prefill_res.protected_skipped
+    summary.prefill_skipped_budget = prefill_res.skipped_budget
+    summary.prefill_skipped_no_title = prefill_res.skipped_no_title
+    summary.prefill_backlog = prefill_res.backlog
+    summary.errors += prefill_res.errors
+
+    if prefill_res.status in ("llm_unavailable", "budget_exhausted"):
+        summary.status = prefill_res.status
+        logger.info("batch_summary", **summary.as_dict())
+        return True
+    return False
+
+
+def _stage_video_render(ctx: BatchContext) -> bool:
+    """9. 動態醫學解說動畫影片佇列渲染階段。"""
+    cfg, summary, logger = ctx.cfg, ctx.summary, ctx.logger
+    if cfg.skip_video_render or cfg.soap_only or cfg.general_only or cfg.dry_run:
+        return False
+
+    try:
+        from src.visual.video_queue import batch_render_queue
+
+        v_res = batch_render_queue(
+            ctx.conn,
+            limit=cfg.video_render_limit,
+            aspect=cfg.video_render_aspect,
+            force=False,
+        )
+        summary.videos_rendered = v_res.get("rendered", 0)
+        summary.videos_skipped = v_res.get("skipped", 0)
+        summary.videos_failed = v_res.get("failed", 0)
+        logger.info(
+            "video_render_stage_completed",
+            rendered=summary.videos_rendered,
+            skipped=summary.videos_skipped,
+            failed=summary.videos_failed,
+        )
+    except Exception as e:
+        summary.videos_failed += 1
+        logger.warning("video_render_stage_failed", error=str(e))
+    return False
+
+
+_BATCH_STAGES: tuple[BatchStage, ...] = (
+    BatchStage("soap", _stage_soap),
+    BatchStage("plan_faq", _stage_plan_faq),
+    BatchStage("plan_trees", _stage_plan_trees),
+    BatchStage("dry_run_check", _stage_dry_run_check),
+    BatchStage("health_check", _stage_health_check),
+    BatchStage("generate_faq", _stage_generate_faq),
+    BatchStage("rebuild_trees", _stage_rebuild_trees),
+    BatchStage("autofill_answers", _stage_autofill_answers),
+    BatchStage("patient_prefill", _stage_patient_prefill),
+    BatchStage("video_render", _stage_video_render),
+)
+
+
 def run_batch(
     conn: sqlite3.Connection,
     cfg: BatchConfig,
@@ -137,8 +622,15 @@ def run_batch(
     clock: Callable[[], float] = time.monotonic,
 ) -> BatchSummary:
     """執行完整夜間批次流程。"""
-    summary = BatchSummary()
-    start_time = clock()
+    ctx = BatchContext(
+        conn=conn,
+        cfg=cfg,
+        llm_call=llm_call,
+        health_check=health_check,
+        logger=logger,
+        clock=clock,
+        start_time=clock(),
+    )
 
     with content_loggers_silenced():
         logger.info(
@@ -154,479 +646,10 @@ def run_batch(
             time_budget_seconds=cfg.time_budget_seconds,
         )
 
-        # ---------------------------------------------------------------------
-        # 0. SOAP 臨床居家照護衛教提煉階段
-        # ---------------------------------------------------------------------
-        soap_stage = (cfg.enable_soap_distill or cfg.soap_only) and not cfg.general_only
+        for stage in _BATCH_STAGES:
+            if stage.run(ctx):
+                return ctx.summary
 
-        # 0a. 前置增量同步：失敗只降級（沿用本機既有病歷繼續提煉），不中斷批次、不影響後續階段
-        if soap_stage and cfg.soap_sync_url and not cfg.dry_run:
-            try:
-                from src.sync.soap_sync_runner import sync_soap_records_before_batch
-                sync_res = sync_soap_records_before_batch(
-                    conn,
-                    cfg.soap_clinic_id,
-                    remote_url=cfg.soap_sync_url,
-                    api_key=cfg.soap_sync_api_key,
-                )
-                summary.soap_sync_status = sync_res.status
-                if sync_res.status != "completed":
-                    summary.errors += 1
-                logger.info(
-                    "soap_presync_done",
-                    status=sync_res.status,
-                    inserted=sync_res.inserted,
-                    updated=sync_res.updated,
-                    unchanged=sync_res.unchanged,
-                    skipped_unsafe=sync_res.skipped_unsafe,
-                )
-            except Exception as e:
-                conn.rollback()
-                summary.soap_sync_status = "failed"
-                summary.errors += 1
-                logger.error("soap_presync_failed", error_type=type(e).__name__)
-
-        if soap_stage:
-            try:
-                from src.soap.distiller import distill_soap_records
-                distill_res = distill_soap_records(
-                    conn,
-                    clinic_id=cfg.soap_clinic_id,
-                    min_occurrences=cfg.soap_min_occurrences,
-                    dry_run=cfg.dry_run,
-                )
-                summary.soap_distilled_count = distill_res.get("distilled_count", 0)
-                summary.soap_conditions = distill_res.get("conditions", [])
-                logger.info(
-                    "soap_distill_done",
-                    distilled_count=summary.soap_distilled_count,
-                    conditions=summary.soap_conditions,
-                    dry_run=cfg.dry_run,
-                )
-            except Exception as e:
-                conn.rollback()  # 提煉中途失敗不得留下未提交交易給後續階段一併提交
-                summary.errors += 1
-                logger.error("soap_distill_failed", error_type=type(e).__name__)
-
-        if cfg.soap_only:
-            logger.info("soap_only_complete", **summary.as_dict())
-            return summary
-
-        seed = load_seed_file(cfg.seed_path)
-
-        # ---------------------------------------------------------------------
-        # 1. FAQ 規劃階段
-        # ---------------------------------------------------------------------
-        planned_topics = []
-        if not cfg.skip_faq:
-            has_review = has_review_status(conn)
-            if not has_review:
-                if not cfg.dry_run:
-                    raise BatchPreflightError(
-                        "資料庫尚未完成審核欄位遷移，請先執行 scripts/migrate_faq_review_status.py"
-                    )
-                else:
-                    logger.warning("unmigrated_database_dry_run", reason="missing_review_status")
-
-            pending_count = count_by_status(conn).get("pending", 0) if has_review else 0
-            if pending_count >= cfg.max_pending:
-                logger.warning(
-                    "faq_backlog_skip",
-                    pending_count=pending_count,
-                    max_pending=cfg.max_pending,
-                )
-            else:
-                selection = select_topics(
-                    seed,
-                    conn,
-                    since_days=cfg.since_days,
-                    min_miss_count=cfg.min_miss_count,
-                    max_topics=None,
-                )
-                logger.info(
-                    "topic_selection_info",
-                    stats_available=selection.stats_available,
-                    unmapped_count=len(selection.unmapped_keywords),
-                )
-                if selection.unmapped_keywords:
-                    logger.info(
-                        "unmapped_keywords",
-                        keywords=[kw for kw, _ in selection.unmapped_keywords[:10]],
-                    )
-
-                # 規劃階段在 select_topics 後，以 regen_marked_rows 取得被標記 (clinic_id, topic_key) 集合
-                marked_rows = regen_marked_rows(conn) if has_review else []
-                marked_keys = {(r["clinic_id"], r["topic_key"]) for r in marked_rows}
-                seed_topic_map = {(t.clinic_id, t.topic_key): t for t in seed.topics}
-
-                unmatched_marked_count = 0
-                marked_selected_topics = []
-                for clinic_id, topic_key in marked_keys:
-                    if (clinic_id, topic_key) in seed_topic_map:
-                        marked_selected_topics.append(
-                            SelectedTopic(
-                                topic=seed_topic_map[(clinic_id, topic_key)],
-                                reason="regen_marked",
-                                hot_count=0,
-                            )
-                        )
-                    else:
-                        unmatched_marked_count += 1
-
-                if unmatched_marked_count > 0:
-                    logger.warning("unmatched_regen_marked_topics", count=unmatched_marked_count)
-
-                # 合併標記主題與既有選題（標記主題排在最前並依 (clinic_id, topic_key) 去重）
-                seen_topic_idents = set()
-                all_candidate_topics = []
-                for st in marked_selected_topics:
-                    ident = (st.topic.clinic_id, st.topic.topic_key)
-                    if ident not in seen_topic_idents:
-                        seen_topic_idents.add(ident)
-                        all_candidate_topics.append(st)
-
-                for st in selection.topics:
-                    ident = (st.topic.clinic_id, st.topic.topic_key)
-                    if ident not in seen_topic_idents:
-                        seen_topic_idents.add(ident)
-                        all_candidate_topics.append(st)
-
-                # 依據 general_only / skip_general 過濾主題
-                if cfg.general_only:
-                    all_candidate_topics = [
-                        st for st in all_candidate_topics if st.topic.category == "general"
-                    ]
-                elif cfg.skip_general:
-                    all_candidate_topics = [
-                        st for st in all_candidate_topics if st.topic.category != "general"
-                    ]
-
-                # 遍歷候選主題，過濾所有問題已存在者（排除被標記重生成題目），再截斷至 max_faq_topics
-                for st in all_candidate_topics:
-                    topic = st.topic
-                    existing = existing_questions(conn, topic.clinic_id, topic.topic_key, exclude_regen_marked=True)
-                    pending_q = [q for q in topic.questions if q.strip() not in existing]
-                    skipped_count = len(topic.questions) - len(pending_q)
-                    if topic.category == "general":
-                        summary.general_skipped_count += skipped_count
-                    if not pending_q:
-                        continue
-                    planned_topics.append((st, pending_q))
-                    logger.info(
-                        "faq_plan",
-                        topic_key=topic.topic_key,
-                        reason=st.reason,
-                        pending_questions_count=len(pending_q),
-                    )
-                    if len(planned_topics) >= cfg.max_faq_topics:
-                        break
-
-            summary.faq_topics_planned = len(planned_topics)
-
-        # ---------------------------------------------------------------------
-        # 2. 樹重建規劃階段
-        # ---------------------------------------------------------------------
-        planned_trees = []
-        if not cfg.skip_trees and not cfg.general_only:
-            marked_trees = find_marked_trees(conn, limit=cfg.max_trees)
-            summary.trees_planned = len(marked_trees)
-            for tree_info in marked_trees:
-                doc_id = tree_info["doc_id"]
-                proc_name = seed.tree_procedure_names.get(doc_id)
-                has_name = proc_name is not None
-                logger.info("tree_plan", doc_id=doc_id, has_procedure_name=has_name)
-                planned_trees.append((tree_info, proc_name))
-
-        # ---------------------------------------------------------------------
-        # 3. Dry-Run 判定
-        # ---------------------------------------------------------------------
-        if cfg.dry_run:
-            if cfg.enable_patient_prefill and not cfg.soap_only and not cfg.general_only:
-                from src.batch.patient_prefill import run_prefill_stage
-
-                effective_now = (cfg.now_fn or _utc_now)()
-                prefill_seed = cfg.prefill_seed_path or cfg.seed_path
-                prefill_res = run_prefill_stage(
-                    conn,
-                    cfg,
-                    llm_call,
-                    now=effective_now,
-                    clock=clock,
-                    logger=logger,
-                    seed_path=prefill_seed,
-                    start_time=start_time,
-                )
-                summary.prefill_topics_planned = prefill_res.topics_planned
-                summary.prefill_backlog = prefill_res.backlog
-                summary.prefill_skipped_no_title = prefill_res.skipped_no_title
-                summary.prefill_protected_skipped = prefill_res.protected_skipped
-
-            logger.info("dry_run_done", llm_status="dry-run 未檢查")
-            summary.status = "dry_run"
-            logger.info("batch_summary", **summary.as_dict())
-            return summary
-
-        # ---------------------------------------------------------------------
-        # 4. 非 dry-run：LLM 健康檢查
-        # ---------------------------------------------------------------------
-        try:
-            health_check()
-        except LocalLLMUnavailableError as e:
-            logger.warning("llm_unavailable", error_type=type(e).__name__)
-            summary.status = "llm_unavailable"
-            logger.info("batch_summary", **summary.as_dict())
-            return summary
-
-        # ---------------------------------------------------------------------
-        # 5. FAQ 生成與寫入階段
-        # ---------------------------------------------------------------------
-        if not cfg.skip_faq:
-            for st, _ in planned_topics:
-                if clock() - start_time >= cfg.time_budget_seconds:
-                    logger.warning("budget_exhausted", stage="faq", topic_key=st.topic.topic_key)
-                    summary.status = "budget_exhausted"
-                    logger.info("batch_summary", **summary.as_dict())
-                    return summary
-
-                topic = st.topic
-                try:
-                    gen_res = generate_topic_faqs(conn, topic, llm_call)
-                    ins, upd, unc = write_topic_faqs(conn, gen_res.valid)
-                    summary.faq_topics_processed += 1
-                    summary.faq_inserted += ins
-                    summary.faq_rejected += len(gen_res.rejected)
-                    summary.faq_skipped_existing += gen_res.skipped_existing
-
-                    if topic.category == "general":
-                        summary.general_generated_count += ins + upd  # 含重生成後更新的題目
-
-                    # 清算重生成旗標
-                    settle_details: dict = {}
-                    settle = settle_regen_flags(conn, topic, gen_res, details=settle_details)
-                    summary.faq_regen_regenerated += settle["regenerated"]
-                    summary.faq_regen_unchanged += settle["unchanged"]
-                    summary.faq_regen_failed += settle["failed"]
-
-                    reason_counts = dict(Counter(rej.get("code", "other") for rej in gen_res.rejected))
-                    logger.info(
-                        "faq_topic_done",
-                        topic_key=topic.topic_key,
-                        inserted=ins,
-                        rejected_count=len(gen_res.rejected),
-                        rejected_reasons=reason_counts,
-                        skipped_existing=gen_res.skipped_existing,
-                        faq_regen_regenerated=settle["regenerated"],
-                        faq_regen_unchanged=settle["unchanged"],
-                        faq_regen_failed=settle["failed"],
-                        faq_regen_unchanged_ids=settle_details.get("unchanged_ids", []),
-                        faq_regen_failed_ids=settle_details.get("failed_ids", []),
-                    )
-                except LocalLLMUnavailableError as e:
-                    logger.warning(
-                        "llm_unavailable",
-                        error_type=type(e).__name__,
-                        topic_key=topic.topic_key,
-                    )
-                    summary.status = "llm_unavailable"
-                    logger.info("batch_summary", **summary.as_dict())
-                    return summary
-                except Exception as e:
-                    summary.errors += 1
-                    logger.error(
-                        "faq_topic_failed",
-                        topic_key=topic.topic_key,
-                        error_type=type(e).__name__,
-                    )
-                    # 依「一次標記一次嘗試」原則，例外時亦對被標記列清算為 failed
-                    try:
-                        marked_for_this_topic = [
-                            r["question"] for r in regen_marked_rows(conn)
-                            if r["clinic_id"] == topic.clinic_id and r["topic_key"] == topic.topic_key
-                        ]
-                        if marked_for_this_topic:
-                            dummy_res = TopicGenResult(
-                                topic_key=topic.topic_key,
-                                requested=len(topic.questions),
-                                skipped_existing=0,
-                                valid=[],
-                                rejected=[],
-                                regen_questions=marked_for_this_topic,
-                            )
-                            settle = settle_regen_flags(conn, topic, dummy_res)
-                            summary.faq_regen_failed += settle["failed"]
-                    except Exception:
-                        pass
-
-        # ---------------------------------------------------------------------
-        # 6. 樹重建階段
-        # ---------------------------------------------------------------------
-        if not cfg.skip_trees:
-            for tree_info, proc_name in planned_trees:
-                doc_id = tree_info["doc_id"]
-                if not proc_name:
-                    summary.trees_skipped += 1
-                    logger.info("tree_skipped", doc_id=doc_id, reason="missing_procedure_name")
-                    continue
-
-                if clock() - start_time >= cfg.time_budget_seconds:
-                    logger.warning("budget_exhausted", stage="trees", doc_id=doc_id)
-                    summary.status = "budget_exhausted"
-                    logger.info("batch_summary", **summary.as_dict())
-                    return summary
-
-                try:
-                    rebuild_res = rebuild_tree(
-                        conn,
-                        doc_id,
-                        proc_name,
-                        llm_call,
-                        snapshot_dir=cfg.snapshot_dir,
-                    )
-
-                    if rebuild_res.status == "rebuilt":
-                        summary.trees_rebuilt += 1
-                        if rebuild_res.previous_source_type in ("manual", "clinic_upload"):
-                            summary.trees_overwrote_handwritten += 1
-                            logger.warning(
-                                "tree_overwrote_handwritten",
-                                doc_id=doc_id,
-                                previous_source_type=rebuild_res.previous_source_type,
-                            )
-                    elif rebuild_res.status == "unchanged":
-                        summary.trees_unchanged += 1
-                    elif rebuild_res.status == "rejected":
-                        summary.trees_rejected += 1
-                    elif rebuild_res.status == "error":
-                        summary.errors += 1
-
-                    snapshot_name = (
-                        Path(rebuild_res.snapshot_path).name
-                        if rebuild_res.snapshot_path
-                        else None
-                    )
-                    logger.info(
-                        "tree_done",
-                        doc_id=doc_id,
-                        status=rebuild_res.status,
-                        reason=rebuild_res.reason,
-                        changed_fields=rebuild_res.changed_fields,
-                        snapshot_name=snapshot_name,
-                    )
-                except LocalLLMUnavailableError as e:
-                    logger.warning(
-                        "llm_unavailable",
-                        error_type=type(e).__name__,
-                        doc_id=doc_id,
-                    )
-                    summary.status = "llm_unavailable"
-                    logger.info("batch_summary", **summary.as_dict())
-                    return summary
-                except Exception as e:
-                    summary.errors += 1
-                    logger.error(
-                        "tree_failed",
-                        doc_id=doc_id,
-                        error_type=type(e).__name__,
-                    )
-
-        # ---------------------------------------------------------------------
-        # 7. 自動補齊待審答案階段 (Phase 20 Background Auto-Filler)
-        # ---------------------------------------------------------------------
-        # dry-run 不得呼叫 LLM 或寫入（連線為唯讀，且 llm_call 為占位函式）
-        if cfg.enable_autofill_answers and not cfg.soap_only and not cfg.dry_run:
-            from ..pageindex.batch_answer_job import get_pending_unanswered_ids
-            from ..pageindex.answer_generator import generate_answer_for_faq, GenerationError
-
-            unanswered_ids = get_pending_unanswered_ids(conn, limit=cfg.max_pending)
-            for u_id in unanswered_ids:
-                if clock() - start_time >= cfg.time_budget_seconds:
-                    logger.warning("budget_exhausted", stage="autofill", faq_id=u_id)
-                    summary.status = "budget_exhausted"
-                    logger.info("batch_summary", **summary.as_dict())
-                    return summary
-                try:
-                    generate_answer_for_faq(conn, u_id, llm_call)
-                    summary.autofill_answers_count += 1
-                    logger.info("autofill_faq_done", faq_id=u_id)
-                except LocalLLMUnavailableError as e:
-                    logger.warning("llm_unavailable", error_type=type(e).__name__, faq_id=u_id)
-                    summary.status = "llm_unavailable"
-                    logger.info("batch_summary", **summary.as_dict())
-                    return summary
-                except GenerationError as ge:
-                    logger.info("autofill_faq_skipped", faq_id=u_id, reason=str(ge))
-                except Exception as e:
-                    summary.errors += 1
-                    logger.warning("autofill_faq_failed", faq_id=u_id, error=str(e))
-
-        # ---------------------------------------------------------------------
-        # 8. 24 小時預先生成主體醫學資訊階段 (Phase 28 P28-PRE / P28-FRESH)
-        # ---------------------------------------------------------------------
-        if cfg.enable_patient_prefill and not cfg.soap_only and not cfg.general_only:
-            from src.batch.patient_prefill import run_prefill_stage
-
-            effective_now = (cfg.now_fn or _utc_now)()
-            effective_prefill_llm = cfg.prefill_llm_call or llm_call
-            prefill_seed = cfg.prefill_seed_path or cfg.seed_path
-
-            prefill_res = run_prefill_stage(
-                conn,
-                cfg,
-                effective_prefill_llm,
-                now=effective_now,
-                clock=clock,
-                logger=logger,
-                seed_path=prefill_seed,
-                start_time=start_time,
-            )
-
-            summary.prefill_topics_planned = prefill_res.topics_planned
-            summary.prefill_generated = prefill_res.generated
-            summary.prefill_refreshed = prefill_res.refreshed_unchanged
-            summary.prefill_rejected = prefill_res.rejected
-            summary.prefill_rejected_warning = prefill_res.rejected_warning
-            summary.prefill_rejected_insufficient = prefill_res.rejected_insufficient
-            summary.prefill_protected_skipped = prefill_res.protected_skipped
-            summary.prefill_skipped_budget = prefill_res.skipped_budget
-            summary.prefill_skipped_no_title = prefill_res.skipped_no_title
-            summary.prefill_backlog = prefill_res.backlog
-            summary.errors += prefill_res.errors
-
-            if prefill_res.status == "llm_unavailable":
-                summary.status = "llm_unavailable"
-                logger.info("batch_summary", **summary.as_dict())
-                return summary
-            elif prefill_res.status == "budget_exhausted":
-                summary.status = "budget_exhausted"
-                logger.info("batch_summary", **summary.as_dict())
-                return summary
-
-        # ---------------------------------------------------------------------
-        # 9. 動態醫學解說動畫影片佇列渲染階段 (Phase 43 Automated Video Queue)
-        # ---------------------------------------------------------------------
-        if not cfg.skip_video_render and not cfg.soap_only and not cfg.general_only and not cfg.dry_run:
-            try:
-                from src.visual.video_queue import batch_render_queue
-                v_res = batch_render_queue(
-                    conn,
-                    limit=cfg.video_render_limit,
-                    aspect=cfg.video_render_aspect,
-                    force=False,
-                )
-                summary.videos_rendered = v_res.get("rendered", 0)
-                summary.videos_skipped = v_res.get("skipped", 0)
-                summary.videos_failed = v_res.get("failed", 0)
-                # 影片渲染為多媒體輸出階段，失敗獨立記錄於 videos_failed，不連坐污染核心知識庫 errors 統計
-                logger.info(
-                    "video_render_stage_completed",
-                    rendered=summary.videos_rendered,
-                    skipped=summary.videos_skipped,
-                    failed=summary.videos_failed,
-                )
-            except Exception as e:
-                summary.videos_failed += 1
-                logger.warning("video_render_stage_failed", error=str(e))
-
-        summary.status = "completed"
-        logger.info("batch_summary", **summary.as_dict())
-        return summary
+        ctx.summary.status = "completed"
+        logger.info("batch_summary", **ctx.summary.as_dict())
+        return ctx.summary

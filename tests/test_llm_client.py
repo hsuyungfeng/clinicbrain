@@ -1,31 +1,43 @@
 """
 Taiwan Clinic Medical PageIndex RAG System - 本地 LLM 客戶端測試
-涵蓋 Phase 02 Task 1:
+涵蓋 Phase 02 Task 1 + Phase 47 Wave 1:
 - check_llm_health() 健康檢查回傳模型名稱
 - local_llm_call() 基本連通性與 content 提取（忽略 reasoning_content）
 - 連線失敗與無效 endpoint 正確引發 LocalLLMUnavailableError
+- CLINICBRAIN_LLM_BASE_URL 環境變數覆寫與 /v1/models TTL 快取
 """
 
-import urllib.error
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import httpx
 import pytest
+
+from src.pageindex import llm_client
 from src.pageindex.llm_client import (
+    LLMEmptyOutputError,
+    LLMTruncatedError,
+    LocalLLMUnavailableError,
     check_llm_health,
     local_llm_call,
-    LocalLLMUnavailableError,
-    LLMEmptyOutputError,
-    LLM_ENDPOINT,
-    MODELS_ENDPOINT,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_health_cache():
+    llm_client._invalidate_health_cache()
+    yield
+    llm_client._invalidate_health_cache()
 
 
 def test_check_llm_health_live():
     """驗證本地 llama-server 存活時能正常獲取模型資訊。"""
     mock_res = MagicMock()
-    mock_res.status = 200
-    mock_res.__enter__.return_value = mock_res
-    mock_res.read.return_value = b'{"data": [{"id": "mock-qwen-27b"}]}'
-    with patch("urllib.request.urlopen", return_value=mock_res):
+    mock_res.status_code = 200
+    mock_res.json.return_value = {"data": [{"id": "mock-qwen-27b"}]}
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_res
+
+    with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
         model_name = check_llm_health(timeout=5)
         assert isinstance(model_name, str)
         assert model_name == "mock-qwen-27b"
@@ -41,9 +53,8 @@ def test_check_llm_health_connection_failure():
 def test_local_llm_call_ignores_reasoning_content():
     """驗證 local_llm_call 只取用 content，嚴格排除 reasoning_content。"""
     mock_response = MagicMock()
-    mock_response.status = 200
-    mock_response.__enter__.return_value = mock_response
-    mock_body = {
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
         "choices": [
             {
                 "message": {
@@ -54,23 +65,21 @@ def test_local_llm_call_ignores_reasoning_content():
             }
         ]
     }
-    mock_response.read.return_value = (
-        __import__("json").dumps(mock_body, ensure_ascii=False).encode("utf-8")
-    )
+    mock_client = MagicMock()
+    mock_client.post.return_value = mock_response
 
     with patch("src.pageindex.llm_client.check_llm_health", return_value="test-model"):
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
             result = local_llm_call("測試提示詞", timeout=10)
             assert result == "這是最終回答內容"
             assert "思考過程" not in result
 
 
 def test_local_llm_call_empty_content_raises_error():
-    """驗證當模型僅輸出思考過程而 content 為空時，拋出 LocalLLMUnavailableError。"""
+    """驗證當模型僅輸出思考過程而 content 為空時，拋出 LLMEmptyOutputError。"""
     mock_response = MagicMock()
-    mock_response.status = 200
-    mock_response.__enter__.return_value = mock_response
-    mock_body = {
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
         "choices": [
             {
                 "message": {
@@ -81,34 +90,33 @@ def test_local_llm_call_empty_content_raises_error():
             }
         ]
     }
-    mock_response.read.return_value = (
-        __import__("json").dumps(mock_body, ensure_ascii=False).encode("utf-8")
-    )
+    mock_client = MagicMock()
+    mock_client.post.return_value = mock_response
 
     with patch("src.pageindex.llm_client.check_llm_health", return_value="test-model"):
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
             with pytest.raises(LLMEmptyOutputError, match="本地 LLM 回應之 content 為空"):
                 local_llm_call("測試提示詞", timeout=10)
 
 
 def test_local_llm_call_timeout_raises_clear_exception():
     """驗證呼叫逾時拋出包含秒數說明的 LocalLLMUnavailableError。"""
-    import socket
+    mock_client = MagicMock()
+    mock_client.post.side_effect = httpx.ReadTimeout("Operation timed out")
+
     with patch("src.pageindex.llm_client.check_llm_health", return_value="test-model"):
-        with patch("urllib.request.urlopen", side_effect=socket.timeout("Operation timed out")):
+        with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
             with pytest.raises(LocalLLMUnavailableError, match="呼叫本地 LLM 逾時（超過 10 秒）"):
                 local_llm_call("測試提示詞", timeout=10)
 
 
 def test_local_llm_call_truncated_raises_truncated_error():
     """Test 1: 驗證 finish_reason='length' 且 content 非空時，拋出 LLMTruncatedError。"""
-    from src.pageindex.llm_client import LLMTruncatedError, LLMEmptyOutputError
     assert issubclass(LLMTruncatedError, LLMEmptyOutputError), "LLMTruncatedError 必須是 LLMEmptyOutputError 子類別"
 
     mock_response = MagicMock()
-    mock_response.status = 200
-    mock_response.__enter__.return_value = mock_response
-    mock_body = {
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
         "choices": [
             {
                 "finish_reason": "length",
@@ -120,12 +128,11 @@ def test_local_llm_call_truncated_raises_truncated_error():
         ],
         "usage": {"prompt_tokens": 100, "completion_tokens": 3000, "total_tokens": 3100},
     }
-    mock_response.read.return_value = (
-        __import__("json").dumps(mock_body, ensure_ascii=False).encode("utf-8")
-    )
+    mock_client = MagicMock()
+    mock_client.post.return_value = mock_response
 
     with patch("src.pageindex.llm_client.check_llm_health", return_value="test-model"):
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
             with pytest.raises(LLMTruncatedError) as exc_info:
                 local_llm_call("測試提示詞", timeout=10)
             err_msg = str(exc_info.value)
@@ -136,9 +143,8 @@ def test_local_llm_call_truncated_raises_truncated_error():
 def test_local_llm_call_finish_reason_stop_success():
     """Test 2: finish_reason='stop' 且 content 正常時照舊回傳。"""
     mock_response = MagicMock()
-    mock_response.status = 200
-    mock_response.__enter__.return_value = mock_response
-    mock_body = {
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
         "choices": [
             {
                 "finish_reason": "stop",
@@ -149,19 +155,17 @@ def test_local_llm_call_finish_reason_stop_success():
             }
         ]
     }
-    mock_response.read.return_value = (
-        __import__("json").dumps(mock_body, ensure_ascii=False).encode("utf-8")
-    )
+    mock_client = MagicMock()
+    mock_client.post.return_value = mock_response
 
     with patch("src.pageindex.llm_client.check_llm_health", return_value="test-model"):
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
             result = local_llm_call("測試提示詞", timeout=10)
             assert result == "這是完整回答內容"
 
 
 def test_sampling_constants_and_payload_capture():
     """Test 4: 驗證取樣常數結構，且傳入 PATIENT_COMPOSE_SAMPLING 時正確組裝 payload。"""
-    import json
     from src.pageindex.llm_client import (
         FAITHFUL_SAMPLING,
         PATIENT_COMPOSE_SAMPLING,
@@ -180,15 +184,14 @@ def test_sampling_constants_and_payload_capture():
     assert "reasoning_effort" not in PATIENT_GENERAL_SAMPLING
     assert PATIENT_GENERAL_SAMPLING["chat_template_kwargs"] == {"enable_thinking": False}
 
-    captured_req = None
+    captured_kwargs = {}
 
-    def fake_urlopen(req, timeout):
-        nonlocal captured_req
-        captured_req = req
+    def fake_post(url, **kwargs):
+        captured_kwargs["url"] = url
+        captured_kwargs.update(kwargs)
         mock_response = MagicMock()
-        mock_response.status = 200
-        mock_response.__enter__.return_value = mock_response
-        mock_body = {
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
             "choices": [
                 {
                     "finish_reason": "stop",
@@ -196,17 +199,17 @@ def test_sampling_constants_and_payload_capture():
                 }
             ]
         }
-        mock_response.read.return_value = json.dumps(mock_body).encode("utf-8")
         return mock_response
 
+    mock_client = MagicMock()
+    mock_client.post.side_effect = fake_post
+
     with patch("src.pageindex.llm_client.check_llm_health", return_value="test-model"):
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
-            # 使用 dict(...) 傳入，確保常數不被就地修改
+        with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
             sampling_copy = dict(PATIENT_COMPOSE_SAMPLING)
             local_llm_call("測試提問", timeout=10, sampling=sampling_copy)
 
-    assert captured_req is not None
-    payload = json.loads(captured_req.data.decode("utf-8"))
+    payload = captured_kwargs["json"]
     assert "reasoning_effort" not in payload
     assert payload["chat_template_kwargs"] == {"enable_thinking": False}
     assert payload["max_tokens"] == 800
@@ -216,27 +219,44 @@ def test_sampling_constants_and_payload_capture():
     assert PATIENT_COMPOSE_SAMPLING["max_tokens"] == 800, "模組常數不得被污染"
 
 
+def test_custom_base_url_env_and_health_ttl_cache(monkeypatch):
+    """驗證 CLINICBRAIN_LLM_BASE_URL 環境變數與 /v1/models TTL 快取避免重複探測。"""
+    monkeypatch.setenv("CLINICBRAIN_LLM_BASE_URL", "http://10.0.0.5:9090/")
+    mock_health_res = MagicMock(status_code=200)
+    mock_health_res.json.return_value = {"data": [{"id": "qwen-custom"}]}
+    mock_chat_res = MagicMock(status_code=200)
+    mock_chat_res.json.return_value = {
+        "choices": [{"finish_reason": "stop", "message": {"content": "正常"}}]
+    }
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_health_res
+    mock_client.post.return_value = mock_chat_res
+
+    with patch("src.pageindex.llm_client._get_http_client", return_value=mock_client):
+        assert local_llm_call("你好", timeout=10) == "正常"
+        assert local_llm_call("再問一次", timeout=10) == "正常"
+
+    assert mock_client.get.call_count == 1
+    assert mock_client.get.call_args[0][0] == "http://10.0.0.5:9090/v1/models"
+    assert mock_client.post.call_args[0][0] == "http://10.0.0.5:9090/v1/chat/completions"
+
+
 def test_llm_lock_and_nightly_batch_running(tmp_path):
     """Test 5: llm_lock.GENERATION_LOCK 與 admin._GENERATION_LOCK 同一物件，nightly_batch_running 測試。"""
-    from src.pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
     from src.api.routes.admin import _GENERATION_LOCK
     from src.batch import db_lock
+    from src.pageindex.llm_lock import GENERATION_LOCK, nightly_batch_running
 
     assert GENERATION_LOCK is _GENERATION_LOCK, "GENERATION_LOCK 與 admin._GENERATION_LOCK 必須是同一個物件實例"
 
-    # 特殊無效路徑
     assert nightly_batch_running("") is False
     assert nightly_batch_running(":memory:") is False
     assert nightly_batch_running(str(tmp_path / "not_exist.db")) is False
 
-    # 真實檔案
     test_db = tmp_path / "clinic_test.db"
     test_db.write_text("dummy")
-
-    # 未持鎖 -> False
     assert nightly_batch_running(str(test_db)) is False
 
-    # 模擬另一行程持有檔案鎖
     fd = db_lock.try_acquire(str(test_db))
     assert fd is not None
     try:
@@ -244,5 +264,4 @@ def test_llm_lock_and_nightly_batch_running(tmp_path):
     finally:
         db_lock.release(fd)
 
-    # 釋放後 -> False
     assert nightly_batch_running(str(test_db)) is False

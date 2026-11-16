@@ -38,6 +38,11 @@ def _use_fts(query: str) -> bool:
     return len(query.strip()) >= FTS_MIN_CHARS
 
 
+def escape_like(term: str) -> str:
+    """跳脫 SQLite LIKE 萬用字元（\\、% 與 _），搭配 ESCAPE '\\' 使用。"""
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def search_text(
     conn: sqlite3.Connection,
     table: str,
@@ -96,8 +101,9 @@ def search_text(
             rows = None
 
     if rows is None:
-        where_clause = "(" + " OR ".join(f"{col} LIKE ?" for col in like_columns) + ")"
-        params = [f"%{query}%" for _ in like_columns]
+        where_clause = "(" + " OR ".join(f"{col} LIKE ? ESCAPE '\\'" for col in like_columns) + ")"
+        escaped_q = escape_like(query)
+        params = [f"%{escaped_q}%" for _ in like_columns]
         if extra_where:
             where_clause += f" AND {extra_where}"
             params.extend(extra_params)

@@ -4,8 +4,8 @@ milestone: v1.4
 milestone_name: 臨床衛教提煉與進階防護
 status: completed_milestone
 stopped_at: Milestone v1.4 / Phase 15–18 全數圓滿完成，全套回歸測試 1013 passed，正式資料庫 SHA-256 恆定未變
-last_updated: "2026-10-08T15:55:00.000Z"
-last_activity: 2026-10-08 -- Phase 18 診所資料上傳與管理 Web App 實作與加固完成，全套回歸測試全過
+last_updated: "2026-11-14T11:35:00+08:00"
+last_activity: 2026-11-14 -- Phase 47 架構重構、效能優化與離線韌性（Wave 1–3）實作完成，交付 Hermes 獨立驗收
 progress:
   total_phases: 4
   completed_phases: 4
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 46（系統衛生、安全加固與回歸修復：System Hygiene, Security Hardening & Regression Recovery）-- COMPLETED
-Plan: 46-01、46-02、46-03 實施與 Hermes 獨立測試驗收全數完成 (3/3)
-Status: Milestone v1.5 In Progress (Phase 41, 44, 43, 45, 46 完成)
+Phase: 47（架構重構、效能優化與離線韌性：Architecture Refactoring, Performance & Offline Resilience）-- COMPLETED
+Plan: 47-01、47-02、47-03 實施與 Hermes 獨立驗收 (3/3)
+Status: Milestone v1.5 In Progress (Phase 41, 43, 44, 45, 46, 47 完成)
 Last activity: 2026-11-13 -- 依據 hydrogenimprovement.md 完成 Phase 46 全部計畫：P0 回歸修復、CORS 白名單加固、常數時間金鑰認證、sync_logs 表補齊、非阻塞上傳、影片佇列防重入、工程基建與 Herdr Hermes 獨立測試驗收全綠。
 
 Progress: [██████████] 100%

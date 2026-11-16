@@ -137,19 +137,34 @@ def test_ui_has_ask_tab_and_no_html_injection(client):
 
 def test_ask_uses_faithful_sampling_without_repetition_penalty(monkeypatch):
     """RAG 提問必須單次關閉重複懲罰（否則模型會為避免重複而改字／掉字），且不影響預設呼叫。"""
-    import json
+    from unittest.mock import MagicMock
     from src.pageindex import llm_client
 
     sent = []
 
     class _Resp:
-        def __enter__(self): return self
-        def __exit__(self, *a): return False
-        def read(self): return json.dumps({"choices": [{"message": {"content": "答案"}}]}).encode()
+        status_code = 200
+        def raise_for_status(self): return None
+        def json(self): return {"choices": [{"message": {"content": "答案"}}]}
+
+    mock_client = MagicMock()
+    mock_client.post.side_effect = lambda url, **kwargs: sent.append(kwargs["json"]) or _Resp()
 
     monkeypatch.setattr(llm_client, "check_llm_health", lambda timeout=5: "ok")
-    monkeypatch.setattr(llm_client.urllib.request, "urlopen", lambda req, timeout=0: sent.append(json.loads(req.data)) or _Resp())
+    monkeypatch.setattr(llm_client, "_get_http_client", lambda: mock_client)
     admin_mod._local_llm_ask_call("q")
     llm_client.local_llm_call("q")
     assert sent[0]["dry_multiplier"] == 0.0 and sent[0]["repeat_penalty"] == 1.0 and sent[0]["temperature"] == 0.1
     assert "dry_multiplier" not in sent[1] and "repeat_penalty" not in sent[1]
+
+
+def test_admin_ask_all_clinics_allows_treatment_queries(client, db, monkeypatch):
+    """「全部診所（一般醫學管理）」(clinic_id='') 問療程如粉瘤切除應可作答，僅診所營運問題才需指定診所。"""
+    _seed_visible_and_pending(db)
+    monkeypatch.setattr(admin_mod, "_local_llm_ask_call", lambda p: "粉瘤切除後請保持傷口清潔乾燥 [F1]。若出現紅腫熱痛或化膿，請儘速就醫。")
+    r = client.post("/api/v1/admin/ask", json={"question": f"{TOKEN_OK}術後可以洗臉嗎？", "clinic_id": ""})
+    assert r.status_code == 200, r.text
+    assert r.json()["mode"] == "answered"
+
+    r_ops = client.post("/api/v1/admin/ask", json={"question": "診所的營業時間是什麼時候？", "clinic_id": ""})
+    assert r_ops.status_code == 400

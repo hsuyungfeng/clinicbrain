@@ -64,12 +64,14 @@ def search_nhi_catalog(
 
     # 2. 若 FTS 未命中或查詢小於 3 字，使用 LIKE 備援
     if not rows:
-        like_term = f"%{clean_q}%"
+        from src.query.search import escape_like
+
+        like_term = f"%{escape_like(clean_q)}%"
         sql = f"""
             SELECT c.index_no, c.id, c.system, c.category, c.name, c.icd10,
                    c.alias, c.keywords, c.clinical_feature, c.topic_key, c.visual_available
             FROM nhi_catalog_1_400 c
-            WHERE (c.name LIKE ? OR c.keywords LIKE ? OR c.alias LIKE ? OR c.clinical_feature LIKE ?) {system_filter}
+            WHERE (c.name LIKE ? ESCAPE '\\' OR c.keywords LIKE ? ESCAPE '\\' OR c.alias LIKE ? ESCAPE '\\' OR c.clinical_feature LIKE ? ESCAPE '\\') {system_filter}
             ORDER BY c.visual_available DESC, c.index_no ASC
             LIMIT ?
         """

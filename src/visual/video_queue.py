@@ -266,6 +266,8 @@ def render_asset_to_video(
             "fast",
             "-movflags",
             "+faststart",
+            "-f",
+            "mp4",
             str(tmp_mp4),
         ]
 

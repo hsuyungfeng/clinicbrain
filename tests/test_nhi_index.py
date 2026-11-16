@@ -45,3 +45,11 @@ def test_format_nhi_context_for_llm(db_conn):
     ctx = format_nhi_context_for_llm(hits)
     assert "【健保基層門診 1-400 疾病參考索引】:" in ctx
     assert "牙齒隱裂症候群" in ctx
+
+
+def test_search_nhi_catalog_escapes_like_wildcards(db_conn):
+    """驗證輸入 % 或 _ 時不會退化為 LIKE 全表匹配。"""
+    hits_under = search_nhi_catalog(db_conn, "_", limit=5)
+    assert hits_under == []
+    hits_pct = search_nhi_catalog(db_conn, "%", limit=5)
+    assert hits_pct == []

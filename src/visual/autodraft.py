@@ -910,6 +910,29 @@ def _shape_pathology_params(raw_params: dict[str, Any]) -> dict[str, Any]:
     return shaped
 
 
+def _shape_scene_labels(raw_labels: Any) -> list[dict[str, str]]:
+    if not isinstance(raw_labels, list):
+        return []
+    cleaned_labels: list[dict[str, str]] = []
+    for lb in raw_labels:
+        if not isinstance(lb, dict):
+            continue
+        txt = str(lb.get("text", "")).strip()[:12]
+        if not txt:
+            continue
+        tone_str = str(lb.get("tone", "")).strip().lower()
+        if tone_str in ("warn", "warning", "danger", "alert", "bad"):
+            final_tone = "warning"
+        elif tone_str in ("opt", "optimal", "good", "ok", "success", "pass"):
+            final_tone = "optimal"
+        else:
+            final_tone = "neutral"
+        cleaned_labels.append({"text": txt, "tone": final_tone})
+        if len(cleaned_labels) >= 4:
+            break
+    return cleaned_labels
+
+
 def parse_and_build_tree_ir(
     raw: str,
     topic_key: str,
@@ -920,57 +943,22 @@ def parse_and_build_tree_ir(
     回傳：
         (ir, "ok") 或 (None, error_code)
     """
-    if not raw or not isinstance(raw, str):
-        return None, "empty_output"
+    from src.visual.autodraft_ir import (
+        VALID_SCENE1_BLUEPRINTS,
+        extract_ir_json,
+        shape_scene1_params,
+        shape_scene2_contrast_params,
+        shape_scene3_timeline_params,
+    )
 
-    cleaned = _THINK_BLOCK_RE.sub("", raw)
-    cleaned = _THINK_OPEN_RE.sub("", cleaned).strip()
+    data, err_code = extract_ir_json(raw)
+    if data is None:
+        return None, err_code
 
-    # 嘗試擷取 JSON 字串
-    json_str = None
-    m = _CODE_BLOCK_RE.search(cleaned)
-    if m:
-        json_str = m.group(1).strip()
-    else:
-        # 尋找最外層的 { ... }
-        s_idx = cleaned.find("{")
-        e_idx = cleaned.rfind("}")
-        if s_idx != -1 and e_idx != -1 and e_idx > s_idx:
-            json_str = cleaned[s_idx : e_idx + 1].strip()
-
-    if not json_str:
-        return None, "schema_error"
-
-    try:
-        data = json.loads(json_str)
-    except Exception:
-        return None, "schema_error"
-
-    if not isinstance(data, dict):
-        return None, "schema_error"
-
-    # 自癒修復：醫學專用 3D/4D 縮寫轉換為正體中文「三維」「四維」，避免誤觸零數字硬限制
-    def _clean_3d_recursive(val: Any) -> Any:
-        if isinstance(val, str):
-            val = re.sub(r"\b3[dD]\b|3[dD]", "三維", val)
-            val = re.sub(r"\b4[dD]\b|4[dD]", "四維", val)
-            return val
-        elif isinstance(val, dict):
-            return {k: _clean_3d_recursive(v) for k, v in val.items()}
-        elif isinstance(val, list):
-            return [_clean_3d_recursive(item) for item in val]
-        return val
-
-    data = _clean_3d_recursive(data)
-
-    # 檢查頂層欄位
     title = data.get("title") or fallback_title
     if isinstance(title, str) and len(title) > 30:
         cleaned_t = re.sub(r"（.*?）|\(.*?\)", "", title).strip()
-        if 1 <= len(cleaned_t) <= 30:
-            title = cleaned_t
-        else:
-            title = title[:30]
+        title = cleaned_t if 1 <= len(cleaned_t) <= 30 else title[:30]
     if not isinstance(title, str) or not (1 <= len(title) <= 30):
         return None, "schema_error"
 
@@ -982,44 +970,17 @@ def parse_and_build_tree_ir(
     if not isinstance(scenes, list) or len(scenes) != 3:
         return None, "schema_error"
 
-    def _parse_int_val(v: Any, default: int, min_v: int, max_v: int) -> int:
-        if isinstance(v, str):
-            _cn = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
-            v = _cn.get(v.strip(), default)
-        if not isinstance(v, int) or isinstance(v, bool):
-            return default
-        return max(min_v, min(max_v, v))
-
-    # 嚴格檢查各場景之 blueprint 順序
-    valid_scene1_blueprints = (
-        "process_diagram",
-        "skin_energy",
-        "laser_action",
-        "neuromuscular",
-        "dermal_support",
-        "cyst_excision",
-        "nail_matrix",
-        "subdermal_curettage",
-        "deep_plane_facelift",
-        "corset_platysmaplasty",
-        "surgical_action",
-        "pathology_mechanism",
-    )
     shaped_scenes = []
-
     for idx, sc in enumerate(scenes):
         if not isinstance(sc, dict):
             return None, "schema_error"
         bp = sc.get("blueprint")
-        if idx == 0:
-            if bp not in valid_scene1_blueprints:
-                return None, "unknown_blueprint"
-        elif idx == 1:
-            if bp != "contrast":
-                return None, "unknown_blueprint"
-        elif idx == 2:
-            if bp != "timeline":
-                return None, "unknown_blueprint"
+        if idx == 0 and bp not in VALID_SCENE1_BLUEPRINTS:
+            return None, "unknown_blueprint"
+        if idx == 1 and bp != "contrast":
+            return None, "unknown_blueprint"
+        if idx == 2 and bp != "timeline":
+            return None, "unknown_blueprint"
 
         sc_title = sc.get("title")
         if not isinstance(sc_title, str) or not sc_title.strip():
@@ -1029,431 +990,38 @@ def parse_and_build_tree_ir(
         caption = sc.get("caption")
         if not isinstance(caption, str) or len(caption.strip()) < 20:
             return None, "schema_error"
-        caption = caption.strip()
-        if len(caption) > 120:
-            caption = caption[:120]
+        caption = caption.strip()[:120]
 
-        # 場景 3 必須包含合規收尾語意
-        if bp == "timeline":
-            if not any(phrase in caption for phrase in _TIMELINE_CLOSING_PHRASES):
-                return None, "forbidden_phrase"
+        if bp == "timeline" and not any(phrase in caption for phrase in _TIMELINE_CLOSING_PHRASES):
+            return None, "forbidden_phrase"
 
-        raw_labels = sc.get("labels")
-        if not isinstance(raw_labels, list):
-            raw_labels = []
-        cleaned_labels = []
-        for lb in raw_labels:
-            if not isinstance(lb, dict):
-                continue
-            txt = str(lb.get("text", "")).strip()[:12]
-            if not txt:
-                continue
-            tone_str = str(lb.get("tone", "")).strip().lower()
-            if tone_str in ("warn", "warning", "danger", "alert", "bad"):
-                final_tone = "warning"
-            elif tone_str in ("opt", "optimal", "good", "ok", "success", "pass"):
-                final_tone = "optimal"
-            else:
-                final_tone = "neutral"
-            cleaned_labels.append({"text": txt, "tone": final_tone})
-            if len(cleaned_labels) >= 4:
-                break
-        labels = cleaned_labels
-
-        # 檢查 params 零預設文字污染（模型必須明確提供所有中文字串）
+        labels = _shape_scene_labels(sc.get("labels"))
         raw_params = sc.get("params")
         if not isinstance(raw_params, dict):
             return None, "schema_error"
 
-        if bp == "process_diagram":
-            src = raw_params.get("source")
-            if not isinstance(src, dict) or not isinstance(src.get("label"), str) or not src["label"].strip():
-                return None, "schema_error"
-            layers = raw_params.get("container_layers")
-            if not isinstance(layers, list) or not (2 <= len(layers) <= 4):
-                return None, "schema_error"
-            for layer in layers:
-                if not isinstance(layer, dict) or not isinstance(layer.get("label"), str) or not layer["label"].strip():
-                    return None, "schema_error"
-            step_lbls = raw_params.get("step_labels")
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            for sl in step_lbls:
-                if not isinstance(sl, str) or not sl.strip():
-                    return None, "schema_error"
-            particles = raw_params.get("particles", 6)
-            if not isinstance(particles, int) or isinstance(particles, bool) or not (4 <= particles <= 12):
-                particles = 6
-            s_fill = src.get("fill", "skin")
-            if s_fill not in PALETTE_TOKENS:
-                s_fill = "skin"
-            shaped_params = {
-                "source": {"label": src["label"].strip()[:8], "fill": s_fill},
-                "particles": particles,
-                "container_layers": [
-                    {
-                        "label": l["label"].strip()[:6],
-                        "fill": l.get("fill", "accent") if l.get("fill") in PALETTE_TOKENS else "accent",
-                        "weight": int(l.get("weight", 2)) if isinstance(l.get("weight"), (int, float)) and 1 <= int(l.get("weight", 2)) <= 5 else 2,
-                        "keep": bool(l.get("keep", False)),
-                    }
-                    for l in layers
-                ],
-                "step_labels": [s.strip()[:10] for s in step_lbls],
-            }
+        if idx == 0:
+            shaped_params = shape_scene1_params(bp, raw_params, _shape_pathology_params)
+        elif idx == 1:
+            shaped_params = shape_scene2_contrast_params(raw_params)
+        else:
+            shaped_params = shape_scene3_timeline_params(raw_params, topic_key, fallback_title)
 
-        elif bp == "skin_energy":
-            mode = raw_params.get("mode", "focused")
-            if mode not in ("focused", "volumetric"):
-                mode = "focused"
-            probe = raw_params.get("probe_label")
-            if not isinstance(probe, str) or not probe.strip():
-                return None, "schema_error"
-            layers = raw_params.get("layer_labels")
-            if isinstance(layers, list) and len(layers) > 3:
-                layers = layers[:3]
-            if not isinstance(layers, list) or len(layers) != 3:
-                return None, "schema_error"
-            for ly in layers:
-                if not isinstance(ly, str) or not ly.strip():
-                    return None, "schema_error"
-            step_lbls = raw_params.get("step_labels")
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            for sl in step_lbls:
-                if not isinstance(sl, str) or not sl.strip():
-                    return None, "schema_error"
-            f_pts = _parse_int_val(raw_params.get("focal_points"), default=5, min_v=3, max_v=7)
-            shaped_params = {
-                "mode": mode,
-                "probe_label": probe.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "focal_points": f_pts,
-                "energy_fill": raw_params.get("energy_fill", "accent"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
+        if shaped_params is None:
+            return None, "schema_error"
 
-        elif bp == "cyst_excision":
-            c_label = raw_params.get("cyst_label")
-            s_label = raw_params.get("sac_label")
-            core_lbl = raw_params.get("core_label")
-            layers = raw_params.get("layer_labels")
-            step_lbls = raw_params.get("step_labels")
-            if not all(isinstance(x, str) and x.strip() for x in (c_label, s_label, core_lbl)):
-                return None, "schema_error"
-            if isinstance(layers, list) and len(layers) > 2:
-                layers = layers[:2]
-            if not isinstance(layers, list) or len(layers) != 2:
-                return None, "schema_error"
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            shaped_params = {
-                "cyst_label": c_label.strip()[:8],
-                "sac_label": s_label.strip()[:8],
-                "core_label": core_lbl.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "sac_fill": raw_params.get("sac_fill", "accent"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "nail_matrix":
-            n_label = raw_params.get("nail_label", "趾甲板")
-            f_label = raw_params.get("fold_label", "側甲襞")
-            s_label = raw_params.get("spicule_label", "嵌甲尖刺")
-            m_label = raw_params.get("matrix_label", "甲基質生長板")
-            step_lbls = raw_params.get("step_labels")
-            if not all(isinstance(x, str) and x.strip() for x in (n_label, f_label, s_label, m_label)):
-                return None, "schema_error"
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            shaped_params = {
-                "nail_label": n_label.strip()[:8],
-                "fold_label": f_label.strip()[:8],
-                "spicule_label": s_label.strip()[:8],
-                "matrix_label": m_label.strip()[:8],
-                "matrix_fill": raw_params.get("matrix_fill", "warn"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "subdermal_curettage":
-            t_label = raw_params.get("target_label")
-            s_label = raw_params.get("shaver_label")
-            layers = raw_params.get("layer_labels")
-            step_lbls = raw_params.get("step_labels")
-            if not all(isinstance(x, str) and x.strip() for x in (t_label, s_label)):
-                return None, "schema_error"
-            if isinstance(layers, list) and len(layers) > 2:
-                layers = layers[:2]
-            if not isinstance(layers, list) or len(layers) != 2:
-                return None, "schema_error"
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            shaped_params = {
-                "target_label": t_label.strip()[:8],
-                "shaver_label": s_label.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "tool_fill": raw_params.get("tool_fill", "accent"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "deep_plane_facelift":
-            smas_lbl = raw_params.get("smas_label", "SMAS筋膜瓣")
-            anchor_lbl = raw_params.get("anchor_label", "骨膜錨定點")
-            lig_lbl = raw_params.get("ligament_label", "維持韌帶")
-            layers = raw_params.get("layer_labels")
-            step_lbls = raw_params.get("step_labels")
-            if not all(isinstance(x, str) and x.strip() for x in (smas_lbl, anchor_lbl, lig_lbl)):
-                return None, "schema_error"
-            if isinstance(layers, list) and len(layers) > 3:
-                layers = layers[:3]
-            if not isinstance(layers, list) or len(layers) != 3:
-                return None, "schema_error"
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            shaped_params = {
-                "smas_label": smas_lbl.strip()[:8],
-                "anchor_label": anchor_lbl.strip()[:8],
-                "ligament_label": lig_lbl.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "suture_fill": raw_params.get("suture_fill", "accent"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "corset_platysmaplasty":
-            m_lbl = raw_params.get("muscle_label", "兩側闊頸肌")
-            f_lbl = raw_params.get("fat_label", "深層脂肪墊")
-            sut_lbl = raw_params.get("suture_label", "馬甲式對縫")
-            layers = raw_params.get("layer_labels")
-            step_lbls = raw_params.get("step_labels")
-            if not all(isinstance(x, str) and x.strip() for x in (m_lbl, f_lbl, sut_lbl)):
-                return None, "schema_error"
-            if isinstance(layers, list) and len(layers) > 3:
-                layers = layers[:3]
-            if not isinstance(layers, list) or len(layers) != 3:
-                return None, "schema_error"
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            shaped_params = {
-                "muscle_label": m_lbl.strip()[:8],
-                "fat_label": f_lbl.strip()[:8],
-                "suture_label": sut_lbl.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "suture_fill": raw_params.get("suture_fill", "accent"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "pathology_mechanism":
-            shaped_params = _shape_pathology_params(raw_params)
-
-        elif bp == "surgical_action":
-            anat = raw_params.get("anatomy_target", "mandible")
-            if anat not in enum_values("surgical_action", "anatomy_target"):
-                anat = "mandible"
-            bone_lbl = raw_params.get("bone_label", "下顎骨端")
-            nerve_lbl = raw_params.get("nerve_label", "頦神經")
-            n_status = raw_params.get("nerve_status", "protected")
-            if n_status not in enum_values("surgical_action", "nerve_status"):
-                n_status = "protected"
-            inc_lbl = raw_params.get("incision_label", "口內隱痕")
-            fix_lbl = raw_params.get("fixation_label", "純鈦板釘")
-            shift_mm = _parse_int_val(raw_params.get("bone_shift_mm"), default=6, min_v=0, max_v=15)
-            prot_nerve = bool(raw_params.get("protect_nerve", True))
-            step_lbls = raw_params.get("step_labels")
-            if isinstance(step_lbls, list) and len(step_lbls) == 3 and all(isinstance(x, str) and x.strip() for x in step_lbls):
-                clean_steps = [x.strip()[:10] for x in step_lbls]
-            else:
-                clean_steps = ["切口進入", "神經保護處置", "穩定固定完成"]
-
-            shaped_params = {
-                "anatomy_target": anat,
-                "bone_label": str(bone_lbl).strip()[:8] if bone_lbl else "骨端結構",
-                "nerve_label": str(nerve_lbl).strip()[:8] if nerve_lbl else "周邊神經",
-                "nerve_status": n_status,
-                "incision_label": str(inc_lbl).strip()[:8] if inc_lbl else "微創切口",
-                "fixation_label": str(fix_lbl).strip()[:8] if fix_lbl else "剛性固定",
-                "bone_shift_mm": shift_mm,
-                "protect_nerve": prot_nerve,
-                "step_labels": clean_steps,
-            }
-
-        elif bp == "laser_action":
-            mode = raw_params.get("mode", "shatter")
-            if mode not in ("shatter", "fractional"):
-                mode = "shatter"
-            beam = raw_params.get("beam_label")
-            target = raw_params.get("target_label")
-            if not isinstance(beam, str) or not beam.strip():
-                return None, "schema_error"
-            if not isinstance(target, str) or not target.strip():
-                return None, "schema_error"
-            layers = raw_params.get("layer_labels")
-            if not isinstance(layers, list) or len(layers) != 2:
-                return None, "schema_error"
-            for ly in layers:
-                if not isinstance(ly, str) or not ly.strip():
-                    return None, "schema_error"
-            step_lbls = raw_params.get("step_labels")
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            for sl in step_lbls:
-                if not isinstance(sl, str) or not sl.strip():
-                    return None, "schema_error"
-            shaped_params = {
-                "mode": mode,
-                "beam_label": beam.strip()[:8],
-                "target_label": target.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "beam_fill": raw_params.get("beam_fill", "accent"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "neuromuscular":
-            nerve = raw_params.get("nerve_label")
-            muscle = raw_params.get("muscle_label")
-            surface = raw_params.get("surface_label")
-            if not isinstance(nerve, str) or not nerve.strip():
-                return None, "schema_error"
-            if not isinstance(muscle, str) or not muscle.strip():
-                return None, "schema_error"
-            if not isinstance(surface, str) or not surface.strip():
-                return None, "schema_error"
-            step_lbls = raw_params.get("step_labels")
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            for sl in step_lbls:
-                if not isinstance(sl, str) or not sl.strip():
-                    return None, "schema_error"
-            shaped_params = {
-                "nerve_label": nerve.strip()[:8],
-                "muscle_label": muscle.strip()[:8],
-                "surface_label": surface.strip()[:8],
-                "blocker_fill": raw_params.get("blocker_fill", "ok"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "dermal_support":
-            filler = raw_params.get("filler_label")
-            if not isinstance(filler, str) or not filler.strip():
-                return None, "schema_error"
-            layers = raw_params.get("layer_labels")
-            if not isinstance(layers, list) or len(layers) != 2:
-                return None, "schema_error"
-            for ly in layers:
-                if not isinstance(ly, str) or not ly.strip():
-                    return None, "schema_error"
-            droplets = raw_params.get("droplets", 6)
-            if not isinstance(droplets, int) or isinstance(droplets, bool) or not (4 <= droplets <= 8):
-                droplets = 6
-            step_lbls = raw_params.get("step_labels")
-            if not isinstance(step_lbls, list) or len(step_lbls) != 3:
-                return None, "schema_error"
-            for sl in step_lbls:
-                if not isinstance(sl, str) or not sl.strip():
-                    return None, "schema_error"
-            shaped_params = {
-                "filler_label": filler.strip()[:8],
-                "layer_labels": [ly.strip()[:8] for ly in layers],
-                "droplets": droplets,
-                "filler_fill": raw_params.get("filler_fill", "gel"),
-                "step_labels": [sl.strip()[:10] for sl in step_lbls],
-            }
-
-        elif bp == "contrast":
-            left = raw_params.get("left")
-            right = raw_params.get("right")
-            if not isinstance(left, dict) or not isinstance(right, dict):
-                return None, "schema_error"
-            left_req = ["title", "note", "core_label", "footnote"]
-            right_req = ["title", "note", "footnote"]
-            for req_k in left_req:
-                if not isinstance(left.get(req_k), str) or not left[req_k].strip():
-                    return None, "schema_error"
-            for req_k in right_req:
-                if not isinstance(right.get(req_k), str) or not right[req_k].strip():
-                    return None, "schema_error"
-
-            rows = right.get("rows", raw_params.get("rows", 3))
-            per_row = right.get("per_row", raw_params.get("per_row", 5))
-
-            left_mode = left.get("mode", "mass")
-            if left_mode not in enum_values("contrast", "mode", "left"):
-                left_mode = "mass"
-            left_effect = left.get("core_effect", "dim")
-            if left_effect not in ("dim", "none"):
-                left_effect = "dim"
-            left_fill = left.get("unit_fill", "warn")
-            if left_fill not in PALETTE_TOKENS:
-                left_fill = "warn"
-
-            right_mode = right.get("mode", "layered")
-            if right_mode not in enum_values("contrast", "mode", "right"):
-                right_mode = "layered"
-            right_fill = right.get("unit_fill", "accent")
-            if right_fill not in PALETTE_TOKENS:
-                right_fill = "accent"
-
-            shaped_params = {
-                "left": {
-                    "title": left["title"].strip()[:8],
-                    "note": left["note"].strip()[:14],
-                    "mode": left_mode,
-                    "core_effect": left_effect,
-                    "core_label": left["core_label"].strip()[:8],
-                    "footnote": left["footnote"].strip()[:16],
-                    "unit_fill": left_fill,
-                },
-                "right": {
-                    "title": right["title"].strip()[:8],
-                    "note": right["note"].strip()[:14],
-                    "mode": right_mode,
-                    "rows": int(rows) if isinstance(rows, int) and not isinstance(rows, bool) and 1 <= rows <= 4 else 3,
-                    "per_row": int(per_row) if isinstance(per_row, int) and not isinstance(per_row, bool) and 3 <= per_row <= 8 else 5,
-                    "footnote": right["footnote"].strip()[:16],
-                    "unit_fill": right_fill,
-                },
-            }
-
-        elif bp == "timeline":
-            milestones = raw_params.get("milestones")
-            if not isinstance(milestones, list) or len(milestones) != 3:
-                return None, "schema_error"
-            for m_item in milestones:
-                if not isinstance(m_item, str) or not m_item.strip():
-                    return None, "schema_error"
-            units = _parse_int_val(raw_params.get("units"), default=3, min_v=2, max_v=5)
-            # 非自體脂肪主題一律防止長血管誤導（支援 wound_healing 與 collagen_remodeling）
-            is_fat_topic = ("脂肪" in fallback_title) or ("fat" in topic_key)
-            connectors = raw_params.get("connectors", "vessels" if is_fat_topic else "none")
-            if not is_fat_topic and connectors == "vessels":
-                connectors = "none"
-            if connectors not in enum_values("timeline", "connectors"):
-                connectors = "none"
-            unit_effect = raw_params.get("unit_effect", "mature")
-            if unit_effect not in enum_values("timeline", "unit_effect"):
-                unit_effect = "mature"
-            unit_fill = raw_params.get("unit_fill", "accent")
-            if unit_fill not in PALETTE_TOKENS:
-                unit_fill = "accent"
-            shaped_params = {
-                "milestones": [m_item.strip()[:8] for m_item in milestones],
-                "unit_effect": unit_effect,
-                "connectors": connectors,
-                "units": int(units) if isinstance(units, int) and not isinstance(units, bool) and 2 <= units <= 5 else 3,
-                "unit_fill": unit_fill,
-            }
-
-        # 檢驗 params 是否符合 Blueprint 規格
         p_ok, p_code = validate_params(bp, shaped_params)
         if not p_ok:
             return None, p_code
 
+        dur = sc.get("duration_sec", 8)
         shaped_scenes.append({
             "blueprint": bp,
-            "title": sc_title.strip(),
-            "caption": caption.strip(),
-            "labels": [{"text": lb["text"].strip(), "tone": lb["tone"]} for lb in labels],
+            "title": sc_title,
+            "caption": caption,
+            "labels": labels,
             "params": shaped_params,
-            "duration_sec": sc.get("duration_sec", 8) if isinstance(sc.get("duration_sec"), int) and 4 <= sc.get("duration_sec", 8) <= 12 else 8,
+            "duration_sec": dur if isinstance(dur, int) and 4 <= dur <= 12 else 8,
         })
 
     candidate_ir = {
@@ -1463,23 +1031,20 @@ def parse_and_build_tree_ir(
         "scenes": shaped_scenes,
     }
 
-    # 檢查全文字結構（不含 topic_key 識別碼）不含任何阿拉伯數字
-    text_Check_payload = {
+    text_check_payload = {
         "title": candidate_ir["title"],
         "keywords": candidate_ir["keywords"],
         "scenes": candidate_ir["scenes"],
     }
-    if not _check_no_digits_recursive(text_Check_payload):
+    if not _check_no_digits_recursive(text_check_payload):
         return None, "forbidden_phrase"
 
-    # 若非自體脂肪主題，嚴禁殘留引擎預設之脂肪移植字面值
     is_fat_topic = ("脂肪" in fallback_title) or ("脂肪" in candidate_ir["title"]) or ("fat" in topic_key)
     if not is_fat_topic:
         scenes_dump = json.dumps(candidate_ir["scenes"], ensure_ascii=False)
         if any(lit in scenes_dump for lit in _FAT_GRAFT_DEFAULT_LITERALS):
             return None, "forbidden_phrase"
 
-    # 完整執行 validate_ir
     ok, code = validate_ir(candidate_ir)
     if not ok:
         return None, code

@@ -132,3 +132,15 @@ def test_search_limit_parameter(conn):
     """驗證 limit 參數嚴格控制回傳筆數。"""
     hits = search_drugs(conn, "消炎", limit=2)
     assert len(hits) <= 2
+
+
+def test_escape_like_prevents_wildcard_full_table_scan(conn):
+    """驗證輸入 % 或 _ 時會正確跳脫，不會退化為全表匹配。"""
+    from src.query.search import escape_like
+
+    assert escape_like(r"100%_\test") == r"100\%\_\\test"
+    # '_' 不應匹配所有含單一字元的列；'%' 不應匹配不含字面 '%' 的服務項目
+    hits_underscore = search_service_items(conn, "_", limit=5)
+    assert all("_" in (h.fields.get("chinese_name") or "") for h in hits_underscore)
+    hits_percent = search_service_items(conn, "%", limit=5)
+    assert all("%" in (h.fields.get("chinese_name") or "") for h in hits_percent)

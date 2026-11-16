@@ -378,14 +378,26 @@ Plans:
 ### Phase 46: 系統衛生、安全加固與回歸修復 (System Hygiene, Security Hardening & Regression Recovery)
 
 **Goal**: 依據 `hydrogenimprovement.md` 之全維度體檢報告，修復 P0 測試回歸（DOM 安全與批次錯誤統計連坐）、補齊正式資料庫 `sync_logs` 表結構、收緊 API CORS 與常數時間金鑰認證、解除上傳端點事件迴圈阻塞、補齊 `pyproject.toml` 等基礎設施，並透過 herdr 協同調度獨立 Agent Hermes (`wA:p3`) 進行端到端獨立測試驗收。
-**Status**: In Progress
+**Status**: Complete（46-01~46-03 全部實作完成）
 **Depends on**: Phase 43（影片佇列）、Phase 45（3D 解剖檢視組件）
 **Requirements**: P46-P0-REGRESSION-FIX, P46-SECURITY-HARDENING, P46-ENGINEERING-INFRA, P46-HERMES-VERIFY
 **Plans**: 3 plans
 Plans:
-- [ ] 46-01-PLAN.md — P0 回歸修復、安全 DOM 重構與資料庫結構同步（Wave 1）
-- [ ] 46-02-PLAN.md — P0/P1 API 安全防禦加固、非同步事件迴圈解鎖與背景渲染護欄（Wave 2）
-- [ ] 46-03-PLAN.md — P1 工程基礎設施補齊、Systemd 路徑修復與 Herdr Hermes 獨立驗收（Wave 3）
+- [x] 46-01-PLAN.md — P0 回歸修復、安全 DOM 重構與資料庫結構同步（Wave 1）
+- [x] 46-02-PLAN.md — P0/P1 API 安全防禦加固、非同步事件迴圈解鎖與背景渲染護欄（Wave 2）
+- [x] 46-03-PLAN.md — P1 工程基礎設施補齊、Systemd 路徑修復與 Herdr Hermes 獨立驗收（Wave 3）
+
+### Phase 47: 架構重構、效能優化與離線韌性 (Architecture Refactoring, Performance & Offline Resilience)
+
+**Goal**: 承接 `hydrogenimprovement.md` 剩餘之 P2/P3 項目，完成搜尋 `LIKE` 跳脫、`llm_client.py` 連線池、高複雜度單體拆分（`admin.py` / `runner.py` / `autodraft.py`）、管理後台 CSS 離線化、資料庫遷移統一器與 `AGENTS.md` 瘦身，並透過 herdr 指派獨立 Agent Hermes (`wA:p3`) 擔任 Tester 向 `agy` 回報驗收結果。
+**Status**: Planned
+**Depends on**: Phase 46（系統衛生、安全加固與回歸修復）
+**Requirements**: P47-ESCAPE-LIKE, P47-LLM-CLIENT, P47-SAFETY-PERF, P47-ADMIN-SPLIT, P47-RUNNER-PIPELINE, P47-AUTODRAFT-REFACTOR, P47-OFFLINE-CSS, P47-MIGRATION-UNIFY, P47-DOCS-SLIM, P47-HERMES-VERIFY
+**Plans**: 3 plans
+Plans:
+- [x] 47-01-PLAN.md — 搜尋 LIKE 跳脫、llm_client 連線池與正則預編譯（Wave 1）
+- [x] 47-02-PLAN.md — admin.py 子套件拆分、runner.py 管線化與 autodraft.py 拆解（Wave 2）
+- [x] 47-03-PLAN.md — 前端 CSS 離線化、統一遷移器、文件瘦身與 Herdr Hermes 獨立驗收（Wave 3）
 
 
 

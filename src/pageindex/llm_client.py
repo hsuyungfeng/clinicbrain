@@ -4,23 +4,64 @@ Taiwan Clinic Medical PageIndex RAG System - 本地 LLM 客戶端 Adapter
 Phase 02 Task 1: local LLM inference layer adapter (llama-server)
 
 架構核心定位（見 .planning/phases/02-local-llm-layer/TASK-PLAN.md）：
-- 串接本機 llama-server (llama.cpp)，監聽 http://127.0.0.1:8080
+- 串接本機 llama-server (llama.cpp)，預設監聽 http://127.0.0.1:8080（可由環境變數 CLINICBRAIN_LLM_BASE_URL 覆寫）
 - 提供標準 local_llm_call(prompt: str, timeout: int = 90) -> str 函式，
   簽章完全符合 generate_tree() 所需之 Callable[[str], str]
-- 嚴格僅使用 Python 標準庫 urllib.request，不額外依賴 requests
+- 使用模組級 httpx.Client（keep-alive 連線池）與 /v1/models TTL 快取，降低重複連線開銷
 - 僅讀取 choices[0].message.content，嚴格忽略 reasoning_content 思考過程
 - 連線失敗或逾時拋出明確之自訂例外 LocalLLMUnavailableError
 """
 
-import json
-import socket
-import urllib.error
-import urllib.request
+import os
+import threading
+import time
 from typing import Optional
 
-LLM_ENDPOINT = "http://127.0.0.1:8080/v1/chat/completions"
-MODELS_ENDPOINT = "http://127.0.0.1:8080/v1/models"
+import httpx
+
+DEFAULT_LLM_BASE_URL = "http://127.0.0.1:8080"
+LLM_BASE_URL = os.environ.get("CLINICBRAIN_LLM_BASE_URL", DEFAULT_LLM_BASE_URL).rstrip("/")
+LLM_ENDPOINT = f"{LLM_BASE_URL}/v1/chat/completions"
+MODELS_ENDPOINT = f"{LLM_BASE_URL}/v1/models"
 DEFAULT_MODEL_NAME = "Qwen3.8-27B-UD-Q4_K_XL"
+_HEALTH_CACHE_TTL_SECONDS = 60.0
+
+_CLIENT_LOCK = threading.Lock()
+_HTTP_CLIENT: Optional[httpx.Client] = None
+_HEALTH_LOCK = threading.Lock()
+_LAST_HEALTH_MODEL: Optional[str] = None
+_LAST_HEALTH_TS: float = 0.0
+
+
+def _get_http_client() -> httpx.Client:
+    """取得模組級共用的 httpx.Client 連線池。"""
+    global _HTTP_CLIENT
+    with _CLIENT_LOCK:
+        if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
+            _HTTP_CLIENT = httpx.Client(
+                headers={"User-Agent": "clinicbrain-client"},
+                limits=httpx.Limits(max_keepalive_connections=4, max_connections=10),
+            )
+        return _HTTP_CLIENT
+
+
+def _resolve_endpoints() -> tuple[str, str, str]:
+    """解析目前有效的 base_url、chat/completions 與 models 端點。
+
+    優先採用環境變數 `CLINICBRAIN_LLM_BASE_URL`（若與預設不同），
+    同時相容測試對模組常數 `LLM_ENDPOINT` / `MODELS_ENDPOINT` 的 monkeypatch。
+    """
+    env_base = os.environ.get("CLINICBRAIN_LLM_BASE_URL", "").strip().rstrip("/")
+    if env_base:
+        return env_base, f"{env_base}/v1/chat/completions", f"{env_base}/v1/models"
+    return LLM_BASE_URL, LLM_ENDPOINT, MODELS_ENDPOINT
+
+
+def _invalidate_health_cache() -> None:
+    global _LAST_HEALTH_MODEL, _LAST_HEALTH_TS
+    with _HEALTH_LOCK:
+        _LAST_HEALTH_MODEL = None
+        _LAST_HEALTH_TS = 0.0
 
 
 class LocalLLMUnavailableError(Exception):
@@ -72,28 +113,45 @@ VISUAL_SAMPLING = {
 }
 
 
-
 def check_llm_health(timeout: int = 5) -> str:
     """檢查本地 llama-server 是否正常存活。
     成功時回傳當前載入之模型 ID 或名稱；若服務未啟動則拋出 LocalLLMUnavailableError。
     """
-    req = urllib.request.Request(MODELS_ENDPOINT, headers={"User-Agent": "clinicbrain-client"})
+    global _LAST_HEALTH_MODEL, _LAST_HEALTH_TS
+    base_url, _, models_endpoint = _resolve_endpoints()
+    client = _get_http_client()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            if response.status != 200:
-                raise LocalLLMUnavailableError(
-                    f"本地 LLM 健康檢查回傳非 200 狀態碼：{response.status}"
-                )
-            data = json.loads(response.read().decode("utf-8"))
-            models = data.get("data", []) or data.get("models", [])
-            if models:
-                model_id = models[0].get("id") or models[0].get("name") or DEFAULT_MODEL_NAME
-                return model_id
-            return DEFAULT_MODEL_NAME
-    except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError, OSError) as e:
+        response = client.get(models_endpoint, timeout=timeout)
+        if response.status_code != 200:
+            raise LocalLLMUnavailableError(
+                f"本地 LLM 健康檢查回傳非 200 狀態碼：{response.status_code}"
+            )
+        data = response.json()
+        models = data.get("data", []) or data.get("models", [])
+        if models:
+            model_id = models[0].get("id") or models[0].get("name") or DEFAULT_MODEL_NAME
+        else:
+            model_id = DEFAULT_MODEL_NAME
+        with _HEALTH_LOCK:
+            _LAST_HEALTH_MODEL = model_id
+            _LAST_HEALTH_TS = time.monotonic()
+        return model_id
+    except (httpx.HTTPError, TimeoutError, ConnectionError, OSError) as e:
+        _invalidate_health_cache()
         raise LocalLLMUnavailableError(
-            "本地 LLM 服務未啟動於 http://127.0.0.1:8080，請確認 llama-server 是否運行"
+            f"本地 LLM 服務未啟動於 {base_url}，請確認 llama-server 是否運行"
         ) from e
+
+
+def _ensure_llm_healthy(timeout: int = 5) -> str:
+    """於 TTL 內複用健康檢查結果，減少每次推論前的 /v1/models 往返。"""
+    with _HEALTH_LOCK:
+        if (
+            _LAST_HEALTH_MODEL is not None
+            and (time.monotonic() - _LAST_HEALTH_TS) < _HEALTH_CACHE_TTL_SECONDS
+        ):
+            return _LAST_HEALTH_MODEL
+    return check_llm_health(timeout=timeout)
 
 
 def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = None) -> str:
@@ -106,8 +164,8 @@ def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = N
     伺服器啟動時常設重複懲罰以改善自由寫作，但「依據資料忠實引用」的任務（RAG）會因此被迫
     改用近似字，造成錯字或掉字，這類任務應於單次請求關閉重複懲罰，而不必改動伺服器設定。
     """
-    # 呼叫前先進行健康檢查確認服務運行
-    check_llm_health(timeout=5)
+    _ensure_llm_healthy(timeout=5)
+    base_url, llm_endpoint, _ = _resolve_endpoints()
 
     payload = {
         "messages": [{"role": "user", "content": prompt}],
@@ -120,31 +178,27 @@ def local_llm_call(prompt: str, timeout: int = 420, sampling: Optional[dict] = N
         # 依據 28-07 實機探測：關閉思考時 reasoning_effort 無效且矛盾，自 payload 移除
         if payload.get("chat_template_kwargs", {}).get("enable_thinking") is False:
             payload.pop("reasoning_effort", None)
-    encoded_data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
-    req = urllib.request.Request(
-        LLM_ENDPOINT,
-        data=encoded_data,
-        headers={
-            "Content-Type": "application/json",
-            "User-Agent": "clinicbrain-client",
-        },
-        method="POST",
-    )
-
+    client = _get_http_client()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            raw_bytes = response.read()
-            resp_json = json.loads(raw_bytes.decode("utf-8"))
-    except (socket.timeout, TimeoutError) as e:
+        response = client.post(
+            llm_endpoint,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        resp_json = response.json()
+    except (httpx.TimeoutException, TimeoutError) as e:
         raise LocalLLMUnavailableError(f"呼叫本地 LLM 逾時（超過 {timeout} 秒）：{e}") from e
-    except urllib.error.URLError as e:
-        # 區分是否為內部 socket timeout
-        if isinstance(e.reason, (socket.timeout, TimeoutError)) or "timed out" in str(e).lower():
-            raise LocalLLMUnavailableError(f"呼叫本地 LLM 逾時（超過 {timeout} 秒）：{e}") from e
+    except httpx.ConnectError as e:
+        _invalidate_health_cache()
         raise LocalLLMUnavailableError(
-            "本地 LLM 服務未啟動於 http://127.0.0.1:8080，請確認 llama-server 是否運行"
+            f"本地 LLM 服務未啟動於 {base_url}，請確認 llama-server 是否運行"
         ) from e
+    except httpx.HTTPError as e:
+        _invalidate_health_cache()
+        raise LocalLLMUnavailableError(f"本地 LLM 呼叫發生未預期異常：{e}") from e
     except Exception as e:
         raise LocalLLMUnavailableError(f"本地 LLM 呼叫發生未預期異常：{e}") from e
 
