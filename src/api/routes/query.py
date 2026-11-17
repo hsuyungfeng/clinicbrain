@@ -22,6 +22,11 @@ try:
 except (ImportError, ValueError):
     from src.query.cache_stats import record_query_outcome
 
+try:
+    from ...visual.match import find_visual, get_public_video_info
+except (ImportError, ValueError):
+    from src.visual.match import find_visual, get_public_video_info
+
 router = APIRouter(prefix="/api/v1", tags=["自然語言臨床與健保查詢"])
 _stats_logger = logging.getLogger("clinicbrain.cache_stats")
 _warned_error_types: set[str] = set()
@@ -99,6 +104,13 @@ def _execute_query(
             detail=str(e),
         )
 
+    matched_visual = find_visual(conn, query_str, clinic_id=clinic_id)
+    matched_videos = (
+        get_public_video_info(matched_visual["topic_key"])
+        if matched_visual and matched_visual.get("topic_key")
+        else None
+    )
+
     response_dict = {
         "query": query_str,
         "route": raw_response.route,
@@ -114,6 +126,8 @@ def _execute_query(
         "cache_answer": raw_response.cache_answer,
         "data_level": raw_response.data_level,
         "disclaimer": raw_response.disclaimer,
+        "visual": matched_visual,
+        "videos": matched_videos,
     }
 
     # 執行二次價格遮蔽遞迴掃描

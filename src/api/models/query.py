@@ -87,3 +87,11 @@ class QueryResponseModel(BaseModel):
         None,
         description="法定醫療免責宣告文字。僅在 data_level='general' 時附帶，文字來源為 src/general/disclaimer.py",
     )
+    visual: Optional[Dict[str, Any]] = Field(
+        None,
+        description="比對到的已核准視覺解說卡（含 topic_key, title, scenes）",
+    )
+    videos: Optional[Dict[str, Any]] = Field(
+        None,
+        description="對應視覺解說卡之已渲染 MP4 影片公開下載資訊（若有）",
+    )

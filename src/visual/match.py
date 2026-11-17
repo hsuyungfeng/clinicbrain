@@ -115,6 +115,10 @@ def find_visual(
                 continue
 
             hits = 0
+            title_text = _normalize_text(str(asset.get("title") or "")).strip()
+            if title_text and len(norm_query.strip()) >= 2 and norm_query.strip() in title_text:
+                hits += 2
+
             for kw in keywords:
                 if not isinstance(kw, str):
                     continue
@@ -198,3 +202,101 @@ def visuals_for_tree_sources(
         seen.add(general)
         out.append(_shape_public_visual(best))
     return out
+
+
+_SAFE_TOPIC_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def get_public_video_info(topic_key: str, video_dir: Any = None) -> dict[str, Any] | None:
+    """檢查指定 topic_key 是否已有渲染完成的 MP4 影片，並回傳公開下載資訊（無則回 None）。"""
+    import json
+    from pathlib import Path
+    from .video_queue import DEFAULT_VIDEO_DIR
+
+    if not topic_key or ".." in topic_key or not _SAFE_TOPIC_KEY_RE.match(topic_key):
+        return None
+
+    base_dir = Path(video_dir) if video_dir is not None else DEFAULT_VIDEO_DIR
+    result: dict[str, Any] = {"topic_key": topic_key}
+    has_any = False
+
+    for asp in ("landscape", "portrait"):
+        mp4_path = base_dir / f"{topic_key}_{asp}.mp4"
+        if mp4_path.exists() and mp4_path.stat().st_size > 0:
+            has_any = True
+            meta_path = base_dir / f"{topic_key}_{asp}.meta.json"
+            duration_sec = None
+            if meta_path.exists():
+                try:
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                    duration_sec = meta.get("duration_sec")
+                except Exception:
+                    pass
+            result[asp] = {
+                "available": True,
+                "size_bytes": mp4_path.stat().st_size,
+                "duration_sec": duration_sec,
+                "download_url": f"/api/v1/visual/videos/{topic_key}/download?aspect={asp}",
+            }
+        else:
+            result[asp] = {"available": False}
+
+    return result if has_any else None
+
+
+def search_public_visuals(
+    conn: sqlite3.Connection,
+    query: str,
+    clinic_id: str | None = None,
+    limit: int = 5,
+    video_dir: Any = None,
+) -> list[dict[str, Any]]:
+    """依問句關鍵字或標題檢索已核准之視覺解說卡與公開 MP4 影片清單（Fail-Closed）。"""
+    if not isinstance(query, str) or not query.strip() or limit <= 0:
+        return []
+
+    try:
+        norm_query = _normalize_text(query).strip()
+        if not norm_query:
+            return []
+
+        assets = visible_assets(conn, clinic_id=clinic_id)
+        if not assets:
+            return []
+
+        scored: list[tuple[tuple[int, int, str], dict[str, Any]]] = []
+        for asset in assets:
+            asset_clinic = asset.get("clinic_id")
+            if clinic_id is not None and asset_clinic not in (clinic_id, None):
+                continue
+
+            hits = 0
+            title = _normalize_text(str(asset.get("title") or "")).strip()
+            if title and (norm_query in title or title in norm_query):
+                hits += 2
+
+            keywords = asset.get("keywords")
+            if isinstance(keywords, list):
+                for kw in keywords:
+                    if not isinstance(kw, str):
+                        continue
+                    norm_kw = _normalize_text(kw).strip()
+                    if norm_kw and (norm_kw in norm_query or norm_query in norm_kw):
+                        hits += 1
+
+            if hits <= 0:
+                continue
+
+            topic_key = str(asset.get("topic_key", ""))
+            tier = (0 if asset_clinic == clinic_id else 1) if clinic_id else (0 if asset_clinic is None else 1)
+            scored.append(((tier, -hits, topic_key), asset))
+
+        scored.sort(key=lambda item: item[0])
+        out: list[dict[str, Any]] = []
+        for _, asset in scored[:limit]:
+            shaped = _shape_public_visual(asset)
+            shaped["videos"] = get_public_video_info(shaped["topic_key"], video_dir=video_dir)
+            out.append(shaped)
+        return out
+    except Exception:
+        return []

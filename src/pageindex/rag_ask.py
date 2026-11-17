@@ -41,6 +41,7 @@ def _render_evidence(
     clinic_info: Optional[dict],
     budget_ratio: float = 1.0,
     question: str = "",
+    visual_hits: Optional[list[dict]] = None,
 ) -> tuple[str, list[dict]]:
     faq_ans_budget = max(MIN_ITEM_CHARS, int(DEFAULT_FAQ_ANSWER_BUDGET * budget_ratio))
     tree_budget = max(MIN_ITEM_CHARS, int(DEFAULT_TREE_BUDGET * budget_ratio))
@@ -101,6 +102,27 @@ def _render_evidence(
             blocks.append(f"[C1]（診所基本資料）{line}")
             sources.append({"ref": "C1", "type": "clinic_info", "id": None, "level": "診所", "title": "診所基本資料"})
 
+    for i, vis in enumerate(visual_hits or [], 1):
+        ref = f"V{i}"
+        scene_lines = []
+        for sc in vis.get("scenes") or []:
+            st = (sc.get("title") or "").strip()
+            cap = (sc.get("caption") or "").strip()
+            if st or cap:
+                scene_lines.append(f"{st}：{cap}" if st and cap else (st or cap))
+        body = "；".join(scene_lines)
+        if body:
+            v_title = vis.get("title") or vis.get("topic_key") or ""
+            blocks.append(f"[{ref}]（已核准衛教圖解：{v_title}）\n{clip_at_sentence(body, tree_budget * 2)}")
+            sources.append({
+                "ref": ref,
+                "type": "visual",
+                "id": None,
+                "level": "通用",
+                "title": str(v_title),
+                "topic_key": str(vis.get("topic_key") or ""),
+            })
+
     return "\n\n".join(blocks), sources
 
 
@@ -143,24 +165,42 @@ def retrieve_evidence(conn: sqlite3.Connection, question: str, clinic_id: str | 
             tree_candidates.append(hit)
     tree_candidates = tree_candidates[:MAX_TREES]
 
+    visual_candidates: list[dict] = []
+    if not faq_candidates and not tree_candidates:
+        from ..visual.match import search_public_visuals
+
+        visual_candidates = search_public_visuals(conn, question, clinic_id=clinic_id, limit=2)
+
     # 1. 嘗試以標準預算渲染 (budget_ratio = 1.0)
-    context, sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=1.0, question=question)
+    context, sources = _render_evidence(
+        faq_candidates, tree_candidates, note_candidates, clinic_info,
+        budget_ratio=1.0, question=question, visual_hits=visual_candidates,
+    )
     if len(context) <= CONTEXT_TOTAL_CHARS:
         return context, sources
 
     # 2. 若超出預算，嘗試縮減每項預算至 MIN_ITEM_CHARS；若在 MIN_ITEM_CHARS 下仍超標，逐一從後方剔除 FAQ
     while len(faq_candidates) > 1:
-        min_ctx, _ = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0, question=question)
+        min_ctx, _ = _render_evidence(
+            faq_candidates, tree_candidates, note_candidates, clinic_info,
+            budget_ratio=0.0, question=question, visual_hits=visual_candidates,
+        )
         if len(min_ctx) <= CONTEXT_TOTAL_CHARS:
             break
         faq_candidates.pop()
 
     # 3. 在當前候選集下，在 [0.0, 1.0] 間二分搜尋最佳預算比率，盡可能充分利用 CONTEXT_TOTAL_CHARS
     low, high = 0.0, 1.0
-    best_context, best_sources = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=0.0, question=question)
+    best_context, best_sources = _render_evidence(
+        faq_candidates, tree_candidates, note_candidates, clinic_info,
+        budget_ratio=0.0, question=question, visual_hits=visual_candidates,
+    )
     for _ in range(8):
         mid = (low + high) / 2
-        ctx, srcs = _render_evidence(faq_candidates, tree_candidates, note_candidates, clinic_info, budget_ratio=mid, question=question)
+        ctx, srcs = _render_evidence(
+            faq_candidates, tree_candidates, note_candidates, clinic_info,
+            budget_ratio=mid, question=question, visual_hits=visual_candidates,
+        )
         if len(ctx) <= CONTEXT_TOTAL_CHARS:
             best_context, best_sources = ctx, srcs
             low = mid
@@ -220,11 +260,16 @@ def ask_with_data(
     raw = llm_call(build_ask_prompt(q, context))
     answer = sanitize_faq_text(_clean_llm_output(raw))
     ok, reason = validate_single_faq({"question": q, "answer": answer}, check_dosage=True)
-    from ..visual.match import visuals_for_tree_sources
+    from ..visual.match import search_public_visuals, visuals_for_tree_sources
 
     visuals = visuals_for_tree_sources(
         conn, [src["doc_id"] for src in sources if src.get("type") == "tree"], clinic_id=clinic_id,
     )
+    seen_tks = {v.get("topic_key") for v in visuals}
+    for v in search_public_visuals(conn, q, clinic_id=clinic_id, limit=2):
+        if v.get("topic_key") not in seen_tks:
+            seen_tks.add(v.get("topic_key"))
+            visuals.append(v)
     return {
         "mode": "answered", "answer": answer, "sources": sources, "red_flag_level": None,
         "used_llm": True, "compliance": {"ok": bool(ok), "reason": "" if ok else str(reason)},

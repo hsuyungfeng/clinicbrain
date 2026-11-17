@@ -1517,7 +1517,7 @@ function renderAskResult(data, container) {
         data.sources.forEach(s => {
             const li = el("li", "ask-src-item");
             li.appendChild(badge(s.ref, "badge-id"));
-            const typeLabel = ({ faq: "常見問答", tree: "臨床推理樹", note: "診所備註", clinic_info: "診所資料" })[s.type] || s.type;
+            const typeLabel = ({ faq: "常見問答", tree: "臨床推理樹", note: "診所備註", clinic_info: "診所資料", visual: "衛教圖解動畫" })[s.type] || s.type;
             const desc = el("span", "ask-src-desc", ` ${typeLabel}・${s.level}：${s.title}`);
             li.appendChild(desc);
             ul.appendChild(li);

@@ -28,6 +28,7 @@ from ...general.patient_consult import (
     default_patient_llm,
     patient_consult,
 )
+from ...visual.match import get_public_video_info
 from ...visual.stats import record_event
 
 # 模組載入時自動安裝日誌過濾器（具冪等性）
@@ -103,6 +104,11 @@ def post_general_consult(
         compose_llm_call=default_patient_compose_llm,
         clinic_id=resolved_clinic,
     )
+    videos = (
+        get_public_video_info(result.visual["topic_key"])
+        if result.visual and result.visual.get("topic_key")
+        else None
+    )
     return {
         "status": result.status,
         "message": deep_mask_prices(result.message),
@@ -110,6 +116,7 @@ def post_general_consult(
         "disclaimer": result.disclaimer,
         "booking_url": BOOKING_URL,
         "visual": deep_mask_prices(result.visual),
+        "videos": videos,
         "followup_chips": list(result.followup_chips),
     }
 

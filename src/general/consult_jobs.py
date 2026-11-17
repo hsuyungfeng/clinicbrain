@@ -150,6 +150,13 @@ def _worker(
                 compose_llm_call=act_compose_llm,
                 clinic_id=resolved_clinic,
             )
+            from ..visual.match import get_public_video_info
+
+            videos = (
+                get_public_video_info(res.visual["topic_key"])
+                if res.visual and res.visual.get("topic_key")
+                else None
+            )
             raw_res = {
                 "status": res.status,
                 "message": res.message,
@@ -157,6 +164,7 @@ def _worker(
                 "disclaimer": res.disclaimer,
                 "booking_url": res.booking_url,
                 "visual": res.visual,
+                "videos": videos,
                 "followup_chips": list(res.followup_chips),
             }
             res_dict = deep_mask_prices(raw_res)

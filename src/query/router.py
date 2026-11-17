@@ -448,19 +448,27 @@ def handle_query(
         clinic_hours = get_clinic_hours(conn, clinic_id)
 
     page_index_hits = _search_terms_merged(
-        search_page_index_trees, conn, search_terms, limit, clinic_id=clinic_id
+        search_page_index_trees,
+        conn,
+        search_terms,
+        limit,
+        clinic_id=clinic_id,
+        include_general=True,
     )
+    if clinic_id is not None:
+        page_index_hits = sorted(
+            page_index_hits,
+            key=lambda h: 0 if h.fields.get("clinic_id") == clinic_id else 1,
+        )
     drug_hits = _search_terms_merged(search_drugs, conn, search_terms, limit)
     service_item_hits = _search_terms_merged(search_service_items, conn, search_terms, limit)
     faq_hits = _gather_faq_hits(conn, search_terms, limit, clinic_id, route_result.route)
 
     if route_result.route == "general":
         page_index_hits = [h for h in page_index_hits if h.fields.get("category") == "general"]
-    elif route_result.route == "special":
+    elif route_result.route == "special" and clinic_id is not None:
         # special 路由且有 PageIndex 樹命中，或問及診所政策/術前術後注意事項時，撈出診所通用備註
         if page_index_hits or any(kw in query for kw in ("術前", "術後", "注意事項", "備註", "規定")):
-            if clinic_id is None:
-                raise ValueError(f"special 路由查詢診所通用備註需要提供 clinic_id（問句：'{query}'）")
             raw_notes = get_clinic_custom_notes(conn, clinic_id)
             clinic_custom_notes = {
                 sec: mask_prices(note) for sec, note in raw_notes.items()
@@ -501,7 +509,7 @@ def handle_query(
                 search_terms,
                 cand_limit,
                 clinic_id=None,
-                category="general" if route_result.route == "general" else None,
+                category="general",
             )
             shortcut_candidates = [h for h in raw_sc if h.fields.get("clinic_id") is None]
 
@@ -548,7 +556,7 @@ def handle_query(
             legacy_decision = select_confident_faq(
                 query=query,
                 faq_hits=shortcut_candidates,
-                route=route_result.route,
+                route="general",
                 clinic_id=None,
                 stopword_pattern=_STOPWORD_SPLIT_PATTERN,
             )
