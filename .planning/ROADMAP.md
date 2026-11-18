@@ -410,6 +410,17 @@ Plans:
 - [x] 48-01-PLAN.md — `src/soap/icd10_stats.py`：ICD-10 擷取、高頻排行與 `nhi_catalog_1_400` 對齊（Wave 1）
 - [x] 48-02-PLAN.md — `src/batch/gap_checker.py`：每日趨勢與覆蓋率盤點（covered/partial/uncovered）及待審佇列串接（Wave 2）
 
+### Phase 50: 診所官網療程原理與手術步驟提煉（去診所名稱化）(Clinic Website Procedure & Step Distillation)
+
+**Goal**: 升級外部診所官網爬蟲與臨床決策推理樹提煉管線：優先抓取官網療程／衛教子頁（排除 `commonhealth.com.tw` 等目錄站），僅針對具備「實際醫療療程或手術操作之原理與步驟」的內容進行提煉；無實質療程內容直接略過不產出空殼樹，並全面去除個別診所名稱（標題為純疾病／療程名稱，內文與 FAQ 皆不得出現診所名），並指派 Hermes 擔任獨立 Tester 驗收。
+**Status**: Complete
+**Depends on**: Phase 38（網站爬蟲與提煉管線）
+**Requirements**: P50-PROCEDURE-GATE, P50-DECLINIC-NAME, P50-SUBPAGE-CRAWL, P50-CLEANUP-SEED, P50-UNIT-TESTS, P50-HERMES-TESTER
+**Plans**: 2 plans
+Plans:
+- [x] 50-01-PLAN.md — 療程／手術原理步驟前置篩選、去診所名稱化與官網子頁探索（Wave 1）
+- [x] 50-02-PLAN.md — 既有測試資料清理、單元整合測試與 Hermes 獨立驗收（Wave 2）
+
 
 
 

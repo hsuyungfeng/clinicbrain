@@ -20,7 +20,7 @@ import json
 import re
 import sqlite3
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Sequence
 
 from src.ingestion.convert_chinese import to_traditional
 from src.ingestion.generate_faq import validate_single_faq
@@ -30,7 +30,12 @@ from src.pageindex.text_harness import (
     TEXT_ALIGNMENT_THRESHOLD,
     score_faq_answer_alignment,
 )
-from src.pageindex.tree_distiller import TreeConflictError, TreeValidationError, distill_tree_from_text
+from src.pageindex.tree_distiller import (
+    NoProcedureContentError,
+    TreeConflictError,
+    TreeValidationError,
+    distill_tree_from_text,
+)
 from src.scraper.site_crawler import deep_mask_prices
 
 MAX_SOURCE_CHARS = 3500
@@ -56,6 +61,62 @@ FAQ_PROMPT_TEMPLATE = """思考過程請保持簡潔（不超過 100 字），�
 """
 
 TREE_TITLE_TEMPLATE = "{clinic_name}核心療程{index}"
+
+FAQ_PROMPT_TEMPLATE_GENERAL = """思考過程請保持簡潔（不超過 100 字），直接輸出 JSON。
+你是台灣一般醫學衛教內容編輯。請閱讀下列醫療說明內文，提煉 5 至 10 筆聚焦於疾病治療原理或手術步驟的常見問題與衛教回答。
+
+# 來源內文
+{text}
+
+# 規則（必須全部遵守）
+1. 只輸出 JSON 陣列，每項為 {{"question": "……？", "answer": "……"}}，不要任何其他文字或 Markdown。
+2. 全文使用台灣正體中文，嚴禁簡體字。
+3. 答案 150 至 300 字，至少三句，內容僅限一般性衛教，不下診斷、不開處方。
+4. 嚴禁出現任何個別診所名稱、醫院名稱、醫師姓名、地址、電話或分院資訊。
+5. 嚴禁任何金額、價格、折扣、促銷字樣；嚴禁具體藥品名稱與劑量。
+6. 嚴禁「保證」「根治」「百分之百」「一定有效」等療效保證用語。
+7. 每則答案最後必須包含就醫警訊（具體症狀加就醫動作）。
+"""
+
+PROCEDURE_EXTRACT_PROMPT = """請判斷下列醫療文本是否實際包含「具體疾病之醫療療程原理或手術／治療操作步驟」（而非僅有診所地址、看診時間、科別或機構簡介）。
+只輸出合法 JSON 物件：{{"has_procedure": true/false, "procedure_title": "純疾病或療程名稱（不含任何診所或醫院名稱，若 has_procedure 為 false 則留空字串）"}}
+
+# 文本
+{text}
+"""
+
+
+def _build_forbidden_terms(clinic_name: str) -> tuple[str, ...]:
+    name = (clinic_name or "").strip()
+    if not name:
+        return ()
+    core = re.sub(r"(中醫|牙醫|整形外科|皮膚科|眼科|耳鼻喉科|婦產科)?(診所|醫院|醫療中心)$", "", name).strip()
+    terms = [name]
+    if core and len(core) >= 2 and core != name:
+        terms.append(core)
+    return tuple(terms)
+
+
+def _extract_procedure_meta(text: str, llm_call: Callable[[str], str], forbidden_terms: Sequence[str]) -> tuple[bool, str]:
+    try:
+        raw = llm_call(PROCEDURE_EXTRACT_PROMPT.format(text=text[:MAX_SOURCE_CHARS]))
+    except Exception:
+        return False, ""
+    cleaned = re.sub(r"<think>.*?</think>", "", raw or "", flags=re.DOTALL | re.IGNORECASE).strip()
+    cleaned = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", cleaned).strip()
+    start, end = cleaned.find("{"), cleaned.rfind("}")
+    if start == -1 or end <= start:
+        return False, ""
+    try:
+        obj = json.loads(cleaned[start : end + 1])
+    except ValueError:
+        return False, ""
+    if not isinstance(obj, dict) or not bool(obj.get("has_procedure")):
+        return False, ""
+    title = _sanitize(str(obj.get("procedure_title") or "")).strip()[:30]
+    if not title or any(t in title for t in forbidden_terms if len(t) >= 2):
+        return False, ""
+    return True, title
 
 
 @dataclass
@@ -123,10 +184,18 @@ def _sanitize(text: str) -> str:
     return cleaned if isinstance(cleaned, str) else str(cleaned)
 
 
-def _accept_faq(question: str, answer: str, clinic_name: str) -> tuple[Optional[tuple[str, str, float]], str]:
+def _accept_faq(
+    question: str,
+    answer: str,
+    clinic_name: str,
+    *,
+    forbidden_terms: Sequence[str] = (),
+) -> tuple[Optional[tuple[str, str, float]], str]:
     """回傳 ((問題, 答案, 分數), "ok") 或 (None, 拒絕原因代碼)。"""
     q = _sanitize(question)
     a = _sanitize(answer)
+    if any(t in q or t in a for t in forbidden_terms if len(t) >= 2):
+        return None, "clinic_name"
     if not has_doctor_warning(a):
         a = f"{a} {WARNING_SENTENCE}"
     if not (FAQ_MIN_CHARS <= len(a) <= FAQ_MAX_CHARS):
@@ -166,9 +235,17 @@ def distill_site_content(
     result = DistillationResult()
     digest = _digest(clinic_id or category, clinic_name)
 
+    is_general = category == "general"
+    forbidden_terms = _build_forbidden_terms(clinic_name) if is_general else ()
+
     # 1. FAQ 提煉與驗證
     try:
-        raw = llm(FAQ_PROMPT_TEMPLATE.format(clinic_name=clinic_name, text=condensed))
+        faq_prompt = (
+            FAQ_PROMPT_TEMPLATE_GENERAL.format(text=condensed)
+            if is_general
+            else FAQ_PROMPT_TEMPLATE.format(clinic_name=clinic_name, text=condensed)
+        )
+        raw = llm(faq_prompt)
     except Exception as exc:  # noqa: BLE001 — LLM 離線不應使整段管線崩潰；記錄後仍嘗試推理樹
         result.errors.append(f"faq_llm:{type(exc).__name__}")
         raw = ""
@@ -176,7 +253,7 @@ def distill_site_content(
     result.faq_candidates = len(items)
     accepted: list[tuple[str, str, float]] = []
     for item in items:
-        got, code = _accept_faq(item["question"], item["answer"], clinic_name)
+        got, code = _accept_faq(item["question"], item["answer"], clinic_name, forbidden_terms=forbidden_terms)
         if got is None:
             result.faq_rejected.append(code)
         else:
@@ -202,10 +279,21 @@ def distill_site_content(
 
     # 2. 四段式推理樹提煉（distill_tree_from_text 內含 k 候選對齊評分與合規檢驗，寫入 pending）
     if conn is not None and max_trees > 0:
+        extracted_title = ""
+        if is_general:
+            has_proc, extracted_title = _extract_procedure_meta(condensed, llm, forbidden_terms)
+            if not has_proc:
+                result.errors.append("skipped_no_procedure")
+                return result
+
         for index, chunk in enumerate(_split_chunks(text, TREE_CHUNK_CHARS)[:max_trees], start=1):
             result.trees_attempted += 1
             doc_id = f"site-{digest}-{index}"
-            title = TREE_TITLE_TEMPLATE.format(clinic_name=clinic_name, index=index)[:30]
+            title = (
+                extracted_title
+                if is_general
+                else TREE_TITLE_TEMPLATE.format(clinic_name=clinic_name, index=index)[:30]
+            )
             try:
                 row = distill_tree_from_text(
                     conn,
@@ -218,10 +306,13 @@ def distill_site_content(
                     source_type="web_upload",
                     k_candidates=3,
                     recursion_mode="sequential",
+                    forbidden_terms=forbidden_terms,
                 )
                 result.trees_written.append(row["doc_id"])
             except TreeConflictError:
                 result.errors.append(f"tree_exists:{doc_id}")
+            except NoProcedureContentError:
+                result.errors.append(f"skipped_no_procedure:{doc_id}")
             except TreeValidationError as exc:
                 result.errors.append(f"tree_invalid:{doc_id}:{str(exc)[:80]}")
             except Exception as exc:  # noqa: BLE001

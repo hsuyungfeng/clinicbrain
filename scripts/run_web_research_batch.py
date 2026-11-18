@@ -43,7 +43,13 @@ EXCLUDED_HOST_SUFFIXES = (
     "facebook.com", "fb.com", "fb.me", "instagram.com", "line.me",
     "google.com", "goo.gl", "youtube.com", "youtu.be", "twitter.com",
     "x.com", "pixnet.net", "xuite.net", "blogspot.com", "medi-rank.com",
-    "clinics.com.tw", "olc.tw",
+    "clinics.com.tw", "olc.tw", "commonhealth.com.tw", "health.udn.com",
+    "edh.tw", "heho.com.tw", "kingnet.com.tw",
+)
+
+_PROCEDURE_LINK_KEYWORDS = (
+    "療程", "手術", "治療", "衛教", "適應症", "項目", "服務", "原理",
+    "service", "treatment", "procedure", "surgery", "faq",
 )
 
 logger = logging.getLogger("web_research_batch")
@@ -145,19 +151,68 @@ def html_to_clean_text(raw_html: str) -> str:
     return masked if isinstance(masked, str) else str(masked)
 
 
+def extract_procedure_links(base_url: str, raw_html: str, max_links: int = 2) -> list[str]:
+    """從首頁 HTML 挑選同網域內含療程／手術／衛教關鍵字之子頁連結。"""
+    base_parsed = urllib.parse.urlparse(base_url)
+    base_host = (base_parsed.hostname or "").lower()
+    if not base_host:
+        return []
+    links: list[str] = []
+    seen: set[str] = {base_url.rstrip("/")}
+    for m in re.finditer(r'(?is)<a[^>]+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', raw_html):
+        href = html.unescape(m.group(1)).strip()
+        anchor_text = re.sub(r"(?is)<[^>]+>", " ", m.group(2)).strip().lower()
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
+            continue
+        abs_url = urllib.parse.urljoin(base_url, href)
+        parsed = urllib.parse.urlparse(abs_url)
+        if parsed.scheme not in ("http", "https"):
+            continue
+        if (parsed.hostname or "").lower() != base_host:
+            continue
+        if parsed.path.lower().endswith((".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".zip")):
+            continue
+        norm = abs_url.split("#", 1)[0].rstrip("/")
+        if norm in seen:
+            continue
+        haystack = f"{abs_url.lower()} {anchor_text}"
+        if any(kw in haystack for kw in _PROCEDURE_LINK_KEYWORDS):
+            seen.add(norm)
+            links.append(abs_url.split("#", 1)[0])
+            if len(links) >= max_links:
+                break
+    return links
+
+
 def fetch_page_text(url: str, timeout: float = 15.0) -> str:
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; ClinicBrainHealthEdBot/1.0)",
         "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.5",
     }
+    texts: list[str] = []
     with httpx.Client(follow_redirects=True, timeout=timeout, headers=headers) as client:
         resp = client.get(url)
         resp.raise_for_status()
         ctype = (resp.headers.get("content-type") or "").lower()
         if "text/html" not in ctype and "application/xhtml" not in ctype:
             return ""
-        raw = resp.text[:MAX_HTML_BYTES]
-    return html_to_clean_text(raw)
+        raw_home = resp.text[:MAX_HTML_BYTES]
+        home_text = html_to_clean_text(raw_home)
+        if home_text:
+            texts.append(home_text)
+
+        for sub_url in extract_procedure_links(str(resp.url), raw_home, max_links=2):
+            try:
+                sub_resp = client.get(sub_url)
+                if sub_resp.status_code == 200:
+                    sub_ctype = (sub_resp.headers.get("content-type") or "").lower()
+                    if "text/html" in sub_ctype or "application/xhtml" in sub_ctype:
+                        sub_text = html_to_clean_text(sub_resp.text[:MAX_HTML_BYTES])
+                        if sub_text:
+                            texts.append(sub_text)
+            except Exception:
+                continue
+    return "\n\n".join(texts)
 
 
 def compute_sha256(text: str) -> str:

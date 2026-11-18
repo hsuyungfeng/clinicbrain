@@ -13,7 +13,7 @@ import json
 import logging
 import re
 import sqlite3
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence
 
 try:
     from src.api.routes.query import deep_mask_prices
@@ -75,14 +75,41 @@ class TreeConflictError(Exception):
     """doc_id 已存在：提煉只能建立新草稿，絕不覆寫既有樹（尤其是醫師手寫之醫囑）。"""
 
 
-def validate_tree_segment(field: str, text: str) -> str:
+class NoProcedureContentError(TreeValidationError):
+    """來源文本缺乏實際醫療療程原理或手術操作步驟，拒絕寫入空殼推理樹。"""
+
+
+_NO_PROCEDURE_MARKERS = (
+    "未提供任何實際醫療療程",
+    "未記載任何醫療療程",
+    "僅記載診所基本資訊",
+    "未於文中列明具體療程",
+    "未描述任何具體醫療療程",
+    "本頁未提供任何",
+    "本檔案並未記載任何醫療療程",
+)
+
+
+def validate_tree_segment(
+    field: str,
+    text: str,
+    *,
+    forbidden_terms: Sequence[str] = (),
+) -> str:
     """單一段落的合規檢驗（提煉、編輯、簽核共用同一份規則）。
 
-    回傳價格遮蔽後的文字；簡體字、保證療效禁詞、政治立場詞一律拋 TreeValidationError。
+    回傳價格遮蔽後的文字；簡體字、保證療效禁詞、政治立場詞、
+    空殼無療程語句或禁用診所名稱一律拋 TreeValidationError。
     """
     val = deep_mask_prices(str(text).strip())
     if not isinstance(val, str):
         val = str(val)
+    if any(m in val for m in _NO_PROCEDURE_MARKERS):
+        raise NoProcedureContentError(f"段落 {field} 為無實質療程內容之空殼描述，拒絕寫入")
+    for term in forbidden_terms:
+        t = (term or "").strip()
+        if t and len(t) >= 2 and t in val:
+            raise TreeValidationError(f"段落 {field} 檢出禁止出現之個別診所名稱: {t}")
     simplified = [c for c in _SIMPLIFIED_CHAR_SAMPLE if c in val]
     if simplified:
         raise TreeValidationError(f"段落 {field} 檢出疑似簡體字: {simplified}")
@@ -108,13 +135,14 @@ def distill_tree_from_text(
     conn: sqlite3.Connection,
     title: str,
     text: str,
-    clinic_id: str,
+    clinic_id: Optional[str],
     doc_id: str,
     llm_call: Callable[[str], str],
     category: str = "special",
     source_type: str = "web_upload",
     k_candidates: int = 1,
     recursion_mode: str = "sequential",
+    forbidden_terms: Sequence[str] = (),
 ) -> dict:
     """自給定長篇文字中提煉臨床推理樹，並以 pending 狀態寫入「新」草稿（不覆寫既有樹）。
 
@@ -137,6 +165,11 @@ def distill_tree_from_text(
 
     condensed_text = condense_long_document_by_toc(text, MAX_SOURCE_CHARS)
     base_prompt = TREE_DISTILL_PROMPT_TEMPLATE.format(title=title, text=condensed_text)
+    if category == "general" or forbidden_terms:
+        base_prompt += (
+            "\n7. 嚴禁在任何欄位（包含 summary_text）出現個別診所名稱、醫院名稱、分院據點、地址、電話或醫師姓名；"
+            "請純粹聚焦於疾病機制、治療原理與手術／處置操作步驟。\n"
+        )
     lessons_block = format_text_lessons_for_prompt(select_text_lessons(f"{title}\n{condensed_text}"))
     if lessons_block:
         base_prompt = f"{base_prompt}\n{lessons_block}\n"
@@ -157,7 +190,7 @@ def distill_tree_from_text(
         if missing:
             raise TreeValidationError(f"輸出缺少必要段落：{missing}")
         # 合規檢驗與清洗（與編輯／簽核共用同一規則）
-        return {k: validate_tree_segment(k, data[k]) for k in required_fields}
+        return {k: validate_tree_segment(k, data[k], forbidden_terms=forbidden_terms) for k in required_fields}
 
     if k_candidates == 1:
         cleaned_data = _attempt(base_prompt)
@@ -185,7 +218,7 @@ def distill_tree_from_text(
     # 組裝寫入 row，醫師指令強制留空 None
     tree_row = {
         "doc_id": doc_id,
-        "title": validate_tree_segment("title", title.strip()),
+        "title": validate_tree_segment("title", title.strip(), forbidden_terms=forbidden_terms),
         "clinic_id": clinic_id,
         "category": category,
         "pre_op": cleaned_data["pre_op"],
