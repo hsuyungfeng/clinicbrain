@@ -105,6 +105,11 @@ def create_parser() -> argparse.ArgumentParser:
         help="略過臨床推理樹重建階段",
     )
     parser.add_argument(
+        "--include-pending-web-prefill",
+        action="store_true",
+        help="允許爬蟲提煉之 pending 推理樹 (source_type='web_upload') 進入主體預生成草稿",
+    )
+    parser.add_argument(
         "--skip-patient-prefill",
         action="store_true",
         help="略過 24 小時預先生成主體醫學資訊階段",
@@ -315,6 +320,7 @@ def main(
             max_pending=args.max_pending,
             time_budget_seconds=args.time_budget_seconds,
             enable_patient_prefill=not args.skip_patient_prefill,
+            include_pending_web=args.include_pending_web_prefill,
             skip_video_render=args.skip_video_render,
             prefill_llm_call=prefill_llm,
         )

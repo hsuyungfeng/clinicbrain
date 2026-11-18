@@ -143,25 +143,28 @@ def _accept_faq(question: str, answer: str, clinic_name: str) -> tuple[Optional[
 
 def distill_site_content(
     site_text: str,
-    clinic_id: str,
+    clinic_id: Optional[str],
     clinic_name: str,
     *,
     conn: Optional[sqlite3.Connection] = None,
     llm_call: Optional[Callable[[str], str]] = None,
     max_trees: int = 2,
     source_url: str = "",
+    category: str = "special",
 ) -> DistillationResult:
     """提煉站點內文為 FAQ 草稿與推理樹草稿；conn 為 None 時僅提煉不寫入（乾跑）。"""
     if not site_text or not site_text.strip():
         raise ValueError("site_text 不可為空")
-    if not clinic_id or not clinic_name:
+    if category != "general" and not clinic_id:
         raise ValueError("clinic_id 與 clinic_name 為必填")
+    if not clinic_name:
+        raise ValueError("clinic_name 為必填")
 
     llm = llm_call or _default_llm
     text = _sanitize(site_text)
     condensed = text[:MAX_SOURCE_CHARS]
     result = DistillationResult()
-    digest = _digest(clinic_id, clinic_name)
+    digest = _digest(clinic_id or category, clinic_name)
 
     # 1. FAQ 提煉與驗證
     try:
@@ -185,7 +188,7 @@ def distill_site_content(
             {
                 "question": q,
                 "answer": a,
-                "category": "special",
+                "category": category,
                 "clinic_id": clinic_id,
                 "topic_key": f"site-{digest}",
                 "metadata": json.dumps(
@@ -211,7 +214,7 @@ def distill_site_content(
                     clinic_id=clinic_id,
                     doc_id=doc_id,
                     llm_call=llm,
-                    category="special",
+                    category=category,
                     source_type="web_upload",
                     k_candidates=3,
                     recursion_mode="sequential",

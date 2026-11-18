@@ -164,6 +164,7 @@ def _load_seed_topics(seed_path: Union[str, Path]) -> tuple[dict[str, str], list
 def enumerate_prefill_topics(
     conn: sqlite3.Connection,
     seed_path: Union[str, Path] = "data/batch/faq_seeds.json",
+    include_pending_web: bool = False,
 ) -> list[PrefillTopic]:
     """列舉所有已建檔且已核准之主題（決策樹與種子 general 主題）。
 
@@ -189,9 +190,26 @@ def enumerate_prefill_topics(
     cat_select = "category" if has_cat_col else "NULL AS category"
 
     has_status_col = "review_status" in tree_cols
-    status_cond = "AND (review_status IS NULL OR review_status NOT IN ('pending', 'rejected'))" if has_status_col else ""
+    if include_pending_web:
+        status_cond = (
+            "AND (review_status IS NULL OR review_status NOT IN ('pending', 'rejected') "
+            "OR (review_status = 'pending' AND source_type = 'web_upload'))"
+            if has_status_col
+            else ""
+        )
+    else:
+        status_cond = "AND (review_status IS NULL OR review_status NOT IN ('pending', 'rejected'))" if has_status_col else ""
 
-    tree_vis = visible_tree_sql(conn)
+    if include_pending_web and has_status_col:
+        # visible_tree_sql 會隔離未核准（pending/rejected）之 web_upload 樹，
+        # 故 include_pending_web=True 時需在此額外放行「web_upload 且 pending」者，
+        # 使其可作為預生成參考（與 nightly batch 的 --include-pending-web-prefill 旗標語意一致）；
+        # 其餘 pending/rejected 樹（含 llm_generated、clinic_upload）仍排除。
+        tree_vis = (
+            f"({visible_tree_sql(conn)} OR (source_type = 'web_upload' AND review_status = 'pending'))"
+        )
+    else:
+        tree_vis = visible_tree_sql(conn)
     query_trees = f"""
         SELECT doc_id, clinic_id, {cat_select}, summary_text, pre_op, procedure,
                post_op_short, maintenance, content_version, source_type, {title_select}

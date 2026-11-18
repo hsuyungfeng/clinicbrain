@@ -107,7 +107,11 @@ def run_prefill_stage(
     effective_seed_path = seed_path or getattr(cfg, "seed_path", "data/batch/faq_seeds.json")
 
     # 1. 列舉合格主題
-    topics = enumerate_prefill_topics(conn, seed_path=effective_seed_path)
+    topics = enumerate_prefill_topics(
+        conn,
+        seed_path=effective_seed_path,
+        include_pending_web=getattr(cfg, "include_pending_web", False),
+    )
     if getattr(cfg, "skip_general", False):
         topics = [t for t in topics if t.category != "general"]
 

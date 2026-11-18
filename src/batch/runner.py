@@ -66,6 +66,7 @@ class BatchConfig:
     time_budget_seconds: float = 3600.0
     enable_autofill_answers: bool = True
     enable_patient_prefill: bool = True
+    include_pending_web: bool = False
     prefill_seed_path: Optional[Path] = None
     now_fn: Optional[Callable[[], datetime]] = None
     prefill_llm_call: Optional[Callable[[str], str]] = None
