@@ -469,6 +469,7 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
                     "endocrine_receptor",
                     # Phase 40：次專科解剖器官系統（眼底視網膜、耳鼻喉氣道、泌尿生殖、進階牙周、中醫特種針灸）
                     "ophthalmic_retina",
+                    "ophthalmic_anterior",
                     "ent_airway",
                     "uro_genital",
                     "dental_periodontal",
@@ -497,6 +498,32 @@ BLUEPRINTS: dict[str, dict[str, Any]] = {
             "severity_level": 3,
             "accent_fill": "warn",
             "step_labels": ["致病因子刺激", "局部組織發炎", "屏障逐步修復"],
+        },
+    },
+    "care_redflag": {
+        "params": {
+            "care_items": {
+                "type": "list",
+                "min": 3,
+                "max": 4,
+                "item": {"type": "text", "max_len": 12},
+            },
+            "red_flags": {
+                "type": "list",
+                "min": 2,
+                "max": 4,
+                "item": {"type": "text", "max_len": 12},
+            },
+            "myth_note": {"type": "text", "max_len": 24},
+            "takeaway": {"type": "text", "max_len": 36},
+            "urgency_level": {"type": "int", "min": 1, "max": 5},
+        },
+        "defaults": {
+            "care_items": ["均衡高纖飲食", "足量補充水分", "規律適度運動", "遵循醫囑追蹤"],
+            "red_flags": ["劇烈持續疼痛", "高燒或畏寒發抖", "異常出血不止"],
+            "myth_note": "症狀緩解仍應依醫囑完成追蹤",
+            "takeaway": "日常保養不可少，出現紅旗警訊立即就醫。",
+            "urgency_level": 4,
         },
     },
 }
@@ -625,6 +652,28 @@ def _validate_value(spec: dict[str, Any], value: Any, is_merged_check: bool = Fa
     return False, "param_error"
 
 
+# Phase 49：向後相容選填進階參數（僅在明確提供時驗證，不寫入 defaults 以維持既有 IR 零遷移）
+OPTIONAL_EXTRA_PARAMS: dict[str, dict[str, dict[str, Any]]] = {
+    "contrast": {
+        "contrast_layout": {
+            "type": "enum",
+            "values": ("auto", "side_by_side", "outcome_fork", "tradeoff_matrix", "layered_scan"),
+        },
+    },
+    "pathology_mechanism": {
+        "anatomy_region": {
+            "type": "enum",
+            "values": (
+                "auto", "head_orbit", "head_ent", "head_dental", "head_face",
+                "neck_cervical", "thorax_airway", "abdomen_gi", "pelvis_uro",
+                "axilla", "extremity_nail", "systemic_metabolic", "meridian_acup",
+            ),
+        },
+        "anatomy_target": {"type": "text", "max_len": 30},
+    },
+}
+
+
 def validate_params(blueprint: str, params: Any) -> Tuple[bool, str]:
     """檢驗指定 blueprint 之 params 的規格合法性與文字合規性。
 
@@ -646,15 +695,17 @@ def validate_params(blueprint: str, params: Any) -> Tuple[bool, str]:
         return False, "param_error"
 
     schema = BLUEPRINTS[blueprint]["params"]
+    opt_schema = OPTIONAL_EXTRA_PARAMS.get(blueprint, {})
 
     # 1. 檢查頂層未知鍵
     for k in params.keys():
-        if k not in schema:
+        if k not in schema and k not in opt_schema:
             return False, "param_error"
 
     # 2. 檢驗已提供之欄位
     for k, v in params.items():
-        ok, code = _validate_value(schema[k], v, is_merged_check=False)
+        field_spec = schema[k] if k in schema else opt_schema[k]
+        ok, code = _validate_value(field_spec, v, is_merged_check=False)
         if not ok:
             return False, code
 

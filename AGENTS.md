@@ -383,3 +383,10 @@ Phase 08 起之詳細模組規範（一般諮詢、夜間批次、SOAP 提煉、
 * **Phase 42：病人端多診所聯合諮詢與即時引導 (Multi-Clinic Patient Federated Consultation)**
   - 在病人諮詢端點支援自適應推薦診所與院所特約醫師門診時段。
   - 動態關聯已昇華之基層 ICD-10 解說動畫卡，並強化門診就診預約引導。
+* **Phase 51–52（已交付）：NHI400 解剖映射對齊與全庫 398 筆雙層深度稽核**
+  - `scripts/build_nhi400_manifest.py`、`scripts/audit_manifest_anatomy.py` 與 `scripts/audit_db_visual_assets.py --strict` 建立「語意器官系統 + `visual_engine.js` `pmPickAnatomyDrawer()`」雙層稽核，確保 398 筆（320 筆 `pathology_mechanism`）零錯配。
+  - `src/web/static/visual_engine.js` `PATHO_ORGAN_SYSTEMS` 補齊全部 15 個器官系統，並於 `src/visual/video_queue.py` `compute_ir_sha256()` 納入 `visual_engine.js` SHA-256 salt 連動增量快取。
+* **Phase 53（已交付）：雙軌混合衛教系統與全庫 398 筆 `edu_json` 升級**
+  - 新增 `care_redflag` 藍圖（`src/visual/blueprints.py`、`src/visual/ir.py`、`src/web/static/visual_engine.js` `drawCareRedflag()`，嚴格限縮於 `y <= 392` 避開字幕區）。
+  - `visual_assets` 新增 `edu_json` / `edu_updated_at`（`src/visual/edu_schema.py`、`src/visual/edu_generator.py`、`scripts/generate_edu_batch.py`），鎖定 Phase 52 已核定 `organ_system` 與 `anatomy_target` 並完成全庫 398/398 筆生成與 398 支橫屏 MP4 重渲。
+  - 新增 `GET /api/v1/visual/edu/{topic_key}`（`review_status = 'approved'` + `deep_mask_prices()`）與獨立可列印單張 `GET /edu/{topic_key}`（`src/api/app.py`、`src/web/static/edu.html`、`edu.js`）。

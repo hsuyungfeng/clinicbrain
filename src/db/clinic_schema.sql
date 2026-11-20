@@ -441,6 +441,8 @@ CREATE TABLE IF NOT EXISTS visual_assets (
     content_version INTEGER NOT NULL DEFAULT 1,
     metadata TEXT,
     template_override TEXT,
+    edu_json TEXT,
+    edu_updated_at TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(clinic_id, topic_key)

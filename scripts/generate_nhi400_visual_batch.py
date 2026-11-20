@@ -276,6 +276,7 @@ def mock_generate_ir(manifest_item: Dict[str, Any], inject_error: str = "") -> D
                 "params": {
                     "organ_system": archetype.get("s1_organ", "respiratory_mucosa"),
                     "organ_label": f"{name[:6]}",
+                    "anatomy_target": name,
                     "lesion_label": "病理充血",
                     "trigger_label": "病因刺激",
                     "defense_label": "屏障修復",

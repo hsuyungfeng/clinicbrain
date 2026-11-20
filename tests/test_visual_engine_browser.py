@@ -542,9 +542,12 @@ DECLARED_STAGE_CUTS = {
 
 
 def _is_declared_cut(bp: str, frame: int, n: int) -> bool:
-    cuts = DECLARED_STAGE_CUTS.get(bp, ())
+    cuts = list(DECLARED_STAGE_CUTS.get(bp, ()))
+    # Phase 49-01：Scene 1 藍圖（非 contrast / timeline）於 u=0.14 由宏觀解剖定位切換至局部切面
+    if bp not in ("contrast", "timeline"):
+        cuts.append(0.14)
     u = frame / n
-    return any(abs(u - c) < 1.0 / n / 2 for c in cuts)
+    return any(abs(u - c) <= 1.0 / n for c in cuts)
 
 
 def _variants_for_sweep() -> list[tuple[str, dict | None]]:

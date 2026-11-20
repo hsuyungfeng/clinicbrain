@@ -150,3 +150,56 @@ def download_public_visual_video(
         media_type="video/mp4",
         filename=f"{topic_key}_{aspect}.mp4",
     )
+
+
+@router.get(
+    "/edu/{topic_key}",
+    summary="取得已核准主題之雙軌衛教內容（7 段結構化圖文 + 3 幕動畫 IR）",
+    response_model=Dict[str, Any],
+)
+def get_public_visual_edu(
+    topic_key: str,
+    conn: sqlite3.Connection = Depends(get_read_db),
+):
+    """提供單一已核准主題的完整 7 段衛教資料、動畫 IR 與 MP4 資訊（經價格清洗）。"""
+    if not _TOPIC_KEY_RE.match(topic_key) or ".." in topic_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="無效的主題代碼格式")
+
+    import json
+
+    try:
+        row = conn.execute(
+            "SELECT title, ir_json, edu_json FROM visual_assets "
+            "WHERE topic_key = ? AND review_status = 'approved' "
+            "ORDER BY CASE WHEN clinic_id IS NULL THEN 0 ELSE 1 END LIMIT 1",
+            (topic_key,),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        row = conn.execute(
+            "SELECT title, ir_json, NULL AS edu_json FROM visual_assets "
+            "WHERE topic_key = ? AND review_status = 'approved' "
+            "ORDER BY CASE WHEN clinic_id IS NULL THEN 0 ELSE 1 END LIMIT 1",
+            (topic_key,),
+        ).fetchone()
+
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"找不到已核准的視覺資產：{topic_key}")
+
+    title = str(row[0] or "")
+    ir_obj = json.loads(row[1]) if row[1] else None
+    edu_obj = json.loads(row[2]) if row[2] else None
+    video_info = get_public_video_info(topic_key) or {
+        "topic_key": topic_key,
+        "landscape": {"available": False},
+        "portrait": {"available": False},
+    }
+    return deep_mask_prices(
+        {
+            "topic_key": topic_key,
+            "title": title,
+            "edu": edu_obj,
+            "ir": ir_obj,
+            "video": video_info,
+            "share_url": f"/edu/{topic_key}",
+        }
+    )

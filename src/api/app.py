@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import config
 from pathlib import Path
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from .routes.admin import router as admin_router
 from .routes.cache_stats import router as cache_stats_router
@@ -83,6 +84,14 @@ def create_app() -> FastAPI:
     if static_dir.exists():
         app.mount("/admin", StaticFiles(directory=str(static_dir), html=True), name="admin")
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+    @app.get("/edu/{topic_key}", tags=["衛教單張"], summary="獨立可分享／可列印衛教單張頁面")
+    def edu_share_page(topic_key: str):
+        """回傳獨立雙軌衛教單張頁面，由前端向 `/api/v1/visual/edu/{topic_key}` 載入內容。"""
+        edu_html = static_dir / "edu.html"
+        if not edu_html.exists():
+            return HTMLResponse("<h1>衛教單張尚未部署</h1>", status_code=404)
+        return FileResponse(path=str(edu_html), media_type="text/html; charset=utf-8")
 
     @app.get("/", tags=["根端點"], summary="服務根端點資訊")
     def root():

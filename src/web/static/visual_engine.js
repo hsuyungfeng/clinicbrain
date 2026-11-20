@@ -1299,7 +1299,193 @@
     }
   }
 
+  // Phase 49-02：Scene 2 治療方式差異性結果 — 四種臨床範式分流
+  const CONTRAST_FORK_MODES = [
+    "mucosal_irritant_surge", "metabolic_mechanical_overload", "metabolic_insulin_resistance",
+    "vitreous_drusen_degeneration", "tcm_qi_stagnation", "airway_laryngeal_edema", "venous_plexus_reflux"
+  ];
+  const CONTRAST_MATRIX_MODES = [
+    "tissue_trauma_torn_vessel", "scar_contracture_ectropion",
+    "silicone_extrusion_erythema", "capsular_contracture_ball", "periodontal_bone_defect", "tcm_deep_adhesion"
+  ];
+  const CONTRAST_SCAN_MODES = [
+    "scattered", "thermal_spread", "nodule_clumping", "dental_caries_erosion"
+  ];
+
+  function resolveContrastLayout(params) {
+    const layout = params && params.contrast_layout;
+    if (layout === "side_by_side" || layout === "outcome_fork" || layout === "tradeoff_matrix" || layout === "layered_scan") {
+      return layout;
+    }
+    const leftMode = params && params.left ? params.left.mode : "";
+    if (CONTRAST_FORK_MODES.indexOf(leftMode) >= 0) return "outcome_fork";
+    if (CONTRAST_MATRIX_MODES.indexOf(leftMode) >= 0) return "tradeoff_matrix";
+    if (CONTRAST_SCAN_MODES.indexOf(leftMode) >= 0) return "layered_scan";
+    return "side_by_side";
+  }
+
+  function drawContrastOutcomeFork(ctx, params, u) {
+    ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
+    ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
+    ctx.text({ x: 50, y: 56, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" }, "【處置路徑與病程分叉演進】");
+    ctx.text({ x: 750, y: 56, "text-anchor": "end", "font-size": 11, fill: "#64748b" }, "不同介入方式之長期結果差異");
+
+    // 起點臨床基準節點
+    const pulse = ctx.motion ? ctx.motion.breathing(u, 2.0, 0.08) : 1.0;
+    ctx.circle({ cx: 112, cy: 240, r: 34 * pulse, fill: "#1e3a5f", stroke: "#38bdf8", "stroke-width": 2 });
+    ctx.text({ x: 112, y: 236, "text-anchor": "middle", "font-size": 12, "font-weight": "bold", fill: "#e0f2fe" }, "目前病灶");
+    ctx.text({ x: 112, y: 253, "text-anchor": "middle", "font-size": 11, fill: "#93c5fd" }, "介入決策點");
+
+    const pathU = ctx.motion ? ctx.motion.easeOutCubic(clampNumber(u / 0.78, 0, 1)) : clampNumber(u / 0.78, 0, 1);
+
+    // 上方路徑（對照／保守或單一處置）：虛線緩坡起伏
+    ctx.path({
+      d: "M 146 232 C 250 220, 320 148, 465 148",
+      fill: "none",
+      stroke: "#f59e0b",
+      "stroke-width": 3,
+      "stroke-dasharray": "6 5",
+      pathLength: "100",
+      "stroke-dashoffset": String((100 * (1 - pathU)).toFixed(2))
+    });
+    // 下方路徑（推薦／精準處置）：實線平穩下降或穩定回正
+    ctx.path({
+      d: "M 146 248 C 250 260, 320 332, 465 332",
+      fill: "none",
+      stroke: "#10b981",
+      "stroke-width": 4,
+      "stroke-linecap": "round",
+      pathLength: "100",
+      "stroke-dashoffset": String((100 * (1 - pathU)).toFixed(2))
+    });
+
+    // 路徑追蹤光點
+    const dotX = 146 + (465 - 146) * pathU;
+    const topDotY = 232 - 84 * Math.sin(pathU * Math.PI * 0.5);
+    const botDotY = 248 + 84 * Math.sin(pathU * Math.PI * 0.5);
+    ctx.circle({ cx: dotX, cy: topDotY, r: 5, fill: "#fbbf24" });
+    ctx.circle({ cx: dotX, cy: botDotY, r: 6, fill: "#6ee7b7" });
+
+    // 右側結果卡（隨路徑抵達淡入）
+    const cardAlpha = clampNumber((u - 0.25) / 0.35, 0.25, 1);
+    ctx.rect({ x: 472, y: 92, width: 278, height: 122, rx: 12, fill: "#273549", stroke: "#f59e0b", "stroke-width": 1.5, opacity: cardAlpha });
+    ctx.text({ x: 492, y: 122, "font-size": 16, "font-weight": "bold", fill: "#fbbf24", opacity: cardAlpha }, params.left.title);
+    ctx.text({ x: 492, y: 146, "font-size": 12, fill: "#cbd5e1", opacity: cardAlpha }, params.left.note);
+    ctx.text({ x: 492, y: 194, "font-size": 12, "font-weight": "bold", fill: "#fcd34d", opacity: cardAlpha }, params.left.footnote);
+
+    ctx.rect({ x: 472, y: 266, width: 278, height: 128, rx: 12, fill: "#1e3a2f", stroke: "#10b981", "stroke-width": 2, opacity: cardAlpha });
+    ctx.text({ x: 492, y: 296, "font-size": 16, "font-weight": "bold", fill: "#6ee7b7", opacity: cardAlpha }, params.right.title);
+    ctx.text({ x: 492, y: 320, "font-size": 12, fill: "#e2e8f0", opacity: cardAlpha }, params.right.note);
+    ctx.text({ x: 492, y: 372, "font-size": 12, "font-weight": "bold", fill: "#a7f3d0", opacity: cardAlpha }, params.right.footnote);
+  }
+
+  function drawContrastTradeoffMatrix(ctx, params, u) {
+    ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
+    ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
+    ctx.text({ x: 50, y: 56, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" }, "【治療方式臨床權衡指標比較】");
+    ctx.text({ x: 750, y: 56, "text-anchor": "end", "font-size": 11, fill: "#64748b" }, "客觀比較組織影響與恢復特徵");
+
+    // 頂部兩側方案標頭卡
+    ctx.rect({ x: 50, y: 74, width: 330, height: 64, rx: 10, fill: "#273549", stroke: "#f59e0b", "stroke-width": 1.5 });
+    ctx.text({ x: 215, y: 100, "text-anchor": "middle", "font-size": 16, "font-weight": "bold", fill: "#fbbf24" }, params.left.title);
+    ctx.text({ x: 215, y: 122, "text-anchor": "middle", "font-size": 12, fill: "#cbd5e1" }, params.left.note);
+
+    ctx.rect({ x: 420, y: 74, width: 330, height: 64, rx: 10, fill: "#1e3a2f", stroke: "#10b981", "stroke-width": 2 });
+    ctx.text({ x: 585, y: 100, "text-anchor": "middle", "font-size": 16, "font-weight": "bold", fill: "#6ee7b7" }, params.right.title);
+    ctx.text({ x: 585, y: 122, "text-anchor": "middle", "font-size": 12, fill: "#e2e8f0" }, params.right.note);
+
+    const barU = clampNumber(u / 0.7, 0, 1);
+    const metrics = [
+      { label: "組織影響範圍", leftW: 0.78, rightW: 0.28, leftText: "影響範圍較廣", rightText: "精準鎖定目標" },
+      { label: "術後恢復負荷", leftW: 0.74, rightW: 0.30, leftText: "腫脹與恢復期較長", rightText: "日常作息影響較小" },
+      { label: "周邊結構保留", leftW: 0.38, rightW: 0.88, leftText: "鄰近組織承受張力", rightText: "保留健康神經血管" }
+    ];
+
+    for (let i = 0; i < metrics.length; i++) {
+      const m = metrics[i];
+      const ry = 158 + i * 74;
+      ctx.rect({ x: 50, y: ry, width: 700, height: 60, rx: 10, fill: "#0f172a", stroke: "#334155" });
+      ctx.text({ x: 400, y: ry + 20, "text-anchor": "middle", "font-size": 12, "font-weight": "bold", fill: "#94a3b8" }, m.label);
+
+      // 左側量條（由中線向左延伸）
+      const lw = 240 * m.leftW * barU;
+      ctx.rect({ x: 375 - lw, y: ry + 32, width: lw, height: 14, rx: 7, fill: "#f59e0b", opacity: 0.85 });
+      ctx.text({ x: 66, y: ry + 43, "font-size": 11, fill: "#fcd34d" }, m.leftText);
+
+      // 右側量條（由中線向右延伸）
+      const rw = 240 * m.rightW * barU;
+      ctx.rect({ x: 425, y: ry + 32, width: rw, height: 14, rx: 7, fill: "#10b981", opacity: 0.9 });
+      ctx.text({ x: 734, y: ry + 43, "text-anchor": "end", "font-size": 11, fill: "#6ee7b7" }, m.rightText);
+    }
+
+    ctx.text({ x: 215, y: 402, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fbbf24" }, params.left.footnote);
+    ctx.text({ x: 585, y: 402, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#6ee7b7" }, params.right.footnote);
+  }
+
+  function drawContrastLayeredScan(ctx, params, u) {
+    ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
+    ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
+    ctx.text({ x: 50, y: 56, "font-size": 13, "font-weight": "bold", fill: "#94a3b8" }, "【同解剖組織分層掃描對比】");
+
+    // 上方標題
+    ctx.text({ x: 220, y: 84, "text-anchor": "middle", "font-size": 17, "font-weight": "bold", fill: "#fbbf24" }, params.left.title);
+    ctx.text({ x: 220, y: 104, "text-anchor": "middle", "font-size": 12, fill: "#94a3b8" }, params.left.note);
+    ctx.text({ x: 580, y: 84, "text-anchor": "middle", "font-size": 17, "font-weight": "bold", fill: "#6ee7b7" }, params.right.title);
+    ctx.text({ x: 580, y: 104, "text-anchor": "middle", "font-size": 12, fill: "#94a3b8" }, params.right.note);
+
+    // 統一組織切面底圖（表層→中層→深層）
+    ctx.rect({ x: 64, y: 122, width: 672, height: 246, rx: 12, fill: "#273549", stroke: "#475569", "stroke-width": 1.5 });
+    ctx.rect({ x: 64, y: 122, width: 672, height: 48, rx: 8, fill: PALETTE.skin, opacity: 0.25 });
+    ctx.rect({ x: 64, y: 170, width: 672, height: 112, fill: PALETTE.pale, opacity: 0.14 });
+    ctx.rect({ x: 64, y: 282, width: 672, height: 86, rx: 8, fill: "#1e3a5f", opacity: 0.45 });
+
+    // 左半部組織呈現（擴散／不均勻團塊）
+    const leftFill = PALETTE[params.left.unit_fill] || PALETTE.warn;
+    for (let k = 0; k < 5; k++) {
+      const cx = 135 + deterministicHash(k, 5) * 185;
+      const cy = 188 + deterministicHash(k, 9) * 115;
+      const rad = 16 + 10 * Math.sin(u * Math.PI * 3 + k);
+      ctx.circle({ cx: cx, cy: cy, r: clampNumber(rad, 10, 30), fill: leftFill, opacity: 0.55 });
+    }
+    ctx.circle({ cx: 230, cy: 230, r: 44 + 14 * Math.sin(u * Math.PI * 2), fill: "none", stroke: "#f59e0b", "stroke-width": 2, "stroke-dasharray": "5 4", opacity: 0.7 });
+
+    // 右半部組織呈現（均勻分層／精準鎖定深層）
+    const rightFill = PALETTE[params.right.unit_fill] || PALETTE.ok;
+    for (let r = 0; r < 2; r++) {
+      const ry = 204 + r * 48;
+      ctx.line({ x1: 430, y1: ry, x2: 705, y2: ry, stroke: "#38bdf8", "stroke-width": 1.5, "stroke-dasharray": "4 4", opacity: 0.5 });
+      for (let c = 0; c < 5; c++) {
+        const ux = 460 + c * 52;
+        const popU = clampNumber((u - (r * 5 + c) * 0.05) / 0.15, 0, 1);
+        ctx.circle({ cx: ux, cy: ry, r: 9 * popU, fill: rightFill, stroke: "#6ee7b7", "stroke-width": 1.5, opacity: 0.9 });
+      }
+    }
+
+    // 動態掃描分界線（左右輕微掃動後停於中線，突顯對比）
+    const scanX = 400 + Math.sin(Math.min(1, u * 1.4) * Math.PI) * 55;
+    ctx.line({ x1: scanX, y1: 116, x2: scanX, y2: 374, stroke: "#38bdf8", "stroke-width": 2.5 });
+    ctx.circle({ cx: scanX, cy: 245, r: 14, fill: "#0f172a", stroke: "#38bdf8", "stroke-width": 2 });
+    ctx.text({ x: scanX, y: 249, "text-anchor": "middle", "font-size": 10, "font-weight": "bold", fill: "#e0f2fe" }, "對比");
+
+    ctx.text({ x: 220, y: 398, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#fbbf24" }, params.left.footnote);
+    ctx.text({ x: 580, y: 398, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#6ee7b7" }, params.right.footnote);
+  }
+
   function drawContrast(ctx, params, u) {
+    const layout = resolveContrastLayout(params);
+    if (layout === "outcome_fork") {
+      drawContrastOutcomeFork(ctx, params, u);
+      return;
+    }
+    if (layout === "tradeoff_matrix") {
+      drawContrastTradeoffMatrix(ctx, params, u);
+      return;
+    }
+    if (layout === "layered_scan") {
+      drawContrastLayeredScan(ctx, params, u);
+      return;
+    }
+
     ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" });
     ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
 
@@ -1312,9 +1498,9 @@
       ctx.text({ x: 400, y: 244, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#fbbf24" }, "VS");
     }
 
-    // 左側面板（對照側：加入病理不安微顫動與警示）
-    const tremorX = Math.sin(u * Math.PI * 14) * 0.8;
-    const tremorY = Math.cos(u * Math.PI * 18) * 0.6;
+    // 左側面板（對照側：客觀呼吸微脈動取代過度驚悚震顫）
+    const tremorX = Math.sin(u * Math.PI * 6) * 0.4;
+    const tremorY = Math.cos(u * Math.PI * 6) * 0.3;
     ctx.text({ x: 210, y: 65, "text-anchor": "middle", "font-size": 18, "font-weight": "bold", fill: PALETTE.warn }, params.left.title);
     ctx.text({ x: 210, y: 92, "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" }, params.left.note);
     ctx.rect({ x: 50 + tremorX, y: 115 + tremorY, width: 320, height: 250, rx: 12, fill: "#273549", stroke: "#ef4444", "stroke-width": 1.5 });
@@ -1583,32 +1769,96 @@
       }
     }
 
-    // 底部時間軸進度線條（y: 355）
-    ctx.line({ x1: 110, y1: 355, x2: 690, y2: 355, stroke: "#334155", "stroke-width": 6, "stroke-linecap": "round" });
+    // Phase 49-03：生理機轉微觀好處疊層動畫（流場暢通／減壓舒緩／結構支撐／屏障閉合）
+    const cName = String(params.connectors || "none");
+    const easeU = ctx.motion ? ctx.motion.easeOutCubic(u) : u;
+    if (cName === "mucosal_clearance" || cName === "airway_mucosa_calm" || cName === "pelvic_microflow_restore" || cName === "vessels") {
+      for (let lane = 0; lane < 3; lane++) {
+        const ly = 148 + lane * 68;
+        ctx.path({
+          d: "M 90 " + ly + " C 260 " + (ly - 12 * (1 - easeU)) + ", 540 " + (ly + 12 * (1 - easeU)) + ", 710 " + ly,
+          fill: "none", stroke: "#38bdf8", "stroke-width": 1.5, opacity: 0.22 + 0.35 * easeU
+        });
+        for (let pt = 0; pt < 3; pt++) {
+          const pProg = (u * 1.4 + pt * 0.33 + lane * 0.12) % 1.0;
+          const px = 95 + pProg * 610;
+          ctx.circle({ cx: px, cy: ly, r: 3.2, fill: "#6ee7b7", opacity: Math.sin(pProg * Math.PI) * (0.4 + 0.55 * easeU) });
+        }
+      }
+    } else if (cName === "nerve_regeneration" || cName === "structural_rehab" || cName === "meridian_unblock_healing" || cName === "tcm_meridian_harmony") {
+      // 壓迫應力環向外舒展淡出＋訊號傳導光點
+      const releaseR = 18 + 52 * easeU;
+      ctx.circle({ cx: 400, cy: 217, r: releaseR, fill: "none", stroke: "#6ee7b7", "stroke-width": 1.8, opacity: clampNumber((1 - easeU) * 0.65, 0.08, 0.65) });
+      ctx.path({ d: "M 105 217 Q 400 202 695 217", fill: "none", stroke: "#38bdf8", "stroke-width": 2, opacity: 0.25 + 0.5 * easeU });
+      const sigX = 105 + ((u * 1.5) % 1.0) * 590;
+      ctx.circle({ cx: sigX, cy: 213, r: 5.5, fill: "#fde047", opacity: 0.85 });
+    } else if (cName === "collagen_remodeling" || cName === "scar_maturation" || cName === "skin_retraction" || cName === "bone_graft_integration" || cName === "bone_healing" || cName === "dental_pulp_healing") {
+      // 膠原／骨小樑支撐網格隨進度平順編織成形
+      for (let g = 0; g < 6; g++) {
+        const gx = 120 + g * 104;
+        const gAlpha = clampNumber((u - g * 0.08) / 0.25, 0, 1) * 0.45;
+        ctx.line({ x1: gx, y1: 126, x2: gx + 52, y2: 308, stroke: "#6ee7b7", "stroke-width": 1.5, opacity: gAlpha });
+        ctx.line({ x1: gx + 52, y1: 126, x2: gx, y2: 308, stroke: "#38bdf8", "stroke-width": 1.5, opacity: gAlpha * 0.8 });
+      }
+    } else {
+      // 屏障閉合與發炎微粒平息（穩態修復）
+      const sealW = 640 * easeU;
+      ctx.line({ x1: 80, y1: 122, x2: 80 + sealW, y2: 122, stroke: "#6ee7b7", "stroke-width": 3.5, "stroke-linecap": "round", opacity: 0.75 });
+      for (let d = 0; d < 5; d++) {
+        const dx = 140 + d * 130;
+        const dy = 170 + (d % 2) * 70;
+        const shrink = clampNumber(1 - easeU * 0.8, 0.15, 1);
+        ctx.circle({ cx: dx, cy: dy, r: 7 * shrink, fill: "#f59e0b", opacity: 0.45 * shrink });
+      }
+    }
+
+    // 底部「非量化功能舒適度平緩趨勢帶」與漸進時間軸（y: 334..402，嚴禁百分比）
+    ctx.path({
+      d: "M 110 364 C 260 362, 430 345, 690 338 L 690 370 L 110 370 Z",
+      fill: "#10b981",
+      opacity: clampNumber(0.08 + 0.16 * u, 0.08, 0.24)
+    });
+    ctx.path({
+      d: "M 110 364 C 260 362, 430 345, 690 338",
+      fill: "none",
+      stroke: "#334155",
+      "stroke-width": 5,
+      "stroke-linecap": "round"
+    });
+    ctx.path({
+      d: "M 110 364 C 260 362, 430 345, 690 338",
+      fill: "none",
+      stroke: PALETTE.accent,
+      "stroke-width": 5,
+      "stroke-linecap": "round",
+      pathLength: "100",
+      "stroke-dashoffset": String((100 * (1 - u)).toFixed(2))
+    });
     const currentProgX = 110 + (690 - 110) * u;
-    ctx.line({ x1: 110, y1: 355, x2: currentProgX, y2: 355, stroke: PALETTE.accent, "stroke-width": 6, "stroke-linecap": "round" });
 
     // 三個里程碑點與標籤設定（全部 y <= 405，嚴格在安全區內）
     const nodePositions = [110, 400, 690];
+    const nodeYs = [364, 351, 338];
     const thresholds = [0.05, 0.48, 0.92];
     const stageTimes = isClinicalBase ? ["病程初期", "病程中期", "長期追蹤"] : ["術後初期", "修復重塑期", "長期穩定"];
 
     // 進度線頂部動態時間跟隨膠囊 (Floating Time Bubble，嚴格在字幕與幾何安全區內)
     const bubbleX = clampNumber(currentProgX, 150, 650);
     const bubbleText = stageTimes[stageIdx] || "生理修復期";
-    ctx.rect({ x: bubbleX - 38, y: 333, width: 76, height: 16, rx: 4, fill: "#0f172a", stroke: sc.stroke, "stroke-width": 1, opacity: 0.85 });
-    ctx.text({ x: bubbleX, y: 345, "text-anchor": "middle", "font-size": 10, "font-weight": "bold", fill: sc.textFill }, bubbleText);
+    ctx.rect({ x: bubbleX - 38, y: 318, width: 76, height: 16, rx: 4, fill: "#0f172a", stroke: sc.stroke, "stroke-width": 1, opacity: 0.88 });
+    ctx.text({ x: bubbleX, y: 330, "text-anchor": "middle", "font-size": 10, "font-weight": "bold", fill: sc.textFill }, bubbleText);
 
     for (let mIdx = 0; mIdx < 3; mIdx++) {
       const nx = nodePositions[mIdx];
+      const ny = nodeYs[mIdx];
       const isReached = u >= thresholds[mIdx];
       const isActive = (mIdx === stageIdx);
 
       // 當前活躍階段動態脈動光環與金色修復微粒子綻放（Sparkle Dust）
       if (isActive) {
         const pulseR = ctx.motion ? (15 + 3 * (ctx.motion.breathing(u, 3, 0.3) - 1.0)) : 15;
-        ctx.circle({ cx: nx, cy: 355, r: pulseR, fill: "url(#grad-healing-glow)", opacity: 0.75 });
-        ctx.circle({ cx: nx, cy: 355, r: pulseR, fill: "none", stroke: sc.stroke, "stroke-width": 2, opacity: 0.85 });
+        ctx.circle({ cx: nx, cy: ny, r: pulseR, fill: "url(#grad-healing-glow)", opacity: 0.75 });
+        ctx.circle({ cx: nx, cy: ny, r: pulseR, fill: "none", stroke: sc.stroke, "stroke-width": 2, opacity: 0.85 });
 
         // 8 顆金色微粒子隨進度向外散開淡出（100% 確定性數學運算）
         const nodeProgress = clampNumber((u - thresholds[mIdx]) / 0.35, 0, 1);
@@ -1618,14 +1868,14 @@
             const ang = (sp / 8) * Math.PI * 2 + u * 1.5;
             const dist = 14 + sparkU * 16;
             const spx = nx + Math.cos(ang) * dist;
-            const spy = 355 + Math.sin(ang) * dist * 0.75;
+            const spy = ny + Math.sin(ang) * dist * 0.75;
             const spAlpha = Math.sin(nodeProgress * Math.PI) * 0.8;
             ctx.circle({ cx: spx, cy: spy, r: 2.2, fill: "#fef08a", opacity: clampNumber(spAlpha, 0, 1) });
           }
         }
       }
 
-      ctx.circle({ cx: nx, cy: 355, r: 10, fill: isReached ? PALETTE.accent : "#334155", stroke: "#ffffff", "stroke-width": 2 });
+      ctx.circle({ cx: nx, cy: ny, r: 9, fill: isReached ? PALETTE.accent : "#334155", stroke: "#ffffff", "stroke-width": 2 });
 
       const milestoneText = params.milestones && params.milestones[mIdx] ? params.milestones[mIdx] : "";
       ctx.text(
@@ -2672,7 +2922,11 @@
 
   // 註冊表
   // Phase 35-02：6 大基層專科器官病理機轉（organ_system 白名單與 src/visual/blueprints.py 完全一致）
-  const PATHO_ORGAN_SYSTEMS = ["respiratory_mucosa", "vascular_metabolic", "gi_tract", "skin_barrier", "joint_spine", "uro_pelvic"];
+  const PATHO_ORGAN_SYSTEMS = [
+    "respiratory_mucosa", "vascular_metabolic", "gi_tract", "skin_barrier", "joint_spine", "uro_pelvic",
+    "dental_oral", "tcm_meridian", "endocrine_receptor", "ophthalmic_retina", "ophthalmic_anterior",
+    "ent_airway", "uro_genital", "dental_periodontal", "tcm_special_acup"
+  ];
 
   // 連續平滑函式：所有動畫皆為 u 的連續函式（無階躍、無取模環繞），確保相鄰影格位移有界
   function pmSmooth(x) {
@@ -3271,6 +3525,20 @@
     ctx.text({ x: 100, y: 265, "font-size": 11, fill: "#fde68a" }, "視網膜色素上皮");
   }
 
+  function pmOphthalmicAnterior(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    ctx.ellipse({ cx: 280, cy: 225, rx: 115, ry: 72, fill: "#f8fafc", stroke: "#64748b", "stroke-width": 2 });
+    ctx.circle({ cx: 280, cy: 225, r: 46, fill: "#1e3a8a", stroke: "#38bdf8", "stroke-width": 2 });
+    ctx.circle({ cx: 280, cy: 225, r: 20, fill: "#020617", opacity: 0.92 });
+    if (env.lvl > 0.05) {
+      ctx.ellipse({ cx: 280, cy: 225, rx: 52, ry: 34, fill: "#ef4444", opacity: 0.25 * env.lvl });
+    }
+    if (env.rep > 0.05) {
+      ctx.circle({ cx: 280, cy: 225, r: 54, fill: "none", stroke: "#22c55e", "stroke-width": 2.5, opacity: env.rep });
+    }
+    ctx.text({ x: 96, y: 136, "font-size": 11, fill: "#93c5fd" }, "角膜・結膜・前房水晶體");
+  }
+
   function pmENTAirway(ctx, env) {
     ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
     const edema = 35 * env.lvl;
@@ -3328,49 +3596,130 @@
     tcm_meridian: pmTCM,
     endocrine_receptor: pmEndocrine,
     ophthalmic_retina: pmOphthalmicRetina,
+    ophthalmic_anterior: pmOphthalmicAnterior,
     ent_airway: pmENTAirway,
     uro_genital: pmUroGenital,
     dental_periodontal: pmDentalPeriodontal,
     tcm_special_acup: pmTCMSpecialAcup
   };
 
+  function pmOralMucosaLesion(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    // 上下唇與口腔黏膜基底層
+    ctx.path({ d: "M 130 165 Q 280 120 430 165 L 430 295 Q 280 330 130 295 Z", fill: "#450a0a", stroke: "#fb7185", "stroke-width": 2, opacity: 0.9 });
+    // 舌背／口腔黏膜表層
+    ctx.path({ d: "M 165 215 Q 280 175 395 215 Q 385 280 280 288 Q 175 280 165 215 Z", fill: "#9f1239", stroke: "#fda4af", "stroke-width": 1.8 });
+    // 白色偽膜／黏膜囊腫病灶
+    if (env.lvl > 0.05) {
+      const r = 10 + 18 * env.lvl;
+      ctx.ellipse({ cx: 235, cy: 222, rx: r * 1.1, ry: r * 0.65, fill: "#f8fafc", stroke: "#fca5a5", "stroke-width": 1.5, opacity: Math.min(0.95, 0.35 + env.lvl) });
+      ctx.ellipse({ cx: 318, cy: 236, rx: r * 0.9, ry: r * 0.55, fill: "#f8fafc", stroke: "#fca5a5", "stroke-width": 1.5, opacity: Math.min(0.95, 0.35 + env.lvl) });
+    }
+    if (env.rep > 0.05) {
+      ctx.path({ d: "M 180 220 Q 280 190 380 220", fill: "none", stroke: "#22c55e", "stroke-width": 3, opacity: env.rep });
+    }
+    ctx.text({ x: 96, y: 136, "font-size": 11, fill: "#fda4af" }, "口腔黏膜・舌背・唾液腺");
+  }
+
+  function pmTMJJoint(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    // 顳骨關節窩 (Glenoid Fossa)
+    ctx.path({ d: "M 170 155 Q 260 120 350 165 Q 380 180 410 165 L 410 135 L 170 135 Z", fill: "#cbd5e1", stroke: "#94a3b8", "stroke-width": 2 });
+    // 下顎髁突 (Mandibular Condyle)
+    ctx.path({ d: "M 225 315 L 245 235 Q 275 195 305 235 L 325 315 Z", fill: "#e2e8f0", stroke: "#94a3b8", "stroke-width": 2 });
+    // 關節盤 (Articular Disc)：受壓時向前移位
+    const shiftX = -38 * env.lvl + 28 * env.rep;
+    const shiftY = 14 * env.lvl - 10 * env.rep;
+    ctx.ellipse({ cx: 275 + shiftX, cy: 192 + shiftY, rx: 34, ry: 9, fill: env.lvl > 0.2 ? "#f97316" : "#38bdf8", stroke: "#f8fafc", "stroke-width": 1.5 });
+    ctx.text({ x: 96, y: 136, "font-size": 11, fill: "#bae6fd" }, "顳顎關節窩・關節盤・髁突");
+  }
+
+  function pmMesiodensArch(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    // 上顎牙齦弓
+    ctx.path({ d: "M 120 155 Q 280 125 440 155 L 440 215 Q 280 195 120 215 Z", fill: "#9f1239", opacity: 0.85 });
+    // 兩顆正中門齒
+    ctx.rect({ x: 185, y: 190, width: 58, height: 85, rx: 8, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+    ctx.rect({ x: 317, y: 190, width: 58, height: 85, rx: 8, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+    // 正中多生小錐齒 (Mesiodens)
+    const drop = 18 * env.lvl * (1 - env.rep);
+    ctx.path({ d: `M 262 ${175 + drop} L 298 ${175 + drop} L 280 ${252 + drop} Z`, fill: "#fde047", stroke: "#f97316", "stroke-width": 2, opacity: 1 - 0.75 * env.rep });
+    ctx.text({ x: 96, y: 136, "font-size": 11, fill: "#fde68a" }, "上顎正中門齒與多生錐齒");
+  }
+
+  function pmDentalImplantPeri(ctx, env) {
+    ctx.rect({ x: 70, y: 110, width: 420, height: 230, rx: 16, fill: "#080e1a", stroke: "#1e293b", "stroke-width": 1.5 });
+    // 齒槽骨與牙齦
+    ctx.rect({ x: 140, y: 210, width: 280, height: 105, rx: 8, fill: "#7f1d1d", opacity: 0.55 });
+    // 植體周圍盤狀骨缺損
+    const loss = 26 * env.lvl;
+    ctx.path({ d: `M 245 210 L 215 210 L 235 ${215 + loss} L 325 ${215 + loss} L 345 210 L 315 210 Z`, fill: "#ef4444", opacity: 0.7 * env.lvl });
+    // 鈦金屬螺紋植體與牙冠
+    ctx.rect({ x: 256, y: 135, width: 48, height: 55, rx: 8, fill: "#f8fafc", stroke: "#94a3b8", "stroke-width": 2 });
+    ctx.rect({ x: 266, y: 190, width: 28, height: 110, rx: 4, fill: "#64748b", stroke: "#cbd5e1", "stroke-width": 1.8 });
+    for (let y = 205; y <= 285; y += 16) {
+      ctx.line({ x1: 264, y1: y, x2: 296, y2: y + 4, stroke: "#e2e8f0", "stroke-width": 2 });
+    }
+    if (env.rep > 0.05) {
+      ctx.rect({ x: 222, y: 212, width: 38, height: 24, rx: 4, fill: "#22c55e", opacity: env.rep * 0.7 });
+      ctx.rect({ x: 300, y: 212, width: 38, height: 24, rx: 4, fill: "#22c55e", opacity: env.rep * 0.7 });
+    }
+    ctx.text({ x: 96, y: 136, "font-size": 11, fill: "#cbd5e1" }, "人工植體螺紋與周圍骨");
+  }
+
   // 依據解剖標記與器官系統派發專業解剖繪圖函式
   function pmPickAnatomyDrawer(p) {
+    const osys = (p.organ_system || "");
     const oLabel = (p.organ_label || "");
     const aTarget = (p.anatomy_target || "");
     const lLabel = (p.lesion_label || "");
     const combined = oLabel + " " + aTarget + " " + lLabel;
 
-    // 1. 口咽扁桃腺解剖（急性扁桃腺炎、咽喉炎、扁桃腺隱窩）
-    if (combined.indexOf("扁桃") >= 0 || combined.indexOf("咽") >= 0 || combined.indexOf("懸雍垂") >= 0) {
+    // 1. 明確的特定解剖部位（不受一般器官字眼誤搶）
+    if (combined.indexOf("扁桃") >= 0 || combined.indexOf("懸雍垂") >= 0) {
       return pmPharynxTonsil;
     }
-    // 2. 頸椎與頸深筋膜解剖（落枕、頸部筋膜、項韌帶、頸椎病）
-    if (combined.indexOf("頸") >= 0 || combined.indexOf("落枕") >= 0 || combined.indexOf("項") >= 0) {
+    if (combined.indexOf("落枕") >= 0 || combined.indexOf("頸深筋膜") >= 0 || combined.indexOf("項韌帶") >= 0 || combined.indexOf("頸椎") >= 0) {
       return pmCervicalSpineFascia;
     }
-    // 3. 牙科齒質剖面（牙釉質、牙本質、齲齒、窩洞、牙髓）
-    if (p.organ_system === "dental_oral" || combined.indexOf("牙") >= 0 || combined.indexOf("齲") >= 0 || combined.indexOf("齒") >= 0) {
-      return pmDentalCariesSection;
-    }
-    // 4. Phase 40 次專科分流
-    if (p.organ_system === "ophthalmic_retina" || combined.indexOf("眼") >= 0 || combined.indexOf("黃斑") >= 0 || combined.indexOf("視網膜") >= 0) {
-      return pmOphthalmicRetina;
-    }
-    if (p.organ_system === "ent_airway" || combined.indexOf("喉") >= 0 || combined.indexOf("聲帶") >= 0 || combined.indexOf("氣道") >= 0) {
-      return pmENTAirway;
-    }
-    if (p.organ_system === "uro_genital" || combined.indexOf("精索") >= 0 || combined.indexOf("膀胱") >= 0 || combined.indexOf("骨盆") >= 0) {
-      return pmUroGenital;
-    }
-    if (p.organ_system === "dental_periodontal" || combined.indexOf("牙周") >= 0 || combined.indexOf("骨袋") >= 0) {
-      return pmDentalPeriodontal;
-    }
-    if (p.organ_system === "tcm_special_acup" || combined.indexOf("長強") >= 0 || combined.indexOf("針刀") >= 0) {
-      return pmTCMSpecialAcup;
+
+    // 2. 若已明確指定非牙科/非通用之器官系統，優先尊重 organ_system（避免「雞眼」命中「眼」、「肛裂齒狀線」命中「齒」、「中耳黏膜」命中「口腔黏膜」）
+    if (osys && osys !== "dental_oral" && osys !== "dental_periodontal" && osys !== "respiratory_mucosa") {
+      if (osys === "ophthalmic_anterior") return pmOphthalmicAnterior;
+      if (osys === "ophthalmic_retina") return pmOphthalmicRetina;
+      if (osys === "ent_airway") return pmENTAirway;
+      if (osys === "uro_genital") return pmUroGenital;
+      if (osys === "tcm_special_acup") return pmTCMSpecialAcup;
+      if (PATHO_DRAWERS[osys]) return PATHO_DRAWERS[osys];
     }
 
-    return PATHO_DRAWERS[p.organ_system] || pmRespiratory;
+    // 3. 牙科／口腔細分部位：三叉神經 / 顳顎關節 / 正中多生牙 / 齒列阻生 / 人工植體 / 乾槽症 / 口腔黏膜與唾液腺
+    if (combined.indexOf("三叉神經") >= 0) {
+      return pmVascular;
+    }
+    if (combined.indexOf("顳顎") >= 0 || combined.indexOf("關節盤") >= 0) {
+      return pmTMJJoint;
+    }
+    if (combined.indexOf("多生牙") >= 0 || combined.indexOf("正中多生") >= 0 || combined.indexOf("恆牙") >= 0 || combined.indexOf("乳牙") >= 0 || combined.indexOf("齒列") >= 0 || combined.indexOf("阻生") >= 0) {
+      return pmMesiodensArch;
+    }
+    if (combined.indexOf("植體") >= 0 || combined.indexOf("植牙") >= 0) {
+      return pmDentalImplantPeri;
+    }
+    if (combined.indexOf("乾槽") >= 0) {
+      return pmDentalPeriodontal;
+    }
+    if (osys === "dental_oral" && (combined.indexOf("念珠菌") >= 0 || combined.indexOf("鵝口瘡") >= 0 || combined.indexOf("扁平苔") >= 0 || combined.indexOf("白斑") >= 0 || combined.indexOf("黏膜") >= 0 || combined.indexOf("唾液腺") >= 0 || combined.indexOf("舌下腺") >= 0 || combined.indexOf("口底") >= 0 || combined.indexOf("黏液囊") >= 0 || combined.indexOf("唇") >= 0 || combined.indexOf("口瘡") >= 0 || combined.indexOf("口炎") >= 0 || combined.indexOf("牙齦纖") >= 0 || combined.indexOf("牙齦瘤") >= 0)) {
+      return pmOralMucosaLesion;
+    }
+    if (osys === "dental_oral") {
+      return pmDentalCariesSection;
+    }
+    if (osys === "dental_periodontal") {
+      return pmDentalPeriodontal;
+    }
+
+    return PATHO_DRAWERS[osys] || pmRespiratory;
   }
 
   // Blueprint 14：器官病理機轉（Phase 35-02）
@@ -3390,6 +3739,58 @@
     drawer(ctx, env);
     pmDrawMicro(ctx, env, p);
     drawStepPills(ctx, p.step_labels, u);
+  }
+
+  // Blueprint 15：衛教行動與急診紅旗警訊（Phase 53-01）
+  function drawCareRedflag(ctx, params, u) {
+    const p = params || {};
+    const careItems = Array.isArray(p.care_items) ? p.care_items : [];
+    const redFlags = Array.isArray(p.red_flags) ? p.red_flags : [];
+    const urg = clampNumber(p.urgency_level, 1, 5);
+
+    // 外框底板（維持 y <= 398，避免與 y=414..500 字幕區重疊）
+    ctx.rect({ x: 24, y: 24, width: 752, height: 376, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 });
+    ctx.text({ x: 46, y: 54, "font-size": 14, "font-weight": "bold", fill: "#93c5fd" }, "【日常衛教重點與急診紅旗警訊】");
+    if (p.myth_note) {
+      ctx.rect({ x: 350, y: 36, width: 406, height: 26, rx: 13, fill: "#0f172a", stroke: "#38bdf8", "stroke-width": 1.2 });
+      ctx.text({ x: 553, y: 53, "text-anchor": "middle", "font-size": 11, fill: "#bae6fd" }, "💡 " + String(p.myth_note).slice(0, 24));
+    }
+
+    // 左側：日常預防行動（x: 42..386, y: 76..334）
+    ctx.rect({ x: 42, y: 76, width: 344, height: 258, rx: 12, fill: "#0f172a", stroke: "#1e3a2f", "stroke-width": 1.5 });
+    ctx.text({ x: 60, y: 102, "font-size": 13, "font-weight": "bold", fill: "#4ade80" }, "✅ 日常照護與預防行動");
+    const careCount = Math.min(careItems.length, 4);
+    for (let i = 0; i < careCount; i++) {
+      const reveal = pmRange(u, i * 0.14, i * 0.14 + 0.24);
+      const cy = 118 + i * 52;
+      const op = 0.25 + 0.75 * reveal;
+      ctx.rect({ x: 58, y: cy, width: 312, height: 42, rx: 10, fill: reveal > 0.5 ? "#14332a" : "#111827", stroke: reveal > 0.5 ? "#22c55e" : "#334155", "stroke-width": reveal > 0.5 ? 1.8 : 1.2, opacity: op });
+      ctx.circle({ cx: 80, cy: cy + 21, r: 10, fill: reveal > 0.5 ? "#22c55e" : "#334155", opacity: op });
+      ctx.text({ x: 80, y: cy + 25, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#052e16", opacity: op }, "✓");
+      ctx.text({ x: 100, y: cy + 26, "font-size": 13, "font-weight": "bold", fill: "#ecfdf5", opacity: op }, String(careItems[i] || "").slice(0, 12));
+    }
+
+    // 右側：急診紅旗警訊（x: 414..758, y: 76..334）
+    const pulse = 0.5 + 0.5 * Math.sin(u * Math.PI * (2 + urg * 0.5));
+    ctx.rect({ x: 414, y: 76, width: 344, height: 258, rx: 12, fill: "#1f1215", stroke: "#ef4444", "stroke-width": 1.5 + 1.2 * pulse });
+    ctx.circle({ cx: 436, cy: 97, r: 6, fill: "#ef4444", opacity: 0.45 + 0.55 * pulse });
+    ctx.text({ x: 450, y: 102, "font-size": 13, "font-weight": "bold", fill: "#fca5a5" }, "🚨 何時必須立即就醫（紅旗警訊）");
+    const rfCount = Math.min(redFlags.length, 4);
+    for (let j = 0; j < rfCount; j++) {
+      const rfReveal = pmRange(u, 0.25 + j * 0.14, 0.45 + j * 0.14);
+      const ry = 118 + j * 52;
+      const op = 0.3 + 0.7 * rfReveal;
+      ctx.rect({ x: 430, y: ry, width: 312, height: 42, rx: 10, fill: "#3b1219", stroke: rfReveal > 0.5 ? "#f87171" : "#7f1d1d", "stroke-width": 1.6, opacity: op });
+      ctx.circle({ cx: 452, cy: ry + 21, r: 9, fill: "#ef4444", opacity: op });
+      ctx.text({ x: 452, y: ry + 25, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#ffffff", opacity: op }, "!");
+      ctx.text({ x: 470, y: ry + 26, "font-size": 13, "font-weight": "bold", fill: "#fee2e2", opacity: op }, String(redFlags[j] || "").slice(0, 12));
+    }
+
+    // 底部：一句話記牢（y: 346..392，與 y:414 字幕保持 22px 安全距離）
+    const twReveal = pmRange(u, 0.55, 0.85);
+    ctx.rect({ x: 42, y: 346, width: 716, height: 44, rx: 10, fill: "#0b1324", stroke: "#f59e0b", "stroke-width": 1.6, opacity: 0.4 + 0.6 * twReveal });
+    ctx.text({ x: 60, y: 373, "font-size": 12, "font-weight": "bold", fill: "#fbbf24", opacity: 0.5 + 0.5 * twReveal }, "一句話記牢：");
+    ctx.text({ x: 152, y: 373, "font-size": 13, "font-weight": "bold", fill: "#fef3c7", opacity: 0.5 + 0.5 * twReveal }, String(p.takeaway || "").slice(0, 36));
   }
 
   const blueprints = {
@@ -3669,6 +4070,17 @@
         ]
       },
       draw: drawPathologyMechanism
+    },
+    care_redflag: {
+      params: ["care_items", "red_flags", "myth_note", "takeaway", "urgency_level"],
+      defaults: {
+        "care_items": ["均衡高纖飲食", "足量補充水分", "規律適度運動", "遵循醫囑追蹤"],
+        "red_flags": ["劇烈持續疼痛", "高燒或畏寒發抖", "異常出血不止"],
+        "myth_note": "症狀緩解仍應依醫囑完成追蹤",
+        "takeaway": "日常保養不可少，出現紅旗警訊立即就醫。",
+        "urgency_level": 4
+      },
+      draw: drawCareRedflag
     }
   };
 
@@ -3823,9 +4235,291 @@
       } else {
         out.step_labels = out.step_labels.map(function (s) { return String(s || "").slice(0, 10); });
       }
+    } else if (blueprint === "care_redflag") {
+      if (!Array.isArray(out.care_items) || out.care_items.length < 3) {
+        out.care_items = cloneObject(def.care_items);
+      } else {
+        out.care_items = out.care_items.slice(0, 4).map(function (s) { return String(s || "").slice(0, 12); });
+      }
+      if (!Array.isArray(out.red_flags) || out.red_flags.length < 2) {
+        out.red_flags = cloneObject(def.red_flags);
+      } else {
+        out.red_flags = out.red_flags.slice(0, 4).map(function (s) { return String(s || "").slice(0, 12); });
+      }
+      out.myth_note = String(out.myth_note || "").slice(0, 24);
+      out.takeaway = String(out.takeaway || def.takeaway).slice(0, 36);
+      out.urgency_level = clampNumber(Math.round(out.urgency_level), 1, 5);
     }
 
     return out;
+  }
+
+  // Phase 49-01：解剖位置相對性（Scene 1 開頭 Macro→Micro 定位轉場資料表與繪製）
+  const ANATOMY_REGION_SPECS = {
+    head_orbit: { label: "眼周／視網膜區", ax: 210, ay: 86, upper: "額骨眉弓與眼眶上緣", lower: "上頜竇與下眼瞼", depth: ["角膜前房", "水晶體", "視網膜黃斑部"] },
+    head_ent: { label: "耳鼻喉／上呼吸道", ax: 210, ay: 118, upper: "鼻咽與顎扁桃腺", lower: "喉部聲帶與氣管", depth: ["黏膜表層", "淋巴組織", "深層咽縮肌"] },
+    head_dental: { label: "口腔／齒槽骨區", ax: 210, ay: 108, upper: "上頜齒槽骨", lower: "下頜骨與牙周韌帶", depth: ["牙釉質", "牙本質／牙齦", "齒槽骨與牙髓"] },
+    head_face: { label: "顏面皮膚／筋膜層", ax: 210, ay: 98, upper: "額部與眼周肌群", lower: "中下臉與頸闊肌", depth: ["表皮層", "真皮網狀層", "SMAS 深層筋膜"] },
+    neck_cervical: { label: "頸部／頸椎筋膜區", ax: 210, ay: 144, upper: "枕骨下緣與上頸椎", lower: "斜方肌與胸鎖乳突肌", depth: ["淺層皮膚", "深頸筋膜", "頸椎與神經根"] },
+    thorax_airway: { label: "胸腔／下呼吸道", ax: 210, ay: 204, upper: "氣管主幹與喉部", lower: "橫膈膜與肺葉基底", depth: ["纖毛黏膜層", "平滑肌層", "肺泡微血管網"] },
+    abdomen_gi: { label: "腹腔／消化道區", ax: 210, ay: 274, upper: "食道賁門與胃體", lower: "腸道與腸繫膜", depth: ["消化道黏膜", "黏膜下層", "固有肌層"] },
+    pelvis_uro: { label: "骨盆腔／泌尿生殖區", ax: 210, ay: 334, upper: "下腹腔腹膜", lower: "骨盆底肌群與會陰", depth: ["泌尿道上皮", "平滑肌壁", "骨盆靜脈神經叢"] },
+    axilla: { label: "腋窩／頂漿腺區", ax: 256, ay: 196, upper: "肩關節囊下緣", lower: "胸大肌外側緣", depth: ["腋下真皮層", "頂漿腺／汗腺層", "腋窩神經血管束"] },
+    extremity_nail: { label: "肢端／甲床組織", ax: 132, ay: 328, upper: "遠端指節骨", lower: "指腹軟組織墊", depth: ["甲板表層", "甲溝軟組織", "甲母質 (Matrix)"] },
+    systemic_metabolic: { label: "全身微血管／內分泌軸", ax: 210, ay: 256, upper: "中樞內分泌調控", lower: "周邊器官微循環", depth: ["血管內皮", "組織間液", "目標細胞受體"] },
+    meridian_acup: { label: "經筋／穴位解剖層", ax: 210, ay: 235, upper: "近心端經筋循行", lower: "遠心端肌腱附著", depth: ["皮部淺筋膜", "經筋肌束", "深層神經血管"] }
+  };
+
+  function resolveAnatomyAnchor(bpName, params) {
+    const p = params || {};
+    if (p.anatomy_region && ANATOMY_REGION_SPECS[p.anatomy_region]) {
+      return ANATOMY_REGION_SPECS[p.anatomy_region];
+    }
+    const os = String(p.organ_system || "");
+    const combined = String(p.organ_label || "") + " " + String(p.anatomy_target || "") + " " + String(p.lesion_label || "");
+
+    if (bpName === "ophthalmic_retina" || os === "ophthalmic_retina" || combined.indexOf("眼") >= 0 || combined.indexOf("黃斑") >= 0 || combined.indexOf("視網膜") >= 0) {
+      return ANATOMY_REGION_SPECS.head_orbit;
+    }
+    if (bpName === "nail_matrix") return ANATOMY_REGION_SPECS.extremity_nail;
+    if (bpName === "subdermal_curettage") return ANATOMY_REGION_SPECS.axilla;
+    if (bpName === "corset_platysmaplasty" || combined.indexOf("頸") >= 0 || combined.indexOf("落枕") >= 0 || combined.indexOf("項") >= 0) {
+      return ANATOMY_REGION_SPECS.neck_cervical;
+    }
+    if (bpName === "skin_energy" || bpName === "laser_action" || bpName === "dermal_support" || bpName === "deep_plane_facelift" || bpName === "neuromuscular" || os === "skin_barrier") {
+      return ANATOMY_REGION_SPECS.head_face;
+    }
+    if (os === "dental_oral" || os === "dental_periodontal" || combined.indexOf("牙") >= 0 || combined.indexOf("齒") >= 0 || combined.indexOf("齲") >= 0) {
+      return ANATOMY_REGION_SPECS.head_dental;
+    }
+    if (os === "ent_airway" || combined.indexOf("扁桃") >= 0 || combined.indexOf("咽") >= 0 || combined.indexOf("喉") >= 0 || combined.indexOf("聲帶") >= 0) {
+      return ANATOMY_REGION_SPECS.head_ent;
+    }
+    if (os === "respiratory_mucosa") return ANATOMY_REGION_SPECS.thorax_airway;
+    if (os === "gi_tract") return ANATOMY_REGION_SPECS.abdomen_gi;
+    if (os === "uro_genital" || os === "uro_pelvic") return ANATOMY_REGION_SPECS.pelvis_uro;
+    if (os === "tcm_special_acup" || os === "tcm_meridian") return ANATOMY_REGION_SPECS.meridian_acup;
+    if (os === "joint_spine") return ANATOMY_REGION_SPECS.neck_cervical;
+    if (os === "endocrine_receptor" || os === "vascular_metabolic") return ANATOMY_REGION_SPECS.systemic_metabolic;
+    return ANATOMY_REGION_SPECS.head_face;
+  }
+
+  function drawAnatomicalLocatorZoom(rootCtx, bpName, params, u) {
+    let macroSeq = 0;
+    const tagMacro = function (attrs) {
+      const copy = Object.assign({}, attrs || {});
+      if (!copy["data-id"]) copy["data-id"] = "macro-loc-" + (macroSeq++);
+      return copy;
+    };
+    const ctx = {
+      rect: function (a, p) { return rootCtx.rect(tagMacro(a), p); },
+      circle: function (a, p) { return rootCtx.circle(tagMacro(a), p); },
+      line: function (a, p) { return rootCtx.line(tagMacro(a), p); },
+      path: function (a, p) { return rootCtx.path(tagMacro(a), p); },
+      group: function (a, p) { return rootCtx.group(tagMacro(a), p); },
+      text: function (a, txt, p) { return rootCtx.text(tagMacro(a), txt, p); }
+    };
+    const spec = resolveAnatomyAnchor(bpName, params);
+    const fadeOut = u <= 0.10 ? 1.0 : clampNumber(1 - (u - 0.10) / 0.04, 0, 1);
+    const g = ctx.group({ opacity: fadeOut.toFixed(3) });
+    ctx.rect({ x: 0, y: 0, width: 800, height: 510, fill: "#0f172a", "data-bg": "1" }, g);
+    ctx.rect({ x: 24, y: 24, width: 752, height: 462, rx: 16, fill: "#1e293b", stroke: "#334155", "stroke-width": 2 }, g);
+
+    ctx.text({ x: 52, y: 56, "font-size": 14, "font-weight": "bold", fill: "#38bdf8" }, "【解剖相對位置定位】", g);
+    ctx.text({ x: 748, y: 56, "text-anchor": "end", "font-size": 12, fill: "#94a3b8" }, "由宏觀解剖切換至局部病灶", g);
+
+    // 左側：半透明人體輪廓參考座標（去飽和中性灰藍，嚴格控制在安全區內）
+    ctx.rect({ x: 56, y: 74, width: 308, height: 330, rx: 12, fill: "#0f172a", stroke: "#334155", "stroke-width": 1.5 }, g);
+    const zoomScale = 1 + clampNumber(u / 0.14, 0, 1) * 0.08;
+    const gSil = ctx.group({
+      transform: "translate(" + spec.ax + "," + spec.ay + ") scale(" + zoomScale.toFixed(3) + ") translate(" + (-spec.ax) + "," + (-spec.ay) + ")"
+    }, g);
+    // 頭顱與頸部
+    ctx.circle({ cx: 210, cy: 106, r: 28, fill: "#1e293b", stroke: "#475569", "stroke-width": 2 }, gSil);
+    ctx.rect({ x: 196, y: 132, width: 28, height: 20, rx: 6, fill: "#1e293b", stroke: "#475569", "stroke-width": 1.5 }, gSil);
+    // 軀幹與骨盆
+    ctx.path({ d: "M 164 154 Q 210 146 256 154 L 246 322 Q 210 338 174 322 Z", fill: "#1e293b", stroke: "#475569", "stroke-width": 2 }, gSil);
+    // 雙臂參考輪廓
+    ctx.path({ d: "M 164 158 L 136 238 L 136 312", fill: "none", stroke: "#475569", "stroke-width": 12, "stroke-linecap": "round", opacity: 0.65 }, gSil);
+    ctx.path({ d: "M 256 158 L 284 238 L 284 312", fill: "none", stroke: "#475569", "stroke-width": 12, "stroke-linecap": "round", opacity: 0.65 }, gSil);
+    // 中線矢狀參考線
+    ctx.line({ x1: 210, y1: 80, x2: 210, y2: 336, stroke: "#334155", "stroke-width": 1, "stroke-dasharray": "4 4" }, gSil);
+
+    // 目標解剖錨點脈動光環
+    const pulse = 1 + 0.18 * Math.sin(u * Math.PI * 24);
+    ctx.circle({ cx: spec.ax, cy: Math.min(spec.ay, 326), r: 18 * pulse, fill: "#38bdf8", opacity: 0.22 }, gSil);
+    ctx.circle({ cx: spec.ax, cy: Math.min(spec.ay, 326), r: 11, fill: "none", stroke: "#38bdf8", "stroke-width": 2 }, gSil);
+    ctx.circle({ cx: spec.ax, cy: Math.min(spec.ay, 326), r: 4.5, fill: "#fde047" }, gSil);
+    ctx.text({ x: 210, y: 386, "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#e0f2fe" }, spec.label, g);
+
+    // 導引線連接至右側相對位置說明卡
+    ctx.line({ x1: spec.ax + 12, y1: Math.min(spec.ay, 326), x2: 392, y2: 146, stroke: "#38bdf8", "stroke-width": 1.5, "stroke-dasharray": "4 3" }, g);
+
+    // 右側：上下方位與表淺→深層相對關係卡（全部文字 y <= 388，嚴守字幕安全區）
+    ctx.rect({ x: 392, y: 74, width: 356, height: 330, rx: 12, fill: "#0f172a", stroke: "#334155", "stroke-width": 1.5 }, g);
+    ctx.text({ x: 416, y: 102, "font-size": 14, "font-weight": "bold", fill: "#f1f5f9" }, "周邊構造相對方位", g);
+
+    ctx.rect({ x: 416, y: 114, width: 308, height: 40, rx: 8, fill: "#1e293b", stroke: "#475569" }, g);
+    ctx.text({ x: 430, y: 130, "font-size": 11, fill: "#94a3b8" }, "▲ 上方／近端鄰近", g);
+    ctx.text({ x: 430, y: 146, "font-size": 13, "font-weight": "bold", fill: "#bae6fd" }, spec.upper, g);
+
+    ctx.rect({ x: 416, y: 162, width: 308, height: 40, rx: 8, fill: "#1e293b", stroke: "#475569" }, g);
+    ctx.text({ x: 430, y: 178, "font-size": 11, fill: "#94a3b8" }, "▼ 下方／遠端鄰近", g);
+    ctx.text({ x: 430, y: 194, "font-size": 13, "font-weight": "bold", fill: "#bae6fd" }, spec.lower, g);
+
+    ctx.text({ x: 416, y: 226, "font-size": 14, "font-weight": "bold", fill: "#f1f5f9" }, "組織深淺相對層次（由表及裡）", g);
+    for (let dIdx = 0; dIdx < spec.depth.length; dIdx++) {
+      const dy = 238 + dIdx * 50;
+      const isDeepest = dIdx === spec.depth.length - 1;
+      ctx.rect({
+        x: 416 + dIdx * 12,
+        y: dy,
+        width: 308 - dIdx * 24,
+        height: 42,
+        rx: 8,
+        fill: isDeepest ? "#1e3a5f" : "#1e293b",
+        stroke: isDeepest ? "#38bdf8" : "#475569",
+        "stroke-width": isDeepest ? 2 : 1
+      }, g);
+      ctx.text({ x: 432 + dIdx * 12, y: dy + 26, "font-size": 13, "font-weight": isDeepest ? "bold" : "normal", fill: isDeepest ? "#fde047" : "#e2e8f0" }, (dIdx + 1) + ". " + spec.depth[dIdx], g);
+    }
+  }
+
+  function splitCaptionSegments(caption) {
+    const raw = String(caption || "").trim();
+    if (!raw) return [];
+    const baseParts = raw.split(/[\u3002\uff01\uff1f\uff1b]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    const sentences = baseParts.length > 0 ? baseParts : [raw];
+    const out = [];
+    for (let i = 0; i < sentences.length; i++) {
+      const s = sentences[i];
+      if (s.length <= 28) {
+        out.push(s);
+        continue;
+      }
+      const clauses = s.split(/[\uff0c\u3001]+/).map(function (c) { return c.trim(); }).filter(Boolean);
+      if (clauses.length < 2) {
+        out.push(s);
+        continue;
+      }
+      const targetSegs = (s.length > 52 && clauses.length >= 3) ? 3 : 2;
+      const targetLen = Math.ceil(s.length / targetSegs);
+      let buf = "";
+      let made = 0;
+      for (let j = 0; j < clauses.length; j++) {
+        const c = clauses[j];
+        const candidate = buf ? (buf + "，" + c) : c;
+        const remainingClauses = clauses.length - j - 1;
+        const needMore = (targetSegs - 1) - made;
+        if (buf && candidate.length > targetLen + 6 && remainingClauses >= needMore - 1 && made < targetSegs - 1) {
+          out.push(buf);
+          made++;
+          buf = c;
+        } else {
+          buf = candidate;
+          if (buf.length >= targetLen && remainingClauses >= needMore && made < targetSegs - 1) {
+            out.push(buf);
+            made++;
+            buf = "";
+          }
+        }
+      }
+      if (buf) out.push(buf);
+    }
+    return out.length > 0 ? out : [raw];
+  }
+
+  function wrapCaptionLines(text, maxChars) {
+    const s = String(text || "");
+    if (s.length <= maxChars) return [s];
+    const line1 = s.slice(0, maxChars);
+    const rest = s.slice(maxChars);
+    if (rest.length <= maxChars) return [line1, rest];
+    return [line1, rest.slice(0, maxChars - 1) + "…"];
+  }
+
+  function drawSceneNarrativeOverlay(ctx, scene, u) {
+    const caption = scene && typeof scene.caption === "string" ? scene.caption.trim() : "";
+    const labels = scene && Array.isArray(scene.labels) ? scene.labels : [];
+    if (!caption && labels.length === 0) return;
+
+    if (caption) {
+      const segs = splitCaptionSegments(caption);
+      const count = segs.length;
+      const segIdx = Math.min(count - 1, Math.floor(clampNumber(u, 0, 0.9999) * count));
+      const segText = segs[segIdx] || "";
+      const segStart = segIdx / count;
+      const segLocal = clampNumber((u - segStart) * count, 0, 1);
+      const fadeAlpha = clampNumber(segLocal / 0.18, 0.35, 1.0);
+      const isAlertSeg = segText.indexOf("警訊") >= 0 || segText.indexOf("就醫") >= 0 || segText.indexOf("急診") >= 0 || segText.indexOf("穿孔") >= 0 || segText.indexOf("出血") >= 0;
+
+      ctx.rect({
+        x: 34, y: 414, width: 732, height: 62, rx: 10,
+        fill: "#0b1324",
+        stroke: isAlertSeg ? "#f59e0b" : "#334155",
+        "stroke-width": isAlertSeg ? 1.8 : 1.2,
+        opacity: 0.94,
+        "data-subtitle": "1"
+      });
+
+      // 左側分段進度膠囊 (1/3, 2/3...)
+      ctx.rect({
+        x: 46, y: 424, width: 38, height: 18, rx: 5,
+        fill: isAlertSeg ? "#451a03" : "#1e3a5f",
+        stroke: isAlertSeg ? "#f59e0b" : "#38bdf8",
+        "stroke-width": 1,
+        "data-subtitle": "1"
+      });
+      ctx.text({
+        x: 65, y: 437, "text-anchor": "middle", "font-size": 10, "font-weight": "bold",
+        fill: isAlertSeg ? "#fde047" : "#93c5fd",
+        "data-subtitle": "1"
+      }, (segIdx + 1) + "/" + count);
+
+      // 字幕文字（最多兩行，高對比清晰易讀）
+      const lines = wrapCaptionLines(segText, 38);
+      for (let li = 0; li < lines.length; li++) {
+        ctx.text({
+          x: 96,
+          y: lines.length === 1 ? 449 : (438 + li * 21),
+          "font-size": 14,
+          "font-weight": isAlertSeg ? "bold" : "normal",
+          fill: isAlertSeg ? "#fef08a" : "#f1f5f9",
+          opacity: fadeAlpha.toFixed(3),
+          "data-subtitle": "1"
+        }, lines[li]);
+      }
+    }
+
+    // 動態 labels 標籤列（y: 480..500，依時間軸依序點亮）
+    if (labels.length > 0) {
+      const shown = labels.slice(0, 4);
+      const pillW = 148;
+      const gap = 12;
+      const totalW = shown.length * pillW + (shown.length - 1) * gap;
+      const startX = (800 - totalW) / 2;
+      for (let i = 0; i < shown.length; i++) {
+        const lb = shown[i] || {};
+        const appearAt = i * 0.22;
+        const lU = clampNumber((u - appearAt) / 0.16, 0, 1);
+        const op = lU > 0 ? (0.35 + 0.65 * lU) : 0.22;
+        const tone = lb.tone === "warning" ? "#ef4444" : (lb.tone === "optimal" ? "#10b981" : "#38bdf8");
+        const bg = lb.tone === "warning" ? "#451a03" : (lb.tone === "optimal" ? "#064e3b" : "#1e293b");
+        const px = startX + i * (pillW + gap);
+        ctx.rect({
+          x: px, y: 480, width: pillW, height: 20, rx: 6,
+          fill: bg, stroke: tone, "stroke-width": lU >= 1 ? 1.5 : 1,
+          opacity: op.toFixed(3),
+          "data-subtitle": "1"
+        });
+        ctx.text({
+          x: px + pillW / 2, y: 494, "text-anchor": "middle", "font-size": 11, "font-weight": "bold",
+          fill: "#f8fafc",
+          opacity: op.toFixed(3),
+          "data-subtitle": "1"
+        }, String(lb.text || "").slice(0, 12));
+      }
+    }
   }
 
   function mount(svgEl, scenes) {
@@ -3882,7 +4576,10 @@
 
       const ctx = createCtx(rootG);
 
-      if (bp && typeof bp.draw === "function") {
+      const useMacroLocator = idx === 0 && u < 0.14 && bpName !== "contrast" && bpName !== "timeline";
+      if (useMacroLocator) {
+        drawAnatomicalLocatorZoom(ctx, bpName, params, u);
+      } else if (bp && typeof bp.draw === "function") {
         bp.draw(ctx, params, u);
       } else {
         // 安全降級：未知模板繪製標題
@@ -3890,6 +4587,8 @@
         const titleText = scene && typeof scene.title === "string" ? scene.title : "解說畫面";
         ctx.text({ x: 400, y: 240, "text-anchor": "middle", "font-size": 22, fill: "#cfe0f5", "font-weight": "bold" }, titleText);
       }
+
+      drawSceneNarrativeOverlay(ctx, scene, u);
     }
 
     function destroy() {

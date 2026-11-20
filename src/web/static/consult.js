@@ -605,6 +605,67 @@
         updateSceneView();
         visualCard.style.display = "block";
 
+        if (topicKey) {
+            var oldEdu = visualCard.querySelector(".consult-edu-panel");
+            if (oldEdu && oldEdu.parentNode) oldEdu.parentNode.removeChild(oldEdu);
+            var eduWrap = document.createElement("div");
+            eduWrap.className = "consult-edu-panel";
+            eduWrap.style.display = "none";
+            eduWrap.style.marginTop = "10px";
+            eduWrap.style.paddingTop = "10px";
+            eduWrap.style.borderTop = "1px solid #334155";
+            var linkRow = document.createElement("div");
+            linkRow.style.display = "flex";
+            linkRow.style.justifyContent = "space-between";
+            linkRow.style.alignItems = "center";
+            var details = document.createElement("details");
+            details.style.width = "100%";
+            var summary = document.createElement("summary");
+            summary.textContent = "📖 展開完整圖文衛教重點";
+            summary.style.cursor = "pointer";
+            summary.style.fontWeight = "bold";
+            summary.style.color = "#7dd3fc";
+            var body = document.createElement("div");
+            body.style.marginTop = "8px";
+            body.style.fontSize = "13px";
+            details.appendChild(summary);
+            details.appendChild(body);
+            var shareA = document.createElement("a");
+            shareA.href = "/edu/" + encodeURIComponent(topicKey);
+            shareA.target = "_blank";
+            shareA.textContent = "↗ 獨立單張 / 列印";
+            shareA.style.fontSize = "12px";
+            shareA.style.color = "#38bdf8";
+            shareA.style.marginLeft = "12px";
+            shareA.style.whiteSpace = "nowrap";
+            linkRow.appendChild(details);
+            linkRow.appendChild(shareA);
+            eduWrap.appendChild(linkRow);
+            visualCard.appendChild(eduWrap);
+
+            fetch("/api/v1/visual/edu/" + encodeURIComponent(topicKey))
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(res) {
+                    if (!res || !res.edu) return;
+                    var e = res.edu;
+                    var p1 = document.createElement("p");
+                    p1.textContent = "【認識】" + ((e.definition && e.definition.summary) || "");
+                    body.appendChild(p1);
+                    if (e.prevention_myth && Array.isArray(e.prevention_myth.tips)) {
+                        var p2 = document.createElement("p");
+                        p2.textContent = "✅ 衛教重點：" + e.prevention_myth.tips.join("；");
+                        body.appendChild(p2);
+                    }
+                    if (e.red_flags_takeaway && Array.isArray(e.red_flags_takeaway.red_flags)) {
+                        var p3 = document.createElement("p");
+                        p3.textContent = "🚨 急診紅旗：" + e.red_flags_takeaway.red_flags.join("、");
+                        body.appendChild(p3);
+                    }
+                    eduWrap.style.display = "block";
+                })
+                .catch(function() {});
+        }
+
         if (!shownSent) {
             shownSent = true;
             postVisualEvent(topicKey, "shown");

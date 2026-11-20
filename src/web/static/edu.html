@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>臨床雙軌衛教圖解單張</title>
+  <link rel="stylesheet" href="/static/tailwind.min.css" />
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+    .edu-card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+    .edu-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .edu-table th, .edu-table td { border: 1px solid #334155; padding: 8px 10px; text-align: left; font-size: 14px; }
+    .edu-table th { background: #0f172a; color: #93c5fd; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 13px; margin: 4px 6px 4px 0; background: #0f172a; border: 1px solid #475569; }
+    @media print {
+      body { background: #ffffff !important; color: #0f172a !important; }
+      .no-print { display: none !important; }
+      .edu-card { background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #0f172a !important; break-inside: avoid; }
+      .edu-table th { background: #f1f5f9 !important; color: #0f172a !important; }
+      .edu-table td, .edu-table th { border-color: #cbd5e1 !important; }
+      .pill { background: #f8fafc !important; color: #0f172a !important; border-color: #94a3b8 !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <main class="max-w-4xl mx-auto px-4 py-6">
+    <header class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div>
+        <div class="text-xs text-sky-400 font-semibold tracking-wider">CLINICBRAIN 臨床雙軌衛教單張</div>
+        <h1 id="edu-title" class="text-2xl font-bold mt-1">載入中...</h1>
+      </div>
+      <div class="flex flex-wrap gap-2 no-print">
+        <button id="btn-print" type="button" class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold">🖨️ 列印 A4 單張</button>
+        <button id="btn-copy" type="button" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm">🔗 複製分享連結</button>
+        <a id="btn-mp4" href="#" target="_blank" class="hidden px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-sm">🎬 下載 MP4</a>
+      </div>
+    </header>
+
+    <section id="stage-card" class="edu-card no-print">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-semibold text-sky-300">三幕臨床動畫解說</span>
+        <div class="flex gap-2 text-xs">
+          <button id="btn-play-toggle" type="button" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600">暫停 / 播放</button>
+          <button id="btn-replay" type="button" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600">從頭重播</button>
+        </div>
+      </div>
+      <svg id="edu-svg-stage" viewBox="0 0 800 510" class="w-full rounded-xl bg-slate-950"></svg>
+    </section>
+
+    <section id="edu-sections" aria-live="polite"></section>
+
+    <footer class="text-xs text-slate-400 mt-6 pb-8 text-center">
+      💊 本圖解僅供衛教參考，實際診斷與治療請諮詢醫師或藥師。
+    </footer>
+  </main>
+
+  <script src="/static/visual_engine.js"></script>
+  <script src="/static/edu.js"></script>
+</body>
+</html>

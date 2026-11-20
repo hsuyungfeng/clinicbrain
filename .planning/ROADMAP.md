@@ -421,6 +421,41 @@ Plans:
 - [x] 50-01-PLAN.md — 療程／手術原理步驟前置篩選、去診所名稱化與官網子頁探索（Wave 1）
 - [x] 50-02-PLAN.md — 既有測試資料清理、單元整合測試與 Hermes 獨立驗收（Wave 2）
 
+### Phase 51: NHI400 衛教圖解解剖器官精準映射與零錯配防線 (NHI400 Anatomy Alignment & Audit Gate)
+
+**Goal**: 消除 `nhi400_manifest.json`（200 筆）全數 122 筆解剖錯配（包含 `D384` 口腔念珠菌症、`D385` 小唾液腺黏液囊腫、`respiratory_mucosa` 誤配各專科、以及非視網膜眼科疾病誤配 `ophthalmic_retina`），於 `blueprints.py` / `visual_engine.js` 補齊細分器官繪圖支援，建立 `audit_manifest_anatomy.py --strict` 閘門與回歸測試，並指派 Hermes 擔任獨立 Tester & Checker 驗收。
+**Status**: Complete
+**Depends on**: Phase 40（NHI400 清單）、Phase 49（視覺引擎升級）
+**Requirements**: P51-ORGAN-ROUTING, P51-ORAL-ANTERIOR-EYE, P51-MANIFEST-REBUILD, P51-AUDIT-GATE, P51-UNIT-TESTS, P51-HERMES-CHECKER
+**Plans**: 2 plans
+Plans:
+- [x] 51-01-PLAN.md — 細分器官繪圖支援、`build_nhi400_manifest.py` 精準映射與清單重建（Wave 1）
+- [x] 51-02-PLAN.md — `audit_manifest_anatomy.py --strict` 閘門、回歸測試與 Hermes 獨立 Tester/Checker 驗收（Wave 2）
+
+### Phase 52: 全庫 398 筆衛教圖解深度稽核與渲染層錯配根治 (Deep Visual Anatomy Verification & Renderer Alignment)
+
+**Goal**: 針對 `clinic.db` 全數 398 筆 `visual_assets` 建立雙層深度稽核（語意器官映射 + `visual_engine.js` `pmPickAnatomyDrawer()` 實際派發），修正跨器官誤命中（如 `nhi-w266-n48-1` 龜頭包皮炎誤配 `dental_oral`）與截斷標籤退化為單顆臼齒蛀牙圖示之問題，將 `visual_engine.js` 雜湊納入 `video_queue.py` 快取鍵，並由 Hermes 擔任 PlanChecker 與獨立 Tester 驗收。
+**Status**: Complete
+**Depends on**: Phase 51（NHI400 解剖映射對齊）
+**Requirements**: P52-DB-DEEP-AUDIT, P52-FIX-CROSS-ORGAN, P52-DRAWER-ROUTING, P52-CACHE-ENGINE-SALT, P52-BROWSER-DRAWER-TEST, P52-HERMES-TESTER
+**Plans**: 2 plans
+Plans:
+- [x] 52-01-PLAN.md — 全庫 398 筆雙層深度稽核、跨器官誤命中修復與繪圖器分流補齊（Wave 1）
+- [x] 52-02-PLAN.md — MP4 快取連動 `visual_engine.js` 雜湊、瀏覽器回歸測試與 Hermes 驗收（Wave 2）
+
+### Phase 53: 雙軌混合衛教系統與 Local LLM 400 題結構化升級 (Dual-Track LLM Edu & Animation Upgrade)
+
+**Goal**: 結合 Local LLM（`Ornith-1.5-35B-Q5_K_M`）產出 7 段結構化衛教知識（`edu_json`）與雙軌呈現：軌道 A 新增 `care_redflag` 藍圖並將 3 幕動畫專病化（病理機轉與成因 → 病症／處置對照 → 衛教行動與急診紅旗）；軌道 B 於既有前端展開完整 7 段圖文衛教並新增獨立可分享／可列印頁面 `/edu/{topic_key}`。全過程強制鎖定 Phase 52 已核定之 `organ_system` 與 `anatomy_target`。
+**Status**: Complete
+**Depends on**: Phase 52（全庫 398 筆衛教圖解深度稽核與渲染層錯配根治）
+**Requirements**: P53-CARE-REDFLAG-BP, P53-EDU-SCHEMA-LLM, P53-PILOT-10, P53-DUAL-WEB-EDU, P53-BATCH-400, P53-HERMES-VERIFIED
+**Plans**: 4 plans
+Plans:
+- [x] 53-01-PLAN.md — 新增 `care_redflag` 藍圖、`blueprints.py`/`ir.py` 與 `visual_engine.js` 渲染器支援（Wave 1）
+- [x] 53-02-PLAN.md — `visual_assets.edu_json` 擴充、7 段結構化 Schema 與 Local LLM 生成器＋10 筆代表題試跑（Wave 2）
+- [x] 53-03-PLAN.md — 雙軌前端 UI（`index.html`/`consult.html` 展開面板）與獨立可列印分享頁 `/edu/{topic_key}`（Wave 3）
+- [x] 53-04-PLAN.md — 全庫 398～400 筆斷點續跑批次生成、重點主題 MP4 重渲與 Hermes 獨立驗收（Wave 4，全庫 398/398 筆 `edu_json` 與 `care_redflag` 已全數完成）
+
 
 
 

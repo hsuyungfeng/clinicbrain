@@ -272,6 +272,9 @@ curl -X POST http://127.0.0.1:8000/api/v1/sync/import \
   - 整合多診所特約醫師時段與一般醫學知識，引導病患諮詢後直接對接診所預約。
 - **Phase 41: 自動化動態解說動畫影片佇列 (Automated Explainer Video Queue)**
   - 背景佇列自動將核准動畫卡經無頭 Chromium 渲染並以 ffmpeg 合成高品質 MP4 影片，供院所輪播使用。
+- **Phase 51–53（已交付）: 解剖對齊深度稽核 × 雙軌結構化衛教系統 (`care_redflag` + `edu_json`)**
+  - **全庫解剖對齊與雙層稽核**：新增 `scripts/audit_manifest_anatomy.py` 與 `scripts/audit_db_visual_assets.py --strict`，驗證 `clinic.db` 全數 398 筆 `visual_assets`（含 320 筆 `pathology_mechanism`）零錯配；`src/visual/video_queue.py` 將 `visual_engine.js` SHA-256 納入快取鍵並完成 398 支橫屏 MP4 增量重渲。
+  - **雙軌混合衛教系統**：新增第 15 種藍圖 `care_redflag`（左：日常預防行動、右：急診紅旗警訊、底：一句話記牢），並以本機 LLM 為全庫 398 筆主題產出 7 段結構化衛教 JSON（`visual_assets.edu_json`），於 `index.html`/`consult.html` 展開且提供獨立可分享／A4 列印頁面 `GET /edu/{topic_key}` 與 API `GET /api/v1/visual/edu/{topic_key}`。
 
 ---
 

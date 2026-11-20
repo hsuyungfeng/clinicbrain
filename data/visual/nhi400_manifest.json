@@ -25,7 +25,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -54,7 +54,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -83,7 +83,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -112,7 +112,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -141,7 +141,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -170,7 +170,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -199,7 +199,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -228,7 +228,7 @@
       "s2_left_mode": "airway_laryngeal_edema",
       "s2_right_mode": "airway_patency_restore",
       "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "theme_name": "耳鼻喉黏膜充血與氣道管腔通暢"
     }
   },
   {
@@ -253,11 +253,11 @@
     "clinical_feature": "自體免疫失調致口腔黏膜上皮深部局限壞死",
     "recommended_blueprint": "dermal_support",
     "archetype": {
-      "s1_organ": "ent_airway",
-      "s2_left_mode": "airway_laryngeal_edema",
-      "s2_right_mode": "airway_patency_restore",
-      "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -282,11 +282,11 @@
     "clinical_feature": "胃蛋白酶氣霧微粒逆流刺激杓狀軟骨黏膜紅腫",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ent_airway",
-      "s2_left_mode": "airway_laryngeal_edema",
-      "s2_right_mode": "airway_patency_restore",
-      "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "s1_organ": "gi_tract",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -311,11 +311,11 @@
     "clinical_feature": "腎動脈狹窄或腎上腺過量分泌留鹽激素升壓",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -340,11 +340,11 @@
     "clinical_feature": "長期高血糖導致微血管基底膜增厚血流灌注不足",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -369,11 +369,11 @@
     "clinical_feature": "下肢靜脈血液鬱積誘發交感神經過度反射收縮",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -398,11 +398,11 @@
     "clinical_feature": "左心室收縮時二尖瓣葉向左心房異常膨出脫垂",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -427,11 +427,11 @@
     "clinical_feature": "內皮細胞受損膽固醇脂質沉積纖維帽形成",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -456,11 +456,11 @@
     "clinical_feature": "淋巴微管引流通道受阻皮下組織淋巴蛋白蓄積",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -485,11 +485,11 @@
     "clinical_feature": "鐵質儲存耗盡血紅素合成原料不足紅血球細小",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -514,11 +514,11 @@
     "clinical_feature": "DNA合成受阻細胞核成熟遲緩合併神經髓鞘脫失",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -543,11 +543,11 @@
     "clinical_feature": "副甲狀腺腺瘤自主過量分泌甲狀旁腺素升血鈣",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -572,11 +572,11 @@
     "clinical_feature": "腦下垂體前葉催乳素過量分泌抑制促性腺激素",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -601,11 +601,11 @@
     "clinical_feature": "胃底穿過橫膈食道裂孔滑入胸腔破壞下食道括約肌",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -630,11 +630,11 @@
     "clinical_feature": "胃小凹上皮細胞過度反應性良性增生隆起",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -659,11 +659,11 @@
     "clinical_feature": "螺旋桿菌分泌尿素酶破壞胃黏液層引起慢性發炎",
     "recommended_blueprint": "laser_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -688,11 +688,11 @@
     "clinical_feature": "膽固醇結晶或黏膜增生突入膽囊腔內定期超音波監控",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -717,11 +717,11 @@
     "clinical_feature": "腸壁肌層血管穿透孔薄弱點黏膜向外囊狀膨出",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -746,11 +746,11 @@
     "clinical_feature": "肛門腺體細菌感染化膿穿破括約肌形成慢性發炎管道",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -775,11 +775,11 @@
     "clinical_feature": "藥物代謝物直接毒性或特異免疫反應破壞肝細胞膜",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -804,11 +804,11 @@
     "clinical_feature": "腹橫筋膜缺損腹內壓力促使小腸大網膜滑入腹股溝管",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "joint_spine",
-      "s2_left_mode": "mass",
-      "s2_right_mode": "minimal_incision",
-      "s3_connector": "structural_rehab",
-      "theme_name": "肌骨軟組織力學與解剖減壓"
+      "s1_organ": "gi_tract",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -833,11 +833,11 @@
     "clinical_feature": "反覆微發炎腺泡萎縮纖維化致胰脂酶分泌匱乏",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -862,11 +862,11 @@
     "clinical_feature": "小腸絨毛上皮萎縮平坦化養分吸收微表面積驟降",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -949,11 +949,11 @@
     "clinical_feature": "大腦中樞痛覺訊號放大調節障礙與下行抑制途徑受損",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -978,11 +978,11 @@
     "clinical_feature": "髕骨滑動軌跡向外偏斜關節軟骨面承受異常剪力毛化",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1036,11 +1036,11 @@
     "clinical_feature": "關節囊或腱鞘結締組織退變形成單向活瓣黏液積聚",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1065,11 +1065,11 @@
     "clinical_feature": "自體免疫抗體攻擊滑膜血管翳增生破壞關節軟骨",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1094,11 +1094,11 @@
     "clinical_feature": "HLA-B27關聯附著點發炎導致韌帶骨化與骨橋融合",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1123,11 +1123,11 @@
     "clinical_feature": "關節軟骨基質焦磷酸鈣過飽和析出菱形晶體誘發發炎",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "joint_spine",
-      "s2_left_mode": "mass",
-      "s2_right_mode": "minimal_incision",
-      "s3_connector": "structural_rehab",
-      "theme_name": "肌骨軟組織力學與解剖減壓"
+      "s1_organ": "endocrine_receptor",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -1181,11 +1181,11 @@
     "clinical_feature": "後脛肌腱退變拉長失去支撐內側縱弓動態塌陷外翻",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1239,11 +1239,11 @@
     "clinical_feature": "髂脛束後緣或臀大肌前緣肌腱過度緊繃滑動跳過骨突",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1268,11 +1268,11 @@
     "clinical_feature": "縫匠肌股薄肌半腱肌三合肌腱反覆牽扯摩擦深部滑囊",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1297,11 +1297,11 @@
     "clinical_feature": "掌腱膜肌纖維母細胞良性增殖膠原纖維進行性攣縮",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -1326,11 +1326,11 @@
     "clinical_feature": "表皮深層海綿狀水腫小水泡伴隨自律神經與過敏誘發",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1355,11 +1355,11 @@
     "clinical_feature": "長期機械搔抓引發表皮神經纖維增生與真皮膠原硬化",
     "recommended_blueprint": "dermal_support",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1384,11 +1384,11 @@
     "clinical_feature": "神經精神壓力與搔抓惡性循環致表皮棘層過度肥厚",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1413,11 +1413,11 @@
     "clinical_feature": "皮脂腺分泌驟降角質層細胞間脂質流失經皮水分散失",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1442,11 +1442,11 @@
     "clinical_feature": "皮膚屏障受損外在刺激誘發圓形盤狀表皮海綿水腫",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1471,11 +1471,11 @@
     "clinical_feature": "自體抗體攻擊表皮基底膜半橋粒造成表皮下大水泡",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1500,11 +1500,11 @@
     "clinical_feature": "真皮層組織球與纖維母細胞反應性良性過度膠原增生",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1529,11 +1529,11 @@
     "clinical_feature": "毛囊漏斗角化阻塞頂漿腺破裂引發深部慢性肉芽發炎",
     "recommended_blueprint": "subdermal_curettage",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1558,11 +1558,11 @@
     "clinical_feature": "胸交感神經節過度亢進刺激小汗腺分泌大量水分",
     "recommended_blueprint": "neuromuscular",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1587,11 +1587,11 @@
     "clinical_feature": "良性黑色素細胞在表皮真皮交界處良性均勻巢狀聚集",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1616,11 +1616,11 @@
     "clinical_feature": "真皮膠原蛋白萎縮日光性彈性纖維變性血管失去支撐",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1645,11 +1645,11 @@
     "clinical_feature": "機械性長期摩擦擠壓引發角質細胞加速堆積無法脫落",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1674,11 +1674,11 @@
     "clinical_feature": "絲聚蛋白基因突變或缺乏導致角質層緊密黏著脫屑障礙",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -1703,11 +1703,11 @@
     "clinical_feature": "真皮淺層小汗腺導管分化良性增生腺管呈蝌蚪狀結構",
     "recommended_blueprint": "laser_action",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -1732,11 +1732,11 @@
     "clinical_feature": "皮脂腺或毛囊漏斗部角質蛋白滯留包裹形成微小囊壁",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -1790,11 +1790,11 @@
     "clinical_feature": "逼尿肌不自主抽搐收縮與膀胱感覺傳入神經高敏感性",
     "recommended_blueprint": "neuromuscular",
     "archetype": {
-      "s1_organ": "uro_genital",
-      "s2_left_mode": "venous_plexus_reflux",
-      "s2_right_mode": "venous_ligation_clear",
-      "s3_connector": "pelvic_microflow_restore",
-      "theme_name": "骨盆微循環回流與靜脈叢減壓"
+      "s1_organ": "uro_pelvic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -1819,11 +1819,11 @@
     "clinical_feature": "膀胱黏膜糖胺聚糖GAG保護屏障受損尿液高濃度鉀離子刺激神經",
     "recommended_blueprint": "dermal_support",
     "archetype": {
-      "s1_organ": "uro_genital",
-      "s2_left_mode": "venous_plexus_reflux",
-      "s2_right_mode": "venous_ligation_clear",
-      "s3_connector": "pelvic_microflow_restore",
-      "theme_name": "骨盆微循環回流與靜脈叢減壓"
+      "s1_organ": "uro_pelvic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -1848,11 +1848,11 @@
     "clinical_feature": "中樞或周邊自主神經損傷致逼尿肌括約肌協同失調",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "uro_genital",
-      "s2_left_mode": "venous_plexus_reflux",
-      "s2_right_mode": "venous_ligation_clear",
-      "s3_connector": "pelvic_microflow_restore",
-      "theme_name": "骨盆微循環回流與靜脈叢減壓"
+      "s1_organ": "uro_pelvic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -1906,11 +1906,11 @@
     "clinical_feature": "包皮囊腔潮濕閉塞念珠菌或厭氧菌滋生分解包皮垢刺激",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -1935,11 +1935,11 @@
     "clinical_feature": "海綿體動脈內皮細胞一氧化氮合成障礙平滑肌舒張充血不全",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -1993,11 +1993,11 @@
     "clinical_feature": "前庭大腺排泄導管慢性發炎水腫堵塞黏液蓄積成囊",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -2022,11 +2022,11 @@
     "clinical_feature": "子宮頸管內柱狀上皮向外移行或局部黏膜間質局限增生",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -2051,11 +2051,11 @@
     "clinical_feature": "雄激素過高與高胰島素血症促使多顆竇狀卵泡發育停滯排卵失敗",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -2080,11 +2080,11 @@
     "clinical_feature": "成熟卵泡破裂後雌激素短暫撤退子宮內膜局部微量剝落",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -2167,11 +2167,11 @@
     "clinical_feature": "停經後雌激素驟降陰道黏膜上皮變薄肝糖減少乳酸菌消失pH上升",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -2196,11 +2196,11 @@
     "clinical_feature": "前額葉對杏仁核威脅感知抑制不足交感神經高反應性激活",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2225,11 +2225,11 @@
     "clinical_feature": "皮質紋狀體視丘皮質迴路過度亢進血清素與多巴胺傳導失衡",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2254,11 +2254,11 @@
     "clinical_feature": "創傷記憶無法由海馬迴正常情境化整合杏仁核持續處於恐懼警戒",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2283,11 +2283,11 @@
     "clinical_feature": "前額葉皮質多巴胺與正腎上腺素神經元突觸傳導效率低下",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "endocrine_receptor",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -2312,11 +2312,11 @@
     "clinical_feature": "海馬迴與顳葉內側突觸連結密度微小退行性減少",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2341,11 +2341,11 @@
     "clinical_feature": "中樞神經系統鐵代謝異常合併多巴胺下行抑制途徑夜間失調",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2370,11 +2370,11 @@
     "clinical_feature": "胸神經根於椎間孔受壓或病毒侵害神經纖維發炎異位放電",
     "recommended_blueprint": "neuromuscular",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "skin_barrier",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -2399,11 +2399,11 @@
     "clinical_feature": "微動脈搏動性壓迫三叉神經根部神經髓鞘局部脫失短路放電",
     "recommended_blueprint": "neuromuscular",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -2428,11 +2428,11 @@
     "clinical_feature": "瞼板腺排泄管口角化堵塞葡萄球菌感染化膿或肉芽腫性油脂包裹",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -2457,11 +2457,11 @@
     "clinical_feature": "瞼板腺功能障礙合併皮脂蠕形蟎蟲寄生造成慢性睫毛囊發炎",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -2544,11 +2544,11 @@
     "clinical_feature": "紫外線刺激球結膜幹細胞變性纖維血管結締組織慢性增生侵襲角膜",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -2573,11 +2573,11 @@
     "clinical_feature": "虹膜與睫狀體血管通透性增加房水中發炎細胞蛋白微粒浮游閃輝",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -2602,11 +2602,11 @@
     "clinical_feature": "上鞏膜深淺層血管網免疫性發炎充血血管可推動不浸潤眼球深層",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "ophthalmic_anterior",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "眼表角結膜・眼瞼・前房光學照護"
     }
   },
   {
@@ -2631,11 +2631,11 @@
     "clinical_feature": "粒線體氧化磷酸化障礙合併免疫自律神經系統慢性調節失衡",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "joint_spine",
-      "s2_left_mode": "mass",
-      "s2_right_mode": "minimal_incision",
-      "s3_connector": "structural_rehab",
-      "theme_name": "肌骨軟組織力學與解剖減壓"
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2660,11 +2660,11 @@
     "clinical_feature": "睡眠時咽喉軟組織及舌根後墜鬆弛負壓導致上呼吸道完全或部分塌陷",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ent_airway",
-      "s2_left_mode": "airway_laryngeal_edema",
-      "s2_right_mode": "airway_patency_restore",
-      "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "s1_organ": "respiratory_mucosa",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "呼吸道黏膜發炎機轉與屏障調控"
     }
   },
   {
@@ -2718,11 +2718,11 @@
     "clinical_feature": "夜間抗利尿激素分泌節律未成熟合併睡眠大腦喚醒中樞閾值過高",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "uro_pelvic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "泌尿生殖道黏膜與排尿功能調控"
     }
   },
   {
@@ -2747,11 +2747,11 @@
     "clinical_feature": "幼兒腦部發育未成熟神經元髓鞘化不足於體溫急遽攀升時異常放電",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "vascular_metabolic",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "次專科全身微循環與系統恆定調控"
     }
   },
   {
@@ -2776,11 +2776,11 @@
     "clinical_feature": "柯薩奇A型病毒侵犯口咽部黏膜上皮引發急性水泡壞死潰爛",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -2805,11 +2805,11 @@
     "clinical_feature": "下呼吸道嗜酸性發炎氣道高反應性刺激黏膜下咳嗽受體敏感",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ent_airway",
-      "s2_left_mode": "airway_laryngeal_edema",
-      "s2_right_mode": "airway_patency_restore",
-      "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "s1_organ": "respiratory_mucosa",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "呼吸道黏膜發炎機轉與屏障調控"
     }
   },
   {
@@ -2834,11 +2834,11 @@
     "clinical_feature": "乳腺小葉導管上皮與間質組織對雌激素過度敏感良性增生",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -2863,11 +2863,11 @@
     "clinical_feature": "體內雌激素與雄激素比例失衡刺激男性退化乳腺導管間質增生",
     "recommended_blueprint": "subdermal_curettage",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "endocrine_receptor",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -2892,11 +2892,11 @@
     "clinical_feature": "髕骨下富含血管神經之脂肪組織於膝過度伸直時遭受夾擠發炎",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -2921,11 +2921,11 @@
     "clinical_feature": "腓腸肌內側頭與肌腱接合處在過度偏心收縮時肌纖維發生撕裂出血",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -2979,11 +2979,11 @@
     "clinical_feature": "上頸椎小關節紊亂深部肌肉痙攣刺激枕大神經傳導匯聚於三叉神經核",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -3008,11 +3008,11 @@
     "clinical_feature": "斜角肌間隙或鎖骨與第一肋骨間隙狹窄壓迫臂神經叢與鎖骨下動脈",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
+      "s1_organ": "vascular_metabolic",
+      "s2_left_mode": "venous_plexus_reflux",
+      "s2_right_mode": "venous_ligation_clear",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "血管內皮血流動力與循環微環境調控"
     }
   },
   {
@@ -3037,11 +3037,11 @@
     "clinical_feature": "第一腕掌關節馬鞍狀關節軟骨承受長期捏合剪力退變磨耗骨刺增生",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -3066,11 +3066,11 @@
     "clinical_feature": "屈指肌腱與A1滑車腱鞘過度摩擦局限性膠原退化黏液聚集包裹",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -3095,11 +3095,11 @@
     "clinical_feature": "深橫蹠韌帶下方的足底趾間神經反覆遭受相鄰蹠骨頭夾擠神經內膜纖維化",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -3153,11 +3153,11 @@
     "clinical_feature": "舟狀骨內側先天未骨化副骨改變後脛肌腱力學走向易因磨擦牽拉發炎",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -3182,11 +3182,11 @@
     "clinical_feature": "跟骨後上隆起骨刺反覆摩擦阿基里斯腱前方深層滑囊充血增厚",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
-      "s2_left_mode": "mucosal_irritant_surge",
-      "s2_right_mode": "barrier_hydration_shield",
-      "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "s1_organ": "joint_spine",
+      "s2_left_mode": "mass",
+      "s2_right_mode": "minimal_incision",
+      "s3_connector": "structural_rehab",
+      "theme_name": "肌骨軟組織力學與解剖減壓"
     }
   },
   {
@@ -3211,11 +3211,11 @@
     "clinical_feature": "食物或吸入性過敏原引發第二型發炎反應嗜酸性白血球浸潤食道壁纖維化",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ent_airway",
-      "s2_left_mode": "airway_laryngeal_edema",
-      "s2_right_mode": "airway_patency_restore",
-      "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "s1_organ": "gi_tract",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -3240,11 +3240,11 @@
     "clinical_feature": "成熟嗜中性白血球真皮層無菌性大量浸潤合併微血管通透性增加",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -3269,11 +3269,11 @@
     "clinical_feature": "真皮膠原纖維局部退變組織球巨噬細胞呈柵欄狀環形浸潤包圍",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -3298,11 +3298,11 @@
     "clinical_feature": "毛髮捲曲刺破毛囊上皮或表皮真皮引發異物肉芽腫發炎反應",
     "recommended_blueprint": "laser_action",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -3327,11 +3327,11 @@
     "clinical_feature": "低密度脂蛋白受體基因缺損清除受阻大量脂質被巨噬細胞吞噬沉積於肌腱",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "endocrine_receptor",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "內分泌受體訊號與代謝恆定調控"
     }
   },
   {
@@ -3360,7 +3360,7 @@
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "呼吸道黏膜發炎機轉與屏障調控"
     }
   },
   {
@@ -3385,11 +3385,11 @@
     "clinical_feature": "機械性外力物理刺激引發肥大細胞高反應性瞬間去顆粒釋放組織胺",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "skin_barrier",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "表皮真皮屏障修復與局部發炎緩解"
     }
   },
   {
@@ -3414,11 +3414,11 @@
     "clinical_feature": "幽門菌長期發炎胃固有腺體萎縮退化被腸型分化上皮細胞替代",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -3443,11 +3443,11 @@
     "clinical_feature": "膽汁中膽固醇過飽和與黏蛋白結合析出微小結晶沉澱形成泥沙樣懸浮物",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "respiratory_mucosa",
+      "s1_organ": "gi_tract",
       "s2_left_mode": "mucosal_irritant_surge",
       "s2_right_mode": "barrier_hydration_shield",
       "s3_connector": "homeostasis_control",
-      "theme_name": "次專科臨床病理機轉與照護調控"
+      "theme_name": "消化道黏膜屏障與肝膽腸胃功能調控"
     }
   },
   {
@@ -3646,11 +3646,11 @@
     "clinical_feature": "正氣虧虛脈絡空虛風寒或風熱之邪乘虛侵入少陽陽明經絡",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4168,11 +4168,11 @@
     "clinical_feature": "情志鬱結肝氣不舒脾失健運聚濕成痰痰氣互結於咽喉所致",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "ent_airway",
-      "s2_left_mode": "airway_laryngeal_edema",
-      "s2_right_mode": "airway_patency_restore",
-      "s3_connector": "airway_mucosa_calm",
-      "theme_name": "呼吸道黏膜充血與氣道管腔通暢"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4342,11 +4342,11 @@
     "clinical_feature": "長久站立勞役過度耗傷元氣氣虛無力統攝血行絡脈瘀滯曲張",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "uro_genital",
-      "s2_left_mode": "venous_plexus_reflux",
-      "s2_right_mode": "venous_ligation_clear",
-      "s3_connector": "pelvic_microflow_restore",
-      "theme_name": "骨盆微循環回流與靜脈叢減壓"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4545,11 +4545,11 @@
     "clinical_feature": "濕熱毒邪下注傷及任帶二脈氣血阻滯經絡不暢少腹及骨盆深部作痛",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "uro_genital",
-      "s2_left_mode": "venous_plexus_reflux",
-      "s2_right_mode": "venous_ligation_clear",
-      "s3_connector": "pelvic_microflow_restore",
-      "theme_name": "骨盆微循環回流與靜脈叢減壓"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4632,11 +4632,11 @@
     "clinical_feature": "先天稟賦偏頗情志化火引動內風肝風攜痰上擾清空竅道經脈拘攣",
     "recommended_blueprint": "neuromuscular",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4661,11 +4661,11 @@
     "clinical_feature": "濕熱下注或房勞傷腎精液瘀濁停聚膀胱之邸血絡受阻氣機不暢",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "uro_genital",
-      "s2_left_mode": "venous_plexus_reflux",
-      "s2_right_mode": "venous_ligation_clear",
-      "s3_connector": "pelvic_microflow_restore",
-      "theme_name": "骨盆微循環回流與靜脈叢減壓"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4922,11 +4922,11 @@
     "clinical_feature": "消渴日久陰虛燥熱灼傷脈絡熱迫血溢絡脈瘀阻微細血脈滲血視網膜失養",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "ophthalmic_retina",
-      "s2_left_mode": "vitreous_drusen_degeneration",
-      "s2_right_mode": "optical_barrier_shield",
-      "s3_connector": "retinal_epithelium_repair",
-      "theme_name": "眼底視網膜感光與光學防護"
+      "s1_organ": "tcm_special_acup",
+      "s2_left_mode": "tcm_deep_adhesion",
+      "s2_right_mode": "acupotomy_micro_release",
+      "s3_connector": "meridian_unblock_healing",
+      "theme_name": "深部經筋沾黏鬆解與經絡調和"
     }
   },
   {
@@ -4951,11 +4951,11 @@
     "clinical_feature": "化學性酸性飲食侵蝕結合夜間磨牙機械重力損耗全口琺瑯質崩解",
     "recommended_blueprint": "dermal_support",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -4980,11 +4980,11 @@
     "clinical_feature": "牙齒琺瑯質至象牙質深部微細結構應力裂紋咀嚼剪力伸展激發牙髓疼痛",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5009,11 +5009,11 @@
     "clinical_feature": "破牙細胞受慢性刺激異常活性化破壞吸收牙齒象牙質管壁形成肉芽腔",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5067,11 +5067,11 @@
     "clinical_feature": "年齡老化或創傷刺激刺激成牙本質細胞大量過度沉積修復性牙本質堵塞根管",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5096,11 +5096,11 @@
     "clinical_feature": "橫向過度用力刷牙或咬合扭力應力集中於齒頸釉牙骨質界琺瑯質疲勞微崩",
     "recommended_blueprint": "dermal_support",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5125,11 +5125,11 @@
     "clinical_feature": "牙胚發育期成釉細胞功能障礙基質沉積或鈣化礦化不足琺瑯質薄弱多孔",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5154,11 +5154,11 @@
     "clinical_feature": "放療損害唾液腺分泌大量喪失自潔抑菌功能結合齒質受射線直接變脆腐爛",
     "recommended_blueprint": "process_diagram",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5183,11 +5183,11 @@
     "clinical_feature": "特定藥物刺激牙齦纖維母細胞合成大量細胞外間質與膠原纖維過度增殖",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5212,11 +5212,11 @@
     "clinical_feature": "孕期高濃度雌激素黃體素劇增使局部牙菌斑刺激反應放大微血管高度增生",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5270,11 +5270,11 @@
     "clinical_feature": "T淋巴細胞自體免疫介導攻擊口腔黏膜上皮基底細胞層引發慢性慢性發炎",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5299,11 +5299,11 @@
     "clinical_feature": "長期外在物理化學致癌物刺激黏膜上皮過度角化異常增生細胞異型性",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5328,11 +5328,11 @@
     "clinical_feature": "局部免疫力低下或長期假牙清潔不佳白色念珠菌菌絲侵襲黏膜表層",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5357,11 +5357,11 @@
     "clinical_feature": "外傷咬破小唾液腺導管唾液黏液外溢至黏膜下結締組織中被肉芽纖維包裹",
     "recommended_blueprint": "cyst_excision",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5386,11 +5386,11 @@
     "clinical_feature": "纖維蛋白溶解酶過度活化溶解拔牙骨窩保護性血塊致齒槽骨壁及神經裸露",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5444,11 +5444,11 @@
     "clinical_feature": "發炎刺激或外傷反射性引發翼內肌與顳肌咀嚼肌群持續強直收縮",
     "recommended_blueprint": "neuromuscular",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5473,11 +5473,11 @@
     "clinical_feature": "舌下腺主導管或其微小腺泡破裂黏液大量滯留口底軟組織形成假性囊腫",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5531,11 +5531,11 @@
     "clinical_feature": "牙弓骨骼容積不足以容納恆齒齒質骨骼三維發育不協調代償外暴",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5560,11 +5560,11 @@
     "clinical_feature": "第二乳臼齒過早缺失導致第一大臼齒受推進力前傾位移侵佔後續小臼齒萌發空間",
     "recommended_blueprint": "contrast",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5589,11 +5589,11 @@
     "clinical_feature": "牙胚板過度活躍形成額外齒胚多生於上顎正中骨內阻擋或推擠恆門齒",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5618,11 +5618,11 @@
     "clinical_feature": "恆犬齒萌發路徑過長偏差被側門齒阻擋而在顎骨深部水平嵌埋無法自行萌出",
     "recommended_blueprint": "timeline",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {
@@ -5647,11 +5647,11 @@
     "clinical_feature": "關節盤雙板區韌帶撕裂鬆弛關節盤完全向前移位髁頭無法向前滑行卡在盤後",
     "recommended_blueprint": "surgical_action",
     "archetype": {
-      "s1_organ": "dental_periodontal",
-      "s2_left_mode": "periodontal_bone_defect",
-      "s2_right_mode": "gtr_guided_regeneration",
-      "s3_connector": "bone_graft_integration",
-      "theme_name": "牙周骨組織缺損與導引組織再生"
+      "s1_organ": "dental_oral",
+      "s2_left_mode": "mucosal_irritant_surge",
+      "s2_right_mode": "barrier_hydration_shield",
+      "s3_connector": "homeostasis_control",
+      "theme_name": "口腔黏膜／齒列／唾液腺病變與局部照護"
     }
   },
   {

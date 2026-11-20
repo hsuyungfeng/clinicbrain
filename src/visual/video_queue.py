@@ -44,8 +44,21 @@ _rendering_topics: set[str] = set()
 _rendering_lock = threading.Lock()
 
 
+VISUAL_ENGINE_PATH = PROJECT_ROOT / "src" / "web" / "static" / "visual_engine.js"
+
+
+def _visual_engine_salt() -> str:
+    """回傳 visual_engine.js 檔案 SHA-256 前 12 碼，使前端繪圖器更新時自動失效舊快取。"""
+    try:
+        if VISUAL_ENGINE_PATH.is_file():
+            return hashlib.sha256(VISUAL_ENGINE_PATH.read_bytes()).hexdigest()[:12]
+    except Exception:
+        pass
+    return ""
+
+
 def compute_ir_sha256(ir_data: Any) -> str:
-    """計算 IR 結構的標準化 SHA-256 雜湊值。"""
+    """計算 IR 結構與 visual_engine.js 版本之標準化 SHA-256 雜湊值。"""
     if isinstance(ir_data, str):
         try:
             ir_dict = json.loads(ir_data)
@@ -55,7 +68,9 @@ def compute_ir_sha256(ir_data: Any) -> str:
         ir_dict = ir_data
 
     canonical = json.dumps(ir_dict, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    salt = _visual_engine_salt()
+    payload = f"{salt}:{canonical}" if salt else canonical
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def get_asset_bundle_data(conn: sqlite3.Connection, topic_key: str) -> Dict[str, Any]:

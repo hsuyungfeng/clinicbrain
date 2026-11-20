@@ -1460,6 +1460,44 @@ function buildAskVisualPlayer(visual) {
 
     askVisualStop = stopPlayback;
     renderFrame(0);
+
+    if (v && v.topic_key) {
+        const eduBox = el("div", "ask-edu-panel hidden");
+        const eduActions = el("div", "flex items-center justify-between gap-2 mt-2");
+        const eduDetails = document.createElement("details");
+        eduDetails.className = "w-full";
+        const eduSummary = el("summary", "cursor-pointer text-sm font-semibold text-sky-300 py-1", "📖 展開完整 7 段圖文衛教重點");
+        const eduBody = el("div", "mt-2 text-sm space-y-2 text-slate-200");
+        eduDetails.appendChild(eduSummary);
+        eduDetails.appendChild(eduBody);
+        const shareLink = el("a", "text-xs text-sky-400 underline ml-2 shrink-0", "↗ 獨立分享 / A4 列印");
+        shareLink.href = "/edu/" + encodeURIComponent(v.topic_key);
+        shareLink.target = "_blank";
+        eduActions.appendChild(eduDetails);
+        eduActions.appendChild(shareLink);
+        eduBox.appendChild(eduActions);
+        wrap.appendChild(eduBox);
+
+        fetch("/api/v1/visual/edu/" + encodeURIComponent(v.topic_key))
+            .then(r => (r.ok ? r.json() : null))
+            .then(res => {
+                if (!res || !res.edu) return;
+                const e = res.edu;
+                eduBody.appendChild(el("p", "", "【認識】" + (e.definition && e.definition.summary ? e.definition.summary : "")));
+                if (e.prevention_myth && Array.isArray(e.prevention_myth.tips)) {
+                    eduBody.appendChild(el("p", "text-emerald-300", "✅ 重點：" + e.prevention_myth.tips.join("；")));
+                }
+                if (e.red_flags_takeaway && Array.isArray(e.red_flags_takeaway.red_flags)) {
+                    eduBody.appendChild(el("p", "text-rose-300", "🚨 急診警訊：" + e.red_flags_takeaway.red_flags.join("、")));
+                }
+                if (e.red_flags_takeaway && e.red_flags_takeaway.takeaway) {
+                    eduBody.appendChild(el("p", "text-amber-200 font-semibold", "💡 " + e.red_flags_takeaway.takeaway));
+                }
+                eduBox.classList.remove("hidden");
+            })
+            .catch(() => {});
+    }
+
     return wrap;
 }
 
