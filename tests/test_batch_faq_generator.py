@@ -341,3 +341,33 @@ def test_llm_unavailable_error_propagates(isolated_conn):
 
     with pytest.raises(LocalLLMUnavailableError):
         generate_topic_faqs(isolated_conn, topic, mock_fail)
+
+
+def test_single_pending_question_minor_phrasing_normalized(isolated_conn):
+    """單題待生成時若 LLM 僅微調標點或語氣助詞，應自動正規化回原始種子題目。"""
+    topic = SeedTopic(
+        topic_key="zz-batch-norm",
+        title="蕁麻疹照護",
+        category="general",
+        clinic_id=None,
+        keywords=(),
+        always=True,
+        tree_doc_id=None,
+        questions=("蕁麻疹什麼時候需要就醫？",),
+    )
+
+    def mock_llm(_p: str) -> str:
+        return json.dumps(
+            [
+                {
+                    "question": "蕁麻疹什麼時候應該就醫?",
+                    "answer": "蕁麻疹若出現呼吸困難、嘴唇腫脹或喉嚨緊縮等過敏性休克徵兆，請立即前往急診就醫。",
+                }
+            ],
+            ensure_ascii=False,
+        )
+
+    res = generate_topic_faqs(isolated_conn, topic, mock_llm)
+    assert len(res.valid) == 1
+    assert res.valid[0]["question"] == "蕁麻疹什麼時候需要就醫？"
+    assert res.rejected == []

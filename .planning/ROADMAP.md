@@ -456,6 +456,19 @@ Plans:
 - [x] 53-03-PLAN.md — 雙軌前端 UI（`index.html`/`consult.html` 展開面板）與獨立可列印分享頁 `/edu/{topic_key}`（Wave 3）
 - [x] 53-04-PLAN.md — 全庫 398～400 筆斷點續跑批次生成、重點主題 MP4 重渲與 Hermes 獨立驗收（Wave 4，全庫 398/398 筆 `edu_json` 與 `care_redflag` 已全數完成）
 
+### Phase 54: 每日權威醫學新知自動巡檢與待審提案管線 (Daily Authoritative Medical Refresh & Review Pipeline)
+
+**Goal**: 針對已發布的 1,081 筆 FAQ、88 棵推理樹與 397 支衛教動畫，建立每日自動網上巡檢機制：嚴格限定官方與學術白名單來源（衛福部/CDC/TFDA/NHI/PubMed/醫學中心），先由本機 LLM 比對是否出現「實質新指引、禁忌症或藥品警訊」；僅有實質異動時才生成 `pending` 改版提案（`knowledge_refresh_proposals`），經醫師於管理後台檢視 Diff 與來源後一鍵核准，方透過唯一權威寫入路徑（`upsert_faqs` / `upsert_trees` / `edu_json` + `build_upgraded_ir`）生效並保留醫師自填筆記與 Phase 52 解剖鎖定。
+**Status**: Complete
+**Depends on**: Phase 53（雙軌結構化衛教系統）
+**Requirements**: P54-WHITELIST-FETCH, P54-DIFF-DETECTOR, P54-DAILY-SCHEDULER, P54-ADMIN-DIFF-APPROVE, P54-HERMES-VERIFIED
+**Plans**: 4 plans
+Plans:
+- [x] 54-01-PLAN.md — `knowledge_refresh_proposals`/`knowledge_refresh_log` 資料表與權威醫學白名單採集器（Wave 1）
+- [x] 54-02-PLAN.md — 本機 LLM 實質差異比對器、合規防護與每日輪巡排程腳本（Wave 2）
+- [x] 54-03-PLAN.md — 管理後台 `/api/v1/admin/refresh/*` Diff 簽核 API（含權威寫入連動）與 UI 面板（Wave 3）
+- [x] 54-04-PLAN.md — 單元/API 整合測試、實機 `--dry-run` 巡檢與 Hermes 獨立 Tester 驗收（Wave 4）
+
 
 
 

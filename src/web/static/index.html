@@ -48,6 +48,10 @@
             <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent" data-tab="tab-ask">
                 💬 向 LLM 提問
             </button>
+            <button class="nav-tab py-4 px-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent flex items-center gap-1.5" data-tab="tab-refresh">
+                🔄 新知提案審核
+                <span id="navRefreshBadge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+            </button>
         </div>
     </nav>
 
@@ -512,6 +516,35 @@
             <div id="askResult" class="ask-result hidden"></div>
             <h3 class="text-sm font-bold text-gray-600 mt-6 mb-2">本次瀏覽的提問紀錄</h3>
             <div id="askHistory" class="ask-history"><div class="status-box">尚無提問紀錄。</div></div>
+        </section>
+
+        <!-- 頁籤 8：權威醫學新知提案審核 (Phase 54) -->
+        <section id="tab-refresh" class="tab-content hidden">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">🔄 權威醫學新知提案審核</h2>
+                    <p class="text-sm text-gray-500">每日自動巡檢 PubMed、衛福部與食藥署公告。所有提案須經醫師比對差異並核准後，才會寫入正式知識庫。</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="refreshFilterStatus" class="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
+                        <option value="pending" selected>待審核 (Pending)</option>
+                        <option value="approved">已核准 (Approved)</option>
+                        <option value="rejected">已退回 (Rejected)</option>
+                        <option value="all">全部狀態</option>
+                    </select>
+                    <select id="refreshFilterType" class="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
+                        <option value="">全部類型</option>
+                        <option value="faq">衛教 FAQ</option>
+                        <option value="tree">臨床推理樹</option>
+                        <option value="visual_edu">3 幕醫學動畫衛教</option>
+                    </select>
+                    <button id="btnRefreshReload" class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300">重新整理</button>
+                    <button id="btnRefreshRun" class="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded">立即巡檢 3 筆</button>
+                </div>
+            </div>
+            <div id="refreshProposalsContainer" class="space-y-4">
+                <div class="text-center py-10 text-gray-500 bg-white rounded-lg border border-gray-200">載入新知提案中...</div>
+            </div>
         </section>
     </main>
 

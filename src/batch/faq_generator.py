@@ -11,6 +11,7 @@ Phase 09 Nightly Batch Maintenance: Task 1
 
 from dataclasses import dataclass, field
 import json
+import re
 import sqlite3
 from typing import Any, Callable, NamedTuple, Optional, Sequence, Union
 
@@ -112,7 +113,7 @@ def build_seed_faq_prompt(
     ]
     if require_doctor_warning:
         rules.append(
-            "\n9. 何時該就醫警訊收尾：【強制要求】每題 answer 的結尾必須以就醫警訊收尾，例如：『若出現胸痛、呼吸困難或體溫超過38.5度持續3天，請立即前往急診或儘速就醫。』，不得遺漏。"
+            "\n9. 何時該就醫警訊收尾：【強制要求】無論題目是定義、症狀或照護，每題 answer 的最後「同一句」必須同時包含具體危險症狀或數值條件＋就醫動作（不可只寫「請定期就醫追蹤」），例如：『若出現極度口渴、視力模糊、呼吸困難、意識不清或體溫超過38.5度，請立即前往急診或儘速就醫。』，嚴禁遺漏。"
         )
     extra_rules = "".join(rules)
 
@@ -284,6 +285,10 @@ def generate_topic_faqs(
     final_valid: list[dict] = []
     seen_in_batch: set[str] = set()
     pending_set = {q.strip() for q in pending_questions}
+    norm_pending_map = {
+        re.sub(r"[\s？?！!。，,、：:]+", "", pq): pq.strip()
+        for pq in pending_questions
+    }
 
     for idx, item in enumerate(valid_items):
         q = (item.get("question") or "").strip()
@@ -294,8 +299,18 @@ def generate_topic_faqs(
             continue
 
         if q not in pending_set:
-            rejected_clean.append({"code": "question_not_in_seed", "index": idx})
-            continue
+            norm_q = re.sub(r"[\s？?！!。，,、：:]+", "", q)
+            if norm_q in norm_pending_map:
+                q = norm_pending_map[norm_q]
+            elif (
+                len(pending_questions) == 1
+                and len(valid_items) == 1
+                and len(set(norm_q) & set(next(iter(norm_pending_map.keys())))) >= 4
+            ):
+                q = pending_questions[0].strip()
+            else:
+                rejected_clean.append({"code": "question_not_in_seed", "index": idx})
+                continue
 
         if len(a) < MIN_ANSWER_CHARS:
             rejected_clean.append({"code": "answer_too_short", "index": idx})

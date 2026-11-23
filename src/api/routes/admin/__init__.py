@@ -56,6 +56,7 @@ from .trees import (  # noqa: F401
 from .clinics import router as clinics_router  # noqa: F401
 from .visuals import router as visuals_router  # noqa: F401
 from .videos import _render_video_in_background, router as videos_router  # noqa: F401
+from .refresh import router as refresh_router  # noqa: F401
 
 router = APIRouter(
     prefix="/api/v1/admin",
@@ -70,3 +71,4 @@ router.include_router(trees_router)
 router.include_router(clinics_router)
 router.include_router(visuals_router)
 router.include_router(videos_router)
+router.include_router(refresh_router)

@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initUploadSection();
     initSoapSection();
     initAskSection();
+    initRefreshSection();
 });
 
 // 1. 認證機制管理
@@ -105,6 +106,7 @@ function initTabNavigation() {
                 loadApprovedTreesForVisualSelect();
             }
             if (targetId === "tab-soap") loadSoapRecords();
+            if (targetId === "tab-refresh") loadRefreshProposals();
         });
     });
 }
@@ -2949,5 +2951,177 @@ async function autoGeneralDraft(question, container) {
     } catch (err) {
         status.textContent = "一般草稿未存入：網路請求失敗，請稍後再試";
         status.className = "text-sm text-red-600 mt-2";
+    }
+}
+
+// ==========================================
+// 8. 權威醫學新知提案審核 (Phase 54)
+// ==========================================
+function initRefreshSection() {
+    const statusSel = document.getElementById("refreshFilterStatus");
+    const typeSel = document.getElementById("refreshFilterType");
+    const btnReload = document.getElementById("btnRefreshReload");
+    const btnRun = document.getElementById("btnRefreshRun");
+    if (statusSel) statusSel.addEventListener("change", loadRefreshProposals);
+    if (typeSel) typeSel.addEventListener("change", loadRefreshProposals);
+    if (btnReload) btnReload.addEventListener("click", loadRefreshProposals);
+    if (btnRun) btnRun.addEventListener("click", runManualRefresh);
+}
+
+async function loadRefreshProposals() {
+    const container = document.getElementById("refreshProposalsContainer");
+    const statusSel = document.getElementById("refreshFilterStatus");
+    const typeSel = document.getElementById("refreshFilterType");
+    if (!container) return;
+
+    const status = statusSel ? statusSel.value : "pending";
+    const targetType = typeSel ? typeSel.value : "";
+    const params = new URLSearchParams({ status });
+    if (targetType) params.set("target_type", targetType);
+
+    container.replaceChildren(el("div", "text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200", "載入新知提案中..."));
+    try {
+        const resp = await fetch(`/api/v1/admin/refresh/proposals?${params.toString()}`, {
+            headers: getAuthHeaders(),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+            container.replaceChildren(el("div", "p-4 bg-red-50 text-red-700 rounded border border-red-200", apiErrorText(data, "載入失敗")));
+            return;
+        }
+        const badge = document.getElementById("navRefreshBadge");
+        if (badge && data.counts) {
+            badge.textContent = String(data.counts.pending ?? 0);
+        }
+        const items = data.items || [];
+        if (items.length === 0) {
+            container.replaceChildren(el("div", "text-center py-10 text-gray-500 bg-white rounded-lg border border-gray-200", "目前沒有符合條件的新知提案。"));
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        items.forEach((item) => frag.appendChild(renderRefreshProposalCard(item)));
+        container.replaceChildren(frag);
+    } catch (err) {
+        container.replaceChildren(el("div", "p-4 bg-red-50 text-red-700 rounded border border-red-200", "載入新知提案時發生網路錯誤"));
+    }
+}
+
+function renderRefreshProposalCard(item) {
+    const card = el("div", "bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-3");
+
+    const header = el("div", "flex flex-wrap items-center justify-between gap-2 border-b pb-2");
+    const titleWrap = el("div", "flex flex-wrap items-center gap-2");
+    const typeBadge = el("span", "text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800", item.target_type || "");
+    const statusColor = item.status === "approved" ? "bg-emerald-100 text-emerald-800" : item.status === "rejected" ? "bg-gray-200 text-gray-700" : "bg-amber-100 text-amber-800";
+    const statusBadge = el("span", `text-xs font-bold px-2 py-0.5 rounded ${statusColor}`, item.status || "");
+    const titleEl = el("h3", "text-base font-bold text-gray-900", item.title || item.target_key || "");
+    titleWrap.append(typeBadge, statusBadge, titleEl);
+
+    const keyEl = el("span", "text-xs font-mono text-gray-500", `Key: ${item.target_key || ""}`);
+    header.append(titleWrap, keyEl);
+    card.appendChild(header);
+
+    const meta = el("div", "text-xs text-gray-600 space-y-1");
+    const diffP = el("p", "text-sm font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded p-2", `差異摘要：${item.diff_summary || ""}`);
+    const evidP = el("p", "text-xs text-gray-700", `實證摘要：${item.evidence_summary || ""}`);
+    meta.append(diffP, evidP);
+
+    if (typeof item.source_url === "string" && item.source_url.startsWith("https://")) {
+        const srcRow = el("p", "text-xs text-gray-600");
+        srcRow.appendChild(document.createTextNode(`權威來源 (${item.source_domain || ""})：`));
+        const link = document.createElement("a");
+        link.href = item.source_url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "text-indigo-600 hover:underline break-all";
+        link.textContent = item.source_url;
+        srcRow.appendChild(link);
+        meta.appendChild(srcRow);
+    }
+    card.appendChild(meta);
+
+    const diffGrid = el("div", "grid grid-cols-1 md:grid-cols-2 gap-3 text-xs");
+    const curBox = el("div", "bg-gray-50 border border-gray-200 rounded p-3 overflow-x-auto");
+    curBox.appendChild(el("div", "font-bold text-gray-700 mb-1", "目前版本 (Current)"));
+    const curPre = el("pre", "whitespace-pre-wrap text-gray-700 font-mono text-xs", JSON.stringify(item.current_snapshot || {}, null, 2));
+    curBox.appendChild(curPre);
+
+    const propBox = el("div", "bg-emerald-50 border border-emerald-200 rounded p-3 overflow-x-auto");
+    propBox.appendChild(el("div", "font-bold text-emerald-800 mb-1", "建議更新 (Proposed)"));
+    const propPre = el("pre", "whitespace-pre-wrap text-emerald-900 font-mono text-xs", JSON.stringify(item.proposed_json || {}, null, 2));
+    propBox.appendChild(propPre);
+
+    diffGrid.append(curBox, propBox);
+    card.appendChild(diffGrid);
+
+    if (item.status === "pending") {
+        const actions = el("div", "flex justify-end gap-2 pt-2 border-t");
+        const btnReject = el("button", "px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300", "退回提案");
+        btnReject.addEventListener("click", () => handleRejectRefresh(item.id));
+        const btnApprove = el("button", "px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium", "核准並寫回知識庫");
+        btnApprove.addEventListener("click", () => handleApproveRefresh(item.id));
+        actions.append(btnReject, btnApprove);
+        card.appendChild(actions);
+    }
+    return card;
+}
+
+async function handleApproveRefresh(proposalId) {
+    try {
+        const resp = await fetch(`/api/v1/admin/refresh/proposals/${proposalId}/approve`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+            showToast(`已核准提案 #${proposalId} 並寫回知識庫`, "success");
+            loadRefreshProposals();
+        } else {
+            showToast(apiErrorText(data, "核准失敗"), "error");
+        }
+    } catch (err) {
+        showToast("核准請求失敗", "error");
+    }
+}
+
+async function handleRejectRefresh(proposalId) {
+    try {
+        const resp = await fetch(`/api/v1/admin/refresh/proposals/${proposalId}/reject`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+            showToast(`已退回提案 #${proposalId}`, "info");
+            loadRefreshProposals();
+        } else {
+            showToast(apiErrorText(data, "退回失敗"), "error");
+        }
+    } catch (err) {
+        showToast("退回請求失敗", "error");
+    }
+}
+
+async function runManualRefresh() {
+    const btn = document.getElementById("btnRefreshRun");
+    if (btn) btn.disabled = true;
+    showToast("開始巡檢權威醫學新知（最多 3 筆）...", "info");
+    try {
+        const resp = await fetch("/api/v1/admin/refresh/run", {
+            method: "POST",
+            headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ daily_quota: 3, target_type: "all", dry_run: false }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+            showToast(`巡檢完成：候選 ${data.candidates}、新增提案 ${data.proposed}、無變動 ${data.unchanged}`, "success");
+            loadRefreshProposals();
+        } else {
+            showToast(apiErrorText(data, "巡檢失敗"), "error");
+        }
+    } catch (err) {
+        showToast("巡檢請求失敗", "error");
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
