@@ -469,6 +469,30 @@ Plans:
 - [x] 54-03-PLAN.md — 管理後台 `/api/v1/admin/refresh/*` Diff 簽核 API（含權威寫入連動）與 UI 面板（Wave 3）
 - [x] 54-04-PLAN.md — 單元/API 整合測試、實機 `--dry-run` 巡檢與 Hermes 獨立 Tester 驗收（Wave 4）
 
+### Phase 55: 夜間 FAQ 自動生成與動畫管線強化 (Nightly FAQ & Visual Pipeline Hardening)
+
+**Goal**: 解決夜間批次 `patient_prefill` 被 `--max-faq-topics 5` 卡住導致 80 主題積壓、FAQ 合規驗證失敗未重試直接退件、夜間缺乏 `visual_autodraft` 自動草擬動畫階段、`video_render` 缺乏單次渲染上限防護，以及 `run_daily_knowledge_refresh.py` 官方 RSS `404`/`ParseError` 靜默失敗（`RSS=0`）等五大問題；並由 Herdr Hermes 擔任 PlanChecker 與獨立 Tester 驗收。
+**Status**: Complete
+**Depends on**: Phase 54（每日權威醫學新知自動巡檢）
+**Requirements**: P55-PREFILL-CAP, P55-FAQ-RETRY, P55-VIDEO-LIMIT, P55-VISUAL-AUTODRAFT, P55-RSS-FIX, P55-TESTS, P55-HERMES-VERIFIED
+**Plans**: 3 plans
+Plans:
+- [x] 55-01-PLAN.md — 拆開 `--max-prefill-topics`、FAQ 驗證失敗帶原因單次重試與 `--video-render-limit` 防護（Wave 1）
+- [x] 55-02-PLAN.md — 夜間 `visual_autodraft` 自動草擬階段與官方 RSS URL／錯誤日誌修復（Wave 2）
+- [x] 55-03-PLAN.md — Phase 55 單元／整合測試、`--dry-run` 預檢與 Herdr Hermes 獨立 Tester 驗收（Wave 3）
+
+### Phase 56: 最佳組合拳 — Typed IR / 3D × Ornith-1.5-35B × raea 混合影片管線 (Hybrid Video & 3D Pipeline)
+
+**Goal**: 建立三層分工的混合影片管線：解剖與病理核心維持 `clinicbrain` Typed IR + `visual_engine.js`（或 Phase 41 經 `dequantize` 處理之 BodyVista 3D GLB）；內容決策層由本機 `Ornith-1.5-35B`（`enable_thinking: false`）產出結構化合規 JSON（`ReelScript`）並具備確定性離線降級；合成與品管層由 `raea` 固定模板（`reel_template.tsx` / `anatomy_3d_template.tsx`）高速 GPU 渲染並強制通過 `raea check` 安全區、響度（`-14 LUFS`）與 `--quality master` 驗收；並由 Hermes 擔任 PlanChecker 與獨立 Tester 驗收。
+**Status**: Complete
+**Depends on**: Phase 55（夜間 FAQ 自動生成與動畫管線強化）
+**Requirements**: P56-ORNITH-SCRIPT-SCHEMA, P56-ORNITH-LLM-CLIENT, P56-COMPLIANCE-FALLBACK, P56-RAEA-REEL-TEMPLATE, P56-RAEA-3D-TEMPLATE, P56-RAEA-CHECK-GATE, P56-GLB-DEQUANTIZE, P56-UNIT-TESTS, P56-E2E-RENDER-VERIFY, P56-HERMES-VERIFIED
+**Plans**: 3 plans
+Plans:
+- [x] 56-01-PLAN.md — `Ornith-1.5-35B` 結構化短影音腳本生成器（`ReelScript` Schema、合規檢核與確定性降級）（Wave 1）
+- [x] 56-02-PLAN.md — `raea` 2D/3D 固定模板納編、`raea_pipeline.py`（GLB 解量化、`raea check` 閘門）與批次 CLI（Wave 2）
+- [x] 56-03-PLAN.md — 單元／整合測試、實機端到端渲染驗證與 Hermes 獨立 Tester 驗收（Wave 3）
+
 
 
 
