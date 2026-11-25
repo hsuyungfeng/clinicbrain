@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, List
 
-from src.api.routes.query import deep_mask_prices
+from src.utils.price_mask import deep_mask_prices
 from src.ingestion.convert_chinese import to_traditional
 from src.pageindex.llm_client import VISUAL_SAMPLING, local_llm_call
 from src.pageindex.prompt_template import _FORBIDDEN_PHRASES, _POLITICAL_STANCE_PHRASES

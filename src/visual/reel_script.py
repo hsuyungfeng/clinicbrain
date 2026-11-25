@@ -11,7 +11,7 @@ from typing import Any, Callable, List, Literal, Optional, Tuple
 import httpx
 from pydantic import BaseModel, Field
 
-from src.api.routes.query import deep_mask_prices
+from src.utils.price_mask import deep_mask_prices
 from src.general.disclaimer import DISCLAIMER_TEXT
 from src.ingestion.convert_chinese import to_traditional
 from src.pageindex.prompt_template import _FORBIDDEN_PHRASES, _POLITICAL_STANCE_PHRASES

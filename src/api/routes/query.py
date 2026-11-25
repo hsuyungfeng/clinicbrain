@@ -13,9 +13,11 @@ from ..dependencies import get_read_db
 from ..models.query import QueryRequest, QueryResponseModel
 
 try:
-    from ...query.router import handle_query, mask_prices, faq_hit_level
+    from ...query.router import handle_query, faq_hit_level
 except (ImportError, ValueError):
-    from src.query.router import handle_query, mask_prices, faq_hit_level
+    from src.query.router import handle_query, faq_hit_level
+
+from src.utils.price_mask import deep_mask_prices, mask_prices
 
 try:
     from ...query.cache_stats import record_query_outcome
@@ -59,19 +61,7 @@ def _record_cache_stats(clinic_id: Optional[str], source: str, matched_keywords:
             conn.close()
 
 
-def deep_mask_prices(obj: Any) -> Any:
-    """遞迴對所有巢狀資料結構（字串、字典、串列）執行價格遮蔽。
-    這是在 API 序列化回傳前的二次安全防禦層，保證任何深層文字無金額數字洩漏。
-    """
-    if isinstance(obj, str):
-        return mask_prices(obj)
-    elif isinstance(obj, dict):
-        return {k: deep_mask_prices(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [deep_mask_prices(item) for item in obj]
-    elif isinstance(obj, tuple):
-        return tuple(deep_mask_prices(item) for item in obj)
-    return obj
+
 
 
 def _format_hit(hit) -> dict:

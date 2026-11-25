@@ -68,9 +68,7 @@ _PROCEDURE_KEYWORDS = (
 )
 _DRUG_OR_SERVICE_KEYWORDS = ("藥", "成分", "副作用", "支付", "給付", "健保", "點數", "報保")
 
-# 絕對禁止出現的價格格式：數字+元/塊，或 NT$/$ 開頭的金額
-_PRICE_PATTERN = re.compile(r"\d+\s*[元塊]|NT\$\s*\d+|\$\d+")
-_PRICE_MASK = "[請致電診所確認]"
+from src.utils.price_mask import _PRICE_MASK, _PRICE_PATTERN, deep_mask_prices, mask_prices
 
 
 # 中文連續字元擷取，用於 extract_search_terms() 的 fallback：把問句切成
@@ -189,12 +187,7 @@ def classify(query: str) -> RouteResult:
     return RouteResult(route=route, matched_keywords=matched)
 
 
-def mask_prices(text: str) -> str:
-    """把任何形式的價格資訊替換成統一的引導文字。這是 CONSTRAINT 的最後
-    一道防線，任何要回傳給使用者的文字都應該先經過這裡。"""
-    if not text:
-        return text
-    return _PRICE_PATTERN.sub(_PRICE_MASK, text)
+
 
 
 def get_clinic_hours(conn: sqlite3.Connection, clinic_id: str) -> list[dict]:
