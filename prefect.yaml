@@ -1,0 +1,89 @@
+# clinicbrain Prefect 3 Deployments 配置
+#
+# ==============================================================================
+# 單一擁有者原子切換（Single-owner atomic cutover）與還原（Rollback）步驟
+# ==============================================================================
+# 原則：嚴禁 crontab 與 Prefect Deployment 同時啟用雙跑！
+#
+# 1. 啟用 Prefect Deployments（由 clinicbrain-pool Worker 接管）：
+#    cd /home/hsuyungfeng/DevSoft/clinicbrain
+#    PREFECT_API_URL=http://127.0.0.1:4200/api .venv/bin/prefect deploy --all
+#
+# 2. 原子切換停用對應 crontab（先備份再註解 clinicbrain 三行排程）：
+#    crontab -l > /tmp/crontab.backup.$(date +%Y%m%d_%H%M%S)
+#    crontab -l | sed -E \
+#      -e 's|^([^#].*run_nightly_batch\.py)|# [PREFECT-MIGRATED] \1|' \
+#      -e 's|^([^#].*run_web_research_batch\.py)|# [PREFECT-MIGRATED] \1|' \
+#      -e 's|^([^#].*run_daily_knowledge_refresh\.py)|# [PREFECT-MIGRATED] \1|' \
+#      | crontab -
+#
+# 3. 一鍵還原（Rollback 回 crontab）：
+#    PREFECT_API_URL=http://127.0.0.1:4200/api .venv/bin/prefect deployment pause-schedule clinicbrain-nightly-batch/clinicbrain-nightly-batch
+#    PREFECT_API_URL=http://127.0.0.1:4200/api .venv/bin/prefect deployment pause-schedule clinicbrain-web-research/clinicbrain-web-research
+#    PREFECT_API_URL=http://127.0.0.1:4200/api .venv/bin/prefect deployment pause-schedule clinicbrain-daily-refresh/clinicbrain-daily-refresh
+#    crontab -l | sed 's|^# \[PREFECT-MIGRATED\] ||' | crontab -
+# ==============================================================================
+
+name: clinicbrain
+prefect-version: 3.9.5
+
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /home/hsuyungfeng/DevSoft/clinicbrain
+
+deployments:
+  - name: clinicbrain-nightly-batch
+    version: "1.0.0"
+    tags: ["clinicbrain", "nightly", "llm"]
+    description: "每日 03:30 夜間批次（FAQ 預生成、推理樹重建、SOAP 提煉、動畫渲染）"
+    entrypoint: src/batch/prefect_flows.py:nightly_batch_flow
+    work_pool:
+      name: clinicbrain-pool
+      work_queue_name: default
+    parameters:
+      allow_prod_db: true
+      dry_run: false
+      max_faq_topics: 5
+      max_trees: 3
+      time_budget_seconds: 3600.0
+      include_pending_web_prefill: true
+    schedules:
+      - cron: "30 3 * * *"
+        timezone: "Asia/Taipei"
+        active: true
+
+  - name: clinicbrain-web-research
+    version: "1.0.0"
+    tags: ["clinicbrain", "web-research", "llm"]
+    description: "每週三、週日 04:15 外部診所官網增量爬蟲與衛教提煉"
+    entrypoint: src/batch/prefect_flows.py:web_research_batch_flow
+    work_pool:
+      name: clinicbrain-pool
+      work_queue_name: default
+    parameters:
+      allow_prod_db: true
+      dry_run: false
+      limit: 10
+      time_budget_seconds: 2400.0
+    schedules:
+      - cron: "15 4 * * 3,0"
+        timezone: "Asia/Taipei"
+        active: true
+
+  - name: clinicbrain-daily-refresh
+    version: "1.0.0"
+    tags: ["clinicbrain", "knowledge-refresh"]
+    description: "每日 04:45 權威醫學新知（PubMed / 衛福部 / CDC / TFDA RSS）巡檢"
+    entrypoint: src/batch/prefect_flows.py:daily_knowledge_refresh_flow
+    work_pool:
+      name: clinicbrain-pool
+      work_queue_name: default
+    parameters:
+      daily_quota: 15
+      target_type: "all"
+      check_feeds: true
+      dry_run: false
+    schedules:
+      - cron: "45 4 * * *"
+        timezone: "Asia/Taipei"
+        active: true
