@@ -72,21 +72,16 @@
       "type": "data_integrity"
     }
   ],
-  "human_actions_pending": [
-    {
-      "action": "決定分類器方向：A 維持現狀（建議短期）；B 先釐清定義；C 擴大盲測樣本",
-      "blocking": true
-    },
-    {
-      "action": "確認是否推送 673cd8c 到 origin",
-      "blocking": false
-    },
-    {
-      "action": "確認是否修訂 AGENTS.md（標註檔防篡改條款）",
-      "blocking": false
-    }
-  ],
+  "human_actions_pending": [],
   "decisions": [
+    {
+      "decision": "分類器短期採選項 A：保持 fixed 模式，分類器不上線；Phase 57 暫緩，57-03 與 57-04 維持暫緩",
+      "ref": "golden/57-02-DECISIONS.md"
+    },
+    {
+      "decision": "AGENTS.md 正式修訂：增訂黃金集/盲測集防篡改條款（Ground Truth Immutability）與雙指標驗核標準",
+      "ref": "AGENTS.md"
+    },
     {
       "decision": "A 外科微創處置採原歸屬（cyst_excision / nail_matrix / subdermal_curettage / deep_plane_facelift）",
       "ref": "golden/57-02-DECISIONS.md"
@@ -119,7 +114,7 @@
   "uncommitted_files": [
     "golden/physician_labeling_sheet.ods (醫師工作副本，不納入版控)"
   ],
-  "next_action": "等待操作者決定分類器方向；57-03、57-04 暫緩。",
+  "next_action": "Phase 57 依選項 A 封存暫緩（夜間批次保持安全固定模板，分類器不上線）；準備進入下一個里程碑階段。",
   "context_notes": "讀取本檔前請先看 golden/57-02-DECISIONS.md 與 golden/57-02-REVISED-PLAN.md。discarded 的 runner/autodraft 舊版本無法還原，備份在 ~/clinicbrain-discarded-20261127/。",
   "last_step": "57-02 T6 Independent Blind Evaluation: LLM-only 83.3%, full system 83.3%, auto-accept 93.3% (14/15). Gate Not Met (85% frozen)."
 }
