@@ -45,6 +45,7 @@
 | 44. 次世代生動向量視覺引擎全面升級 | 3/3 | Complete | 2026-11-11 |
 | 45. 3D 臨床解剖 WebGL 檢視組件實裝 | 3/3 | Complete | 2026-11-13 |
 | 46. 系統衛生、安全加固與回歸修復 | 3/3 | Complete | 2026-11-13 |
+| 57. 動畫藍圖分類、黃金標準與旁白 A/B 測試 | 0/4 | Planned | — |
 
 ## Phase Details
 
@@ -493,11 +494,17 @@ Plans:
 - [x] 56-02-PLAN.md — `raea` 2D/3D 固定模板納編、`raea_pipeline.py`（GLB 解量化、`raea check` 閘門）與批次 CLI（Wave 2）
 - [x] 56-03-PLAN.md — 單元／整合測試、實機端到端渲染驗證與 Hermes 獨立 Tester 驗收（Wave 3）
 
+### Phase 57: 動畫藍圖分類、黃金標準與旁白 A/B 測試 (Visual Blueprint Classification, Golden Set & Narration A/B)
 
+**Goal:** 先以醫師標註的黃金標準集量化現行分類基線，再以 LLM 分類（含「其他」選項與證據片段）取代健保批次寫死的第一幕模板，最後加入 TTS 旁白與理解題並設計 A/B 測試；渲染層是否遷移只做評估。
+**Evidence:** 2026-11-27 實測：399 筆資產中健保批次 314 筆第一幕皆為 `pathology_mechanism`，原因是 `generate_nhi200_visual_batch.py` 的 prompt 寫死該藍圖；推理樹來源 72 筆僅 1 筆兜底；47 棵推理樹無動畫。
+**Depends on:** Phase 56
+**Requirements:** P57-MAPPING, P57-GOLDEN-BASELINE, P57-LLM-CLASSIFIER, P57-OTHER-OPTION, P57-EVIDENCE-SPAN, P57-TTS-NARRATION, P57-COMPREHENSION-QUIZ, P57-AB-DESIGN, P57-RENDER-EVAL
+**Plans:** 4 plans (4 waves)
 
-
-
-
-
-
+Plans:
+- [ ] 57-01-PLAN.md — 對應對帳、黃金標準集模板與現況基線（Wave 1）
+- [ ] 57-02-PLAN.md — LLM 分類含「其他」、證據片段、健保批次改接與準確率量測（Wave 2，需醫師標註）
+- [ ] 57-03-PLAN.md — TTS 旁白、理解題與 A/B 設計（Wave 3，曝光需核准）
+- [ ] 57-04-PLAN.md — 渲染層遷移評估報告（Wave 4，不實作）
 

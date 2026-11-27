@@ -269,17 +269,41 @@ def generate_topic_faqs(
         require_doctor_warning=is_general,
     )
 
-    rejected_clean: list[dict] = []
-    for rej in rejected_raw:
-        if "error" in rej:
-            rejected_clean.append({"code": "json_invalid"})
-        else:
-            reason_str = rej.get("reason", "")
-            code = classify_reject_reason(reason_str)
-            item_record = {"code": code}
-            if "index" in rej:
-                item_record["index"] = rej["index"]
-            rejected_clean.append(item_record)
+    def _classify_rejected(raw_list: list[dict]) -> list[dict]:
+        out: list[dict] = []
+        for rej in raw_list:
+            if "error" in rej:
+                out.append({"code": "json_invalid"})
+            else:
+                reason_str = rej.get("reason", "")
+                code = classify_reject_reason(reason_str)
+                item_record: dict = {"code": code}
+                if "index" in rej:
+                    item_record["index"] = rej["index"]
+                out.append(item_record)
+        return out
+
+    rejected_clean: list[dict] = _classify_rejected(rejected_raw)
+
+    # 若全部因缺警訊或劑量處方遭拒，帶具體原因重試最多 1 次（合規標準不放寬）
+    retryable_codes = {"missing_doctor_warning", "dosage_or_prescription"}
+    if not valid_items and any(r.get("code") in retryable_codes for r in rejected_clean):
+        hints = []
+        if any(r.get("code") == "missing_doctor_warning" for r in rejected_clean):
+            hints.append("每題回答必須包含明確就醫警訊（例如若持續不適或出現紅腫熱痛請盡速就醫）")
+        if any(r.get("code") == "dosage_or_prescription" for r in rejected_clean):
+            hints.append("嚴禁出現具體藥品劑量、頻次或處方開立指令")
+        retry_prompt = f"{prompt}\n\n【修正要求】{'；'.join(hints)}。請維持原問題字句與 JSON 格式重新生成。"
+        retry_output = llm_call(retry_prompt)
+        retry_valid, retry_rejected_raw = parse_and_validate_faq(
+            retry_output,
+            return_rejected=True,
+            check_dosage=True,
+            require_doctor_warning=is_general,
+        )
+        if retry_valid:
+            valid_items = retry_valid
+            rejected_clean = _classify_rejected(retry_rejected_raw)
 
     # 4. 針對合格項目進行種子一致性與長度檢查
     final_valid: list[dict] = []
@@ -309,8 +333,28 @@ def generate_topic_faqs(
             ):
                 q = pending_questions[0].strip()
             else:
-                rejected_clean.append({"code": "question_not_in_seed", "index": idx})
-                continue
+                # 嘗試以字元 Jaccard 相似度唯一配對尚未使用的原始種子問句，並強制寫回原問句
+                best_seed = None
+                best_score = 0.0
+                q_chars = set(norm_q)
+                if q_chars:
+                    for n_seed, orig_seed in norm_pending_map.items():
+                        if orig_seed in seen_in_batch:
+                            continue
+                        s_chars = set(n_seed)
+                        if not s_chars:
+                            continue
+                        inter = len(q_chars & s_chars)
+                        union = len(q_chars | s_chars)
+                        jaccard = inter / union if union else 0.0
+                        if inter >= 4 and jaccard >= 0.45 and jaccard > best_score:
+                            best_score = jaccard
+                            best_seed = orig_seed
+                if best_seed is not None:
+                    q = best_seed
+                else:
+                    rejected_clean.append({"code": "question_not_in_seed", "index": idx})
+                    continue
 
         if len(a) < MIN_ANSWER_CHARS:
             rejected_clean.append({"code": "answer_too_short", "index": idx})

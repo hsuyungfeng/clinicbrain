@@ -124,7 +124,7 @@ def run_prefill_stage(
     res.skipped_no_title = len(all_tree_docs - enumerated_tree_docs)
 
     # 2. 新鮮度規劃
-    max_topics = getattr(cfg, "max_faq_topics", 5)
+    max_topics = getattr(cfg, "max_prefill_topics", getattr(cfg, "max_faq_topics", 20))
     plan = plan_prefill(conn, topics, now=now, max_topics=max_topics, regenerate_all=False)
 
     res.topics_planned = len(plan.topics) + plan.backlog
@@ -285,6 +285,55 @@ def run_prefill_stage(
             ok, reason = validate_composed(clean_value_body, None)
             if not ok:
                 rej_code = reject_code_for(reason or "", clean_value_body)
+                if rej_code in ("missing_warning", "dosage_or_prescription") and (clock() - stage_start < time_budget):
+                    hint = (
+                        "【修正要求】回答末尾必須包含明確的就醫警訊句（例如：若症狀持續未改善或出現紅腫熱痛等異常，請盡速就醫由醫師評估）。"
+                        if rej_code == "missing_warning"
+                        else "【修正要求】嚴禁出現具體藥品劑量、頻次或處方開立指令，僅說明原則並提醒由醫師評估。"
+                    )
+                    retry_prompt = f"{prompt}\n\n{hint}"
+                    try:
+                        retry_raw = llm_call(retry_prompt)
+                        retry_val, _ = parse_model_output(retry_raw)
+                        if not looks_insufficient(retry_val) and is_complete_ending(retry_val):
+                            r_sents = split_sentences(retry_val.strip())
+                            if len(r_sents) >= MIN_VALUE_SENTENCES:
+                                r_warn = [i for i, s in enumerate(r_sents) if has_doctor_warning(s)]
+                                if len(r_sents) > MAX_VALUE_SENTENCES:
+                                    if r_warn:
+                                        w_idx = r_warn[-1]
+                                        chosen = {w_idx}
+                                        for i, _s in enumerate(r_sents):
+                                            if len(chosen) >= MAX_VALUE_SENTENCES:
+                                                break
+                                            if i != w_idx:
+                                                chosen.add(i)
+                                        r_sel = [r_sents[i] for i in range(len(r_sents)) if i in chosen]
+                                    else:
+                                        r_sel = r_sents[:MAX_VALUE_SENTENCES]
+                                else:
+                                    r_sel = r_sents
+                                if len(r_sel) >= MIN_VALUE_SENTENCES:
+                                    r_body = "".join(r_sel).replace("？", "。").replace("?", "。").strip()
+                                    if not looks_insufficient(r_body) and is_complete_ending(r_body):
+                                        r_ok, r_reason = validate_composed(r_body, None)
+                                        if r_ok:
+                                            clean_value_body = r_body
+                                            ok = True
+                                        else:
+                                            rej_code = reject_code_for(r_reason or "", r_body)
+                    except LocalLLMUnavailableError:
+                        res.skipped_budget += (len(plan.topics) - topic_idx)
+                        res.status = "llm_unavailable"
+                        if logger:
+                            logger.warning("llm_unavailable", stage="patient_prefill", topic_key=tp_plan.topic.topic_key)
+                        return res
+                    except (LLMEmptyOutputError, LLMTruncatedError):
+                        pass
+                    except Exception:
+                        pass
+
+            if not ok:
                 res.rejected += 1
                 if rej_code == "missing_warning":
                     res.rejected_warning += 1

@@ -37,6 +37,7 @@
             "params": {
               "organ_system": "ent_airway",
               "organ_label": "急性喉氣管炎",
+              "anatomy_target": "急性喉氣管炎與哮吼",
               "lesion_label": "病理充血",
               "trigger_label": "病因刺激",
               "defense_label": "屏障修復",
@@ -148,6 +149,7 @@
             "params": {
               "organ_system": "ent_airway",
               "organ_label": "慢性肥厚性鼻",
+              "anatomy_target": "慢性肥厚性鼻炎伴下鼻甲肥大",
               "lesion_label": "病理充血",
               "trigger_label": "病因刺激",
               "defense_label": "屏障修復",
@@ -259,6 +261,7 @@
             "params": {
               "organ_system": "ent_airway",
               "organ_label": "鼻中隔彎曲伴",
+              "anatomy_target": "鼻中隔彎曲伴繼發性鼻道狹窄",
               "lesion_label": "病理充血",
               "trigger_label": "病因刺激",
               "defense_label": "屏障修復",
@@ -370,6 +373,7 @@
             "params": {
               "organ_system": "ent_airway",
               "organ_label": "腺樣體肥大伴",
+              "anatomy_target": "腺樣體肥大伴兒童睡眠呼吸中止",
               "lesion_label": "病理充血",
               "trigger_label": "病因刺激",
               "defense_label": "屏障修復",
@@ -481,6 +485,7 @@
             "params": {
               "organ_system": "ent_airway",
               "organ_label": "聲帶結節與音",
+              "anatomy_target": "聲帶結節與音聲障礙",
               "lesion_label": "病理充血",
               "trigger_label": "病因刺激",
               "defense_label": "屏障修復",

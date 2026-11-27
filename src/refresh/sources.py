@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import List
@@ -11,6 +12,8 @@ from urllib.parse import quote_plus, urlparse
 import httpx
 
 from src.scraper.policy import is_public_address, resolve_public_addresses, strip_url_for_storage
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_MEDICAL_DOMAINS: tuple[str, ...] = (
     "mohw.gov.tw",
@@ -27,8 +30,9 @@ ALLOWED_MEDICAL_DOMAINS: tuple[str, ...] = (
 )
 
 OFFICIAL_RSS_FEEDS: tuple[str, ...] = (
-    "https://www.cdc.gov.tw/RSS/RssXml/Emerald/1",
-    "https://www.fda.gov.tw/RSS/RssXml/25",
+    "https://www.mohw.gov.tw/rss-16-1.html",
+    "https://www.fda.gov.tw/TC/rssLawMedical.ashx",
+    "https://www.fda.gov.tw/TC/rssNews.ashx",
 )
 
 
@@ -145,15 +149,40 @@ def parse_pubmed_xml(xml_text: str) -> List[SourceEvidence]:
     return out
 
 
+def _local_tag(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _child_text(elem: ET.Element, *names: str) -> str:
+    for child in elem:
+        if _local_tag(child.tag) in names:
+            return "".join(child.itertext()).strip()
+    return ""
+
+
+def _atom_link(elem: ET.Element) -> str:
+    for child in elem:
+        if _local_tag(child.tag) == "link":
+            href = (child.attrib.get("href") or "").strip()
+            if href:
+                return href
+            txt = "".join(child.itertext()).strip()
+            if txt:
+                return txt
+    return ""
+
+
 def parse_rss_feed(xml_text: str, base_url: str) -> List[SourceEvidence]:
-    """解析官方 RSS/Atom XML 並嚴格過濾每筆項目連結必須通過白名單。"""
-    root = ET.fromstring(xml_text)
+    """解析官方 RSS/Atom XML（容錯 BOM／前導空白）並嚴格過濾每筆項目連結必須通過白名單。"""
+    cleaned = (xml_text or "").lstrip("\ufeff \t\r\n")
+    root = ET.fromstring(cleaned)
     out: List[SourceEvidence] = []
-    for item in root.findall(".//item"):
-        title = (item.findtext("title") or "").strip()
-        link = (item.findtext("link") or "").strip()
-        pub = (item.findtext("pubDate") or "").strip()
-        desc = (item.findtext("description") or "").strip()[:400]
+    entries = [el for el in root.iter() if _local_tag(el.tag) in ("item", "entry")]
+    for item in entries:
+        title = _child_text(item, "title")
+        link = _atom_link(item)
+        pub = _child_text(item, "pubDate", "updated", "published")
+        desc = _child_text(item, "description", "summary", "content")[:400]
         target_url = link or base_url
         if not title or not is_allowed_medical_url(target_url, check_dns=False):
             continue
@@ -176,7 +205,7 @@ def fetch_official_feeds(
     client: httpx.Client | None = None,
     check_dns: bool = True,
 ) -> List[SourceEvidence]:
-    """批次擷取台灣官方醫療機關 RSS 公告（單一來源失敗不中斷整體）。"""
+    """批次擷取台灣官方醫療機關 RSS 公告（單一來源失敗記錄警告但不中斷整體）。"""
     own_client = client is None
     cli = client or httpx.Client(headers={"User-Agent": "ClinicBrain-MedicalRefresh/1.0"})
     items: List[SourceEvidence] = []
@@ -185,7 +214,8 @@ def fetch_official_feeds(
             try:
                 resp = _safe_get(cli, url, check_dns=check_dns)
                 items.extend(parse_rss_feed(resp.text, url))
-            except Exception:
+            except Exception as exc:
+                logger.warning("官方 RSS 擷取失敗 (%s): %s: %s", url, type(exc).__name__, exc)
                 continue
         return items
     finally:

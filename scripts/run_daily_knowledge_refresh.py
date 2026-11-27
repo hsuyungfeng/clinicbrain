@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sqlite3
 import sys
 from pathlib import Path
@@ -36,6 +37,7 @@ def _extract_pubmed_query(title: str, key: str) -> str:
 
 
 def main() -> int:
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     args = parse_args()
     conn = sqlite3.connect(args.db)
     ensure_refresh_tables(conn)

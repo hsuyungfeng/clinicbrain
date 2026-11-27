@@ -392,3 +392,102 @@ Stage 2 圖片更差，同樣不展開。完整判斷紀錄見
   ──────
   ### 四、 總結與建議行動
 
+
+
+  針對 clinicbrain 現有架構與 shinyobjectz/raea https://github.com/shinyobjectz/raea（最新釋出 v0.1.9，2026-
+  11-22）進行深度研究後，我的整體建議是：
+  │ 結論：不要用 raea 取代現有的 398 筆 2.5D SVG 動畫管線；但非常值得用它來做「有聲社群短影音」與「Phase 41
+  │ 的 3D 解剖影片」PoC 測試，並可無痛取代 Remotion。
+
+  以下從架構對比、適用場景、風險評估到測試影片方案為您整理分析：
+  ──────
+  一、 clinicbrain 現況 vs raea 能力對比
+
+   面向            │ clinicbrain 現有管線        │ shinyobjectz/raea           │ 評估
+  ─────────────────┼─────────────────────────────┼─────────────────────────────┼────────────────────────────
+   渲染核心        │ clinicbrain/src/web/static/ │ Rust + Bevy 0.20 +          │ clinicbrain 已有 403
+                   │ visual_engine.js（4,618     │ Vello（GPU 2D/SVG/DOM）+    │ 支成品 MP4 在
+                   │ 行確定性 SVG +              │ QuickJS（Linux）            │ data/videos/，且同時支援網
+                   │ ClinicMotion）＋ Playwright │                             │ 頁端互動播放；raea
+                   │ Chromium 逐格截圖 ＋ ffmpeg │                             │ 優勢在於不需啟動瀏覽器、可
+                   │                             │                             │ 直接輸出影片與 3D
+   3D 支援         │ clinicbrain/Plan.md:196-205 │ 原生支援 Bevy               │ 高度互補，可直接承接 Phase
+                   │ Phase 41 規劃評估           │ 3D、glTF/GLB、React Three   │ 41 的 3D 解剖衛教影片輸出
+                   │ BodyVista（GLTF/GLB）       │ Fiber (<R3F>)、鏡頭運鏡與   │
+                   │                             │ 2D 標註疊層                 │
+   音訊與口白      │ clinicbrain/src/visual/vide │ 內建混音器、本地音效生成（r │ 可補齊 IG Reels / LINE
+                   │ o_queue.py:10 目前為無聲    │ aea                         │ 官方帳號需要配音與字幕的缺
+                   │ H.264 合成                  │ sao）、語音/TTS（FISH_API_K │ 口
+                   │                             │ EY）、依語音剪輯（raea      │
+                   │                             │ cut）                       │
+   Remotion 相容性 │ 曾實驗過                    │ API                         │ 可直接取代 Remotion
+                   │ clinicbrain/demo/visual/rem │ 幾乎完全相同（AbsoluteFill, │
+                   │ otion-rhinoplasty/src/Compo │ Composition,                │
+                   │ sition.tsx（AbsoluteFill,   │ useCurrentFrame,            │
+                   │ useCurrentFrame,            │ interpolate, registerRoot） │
+                   │ interpolate）               │                             │
+   授權條款        │ Remotion                    │ FSL-1.1-ALv2（兩年後轉      │ 對診所專案非常友善
+                   │ 商業使用需付費公司授權      │ Apache-                     │
+                   │                             │ 2.0；診所內部產出影片與自用 │
+                   │                             │ 免費，僅限制做成競品引擎）  │
+   AI Agent 整合   │ Hermes Agent + clinic-      │ 專為 Agent 設計：附帶 raea- │ 很適合納入 Agent
+                   │ visual-batch skill          │ skills、--frame N           │ 自動品管迴圈
+                   │                             │ 單格截圖檢查、raea check    │
+                   │                             │ 自動檢測文字裁切/對比度/音  │
+                   │                             │ 量/凍結                     │
+  ──────
+  二、 哪些地方「有幫助」、哪些「不建議動」？
+
+  1. 強烈建議不要動的部分
+  • 現有 398 筆 2.5D 病理動畫（clinicbrain/src/web/static/visual_engine.js +
+  clinicbrain/src/visual/video_queue.py）：
+      • 這套系統已經高度客製化（15 個器官系統、Typed IR 零遷移、SHA-256 增量快取、Phase 44/49
+      光影與對照升級），且必須在診所諮詢網頁端即時互動播放。搬到 raea 無法直接嵌入現有 FastAPI
+      網頁播放器，重寫成本高、投報率低。
+
+
+  2. 最有幫助、值得測試的 3 個切入點
+
+  1. 社群有聲短影音後製包裝（9:16 Reels / Shorts / LINE）：
+      • 把 clinicbrain/src/visual/video_queue.py 產出的無聲衛教 MP4 作為底片，用 raea
+      加上動態繁體中文標題卡、醫師口白/配音、免責聲明底條、結尾診所預約 CTA（這正是之前
+      demo/visual/remotion-rhinoplasty 想做的事），再用 raea check 自動檢查安全區與音量。
+  2. Phase 41 醫美 3D 解剖解說影片（glTF/GLB）：
+      • 針對高單價醫美療程（如拉皮 SMAS 層、鼻整形支架、隆乳胸大肌腔隙），將 3D 解剖模型（.glb）放進
+      raea，由 AI Agent 寫鏡頭運鏡 + 半透明組織標註，直接渲染成 1080p MP4。
+  3. 快速產出診所行銷 / 知識型模板影片：
+      • 結合 raea 的 SVG/Tailwind/Motion 能力，快速產出「醫師 Q&A 精華」、「術後照護須知」等圖文動態短片。
+
+  ──────
+  三、 本機環境與必須先驗證的風險
+
+  1. 本機硬體已完全就緒：
+      • 已確認本機具備 NVIDIA GeForce GTX 1060 6GB（Vulkan 1.4.312）、AMD Radeon / MI50（RADV Vulkan 1.4.
+      335）、ffmpeg 與 node v24.13.1，符合 raea Linux 版的執行需求。
+      • 註：根據 raea 官方 linux.feature https://github.com/shinyobjectz/raea/blob/main/docs/linux.feature
+      實測，Linux 上因為 JS 引擎使用 QuickJS（無 JIT），渲染速度主要吃 CPU 單核與同步（1080p 約 15–25
+      fps，冷啟動首幀約 6–10 秒），仍明顯快於 Playwright 逐格截圖存 PNG 再轉檔。
+  2. 必須透過測試影片驗證的 3 個風險：
+      • 繁體中文（CJK）字型與斷行：raea 在 Linux 依賴 fontconfig + Vello / stylo，必須實測繁體中文字型（如
+      Noto Sans TC）在 2D 排版與動態字卡上是否有缺字、字距異常或被裁切的問題。
+      • 多 GPU 環境挑選：本機同時有 AMD 與 NVIDIA 兩張卡，需確認 raea 預設選用哪張 Vulkan
+      裝置（必要時搭配環境變數調整）。
+      • 工具成熟度：raea 剛開源不到兩週（0.1.1 → 0.1.9 高頻更新），stage-guards.feature https://github.
+      com/shinyobjectz/raea/blob/main/docs/stage-guards.feature 中也記錄了不少他們剛發現正在修的 3D
+      文字與圖集 bug，因此現階段適合作為獨立的實驗/子管線，不宜直接綁死核心生產排程。
+
+  ──────
+  四、 建議的「測試影片（PoC）」方案
+
+  建議先不改動 clinicbrain 主程式，在獨立測試目錄跑 1~2 支短影片 驗證可行性：
+
+  1. PoC 1（最推薦，對接現有資產，約 15 分鐘）：
+      • 題目：拿現有的一支 9:16 豎屏無聲影片（例如 data/videos/icd-k279-peptic-ulcer_portrait.mp4 或
+      remotion-rhinoplasty 的 rhinoplasty-strut.mp4），用 raea 寫一個簡單的 .tsx 合成檔：
+          • 加上「緻妍診所」動態片頭/免責聲明底條（測試繁體中文渲染）
+          • 疊加一段測試音訊/背景音
+          • 執行 raea render 測量本機渲染耗時，並跑 raea check 檢查輸出品質。
+
+  2. PoC 2（驗證 Phase 41 3D 潛力，選做）：
+      • 題目：用 raea 載入一個簡易 3D 幾何或公開 .glb 模型，做 5 秒鏡頭環繞運鏡 + 繁體中文 2D 標註，驗證
+      Bevy 3D 在本機 GTX 1060 Linux 上的渲染穩定度。
