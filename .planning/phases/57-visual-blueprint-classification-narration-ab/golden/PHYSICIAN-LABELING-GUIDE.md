@@ -1,6 +1,6 @@
 # 黃金標準集標註說明（給審閱醫師）
 
-本說明對應 `golden_set_template.csv`，共 50 筆。目的是為「動畫第一幕藍圖分類器」建立醫師標準答案，
+本說明對應 `physician_labeling_sheet.csv`（由 `golden_set_template.csv` 加入來源原文而來），共 50 筆。目的是為「動畫第一幕藍圖分類器」建立醫師標準答案，
 用來評估分類器的準確率。**醫師的判斷是此評估的基準，請依臨床專業判斷填寫，不必迎合系統現行的推斷結果。**
 
 ---
@@ -66,8 +66,14 @@
 
 ## 五、交回方式
 
-1. 直接在 `golden_set_template.csv` 的 `physician_blueprint` 與 `evidence_span` 欄位填寫。
-2. 完成後通知專案團隊。團隊會以程式檢查：
+1. 請填寫 **`physician_labeling_sheet.csv`**（不是 `golden_set_template.csv`）。此表已附上每筆的 `source_text`（來源原文），
+   方便你直接對照；請在 `physician_blueprint`、`evidence_span` 欄位填寫，有備註可寫在 `physician_notes`。
+   表單以 UTF-8 with BOM 儲存，Excel 可直接開啟。
+2. 完成後通知專案團隊。團隊會以下列指令檢查（`--require-complete` 會要求 50 筆全部標註）：
+   ```bash
+   clinicbrain/.venv/bin/python clinicbrain/scripts/check_physician_labels.py --require-complete
+   ```
+   程式檢查：
    - `physician_blueprint` 是否為合法選項；
    - `evidence_span` 是否確為來源原文子字串（忽略空白與全半形標點的差異）。
 3. 檢查未通過的列，會退回請醫師確認，不會自動修改您的答案。
