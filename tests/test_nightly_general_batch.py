@@ -36,6 +36,9 @@ def _dummy_llm(prompt: str) -> str:
 def test_general_only_batch(isolated_conn: sqlite3.Connection, tmp_path: Path):
     """驗證 general_only 模式僅處理 category='general' 主題，且略過樹重建與 SOAP 提煉。"""
     conn = isolated_conn
+    # 測試資料獨立性：清除副本中已生成的一般主題 FAQ，使測試不依賴正式資料庫的當前內容。
+    conn.execute("DELETE FROM faq_cache WHERE source_type = 'llm_generated' AND category = 'general'")
+    conn.commit()
     log_dir = tmp_path / "logs"
     logger = RunLogger(log_dir, echo=False)
     seed_file = Path("data/batch/faq_seeds.json")

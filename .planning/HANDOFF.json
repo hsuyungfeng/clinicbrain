@@ -1,86 +1,112 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-22T10:04:35+08:00",
-  "phase": "33",
-  "phase_name": "semantic-contrast-and-timeline-engine",
-  "phase_dir": ".planning/phases/33-semantic-contrast-and-timeline-engine",
-  "plan": 2,
-  "task": 3,
-  "total_tasks": 3,
+  "timestamp": "2026-11-27T17:53:34+08:00",
+  "phase": "57",
+  "phase_name": "visual-blueprint-classification-narration-ab",
+  "phase_dir": ".planning/phases/57-visual-blueprint-classification-narration-ab",
+  "plan": "57-02",
+  "task": "T6",
+  "total_tasks": 6,
   "status": "paused",
   "completed_tasks": [
     {
-      "id": 1,
-      "name": "33-01 blueprints 列舉擴充 + enum_values 單一來源 + autodraft 專科推斷與提示詞第 8 條 + 解析器白名單改讀規格",
-      "status": "done",
-      "commit": "adb3ec8 (含於他人 commit，需確認)"
+      "id": "57-01",
+      "name": "對應對帳、黃金集模板、現況基線",
+      "status": "done"
     },
     {
-      "id": 2,
-      "name": "33-02 visual_engine.js 5 組 contrast 專科 + 5 組 timeline 修復歷程 + glow_restored + 白名單對齊 Python",
-      "status": "done",
-      "commit": "adb3ec8 (含於他人 commit，需確認)"
+      "id": "57-02-T1",
+      "name": "分類器實作與單元測試",
+      "status": "done"
     },
     {
-      "id": 3,
-      "name": "33-02 截圖驗收、Remotion 包裝 rhinoplasty-strut.mp4、MP4/Hermes 審計",
-      "status": "in_progress",
-      "progress": "截圖與測試已完成；MP4 與 Hermes 審計由其他代理完成（見 33-02-SUMMARY.md），Remotion 包裝已渲染一次並目視檢查"
+      "id": "57-02-T2",
+      "name": "健保批次改接與 --blueprint-mode（fixed 快照通過）",
+      "status": "done"
+    },
+    {
+      "id": "57-02-T3",
+      "name": "探索集評估（原始 50.0%，自動接受 57.5%）",
+      "status": "done"
+    },
+    {
+      "id": "57-02-T4",
+      "name": "醫學定義決策（A、B、C 原歸屬；D 需新盲測）",
+      "status": "done",
+      "ref": "golden/57-02-DECISIONS.md"
+    },
+    {
+      "id": "57-02-T5",
+      "name": "查表 TOPIC_BLUEPRINT_REGISTRY 與放行閘門（registry SHA-256 凍結）",
+      "status": "done"
     }
   ],
-  "remaining_tasks": [],
-  "blockers": [
+  "remaining_tasks": [
     {
-      "description": "src/visual/autodraft.py 與 tests/test_visual_autodraft.py 有未提交的他人修改（外科推斷加入能量裝置排除、移除 skin_energy 分支、新增 surgical 解析測試）",
-      "type": "human_action",
-      "workaround": "先釐清作者與意圖，再決定 commit 或還原；本次 WIP commit 不納入"
+      "id": "57-02-T6",
+      "name": "以獨立盲測集產出收斂評估",
+      "blocked_by": "新盲測標註"
     },
     {
-      "description": "clinic.db 與 scripts/run_hermes_batch_49.py 有未提交修改",
-      "type": "human_action",
-      "workaround": "clinic.db 為正式資料，需使用者明確決定是否納入版控；不得由代理自行 commit"
+      "id": "57-03",
+      "name": "TTS 旁白與 A/B 設計",
+      "blocked_by": "57-02 T6"
+    },
+    {
+      "id": "57-04",
+      "name": "渲染層遷移評估報告",
+      "blocked_by": "57-03"
+    }
+  ],
+  "blockers": [
+    {
+      "description": "缺少獨立盲測樣本（決定 D 已改為需要）",
+      "type": "human_action"
+    },
+    {
+      "description": "黃金集 50 筆 A、B 標註與決定衝突；已標記為除錯用、不可用於泛化評估，保持不動",
+      "type": "data_status"
     }
   ],
   "human_actions_pending": [
     {
-      "action": "釐清未提交的 autodraft.py 與測試修改的來源，決定 commit 或捨棄",
-      "context": "避免覆蓋他人工作",
+      "action": "醫師標註新的盲測樣本（來源：未被抽樣的 42 棵樹，不得參考 AI 建議）",
       "blocking": true
-    },
-    {
-      "action": "決定 clinic.db 是否納入 commit",
-      "context": "正式庫資料，不可由代理代為提交",
-      "blocking": false
     }
   ],
   "decisions": [
     {
-      "decision": "專科 contrast/timeline 以 dict 介面為準，新增 select_* 函式回傳 tuple",
-      "rationale": "保留 build_tree_visual_prompt 與既有呼叫端",
-      "phase": "33"
+      "decision": "A 外科微創處置採原歸屬（cyst_excision / nail_matrix / subdermal_curettage / deep_plane_facelift）",
+      "ref": "golden/57-02-DECISIONS.md"
     },
     {
-      "decision": "JS 與 Python 列舉以共用常數/enum_values 為單一來源",
-      "rationale": "Phase 32 發生白名單分歧導致新模式被靜默退回預設",
-      "phase": "33"
+      "decision": "B ICD 輕症採原歸屬（pathology_mechanism）",
+      "ref": "golden/57-02-DECISIONS.md"
     },
     {
-      "decision": "Remotion 專案放在 demo/visual/remotion-rhinoplasty，只包裝既有 MP4 加底部免責說明列",
-      "rationale": "使用者要求 try once；不改原影片內容",
-      "phase": "33"
+      "decision": "C 能量療程採原歸屬（skin_energy / laser_action / process_diagram）",
+      "ref": "golden/57-02-DECISIONS.md"
     },
     {
-      "decision": "昇華規則：推理樹 doc_id 改用 general-<slug>；同 slug 先到者佔用、不覆寫",
-      "rationale": "doc_id 全域 UNIQUE；使用者已接受",
-      "phase": "32"
+      "decision": "D 需要新的獨立盲測樣本",
+      "ref": "golden/57-02-DECISIONS.md"
+    },
+    {
+      "decision": "查表中超出原決定範圍的關鍵字（甲溝炎、果酸煥膚、深層清潔煥膚、雙下巴闊頸肌、扁桃腺炎、咽喉炎、流行性感冒等）保留",
+      "ref": "src/visual/blueprint_registry.py"
+    },
+    {
+      "decision": "85% 門檻凍結，不作為放行或切換 --blueprint-mode classifier 的依據",
+      "ref": "golden/57-02-REVISED-PLAN.md"
+    },
+    {
+      "decision": "夜間草擬階段預設關閉，草稿只寫為 pending",
+      "ref": "57-R-AUTODRAFT-SPEC.md"
     }
   ],
   "uncommitted_files": [
-    "clinic.db (他人/正式庫，不納入)",
-    "scripts/run_hermes_batch_49.py (他人，不納入)",
-    "src/visual/autodraft.py (待釐清，不納入)",
-    "tests/test_visual_autodraft.py (待釐清，不納入)"
+    "golden/physician_labeling_sheet.ods (醫師工作副本，不納入版控)"
   ],
-  "next_action": "先確認 autodraft.py 未提交修改的來源；確認後執行 pytest tests/test_visual_autodraft.py tests/test_visual_engine_browser.py 驗證，再決定是否 commit",
-  "context_notes": "Phase 33 的 JS 與後端專科實作已通過靜態、瀏覽器與 Python 單元測試（視覺相關 167 passed、1 既有略過）。已知弱點：結節與微滴在 u=1 偏小；醫學正確性仍需醫師審核。注意：不要把 clinic.db 或他人修改打包進 WIP。"
+  "next_action": "產生新的盲測樣本表單（42 棵未抽樣樹，分層抽 30 筆，不含 AI 建議與現行推斷欄位），交醫師標註後執行 --require-complete 檢查，再進行 57-02 T6 評估。",
+  "context_notes": "讀取本檔前請先看 golden/57-02-DECISIONS.md 與 golden/57-02-REVISED-PLAN.md。discarded 的 runner/autodraft 舊版本無法還原，備份在 ~/clinicbrain-discarded-20261127/。"
 }
