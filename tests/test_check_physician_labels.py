@@ -117,14 +117,14 @@ def test_cli_exit_2_on_missing_column(tmp_path):
     assert main([str(p)]) == 2
 
 
-def test_real_sheet_loads_and_reports_all_unlabeled():
-    """目前實際表單尚未標註：預設模式應通過，且 50 列皆為未標註。"""
+def test_real_sheet_is_fully_labeled_and_valid():
+    """醫師已完成標註的正式表單：50 列皆已標註，且 --require-complete 下無錯誤。"""
     from scripts.check_physician_labels import DEFAULT_SHEET
 
     rows = load_sheet(DEFAULT_SHEET)
-    res = check_rows(rows)
+    res = check_rows(rows, require_complete=True)
     assert res["total"] == 50
-    assert res["unlabeled"] == 50
+    assert res["unlabeled"] == 0
     assert res["errors"] == []
 
 

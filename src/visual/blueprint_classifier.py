@@ -61,7 +61,9 @@ def build_classification_prompt(source_text: str, title: str = "") -> str:
 7. 若主題為一般流程或概念說明，且無特定機轉、器械或手術動作，請選 process_diagram。
 8. 若原文資訊不足，或與以上所有藍圖都不符，請務必選擇 other，絕不可強行歸類。
 注意：process_diagram 僅為通用流程圖，若原文有明確機轉、器械或手術動作，應優先選擇對應藍圖。
-5. 必須提供 evidence_span（原文中支持此選擇的文字片段，10至40字，必須存在於原文）。
+5. 必須提供 evidence_span：從來源文本中【逐字複製】一段連續原文作為證據，10至40字。
+   不可改寫、不可意譯、不可摘要、不可拼接不同句子的片段，也不可自行補字或改標點；
+   若找不到可逐字引用的原文，請將 evidence_span 留空字串。
 6. confidence 為 0.0 至 1.0 的浮點數。
 
 【衛教標題】：{title}

@@ -139,6 +139,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sheet", default=str(DEFAULT_SHEET), help="醫師表單 .xlsx 路徑")
     parser.add_argument("--dry-run", action="store_true", help="不呼叫 LLM，只確認讀取與結構")
     parser.add_argument(
+        "--no-thinking",
+        action="store_true",
+        help="完整產生時關閉模型思考（與截斷重跑相同設定），確保 50 筆使用一致的取樣設定",
+    )
+    parser.add_argument(
         "--retry-truncated",
         action="store_true",
         help="只重跑因輸出截斷而失敗的列（關閉思考），就地更新 AI 欄位",
@@ -163,9 +168,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"重跑截斷列：{len(done)} 筆 → {done}")
         return 0
 
+    if args.no_thinking:
+        llm = lambda prompt: local_llm_call(prompt, timeout=420, sampling=RETRY_SAMPLING)  # noqa: E731
+    else:
+        llm = local_llm_call
+
     ai_rows = []
     for i, r in enumerate(rows, start=1):
-        rec = _ai_row(r, local_llm_call)
+        rec = _ai_row(r, llm)
         ai_rows.append(rec)
         print(f"[{i}/{len(rows)}] {rec['doc_id']} → {rec['ai_suggested_blueprint']} ({rec['ai_status']})")
 
