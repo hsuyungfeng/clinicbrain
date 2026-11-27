@@ -95,10 +95,54 @@ def write_ai_sheet(xlsx_path: Path, ai_rows: list[dict[str, str]]) -> None:
     wb.save(xlsx_path)
 
 
+# 截斷修正：本地模型的思考輸出會佔用 max_tokens，導致 JSON 被截斷。
+# 分類任務只需要短 JSON，關閉思考即可避免截斷（見 llm_client.local_llm_call 的 sampling 說明）。
+RETRY_SAMPLING = {"chat_template_kwargs": {"enable_thinking": False}}
+TRUNCATION_MARKER = "截斷"
+
+
+def _read_ai_rows(xlsx_path: Path) -> list[dict[str, str]]:
+    ws = load_workbook(xlsx_path)[AI_SHEET_NAME]
+    hdr = [c.value for c in ws[HEADER_ROW]]
+    out = []
+    for r_idx, r in enumerate(ws.iter_rows(min_row=DATA_START_ROW), start=DATA_START_ROW):
+        if r[0].value is None:
+            continue
+        rec = dict(zip(hdr, [c.value for c in r]))
+        rec["_row"] = r_idx
+        out.append(rec)
+    return out
+
+
+def retry_truncated(xlsx_path: Path, llm_call) -> list[str]:
+    """只重跑 reason 含截斷訊息的列，並就地更新 AI 欄位（不重建工作表）。回傳重跑的 doc_id 清單。"""
+    src_by_doc = {r["doc_id"]: r for r in load_sheet(xlsx_path)}
+    targets = [r for r in _read_ai_rows(xlsx_path) if TRUNCATION_MARKER in (r.get("ai_reason") or "")]
+    if not targets:
+        return []
+
+    wb = load_workbook(xlsx_path)
+    ws = wb[AI_SHEET_NAME]
+    done: list[str] = []
+    for t in targets:
+        src = src_by_doc[t["doc_id"]]
+        rec = _ai_row(src, llm_call)
+        for idx, h in enumerate(AI_HEADERS, start=1):
+            ws.cell(row=t["_row"], column=idx, value=rec.get(h, ""))
+        done.append(t["doc_id"])
+    wb.save(xlsx_path)
+    return done
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="加入 AI 建議工作表（不寫入醫師欄位）")
     parser.add_argument("--sheet", default=str(DEFAULT_SHEET), help="醫師表單 .xlsx 路徑")
     parser.add_argument("--dry-run", action="store_true", help="不呼叫 LLM，只確認讀取與結構")
+    parser.add_argument(
+        "--retry-truncated",
+        action="store_true",
+        help="只重跑因輸出截斷而失敗的列（關閉思考），就地更新 AI 欄位",
+    )
     args = parser.parse_args(argv)
 
     xlsx = Path(args.sheet)
@@ -110,6 +154,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     from src.pageindex.llm_client import local_llm_call
+
+    if args.retry_truncated:
+        def _llm(prompt: str) -> str:
+            return local_llm_call(prompt, timeout=420, sampling=RETRY_SAMPLING)
+
+        done = retry_truncated(xlsx, _llm)
+        print(f"重跑截斷列：{len(done)} 筆 → {done}")
+        return 0
 
     ai_rows = []
     for i, r in enumerate(rows, start=1):
