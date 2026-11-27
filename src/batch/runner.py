@@ -78,6 +78,8 @@ class BatchConfig:
     gap_trend_urls: tuple[str, ...] = ()
     gap_allowlist_path: Optional[Path] = None
     gap_max_topics: int = 10
+    enable_visual_autodraft: bool = False
+    max_visual_autodraft: int = 3
 
     def __post_init__(self) -> None:
         # 互斥旗標防護（CLI 之外的程式化呼叫同樣適用；矛盾組合直接拒絕，不靜默擇一）
@@ -132,6 +134,9 @@ class BatchSummary:
     gap_partial: int = 0
     gap_uncovered: int = 0
     gap_inserted_pending: int = 0
+    visual_autodraft_planned: int = 0
+    visual_autodraft_generated: int = 0
+    visual_autodraft_failed: int = 0
     errors: int = 0
 
     def as_dict(self) -> dict:
@@ -579,6 +584,61 @@ def _stage_patient_prefill(ctx: BatchContext) -> bool:
     return False
 
 
+def _stage_visual_autodraft(ctx: BatchContext) -> bool:
+    """8.5. 夜間動畫視覺解說卡草擬階段。"""
+    cfg, conn, summary, logger = ctx.cfg, ctx.conn, ctx.summary, ctx.logger
+    if not cfg.enable_visual_autodraft or cfg.soap_only or cfg.general_only or cfg.dry_run:
+        return False
+
+    from src.visual.autodraft import autodraft_tree_to_pending, find_trees_missing_visual_assets
+
+    missing_trees = find_trees_missing_visual_assets(conn, limit=cfg.max_visual_autodraft)
+    summary.visual_autodraft_planned = len(missing_trees)
+
+    for tree in missing_trees:
+        doc_id = tree.get("doc_id")
+        if ctx.budget_exhausted():
+            logger.warning("budget_exhausted", stage="visual_autodraft", doc_id=doc_id)
+            summary.status = "budget_exhausted"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+
+        try:
+            res = autodraft_tree_to_pending(conn, tree, ctx.llm_call)
+        except LocalLLMUnavailableError as e:
+            summary.visual_autodraft_failed += 1
+            logger.warning("llm_unavailable", stage="visual_autodraft", error_type=type(e).__name__, doc_id=doc_id)
+            summary.status = "llm_unavailable"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+        except Exception as e:
+            summary.visual_autodraft_failed += 1
+            summary.errors += 1
+            logger.error("visual_autodraft_failed", doc_id=doc_id, error=str(e))
+            continue
+
+        status = res.get("status")
+        code = res.get("code")
+
+        if code == "llm_unavailable":
+            summary.visual_autodraft_failed += 1
+            logger.warning("llm_unavailable", stage="visual_autodraft", doc_id=doc_id)
+            summary.status = "llm_unavailable"
+            logger.info("batch_summary", **summary.as_dict())
+            return True
+
+        if status == "ok":
+            summary.visual_autodraft_generated += 1
+            logger.info("visual_autodraft_done", doc_id=doc_id, topic_key=res.get("topic_key"))
+        elif status == "skipped":
+            logger.info("visual_autodraft_skipped", doc_id=doc_id, code=code)
+        else:
+            summary.visual_autodraft_failed += 1
+            logger.warning("visual_autodraft_failed", doc_id=doc_id, code=code)
+
+    return False
+
+
 def _stage_video_render(ctx: BatchContext) -> bool:
     """9. 動態醫學解說動畫影片佇列渲染階段。"""
     cfg, summary, logger = ctx.cfg, ctx.summary, ctx.logger
@@ -663,6 +723,7 @@ _BATCH_STAGES: tuple[BatchStage, ...] = (
     BatchStage("gap_check", _stage_gap_check),
     BatchStage("autofill_answers", _stage_autofill_answers),
     BatchStage("patient_prefill", _stage_patient_prefill),
+    BatchStage("visual_autodraft", _stage_visual_autodraft),
     BatchStage("video_render", _stage_video_render),
 )
 

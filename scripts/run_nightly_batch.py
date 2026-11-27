@@ -119,6 +119,17 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="略過動態解說動畫影片佇列渲染階段",
     )
+    parser.add_argument(
+        "--enable-visual-autodraft",
+        action="store_true",
+        help="啟用夜間未建立視覺資產之已核准推理樹草擬階段",
+    )
+    parser.add_argument(
+        "--max-visual-autodraft",
+        type=_positive_int,
+        default=3,
+        help="單次批次草擬之最大視覺資產數量上限",
+    )
     soap_mode = parser.add_mutually_exclusive_group()
     soap_mode.add_argument(
         "--skip-soap",
@@ -322,6 +333,8 @@ def main(
             enable_patient_prefill=not args.skip_patient_prefill,
             include_pending_web=args.include_pending_web_prefill,
             skip_video_render=args.skip_video_render,
+            enable_visual_autodraft=args.enable_visual_autodraft,
+            max_visual_autodraft=args.max_visual_autodraft,
             prefill_llm_call=prefill_llm,
         )
 
@@ -342,6 +355,8 @@ def main(
         print(f"FAQ 筆數：新增 {summary.faq_inserted} 筆，剔除 {summary.faq_rejected} 筆，略過既有 {summary.faq_skipped_existing} 筆")
         print(f"推理樹：規劃 {summary.trees_planned} 棵，重建 {summary.trees_rebuilt} 棵，未變 {summary.trees_unchanged} 棵，略過 {summary.trees_skipped} 棵")
         print(f"主體預生成：新增 {summary.prefill_generated} 筆，未變刷新 {summary.prefill_refreshed} 筆，略過受保護 {summary.prefill_protected_skipped} 筆，積壓 {summary.prefill_backlog} 個")
+        if summary.visual_autodraft_planned > 0 or summary.visual_autodraft_generated > 0 or summary.visual_autodraft_failed > 0:
+            print(f"視覺草稿：規劃 {summary.visual_autodraft_planned} 筆，草擬 {summary.visual_autodraft_generated} 筆，失敗 {summary.visual_autodraft_failed} 筆")
         if summary.trees_overwrote_handwritten > 0:
             print(f"⚠️ 注意：共有 {summary.trees_overwrote_handwritten} 棵手寫或上傳之推理樹被重建覆蓋")
         print(f"錯誤數：{summary.errors}")

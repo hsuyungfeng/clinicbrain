@@ -1307,3 +1307,155 @@ def autodraft_from_tree(
         }
     finally:
         GENERATION_LOCK.release()
+
+
+def find_trees_missing_visual_assets(
+    conn: sqlite3.Connection,
+    clinic_id: Optional[str] = None,
+    limit: Optional[int] = None,
+) -> list[dict[str, Any]]:
+    """查詢尚未建立對應視覺資產 (visual_assets) 之已核准臨床推理樹。
+
+    對應規則（Mapping Rule）：
+    1. 推理樹 doc_id 與視覺資產 topic_key 之一對一對應關係透過 normalize_tree_topic_key(doc_id) 決定：
+       - 若 doc_id 開頭非 'tree-'，則前綴加上 'tree-'；
+       - 所有英文字元轉小寫，去頭尾空白，僅允許小寫英數字與連字號（例如 doc_id='picosecond' 對應 topic_key='tree-picosecond'）。
+    2. 比對條件：若 visual_assets 中已存在對應之 topic_key（若有指定 clinic_id 則匹配該 clinic_id 或全域 NULL 資產），
+       即代表該推理樹已具備視覺資產，不列入缺失清單。
+    3. 排序與上限：結果嚴格依 doc_id 遞增排序 (doc_id ASC)，保證輸出順序確定；若傳入 limit 則最多取 limit 筆。
+    """
+    from .writer import has_visual_assets_table
+
+    if not has_visual_assets_table(conn):
+        return []
+
+    eligible = fetch_eligible_trees(conn, clinic_id=clinic_id)
+    if not eligible:
+        return []
+
+    cur = conn.cursor()
+    if clinic_id is not None:
+        cur.execute(
+            "SELECT topic_key FROM visual_assets WHERE clinic_id = ? OR clinic_id IS NULL",
+            (clinic_id,),
+        )
+    else:
+        cur.execute("SELECT topic_key FROM visual_assets")
+    existing_keys = {row[0] for row in cur.fetchall() if row[0]}
+
+    missing: list[dict[str, Any]] = []
+    for tree in eligible:
+        doc_id = tree.get("doc_id")
+        if not doc_id:
+            continue
+        try:
+            t_key = normalize_tree_topic_key(doc_id)
+        except ValueError:
+            continue
+        if t_key not in existing_keys:
+            missing.append(tree)
+
+    missing.sort(key=lambda t: str(t.get("doc_id") or ""))
+    if limit is not None:
+        if limit <= 0:
+            return []
+        missing = missing[:limit]
+    return missing
+
+
+def autodraft_tree_to_pending(
+    conn: sqlite3.Connection,
+    tree: dict[str, Any],
+    llm_call: Optional[Callable[[str], str]] = None,
+) -> dict[str, Any]:
+    """為單一臨床推理樹自動生成視覺解說卡草稿並寫入 visual_assets 為 pending 狀態。
+
+    設計與安全約束：
+    1. 狀態約束：絕不寫入 approved 或已發布狀態，review_status 恆為 pending。
+    2. 冪等與保護：同一 topic_key 若在 visual_assets 已存在列，不得覆寫，直接回傳 {"status": "skipped", "code": "already_exists"}。
+    3. 例外防禦：任何例外（含格式錯誤、LLM 例外、SQL 錯誤）皆被安全捕捉，不中斷外部批次，回傳 {"status": "failed", "code": str}。
+    """
+    from .writer import has_visual_assets_table
+
+    try:
+        if not isinstance(tree, dict):
+            return {"status": "failed", "code": "invalid_argument"}
+
+        doc_id = tree.get("doc_id")
+        if not doc_id or not isinstance(doc_id, str):
+            return {"status": "failed", "code": "missing_doc_id"}
+
+        try:
+            topic_key = normalize_tree_topic_key(doc_id)
+        except ValueError:
+            return {"status": "failed", "code": "schema_error"}
+
+        if not has_visual_assets_table(conn):
+            return {"status": "failed", "code": "missing_table"}
+
+        clinic_id = tree.get("clinic_id")
+
+        # 檢查同一 topic_key 是否已存在列（嚴禁覆寫）
+        cur = conn.cursor()
+        if clinic_id is not None:
+            cur.execute(
+                "SELECT 1 FROM visual_assets WHERE topic_key = ? AND (clinic_id = ? OR clinic_id IS NULL)",
+                (topic_key, clinic_id),
+            )
+        else:
+            cur.execute("SELECT 1 FROM visual_assets WHERE topic_key = ?", (topic_key,))
+        if cur.fetchone() is not None:
+            return {"status": "skipped", "code": "already_exists"}
+
+        # 檢查醫師覆寫模板
+        override = _lookup_template_override(conn, clinic_id, topic_key)
+        tree_copy = dict(tree)
+        if override is not None:
+            if override not in BLUEPRINTS:
+                return {"status": "failed", "code": "unknown_blueprint"}
+            tree_copy["template_override"] = override
+
+        act_llm = llm_call or _default_visual_llm
+        prompt = build_tree_visual_prompt(tree_copy)
+        resolved_title = _resolve_tree_title(tree_copy)
+        fallback_title = f"{resolved_title}原理圖解" if not resolved_title.endswith("原理") else resolved_title
+
+        ir, code = _generate_candidate(act_llm, prompt, topic_key, fallback_title, max_attempts=3)
+        if ir is None:
+            return {"status": "failed", "code": code}
+
+        meta_dict: dict[str, Any] = {
+            "origin": "pageindex_tree",
+            "tree_id": tree_copy.get("id"),
+            "doc_id": doc_id,
+            "tree_version": tree_copy.get("content_version", 1),
+            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "generator_pid": os.getpid(),
+            "source": "nightly_autodraft",
+        }
+
+        asset = {
+            "clinic_id": clinic_id,
+            "topic_key": topic_key,
+            "title": ir["title"],
+            "keywords": ir["keywords"],
+            "ir": ir,
+            "metadata": meta_dict,
+        }
+
+        # 寫入 visual_assets，upsert_assets 自動設定 review_status='pending', source_type='llm_generated'
+        upsert_res = upsert_assets(conn, [asset], source_type="llm_generated", commit=True)
+
+        # 嚴格驗證：確認寫入之記錄 review_status 為 pending，絕非 approved
+        cur.execute("SELECT review_status FROM visual_assets WHERE topic_key = ?", (topic_key,))
+        row = cur.fetchone()
+        if row and row[0] != "pending":
+            conn.rollback()
+            return {"status": "failed", "code": "invalid_status_not_pending"}
+
+        return {"status": "ok", "code": "ok", "topic_key": topic_key, **upsert_res}
+    except LocalLLMUnavailableError:
+        return {"status": "failed", "code": "llm_unavailable"}
+    except Exception as e:
+        return {"status": "failed", "code": f"{type(e).__name__}: {e}"}
+
