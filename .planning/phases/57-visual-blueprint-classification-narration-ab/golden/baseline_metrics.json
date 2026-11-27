@@ -1,0 +1,36 @@
+{
+  "status": "awaiting_physician_labels",
+  "description": "現行規則推斷 (infer_scene1_blueprint) 在黃金標準抽樣集上之藍圖分布基線。尚未由醫師標註，不宣稱任何準確率數字。",
+  "golden_sample_size": 50,
+  "sample_strata": {
+    "has_visual_asset": {
+      "yes": 25,
+      "no": 25
+    },
+    "categories": {
+      "general": 50
+    }
+  },
+  "rule_engine_baseline_distribution": {
+    "laser_action": 6,
+    "neuromuscular": 1,
+    "skin_energy": 8,
+    "dermal_support": 1,
+    "cyst_excision": 2,
+    "nail_matrix": 2,
+    "subdermal_curettage": 7,
+    "surgical_action": 4,
+    "deep_plane_facelift": 1,
+    "process_diagram": 18
+  },
+  "nhi_batch_baseline": {
+    "total": 314,
+    "pathology_mechanism_ratio": 1.0,
+    "comment": "314 筆健保批次第一幕皆寫死為 pathology_mechanism"
+  },
+  "physician_benchmark": {
+    "accuracy": null,
+    "confusion_matrix": null,
+    "note": "需待專業醫師於 golden_set_template.csv 填寫 physician_blueprint 與 evidence_span 後方可評估量測"
+  }
+}
