@@ -1,13 +1,13 @@
 {
   "version": "1.0",
-  "timestamp": "2026-11-27T17:53:34+08:00",
+  "timestamp": "2026-11-27T18:30:52+08:00",
   "phase": "57",
   "phase_name": "visual-blueprint-classification-narration-ab",
   "phase_dir": ".planning/phases/57-visual-blueprint-classification-narration-ab",
   "plan": "57-02",
   "task": "T6",
   "total_tasks": 6,
-  "status": "paused",
+  "status": "BLOCKED_AWAITING_DECISION",
   "completed_tasks": [
     {
       "id": "57-01",
@@ -60,18 +60,30 @@
   ],
   "blockers": [
     {
-      "description": "缺少獨立盲測樣本（決定 D 已改為需要）",
-      "type": "human_action"
+      "description": "原始準確率 83.3%（25/30）未達 85% 凍結門檻",
+      "type": "gate"
     },
     {
-      "description": "黃金集 50 筆 A、B 標註與決定衝突；已標記為除錯用、不可用於泛化評估，保持不動",
-      "type": "data_status"
+      "description": "醫學定義歧異：BBL 能量分類、Rejuran 填充、Prolotherapy/Zimmer 的 other 歸屬、腸躁症",
+      "type": "human_decision"
+    },
+    {
+      "description": "曾發生盲測標註被自動流程改寫；已還原並設為唯讀（chmod 444）",
+      "type": "data_integrity"
     }
   ],
   "human_actions_pending": [
     {
-      "action": "醫師標註新的盲測樣本（來源：未被抽樣的 42 棵樹，不得參考 AI 建議）",
+      "action": "決定分類器方向：A 維持現狀（建議短期）；B 先釐清定義；C 擴大盲測樣本",
       "blocking": true
+    },
+    {
+      "action": "確認是否推送 673cd8c 到 origin",
+      "blocking": false
+    },
+    {
+      "action": "確認是否修訂 AGENTS.md（標註檔防篡改條款）",
+      "blocking": false
     }
   ],
   "decisions": [
@@ -107,6 +119,7 @@
   "uncommitted_files": [
     "golden/physician_labeling_sheet.ods (醫師工作副本，不納入版控)"
   ],
-  "next_action": "產生新的盲測樣本表單（42 棵未抽樣樹，分層抽 30 筆，不含 AI 建議與現行推斷欄位），交醫師標註後執行 --require-complete 檢查，再進行 57-02 T6 評估。",
-  "context_notes": "讀取本檔前請先看 golden/57-02-DECISIONS.md 與 golden/57-02-REVISED-PLAN.md。discarded 的 runner/autodraft 舊版本無法還原，備份在 ~/clinicbrain-discarded-20261127/。"
+  "next_action": "等待操作者決定分類器方向；57-03、57-04 暫緩。",
+  "context_notes": "讀取本檔前請先看 golden/57-02-DECISIONS.md 與 golden/57-02-REVISED-PLAN.md。discarded 的 runner/autodraft 舊版本無法還原，備份在 ~/clinicbrain-discarded-20261127/。",
+  "last_step": "57-02 T6 Independent Blind Evaluation: LLM-only 83.3%, full system 83.3%, auto-accept 93.3% (14/15). Gate Not Met (85% frozen)."
 }
