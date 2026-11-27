@@ -1,0 +1,31 @@
+﻿tree_id,doc_id,llm_blueprint,llm_status,llm_confidence,llm_evidence,system_blueprint,system_source,system_accepted
+B01,3503264627-asce-rose-exosome-regeneration,process_diagram,invalid_evidence,0.70,術前須知...療程步驟...術後即刻照護...長期維持保養,process_diagram,llm,False
+B02,3503264627-bbl-broadband-light,skin_energy,ok,0.90,以平頂波能量發射至肌膚不同深度,skin_energy,llm,False
+B03,3503264627-blepharoplasty-eye-contouring,surgical_action,ok,0.70,雙眼皮採微創多點埋線固定或切開法修除贅皮,surgical_action,llm,True
+B04,3503264627-bulbous-nose-rhinoplasty,surgical_action,invalid_evidence,0.80,針對外擴的大翼軟骨進行軟骨間縫合與對跨縫合，拉近軟骨頂點收攏鼻尖,surgical_action,llm,False
+B05,3503264627-full-deep-plane-facelift,deep_plane_facelift,ok,0.98,在深層筋膜下（Deep Plane）進行高位解剖剝離，精確解離顴大肌韌帶與下顎真性維持韌帶,deep_plane_facelift,llm,True
+B06,3503264627-nd-yag-laser-toning,laser_action,ok,0.95,透過光震波與光熱效應將沉積黑色素顆粒震碎為微粒,laser_action,llm,True
+B07,3503264627-overfilled-face-syndrome-correction,other,needs_review,0.55,擬定分階段精準微創修復計畫,other,llm,False
+B08,3503264627-picosecond-laser-rejuvenation,laser_action,ok,0.95,採用皮秒超短脈衝（Picosecond）雷射，強大光機械衝擊波瞬間將黑色素震碎為粉塵狀,laser_action,registry,True
+B09,3503264627-rejuran-pdrn-skin-healer,dermal_support,ok,0.80,以微滴淺層注射技術均勻注入真皮淺層,dermal_support,llm,True
+B10,3503264627-swan-neck-cervicoplasty,corset_platysmaplasty,ok,0.95,進行中央馬甲式雙向交疊對縫（Corset Platysmaplasty），建構強韌肌肉吊帶重塑清晰九十度下顎天鵝頸夾角,corset_platysmaplasty,registry,True
+B11,3503264627-ultherapy-focused-ultrasound,skin_energy,invalid_evidence,0.90,微聚焦超音波技術（MFU-V）...精準釋放聚焦熱凝結點（溫度達六十五至七十度），引發筋膜層強效收縮提拉,skin_energy,registry,True
+B12,general-hao-hyperbaric-oxygen,process_diagram,ok,0.70,依急性骨折、運動傷害嚴重度或慢性傷口狀態，安排五至十次為一週期之連續治療,process_diagram,llm,False
+B13,general-hao-zimmer-inductive,skin_energy,ok,0.75,透過專利交變磁場深入肌膜層與運動神經，誘發節律性肌肉收縮與細胞膜離子重組,skin_energy,llm,False
+B14,hao-hyperbaric-oxygen,process_diagram,ok,0.70,依急性骨折、運動傷害嚴重度或慢性傷口狀態，安排五至十次為一週期之連續治療,process_diagram,llm,False
+B15,hao-prolotherapy-prp,other,needs_review,0.55,由醫師精準穿刺至病灶目標韌帶附著點或關節腔進行多點微量注射,other,llm,False
+B16,hao-zimmer-inductive,other,needs_review,0.55,透過專利交變磁場深入肌膜層與運動神經，誘發節律性肌肉收縮與細胞膜離子重組,other,llm,False
+B17,icd-k279-peptic-ulcer,pathology_mechanism,invalid_evidence,0.80,胃酸侵蝕黏膜形成潰瘍缺損，區域性血管可能受損。,pathology_mechanism,llm,False
+B18,icd-k589-ibs,process_diagram,ok,0.60,規律作息與飲食，記錄誘發因素，適度紓壓，依醫師評估調整照護方式。,process_diagram,llm,False
+B19,icd-k649-hemorrhoids,pathology_mechanism,ok,0.70,長期用力排便或久坐，使肛門靜脈充血擴張形成腫塊,pathology_mechanism,llm,True
+B20,icd-l0390-cellulitis,pathology_mechanism,ok,0.80,細菌經皮膚破損處侵入，深層組織發炎並可能擴散。,pathology_mechanism,llm,True
+B21,icd-l209-atopic-dermatitis,pathology_mechanism,ok,0.70,遺傳體質與屏障功能不足，使皮膚容易受刺激而反覆發炎,pathology_mechanism,llm,True
+B22,icd-l509-urticaria,pathology_mechanism,ok,0.85,過敏刺激使肥大細胞釋放組織胺，造成血管擴張與滲漏,pathology_mechanism,llm,True
+B23,icd-l700-acne,pathology_mechanism,ok,0.80,皮脂與角質阻塞毛孔，細菌繁殖後引起毛囊發炎,pathology_mechanism,llm,True
+B24,icd-m179-knee-osteoarthritis,pathology_mechanism,ok,0.70,軟骨隨年齡與負重逐漸磨損，關節周圍肌力不足使負擔加重,pathology_mechanism,llm,False
+B25,icd-m5450-low-back-pain,pathology_mechanism,ok,0.70,腰部肌肉與筋膜過度負荷，引起緊繃與發炎,pathology_mechanism,llm,True
+B26,icd-m7500-frozen-shoulder,pathology_mechanism,ok,0.70,肩關節囊發炎並逐漸沾黏增厚，使關節活動空間明顯縮小,pathology_mechanism,llm,True
+B27,icd-m810-osteoporosis,pathology_mechanism,invalid_evidence,0.70,骨吸收速度超過新生，骨小梁變稀變脆，骨強度逐漸下降,pathology_mechanism,llm,False
+B28,icd-n3000-uti,pathology_mechanism,ok,0.70,細菌沿尿道上行至膀胱，引起黏膜發炎與充血,pathology_mechanism,llm,True
+B29,icd-s93409-sprain-strain,pathology_mechanism,invalid_evidence,0.70,扭轉或過度牽拉使韌帶與肌腱纖維撕裂，區域性出血並發炎,pathology_mechanism,llm,False
+B30,site-b0987ae19c-1,process_diagram,ok,0.80,治療前評估患者焦慮程度、牙科恐懼史與全身健康狀況,process_diagram,llm,False

@@ -40,3 +40,10 @@
 - 表單不含 AI 建議、現行推斷、或任何分類器輸出；醫師應依 `PHYSICIAN-LABELING-GUIDE.md` 獨立標註。
 - 標註完成後以 `check_physician_labels.py --require-complete <盲測表單>` 檢查，再進行 57-02 T6。
 - 注意：盲測表單的 `title` 欄目前為 `doc_id`（原始查詢未含標題）。
+
+## 盲測標註決定（2026-11-27，操作者）
+
+- 盲測表單（`golden/blind_labeling_sheet.xlsx`）的醫師原始標註維持不變，不以系統預測覆寫。
+- T6 結果以原始標註計算：原始準確率 83.3%（25/30），**未達 85% 門檻**。
+- 判錯的 5 筆（BBL 光嫩膚、Rejuran PDRN、Prolotherapy PRP、Zimmer 誘導式、腸躁症）保留為分歧案例，
+  供後續與醫師討論；不以系統輸出替代醫師判斷。
