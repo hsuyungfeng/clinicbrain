@@ -90,6 +90,8 @@ def extract_json_from_llm_response(raw_text: str) -> Optional[Dict[str, Any]]:
 def post_process_self_heal(
     ir: Dict[str, Any],
     manifest_item: Dict[str, Any],
+    blueprint_mode: str = "fixed",
+    s1_classified_blueprint: Optional[str] = None,
 ) -> Dict[str, Any]:
     """執行確定性自癒防護：強制修正欄位、數字清洗、法規禁詞消除與長度約束。"""
     c = copy.deepcopy(ir)
@@ -127,10 +129,15 @@ def post_process_self_heal(
     c["keywords"] = clean_kws[:4]
 
     # 4. 場景檢查與建構（必須為 3 幕）
+    s1_fallback = (
+        s1_classified_blueprint
+        if (blueprint_mode == "classifier" and s1_classified_blueprint)
+        else "pathology_mechanism"
+    )
     scenes = c.get("scenes")
     if not isinstance(scenes, list) or len(scenes) != 3:
         scenes = [
-            {"blueprint": "pathology_mechanism"},
+            {"blueprint": s1_fallback},
             {"blueprint": "contrast"},
             {"blueprint": "timeline"},
         ]
@@ -201,7 +208,12 @@ def post_process_self_heal(
         # blueprint & params
         bp = sc.get("blueprint")
         if bp not in BLUEPRINTS:
-            bp = "pathology_mechanism" if idx == 0 else ("contrast" if idx == 1 else "timeline")
+            s1_fallback = (
+                s1_classified_blueprint
+                if (blueprint_mode == "classifier" and s1_classified_blueprint)
+                else "pathology_mechanism"
+            )
+            bp = s1_fallback if idx == 0 else ("contrast" if idx == 1 else "timeline")
             sc["blueprint"] = bp
 
         # 補正 params
@@ -243,11 +255,20 @@ def post_process_self_heal(
                 params["milestones"] = ["初期評估", "正規處置", "長期維持"]
             else:
                 params["milestones"] = [sanitize_text_digits(m)[:8] for m in ms]
+        else:
+            ok_p, _ = validate_params(bp, params)
+            if not ok_p:
+                sc["params"] = default_params(bp)
 
     return c
 
 
-def mock_generate_ir(manifest_item: Dict[str, Any], inject_error: str = "") -> Dict[str, Any]:
+def mock_generate_ir(
+    manifest_item: Dict[str, Any],
+    inject_error: str = "",
+    blueprint_mode: str = "fixed",
+    s1_classified_blueprint: Optional[str] = None,
+) -> Dict[str, Any]:
     """確定性 Mock 生成器，供單元測試與離線驗證使用。"""
     name = manifest_item.get("clean_name") or manifest_item.get("disease_name", "專科疾病")
     topic_key = manifest_item.get("topic_key", "nhi-disease")
@@ -259,21 +280,28 @@ def mock_generate_ir(manifest_item: Dict[str, Any], inject_error: str = "") -> D
     elif inject_error == "forbidden_phrase":
         caption_scene3 = f"本療程保證有效改善症狀，{DISCLAIMER_SUFFIX}"
 
+    s1_bp = (
+        s1_classified_blueprint
+        if (blueprint_mode == "classifier" and s1_classified_blueprint)
+        else "pathology_mechanism"
+    )
+    s1_title = f"{name[:8]}病理機轉" if s1_bp == "pathology_mechanism" else f"{name[:8]}臨床圖解"
+
     return {
         "topic_key": topic_key,
         "title": f"{name[:12]}衛教圖解",
         "keywords": manifest_item.get("keywords", ["專科照護", "衛教圖解"])[:4],
         "scenes": [
             {
-                "blueprint": "pathology_mechanism",
-                "title": f"{name[:8]}病理機轉",
+                "blueprint": s1_bp,
+                "title": s1_title,
                 "caption": f"病理機轉呈現{name[:8]}之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
                 "labels": [
                     {"text": "致病因子", "tone": "warning"},
                     {"text": "解剖結構", "tone": "neutral"},
                 ],
                 "duration_sec": 8.0,
-                "params": {
+                "params": default_params(s1_bp) if s1_bp != "pathology_mechanism" else {
                     "organ_system": archetype.get("s1_organ", "respiratory_mucosa"),
                     "organ_label": f"{name[:6]}",
                     "anatomy_target": name,
@@ -341,6 +369,8 @@ def generate_single_item_with_self_healing(
     llm_call_fn: Optional[Callable[[str], str]] = None,
     mock_mode: bool = False,
     max_retries: int = 3,
+    blueprint_mode: str = "fixed",
+    s1_classified_blueprint: Optional[str] = None,
 ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
     """生成單一疾病 IR 並執行自癒重試迴圈。
 
@@ -350,12 +380,32 @@ def generate_single_item_with_self_healing(
     feedback = ""
     last_code = "init"
 
+    needs_review = False
+    if blueprint_mode == "classifier" and not s1_classified_blueprint:
+        try:
+            from src.visual.blueprint_classifier import classify_scene1_blueprint
+
+            d_name = manifest_item.get("disease_name") or manifest_item.get("clean_name", "")
+            d_text = f"{d_name} {manifest_item.get('category', '')} {manifest_item.get('keywords', [])}"
+            clf = classify_scene1_blueprint(d_text, llm_call_fn or (lambda p: ""), title=d_name)
+            if clf.get("status") == "ok" and clf.get("blueprint") != "other":
+                s1_classified_blueprint = clf.get("blueprint")
+            if clf.get("needs_review") or clf.get("status") != "ok":
+                needs_review = True
+        except Exception:
+            needs_review = True
+
     for attempt in range(1, max_retries + 1):
         try:
             if mock_mode:
                 # 模擬初次生成若有 feedback 則自癒修復
                 inject = "digit_detected" if (attempt == 1 and False) else ""
-                raw_ir = mock_generate_ir(manifest_item, inject_error=inject)
+                raw_ir = mock_generate_ir(
+                    manifest_item,
+                    inject_error=inject,
+                    blueprint_mode=blueprint_mode,
+                    s1_classified_blueprint=s1_classified_blueprint,
+                )
             else:
                 # 調用模型 (若未提供 llm_call_fn 則依序 DeepSeek -> local)
                 # 這裡簡化為直接呼叫 mock 或由外部傳入之生成器
@@ -364,19 +414,38 @@ def generate_single_item_with_self_healing(
                     raw_text = llm_call_fn(prompt)
                     raw_ir = extract_json_from_llm_response(raw_text)
                     if not raw_ir:
-                        raw_ir = mock_generate_ir(manifest_item)
+                        raw_ir = mock_generate_ir(
+                            manifest_item,
+                            blueprint_mode=blueprint_mode,
+                            s1_classified_blueprint=s1_classified_blueprint,
+                        )
                 else:
-                    raw_ir = mock_generate_ir(manifest_item)
+                    raw_ir = mock_generate_ir(
+                        manifest_item,
+                        blueprint_mode=blueprint_mode,
+                        s1_classified_blueprint=s1_classified_blueprint,
+                    )
         except Exception as e:
             logger.warning("Attempt %d generation error: %s", attempt, e)
-            raw_ir = mock_generate_ir(manifest_item)
+            raw_ir = mock_generate_ir(
+                manifest_item,
+                blueprint_mode=blueprint_mode,
+                s1_classified_blueprint=s1_classified_blueprint,
+            )
 
         # 執行後處理自癒
-        healed_ir = post_process_self_heal(raw_ir, manifest_item)
+        healed_ir = post_process_self_heal(
+            raw_ir,
+            manifest_item,
+            blueprint_mode=blueprint_mode,
+            s1_classified_blueprint=s1_classified_blueprint,
+        )
 
         # 檢驗 Typed IR
         ok, code = validate_ir(healed_ir)
         if ok:
+            if needs_review:
+                healed_ir["needs_review"] = True
             return True, healed_ir, "ok"
 
         last_code = code
@@ -384,9 +453,15 @@ def generate_single_item_with_self_healing(
         logger.info("  [自癒重試 %d/%d] topic_key=%s code=%s", attempt, max_retries, manifest_item.get("topic_key"), code)
 
     # 最後防禦：若仍未通過，調用終極乾淨 template
-    fallback_ir = mock_generate_ir(manifest_item)
+    fallback_ir = mock_generate_ir(
+        manifest_item,
+        blueprint_mode=blueprint_mode,
+        s1_classified_blueprint=s1_classified_blueprint,
+    )
     f_ok, f_code = validate_ir(fallback_ir)
     if f_ok:
+        if needs_review:
+            fallback_ir["needs_review"] = True
         return True, fallback_ir, "ok_fallback"
 
     return False, None, last_code
@@ -400,6 +475,7 @@ def run_batch(
     dry_run: bool = True,
     write_db: bool = False,
     db_path: Path = DB_PATH,
+    blueprint_mode: str = "fixed",
 ) -> Dict[str, Any]:
     """批次生成 201-400 衛教動畫。"""
     assert manifest_path.exists(), f"找不到任務清單：{manifest_path}"
@@ -411,7 +487,7 @@ def run_batch(
     if limit is not None and limit > 0:
         manifest = manifest[:limit]
 
-    logger.info("🚀 開始批次生成，共 %d 筆任務 (mock_mode=%s, dry_run=%s)", len(manifest), mock_mode, dry_run)
+    logger.info("🚀 開始批次生成，共 %d 筆任務 (mock_mode=%s, dry_run=%s, blueprint_mode=%s)", len(manifest), mock_mode, dry_run, blueprint_mode)
 
     success_count = 0
     failed_count = 0
@@ -423,6 +499,7 @@ def run_batch(
         ok, ir_data, code = generate_single_item_with_self_healing(
             item,
             mock_mode=mock_mode,
+            blueprint_mode=blueprint_mode,
         )
         if ok and ir_data:
             success_count += 1
@@ -459,6 +536,9 @@ def run_batch(
         upsert_rows = []
         for r in results:
             ir_obj = r["ir"]
+            if ir_obj.get("needs_review"):
+                logger.warning("⚠️ [%s] needs_review=True，跳過自動入庫", ir_obj["topic_key"])
+                continue
             upsert_rows.append({
                 "clinic_id": None,
                 "topic_key": ir_obj["topic_key"],
@@ -483,6 +563,7 @@ if __name__ == "__main__":
     parser.add_argument("--live", dest="mock", action="store_false", help="使用真實 LLM 模式")
     parser.add_argument("--dry-run", action="store_true", default=False, help="僅產出檔案不寫入資料庫")
     parser.add_argument("--write-db", action="store_true", default=False, help="寫入資料庫 pending 狀態")
+    parser.add_argument("--blueprint-mode", choices=["fixed", "classifier"], default="fixed", help="第一幕藍圖決定模式 (fixed 或 classifier)")
     args = parser.parse_args()
 
     res = run_batch(
@@ -491,5 +572,6 @@ if __name__ == "__main__":
         mock_mode=args.mock,
         dry_run=args.dry_run,
         write_db=args.write_db,
+        blueprint_mode=args.blueprint_mode,
     )
     print("批次總結：", json.dumps(res, ensure_ascii=False))

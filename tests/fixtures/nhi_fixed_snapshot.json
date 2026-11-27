@@ -1,0 +1,541 @@
+{
+ "nhi200_compile_local": {
+  "keywords": [
+   "高血壓",
+   "血管"
+  ],
+  "scenes": [
+   {
+    "blueprint": "pathology_mechanism",
+    "caption": "血管組織在高壓血流衝擊下，管壁承受極大張力，須持續由專業醫師當面評估。",
+    "duration_sec": 8,
+    "labels": [
+     {
+      "text": "高壓血流",
+      "tone": "warning"
+     },
+     {
+      "text": "血管組織",
+      "tone": "neutral"
+     }
+    ],
+    "params": {
+     "accent_fill": "warn",
+     "defense_label": "黏膜屏障修復",
+     "lesion_label": "充血發炎區",
+     "organ_label": "呼吸道黏膜",
+     "organ_system": "respiratory_mucosa",
+     "severity_level": 3,
+     "step_labels": [
+      "致病因子刺激",
+      "局部組織發炎",
+      "屏障逐步修復"
+     ],
+     "trigger_label": "外來致病源"
+    },
+    "title": "病理機轉解說"
+   },
+   {
+    "blueprint": "contrast",
+    "caption": "延誤處置易加重負擔，規律照護有助穩定結構防禦，詳細照護建議由專業醫師當面評估。",
+    "duration_sec": 8,
+    "labels": [
+     {
+      "text": "延誤處置",
+      "tone": "warning"
+     },
+     {
+      "text": "規律追蹤",
+      "tone": "optimal"
+     }
+    ],
+    "params": {
+     "left": {
+      "core_effect": "dim",
+      "core_label": "中心缺血",
+      "footnote": "單處集中：不易獲取充足養分",
+      "mode": "mass",
+      "note": "較易出現硬塊",
+      "title": "單處過量",
+      "unit_fill": "fat"
+     },
+     "right": {
+      "footnote": "多層分散：接觸周圍健康組織",
+      "mode": "layered",
+      "note": "接觸周圍組織",
+      "per_row": 5,
+      "rows": 3,
+      "title": "分層少量",
+      "unit_fill": "fat"
+     }
+    },
+    "title": "照護處置對照"
+   },
+   {
+    "blueprint": "timeline",
+    "caption": "血管結構逐步穩定，配合專業醫事人員指導維持健康，個人化處置因人而異。",
+    "duration_sec": 8,
+    "labels": [
+     {
+      "text": "初起穩定",
+      "tone": "neutral"
+     },
+     {
+      "text": "長期維護",
+      "tone": "optimal"
+     }
+    ],
+    "params": {
+     "connectors": "vessels",
+     "milestones": [
+      "術後初期",
+      "微血管長入",
+      "狀態穩定"
+     ],
+     "unit_effect": "mature",
+     "unit_fill": "fat",
+     "units": 3
+    },
+    "title": "長期復原進程"
+   }
+  ],
+  "title": "高血壓衛教圖解",
+  "topic_key": "nhi-001-hypertension"
+ },
+ "nhi400_nhi-201-glaucoma": {
+  "code": "ok",
+  "ir": {
+   "keywords": [
+    "青光眼",
+    "視神經",
+    "眼壓"
+   ],
+   "scenes": [
+    {
+     "blueprint": "pathology_mechanism",
+     "caption": "病理機轉呈現青光眼之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "致病因子",
+       "tone": "warning"
+      },
+      {
+       "text": "解剖結構",
+       "tone": "neutral"
+      }
+     ],
+     "params": {
+      "accent_fill": "warn",
+      "anatomy_target": "青光眼",
+      "defense_label": "屏障修復",
+      "lesion_label": "病理充血",
+      "organ_label": "青光眼",
+      "organ_system": "respiratory_mucosa",
+      "severity_level": 3,
+      "step_labels": [
+       "致病因子刺激",
+       "局部組織反應",
+       "屏障功能重塑"
+      ],
+      "trigger_label": "病因刺激"
+     },
+     "title": "青光眼病理機轉"
+    },
+    {
+     "blueprint": "contrast",
+     "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "不良習慣",
+       "tone": "warning"
+      },
+      {
+       "text": "積極照護",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "left": {
+       "core_effect": "dim",
+       "core_label": "組織充血",
+       "footnote": "未及時正規處置",
+       "mode": "mucosal_irritant_surge",
+       "note": "加重局部負擔",
+       "title": "延誤處置",
+       "unit_fill": "warn"
+      },
+      "right": {
+       "footnote": "建立健康微循環",
+       "mode": "barrier_hydration_shield",
+       "note": "專科穩定支持",
+       "per_row": 5,
+       "rows": 3,
+       "title": "積極照護",
+       "unit_fill": "ok"
+      }
+     },
+     "title": "處置對照分析"
+    },
+    {
+     "blueprint": "timeline",
+     "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "門診評估",
+       "tone": "neutral"
+      },
+      {
+       "text": "定期追蹤",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "connectors": "homeostasis_control",
+      "milestones": [
+       "門診評估",
+       "常規處置",
+       "定期追蹤"
+      ],
+      "unit_effect": "glow_restored",
+      "unit_fill": "accent",
+      "units": 3
+     },
+     "title": "生理復原歷程"
+    }
+   ],
+   "title": "青光眼衛教圖解",
+   "topic_key": "nhi-201-glaucoma"
+  },
+  "ok": true
+ },
+ "nhi400_nhi-202-gerd": {
+  "code": "ok",
+  "ir": {
+   "keywords": [
+    "胃酸",
+    "食道",
+    "逆流"
+   ],
+   "scenes": [
+    {
+     "blueprint": "pathology_mechanism",
+     "caption": "病理機轉呈現胃食道逆流之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "致病因子",
+       "tone": "warning"
+      },
+      {
+       "text": "解剖結構",
+       "tone": "neutral"
+      }
+     ],
+     "params": {
+      "accent_fill": "warn",
+      "anatomy_target": "胃食道逆流",
+      "defense_label": "屏障修復",
+      "lesion_label": "病理充血",
+      "organ_label": "胃食道逆流",
+      "organ_system": "respiratory_mucosa",
+      "severity_level": 3,
+      "step_labels": [
+       "致病因子刺激",
+       "局部組織反應",
+       "屏障功能重塑"
+      ],
+      "trigger_label": "病因刺激"
+     },
+     "title": "胃食道逆流病理機轉"
+    },
+    {
+     "blueprint": "contrast",
+     "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "不良習慣",
+       "tone": "warning"
+      },
+      {
+       "text": "積極照護",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "left": {
+       "core_effect": "dim",
+       "core_label": "組織充血",
+       "footnote": "未及時正規處置",
+       "mode": "mucosal_irritant_surge",
+       "note": "加重局部負擔",
+       "title": "延誤處置",
+       "unit_fill": "warn"
+      },
+      "right": {
+       "footnote": "建立健康微循環",
+       "mode": "barrier_hydration_shield",
+       "note": "專科穩定支持",
+       "per_row": 5,
+       "rows": 3,
+       "title": "積極照護",
+       "unit_fill": "ok"
+      }
+     },
+     "title": "處置對照分析"
+    },
+    {
+     "blueprint": "timeline",
+     "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "門診評估",
+       "tone": "neutral"
+      },
+      {
+       "text": "定期追蹤",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "connectors": "homeostasis_control",
+      "milestones": [
+       "門診評估",
+       "常規處置",
+       "定期追蹤"
+      ],
+      "unit_effect": "glow_restored",
+      "unit_fill": "accent",
+      "units": 3
+     },
+     "title": "生理復原歷程"
+    }
+   ],
+   "title": "胃食道逆流衛教圖解",
+   "topic_key": "nhi-202-gerd"
+  },
+  "ok": true
+ },
+ "nhi400_nhi-203-acne": {
+  "code": "ok",
+  "ir": {
+   "keywords": [
+    "痘痘",
+    "皮脂",
+    "毛囊"
+   ],
+   "scenes": [
+    {
+     "blueprint": "pathology_mechanism",
+     "caption": "病理機轉呈現痘痘之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "致病因子",
+       "tone": "warning"
+      },
+      {
+       "text": "解剖結構",
+       "tone": "neutral"
+      }
+     ],
+     "params": {
+      "accent_fill": "warn",
+      "anatomy_target": "痘痘",
+      "defense_label": "屏障修復",
+      "lesion_label": "病理充血",
+      "organ_label": "痘痘",
+      "organ_system": "respiratory_mucosa",
+      "severity_level": 3,
+      "step_labels": [
+       "致病因子刺激",
+       "局部組織反應",
+       "屏障功能重塑"
+      ],
+      "trigger_label": "病因刺激"
+     },
+     "title": "痘痘病理機轉"
+    },
+    {
+     "blueprint": "contrast",
+     "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "不良習慣",
+       "tone": "warning"
+      },
+      {
+       "text": "積極照護",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "left": {
+       "core_effect": "dim",
+       "core_label": "組織充血",
+       "footnote": "未及時正規處置",
+       "mode": "mucosal_irritant_surge",
+       "note": "加重局部負擔",
+       "title": "延誤處置",
+       "unit_fill": "warn"
+      },
+      "right": {
+       "footnote": "建立健康微循環",
+       "mode": "barrier_hydration_shield",
+       "note": "專科穩定支持",
+       "per_row": 5,
+       "rows": 3,
+       "title": "積極照護",
+       "unit_fill": "ok"
+      }
+     },
+     "title": "處置對照分析"
+    },
+    {
+     "blueprint": "timeline",
+     "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "門診評估",
+       "tone": "neutral"
+      },
+      {
+       "text": "定期追蹤",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "connectors": "homeostasis_control",
+      "milestones": [
+       "門診評估",
+       "常規處置",
+       "定期追蹤"
+      ],
+      "unit_effect": "glow_restored",
+      "unit_fill": "accent",
+      "units": 3
+     },
+     "title": "生理復原歷程"
+    }
+   ],
+   "title": "痘痘衛教圖解",
+   "topic_key": "nhi-203-acne"
+  },
+  "ok": true
+ },
+ "nhi400_nhi-204-tooth": {
+  "code": "ok",
+  "ir": {
+   "keywords": [
+    "牙齦",
+    "牙周",
+    "牙菌斑"
+   ],
+   "scenes": [
+    {
+     "blueprint": "pathology_mechanism",
+     "caption": "病理機轉呈現牙周病之局部組織結構受損與發炎反應，影響周圍微循環，需及早由專業醫師當面評估掌握狀況。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "致病因子",
+       "tone": "warning"
+      },
+      {
+       "text": "解剖結構",
+       "tone": "neutral"
+      }
+     ],
+     "params": {
+      "accent_fill": "warn",
+      "anatomy_target": "牙周病",
+      "defense_label": "屏障修復",
+      "lesion_label": "病理充血",
+      "organ_label": "牙周病",
+      "organ_system": "respiratory_mucosa",
+      "severity_level": 3,
+      "step_labels": [
+       "致病因子刺激",
+       "局部組織反應",
+       "屏障功能重塑"
+      ],
+      "trigger_label": "病因刺激"
+     },
+     "title": "牙周病病理機轉"
+    },
+    {
+     "blueprint": "contrast",
+     "caption": "積極配合正規專科臨床照護並維持良好作息，有助維持生理機能穩定，延誤處置可能使不適情況進一步加劇。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "不良習慣",
+       "tone": "warning"
+      },
+      {
+       "text": "積極照護",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "left": {
+       "core_effect": "dim",
+       "core_label": "組織充血",
+       "footnote": "未及時正規處置",
+       "mode": "mucosal_irritant_surge",
+       "note": "加重局部負擔",
+       "title": "延誤處置",
+       "unit_fill": "warn"
+      },
+      "right": {
+       "footnote": "建立健康微循環",
+       "mode": "barrier_hydration_shield",
+       "note": "專科穩定支持",
+       "per_row": 5,
+       "rows": 3,
+       "title": "積極照護",
+       "unit_fill": "ok"
+      }
+     },
+     "title": "處置對照分析"
+    },
+    {
+     "blueprint": "timeline",
+     "caption": "突發不適請即刻就醫診治，個人復原情況因人而異，具體照護請由專科醫師當面評估。",
+     "duration_sec": 8.0,
+     "labels": [
+      {
+       "text": "門診評估",
+       "tone": "neutral"
+      },
+      {
+       "text": "定期追蹤",
+       "tone": "optimal"
+      }
+     ],
+     "params": {
+      "connectors": "homeostasis_control",
+      "milestones": [
+       "門診評估",
+       "常規處置",
+       "定期追蹤"
+      ],
+      "unit_effect": "glow_restored",
+      "unit_fill": "accent",
+      "units": 3
+     },
+     "title": "生理復原歷程"
+    }
+   ],
+   "title": "牙周病衛教圖解",
+   "topic_key": "nhi-204-tooth"
+  },
+  "ok": true
+ }
+}

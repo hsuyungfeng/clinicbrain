@@ -248,6 +248,8 @@ def compile_visual_ir_local(
     fact_sheet: Dict[str, Any],
     call_local_fn: Optional[Callable[[str], str]] = None,
     feedback: str = "",
+    blueprint_mode: str = "fixed",
+    s1_classified_blueprint: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Step 2 (本地 8080 Ornith-35B 動畫編譯器): 接收解剖事實卡，在本地編譯為 3 幕 24 秒 Typed IR（零成本）。"""
     name = item.get("name", "")
@@ -257,6 +259,13 @@ def compile_visual_ir_local(
     feedback_block = ""
     if feedback:
         feedback_block = f"\n【前次校驗失敗反饋，請依此修正】：\n{feedback}\n"
+
+    s1_bp = (
+        s1_classified_blueprint
+        if (blueprint_mode == "classifier" and s1_classified_blueprint)
+        else "pathology_mechanism"
+    )
+    s1_title = "臨床藍圖解說" if s1_bp != "pathology_mechanism" else "病理機轉解說"
 
     prompt = f"""你是一位專業的台灣醫療衛教與動畫架構師。請根據以下通過驗證的【臨床解剖與病理事實卡】，將「{name}」編譯為一套標準 24 秒（3 幕 × 8 秒）的醫學向量解說卡 Typed IR JSON：
 
@@ -288,8 +297,8 @@ def compile_visual_ir_local(
   "keywords": {json.dumps(keywords[:4], ensure_ascii=False)},
   "scenes": [
     {{
-      "blueprint": "pathology_mechanism",
-      "title": "病理機轉解說",
+      "blueprint": "{s1_bp}",
+      "title": "{s1_title}",
       "caption": "第一幕解說文字（30至80字繁體中文，描述{fact_sheet.get('organ_label')}與{fact_sheet.get('lesion_label')}，零阿拉伯數字）",
       "labels": [
         {{"text": "{fact_sheet.get('trigger_label', '致病因子')[:6]}", "tone": "warning"}},
@@ -554,6 +563,7 @@ def generate_single_nhi_ir(
     item: Dict[str, Any],
     llm_call: Optional[Callable[[str], str]] = None,
     max_retries: int = 3,
+    blueprint_mode: str = "fixed",
 ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
     """雙引擎流水線：
     1. Step 1 (DeepSeek): 提煉臨床解剖事實卡 (Anatomy Fact Sheet)
@@ -565,6 +575,20 @@ def generate_single_nhi_ir(
     # 1. 提煉解剖事實卡 (DeepSeek)
     fact_sheet = extract_anatomy_fact_sheet_deepseek(item, archetype, call_deepseek_fn=llm_call)
     print(f"  [Step 1 解剖提煉] 結構: {fact_sheet.get('organ_label')} | 病理: {fact_sheet.get('lesion_label')}")
+
+    s1_classified_blueprint = None
+    needs_review = False
+    if blueprint_mode == "classifier":
+        try:
+            from src.visual.blueprint_classifier import classify_scene1_blueprint
+            source_summary = f"{item.get('name', '')} {item.get('category', '')} {fact_sheet.get('organ_label', '')} {fact_sheet.get('pathology_notes', '')}"
+            clf = classify_scene1_blueprint(source_summary, llm_call or (lambda p: ""), title=item.get("name", ""))
+            if clf.get("status") == "ok" and clf.get("blueprint") != "other":
+                s1_classified_blueprint = clf.get("blueprint")
+            if clf.get("needs_review") or clf.get("status") != "ok":
+                needs_review = True
+        except Exception:
+            needs_review = True
 
     feedback = ""
     last_err = ""
@@ -578,6 +602,8 @@ def generate_single_nhi_ir(
                 fact_sheet,
                 call_local_fn=llm_call,
                 feedback=feedback,
+                blueprint_mode=blueprint_mode,
+                s1_classified_blueprint=s1_classified_blueprint,
             )
             if not data or not isinstance(data, dict):
                 feedback = "輸出無法解析為合法 JSON 物件，請確保只輸出單一標準 JSON 物件。"
@@ -586,6 +612,8 @@ def generate_single_nhi_ir(
 
             # 本地自癒修正常見邊界
             healed_ir = post_process_self_heal(data, archetype, item)
+            if needs_review:
+                healed_ir["needs_review"] = True
 
             # 嚴格 IR 檢驗
             ok, code = validate_ir(healed_ir)
@@ -621,6 +649,7 @@ def run_batch_generation(
     redo_3: bool = False,
     allow_prod_db: bool = False,
     llm_call: Optional[Callable[[str], str]] = None,
+    blueprint_mode: str = "fixed",
 ) -> Dict[str, Any]:
     """批次管線入口函式。"""
     print(f"\n=======================================================")
@@ -709,9 +738,14 @@ def run_batch_generation(
                 success_count += 1
                 continue
 
-            ok, ir, err_msg = generate_single_nhi_ir(item, llm_call=llm_call)
+            ok, ir, err_msg = generate_single_nhi_ir(item, llm_call=llm_call, blueprint_mode=blueprint_mode)
             if not ok or not ir:
                 print(f"  ❌ 生成或驗證失敗: {err_msg}")
+                failed_count += 1
+                continue
+
+            if ir.get("needs_review"):
+                print(f"  ⚠️ 分類器判定需人工審核 (needs_review)，跳過自動發布入庫。")
                 failed_count += 1
                 continue
 
@@ -769,6 +803,12 @@ def main():
     parser.add_argument("--test-one", action="store_true", help="單筆驗收測試（允許日間執行）")
     parser.add_argument("--redo-3", action="store_true", help="強制重新生成並更新 3 筆示範專科疾病（扁桃腺炎、蛀牙、落枕）")
     parser.add_argument("--allow-prod-db", action="store_true", help="允許寫入正式資料庫 clinic.db")
+    parser.add_argument(
+        "--blueprint-mode",
+        choices=["fixed", "classifier"],
+        default="fixed",
+        help="第一幕藍圖決定模式：fixed（預設 pathology_mechanism）或 classifier（LLM 分類器）",
+    )
 
     args = parser.parse_args()
 
@@ -783,6 +823,7 @@ def main():
         test_one=args.test_one,
         redo_3=args.redo_3,
         allow_prod_db=args.allow_prod_db,
+        blueprint_mode=args.blueprint_mode,
     )
 
 
