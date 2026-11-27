@@ -66,9 +66,12 @@
 
 ## 五、交回方式
 
-1. 請填寫 **`physician_labeling_sheet.csv`**（不是 `golden_set_template.csv`）。此表已附上每筆的 `source_text`（來源原文），
-   方便你直接對照；請在 `physician_blueprint`、`evidence_span` 欄位填寫，有備註可寫在 `physician_notes`。
-   表單以 UTF-8 with BOM 儲存，Excel 可直接開啟。
+1. 請填寫 **`physician_labeling_sheet.xlsx`**（Excel 檔，不是 CSV，也不是 `golden_set_template.csv`）。
+   此表已附上每筆的 `source_text`（來源原文），方便你直接對照。
+   - `physician_blueprint`：點選儲存格右側的下拉箭頭選擇藍圖，無法輸入其他文字。
+   - `evidence_span`：從 `source_text` 複製原文片段貼上。
+   - `physician_notes`：備註。
+   填完直接存成 `.xlsx`，不需要另存成 CSV。
 2. 完成後通知專案團隊。團隊會以下列指令檢查（`--require-complete` 會要求 50 筆全部標註）：
    ```bash
    clinicbrain/.venv/bin/python clinicbrain/scripts/check_physician_labels.py --require-complete

@@ -30,10 +30,12 @@ from src.visual.blueprint_classifier import (  # noqa: E402
     is_evidence_in_source,
 )
 
-DEFAULT_SHEET = (
+_GOLDEN_DIR = (
     Path(__file__).resolve().parent.parent
-    / ".planning/phases/57-visual-blueprint-classification-narration-ab/golden/physician_labeling_sheet.csv"
+    / ".planning/phases/57-visual-blueprint-classification-narration-ab/golden"
 )
+DEFAULT_SHEET = _GOLDEN_DIR / "physician_labeling_sheet.xlsx"  # 醫師填寫用（含下拉選單）
+LABEL_SHEET_NAME = "標註"
 REQUIRED_COLUMNS = ("tree_id", "doc_id", "source_text", "physician_blueprint", "evidence_span")
 EVIDENCE_MIN_LEN = 10
 EVIDENCE_MAX_LEN = 40
@@ -101,14 +103,51 @@ def check_rows(rows: list[dict[str, str]], require_complete: bool = False) -> di
     }
 
 
-def load_sheet(path: Path) -> list[dict[str, str]]:
+def _check_columns(fields: list[str]) -> None:
+    missing = [c for c in REQUIRED_COLUMNS if c not in fields]
+    if missing:
+        raise ValueError(f"缺少必要欄位：{', '.join(missing)}")
+
+
+def _load_csv(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
-        fields = reader.fieldnames or []
-        missing = [c for c in REQUIRED_COLUMNS if c not in fields]
-        if missing:
-            raise ValueError(f"缺少必要欄位：{', '.join(missing)}")
+        _check_columns(reader.fieldnames or [])
         return list(reader)
+
+
+def _load_xlsx(path: Path) -> list[dict[str, str]]:
+    from openpyxl import load_workbook
+
+    wb = load_workbook(path, read_only=True, data_only=True)
+    try:
+        ws = wb[LABEL_SHEET_NAME] if LABEL_SHEET_NAME in wb.sheetnames else wb.worksheets[0]
+        it = ws.iter_rows(values_only=True)
+        header_row = next(it, None)
+        if header_row is None:
+            raise ValueError("工作表為空")
+        fields = [str(h).strip() if h is not None else "" for h in header_row]
+        _check_columns(fields)
+        rows: list[dict[str, str]] = []
+        for values in it:
+            row = {
+                fields[i]: ("" if v is None else str(v).strip())
+                for i, v in enumerate(values)
+                if i < len(fields) and fields[i]
+            }
+            # 跳過整列空白（Excel 常見的尾端空列）
+            if any(row.get(c) for c in ("tree_id", "doc_id", "physician_blueprint", "evidence_span")):
+                rows.append(row)
+        return rows
+    finally:
+        wb.close()
+
+
+def load_sheet(path: Path) -> list[dict[str, str]]:
+    """依副檔名讀取表單：.xlsx（醫師填寫用）或 .csv。"""
+    if path.suffix.lower() == ".xlsx":
+        return _load_xlsx(path)
+    return _load_csv(path)
 
 
 def main(argv: list[str] | None = None) -> int:

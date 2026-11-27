@@ -3,6 +3,7 @@ import csv
 import pytest
 
 from scripts.check_physician_labels import check_rows, load_sheet, main
+from src.visual.blueprint_classifier import CLASSIFIER_ALLOWED_BLUEPRINTS
 
 SRC = "術前須知：過敏體質需告知醫師。療程步驟：皮秒雷射利用極短脈衝光束擊碎黑色素，過程約15-30分鐘。"
 
@@ -125,3 +126,70 @@ def test_real_sheet_loads_and_reports_all_unlabeled():
     assert res["total"] == 50
     assert res["unlabeled"] == 50
     assert res["errors"] == []
+
+
+def test_xlsx_build_has_blueprint_dropdown_and_loads(tmp_path):
+    from openpyxl import load_workbook
+
+    from scripts.build_physician_labeling_xlsx import BLUEPRINT_COLUMN, build
+    from scripts.check_physician_labels import LABEL_SHEET_NAME
+
+    p = tmp_path / "sheet.csv"
+    _write_sheet(p, [_row(), _row(tree_id="2", doc_id="doc-2")])
+    out = build(csv_path=p, xlsx_path=tmp_path / "sheet.xlsx")
+
+    wb = load_workbook(out)
+    ws = wb[LABEL_SHEET_NAME]
+    headers = [c.value for c in ws[1]]
+    col = headers.index(BLUEPRINT_COLUMN) + 1
+    dvs = [dv for dv in ws.data_validations.dataValidation if dv.type == "list"]
+    assert len(dvs) == 1
+    dv = dvs[0]
+    assert str(dv.sqref) == f"{ws.cell(row=2, column=col).column_letter}2:{ws.cell(row=3, column=col).column_letter}3"
+    assert "藍圖選項" in dv.formula1
+    assert wb["藍圖選項"].sheet_state == "hidden"
+    opts = [wb["藍圖選項"].cell(row=r, column=1).value for r in range(2, 2 + len(CLASSIFIER_ALLOWED_BLUEPRINTS))]
+    assert opts == list(CLASSIFIER_ALLOWED_BLUEPRINTS)
+
+
+def test_xlsx_labels_are_checked(tmp_path):
+    from openpyxl import load_workbook
+
+    from scripts.build_physician_labeling_xlsx import BLUEPRINT_COLUMN, build
+    from scripts.check_physician_labels import LABEL_SHEET_NAME, load_sheet
+
+    p = tmp_path / "sheet.csv"
+    _write_sheet(p, [_row()])
+    out = build(csv_path=p, xlsx_path=tmp_path / "sheet.xlsx")
+
+    wb = load_workbook(out)
+    ws = wb[LABEL_SHEET_NAME]
+    headers = [c.value for c in ws[1]]
+    ws.cell(row=2, column=headers.index(BLUEPRINT_COLUMN) + 1, value="laser_action")
+    ws.cell(row=2, column=headers.index("evidence_span") + 1, value="皮秒雷射利用極短脈衝光束擊碎黑色素")
+    wb.save(out)
+
+    rows = load_sheet(out)
+    assert len(rows) == 1
+    assert check_rows(rows)["errors"] == []
+
+
+def test_xlsx_rejects_bad_evidence(tmp_path):
+    from openpyxl import load_workbook
+
+    from scripts.build_physician_labeling_xlsx import BLUEPRINT_COLUMN, build
+    from scripts.check_physician_labels import LABEL_SHEET_NAME, load_sheet
+
+    p = tmp_path / "sheet.csv"
+    _write_sheet(p, [_row()])
+    out = build(csv_path=p, xlsx_path=tmp_path / "sheet.xlsx")
+
+    wb = load_workbook(out)
+    ws = wb[LABEL_SHEET_NAME]
+    headers = [c.value for c in ws[1]]
+    ws.cell(row=2, column=headers.index(BLUEPRINT_COLUMN) + 1, value="laser_action")
+    ws.cell(row=2, column=headers.index("evidence_span") + 1, value="原文中不存在的句子內容")
+    wb.save(out)
+
+    res = check_rows(load_sheet(out))
+    assert any("不是 source_text 的子字串" in e for e in res["errors"])
